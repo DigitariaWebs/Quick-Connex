@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { FormInput } from "./FormInput";
 import { SelectInput } from "./SelectInput";
+import { DatePickerInput } from "./DatePickerInput";
+import { TimePickerInput } from "./TimePickerInput";
 
 // Validation helpers
 const validateRequired = (value: FormDataEntryValue | null): boolean => {
@@ -39,6 +41,8 @@ export default function TransferForm({ onSuccess }: TransferFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTime, setSelectedTime] = useState<Date | null>(null);
 
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
@@ -86,11 +90,11 @@ export default function TransferForm({ onSuccess }: TransferFormProps) {
       errors.toHospital = "Destination hospital is required";
     }
 
-    if (!validateDate(transferDate)) {
+    if (!selectedDate) {
       errors.transferDate = "Valid future date is required";
     }
 
-    if (!validateRequired(transferTime)) {
+    if (!selectedTime) {
       errors.transferTime = "Transfer time is required";
     }
 
@@ -118,6 +122,17 @@ export default function TransferForm({ onSuccess }: TransferFormProps) {
       return;
     }
 
+    // Format date and time for submission
+    const formattedDate = selectedDate
+      ? selectedDate.toISOString().split("T")[0]
+      : "";
+    const formattedTime = selectedTime
+      ? `${selectedTime.getHours().toString().padStart(2, "0")}:${selectedTime
+          .getMinutes()
+          .toString()
+          .padStart(2, "0")}`
+      : "";
+
     // Prepare data for submission
     const transferData = {
       patientFirstName,
@@ -125,8 +140,8 @@ export default function TransferForm({ onSuccess }: TransferFormProps) {
       patientAge,
       fromHospital,
       toHospital,
-      transferDate,
-      transferTime,
+      transferDate: formattedDate,
+      transferTime: formattedTime,
       transferType,
       issuer,
       priority,
@@ -147,6 +162,8 @@ export default function TransferForm({ onSuccess }: TransferFormProps) {
       if (data.success) {
         setSuccess("Transfer request created successfully");
         e.currentTarget.reset();
+        setSelectedDate(null);
+        setSelectedTime(null);
         if (onSuccess) {
           onSuccess();
         }
@@ -303,36 +320,30 @@ export default function TransferForm({ onSuccess }: TransferFormProps) {
                         <Calendar size={18} className="mr-2" />
                         Date
                       </h3>
-                      <FormInput
+                      <DatePickerInput
                         id="transferDate"
                         name="transferDate"
                         label="Transfer Date"
-                        type="date"
                         required
+                        selectedDate={selectedDate}
+                        onChange={(date) => setSelectedDate(date)}
+                        error={validationErrors.transferDate}
                       />
-                      {validationErrors.transferDate && (
-                        <p className="text-red-600 text-xs mt-1">
-                          {validationErrors.transferDate}
-                        </p>
-                      )}
                     </div>
                     <div>
                       <h3 className="text-md font-semibold text-black mb-3 flex items-center">
                         <Clock size={18} className="mr-2" />
                         Time
                       </h3>
-                      <FormInput
+                      <TimePickerInput
                         id="transferTime"
                         name="transferTime"
                         label="Transfer Time"
-                        type="time"
                         required
+                        selectedTime={selectedTime}
+                        onChange={(time) => setSelectedTime(time)}
+                        error={validationErrors.transferTime}
                       />
-                      {validationErrors.transferTime && (
-                        <p className="text-red-600 text-xs mt-1">
-                          {validationErrors.transferTime}
-                        </p>
-                      )}
                     </div>
                   </div>
 
