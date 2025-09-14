@@ -9,6 +9,7 @@ export const mockUsers: IUser[] = [
     lastName: 'Johnson',
     email: 'sarah.johnson@hospital.com',
     phone: '(555) 123-4567',
+    password: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8KzKz2K', // password123
     post: 'Head of Emergency Department',
     class: 'A',
     createdAt: new Date('2024-01-01'),
@@ -21,6 +22,7 @@ export const mockUsers: IUser[] = [
     lastName: 'Chen',
     email: 'michael.chen@hospital.com',
     phone: '(555) 234-5678',
+    password: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8KzKz2K', // password123
     post: 'Chief of Cardiology',
     class: 'A',
     createdAt: new Date('2024-01-01'),
@@ -33,6 +35,7 @@ export const mockUsers: IUser[] = [
     lastName: 'Smith',
     email: 'john.smith@hospital.com',
     phone: '(555) 987-6543',
+    password: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8KzKz2K', // password123
     opiqPermit: 'OPIQ-2024-001',
     rcr: 'RCR-2024-001',
     createdAt: new Date('2024-01-01'),
@@ -45,6 +48,7 @@ export const mockUsers: IUser[] = [
     lastName: 'Davis',
     email: 'emily.davis@hospital.com',
     phone: '(555) 876-5432',
+    password: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8KzKz2K', // password123
     opiqPermit: 'OPIQ-2024-002',
     rcr: 'RCR-2024-002',
     createdAt: new Date('2024-01-01'),
@@ -452,5 +456,31 @@ export const getMockStats = () => {
     totalAccepted: transfers.filter(t => t.status === 'accepted').length,
     totalInProgress: transfers.filter(t => t.status === 'in_progress').length,
     totalCompleted: transfers.filter(t => t.status === 'completed').length
+  };
+};
+
+// Helper function to get login credentials for mock users
+export const getMockLoginCredentials = () => {
+  return {
+    manager1: {
+      email: 'sarah.johnson@hospital.com',
+      password: 'password123',
+      userType: 'manager'
+    },
+    manager2: {
+      email: 'michael.chen@hospital.com',
+      password: 'password123',
+      userType: 'manager'
+    },
+    employee1: {
+      email: 'john.smith@hospital.com',
+      password: 'password123',
+      userType: 'employee'
+    },
+    employee2: {
+      email: 'emily.davis@hospital.com',
+      password: 'password123',
+      userType: 'employee'
+    }
   };
 };

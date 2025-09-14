@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 type FormInputProps = {
   id: string;
@@ -10,20 +10,20 @@ type FormInputProps = {
   icon?: React.ReactNode;
 };
 
-export function FormInput({ 
-  id, 
-  name, 
-  label, 
-  type = 'text', 
-  required = true, 
-  placeholder = '', 
-  icon 
+export function FormInput({
+  id,
+  name,
+  label,
+  type = "text",
+  required = true,
+  placeholder = "",
+  icon,
 }: FormInputProps) {
   return (
     <div>
       <label
         htmlFor={id}
-        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+        className="block text-sm font-semibold text-black dark:text-black mb-1"
       >
         {label}
       </label>
@@ -38,7 +38,9 @@ export function FormInput({
           name={name}
           type={type}
           required={required}
-          className={`w-full ${icon ? 'pl-10' : 'px-4'} pr-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm dark:border-gray-600 dark:text-white shadow-sm hover:shadow-md`}
+          className={`w-full ${
+            icon ? "pl-10" : "px-4"
+          } pr-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm dark:border-gray-600 dark:text-white shadow-sm hover:shadow-md`}
           placeholder={placeholder}
         />
       </div>

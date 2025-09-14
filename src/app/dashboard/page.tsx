@@ -13,6 +13,7 @@ import TransferRequestCard from "@/components/dashboard/TransferRequestCard";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardStats from "@/components/dashboard/DashboardStats";
 import LoadingSpinner from "@/components/dashboard/LoadingSpinner";
+import TransferForm from "@/components/forms/TransferForm";
 
 interface TransferRequest {
   _id: string;
@@ -214,6 +215,11 @@ export default function EmployeeDashboard() {
           onFilterChange={handleFilterChange}
           currentFilter={filter}
         />
+
+        {/* Transfer Form - For Managers to create transfers */}
+        <div className="mt-8">
+          <TransferForm onSuccess={handleRefresh} />
+        </div>
 
         {/* Main Content */}
         <div className="mt-8">

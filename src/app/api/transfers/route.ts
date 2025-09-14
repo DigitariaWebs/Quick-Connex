@@ -49,53 +49,98 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const {
-      patientId,
+      patientFirstName,
+      patientLastName,
+      patientAge,
       fromHospital,
-      fromDepartment,
       toHospital,
-      toDepartment,
-      requestedBy,
-      reason,
+      transferDate,
+      transferTime,
+      transferType,
+      issuer,
       priority = 'medium',
-      scheduledDate,
+      reason,
       notes,
       medicalDocuments = []
     } = body;
 
     // Validate required fields
-    if (!patientId || !fromHospital || !toHospital || !requestedBy || !reason) {
+    if (!patientFirstName || !patientLastName || !fromHospital || !toHospital || !transferDate || !reason) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Check if patient exists
-    const patient = await Patient.findOne({ patientId });
-    if (!patient) {
+    // Get current user (would come from session in a real app)
+    // This is a placeholder - in a real app, you'd get the user from the session
+    const requestingUser = await User.findOne({ userType: 'manager' });
+    if (!requestingUser) {
       return NextResponse.json(
-        { success: false, error: 'Patient not found' },
-        { status: 404 }
+        { success: false, error: 'User not authorized' },
+        { status: 401 }
       );
     }
+
+    // Create or find patient
+    const dob = new Date();
+    dob.setFullYear(dob.getFullYear() - parseInt(patientAge as string));
+    
+    // Generate a unique patient ID
+    const patientId = `PAT-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    
+    // Create new patient record
+    const patient = new Patient({
+      patientId,
+      firstName: patientFirstName,
+      lastName: patientLastName,
+      dateOfBirth: dob,
+      gender: 'other', // Default since we don't collect in the form
+      phone: '000-000-0000', // Default since we don't collect in the form
+      address: {
+        street: 'Unknown',
+        city: 'Unknown',
+        state: 'Unknown',
+        zipCode: 'Unknown',
+        country: 'Unknown'
+      },
+      medicalInfo: {
+        emergencyContact: {
+          name: 'Unknown',
+          relationship: 'Unknown',
+          phone: 'Unknown'
+        }
+      },
+      currentHospital: fromHospital,
+      status: 'active'
+    });
+
+    await patient.save();
 
     // Generate unique transfer ID
     const transferId = `TRF-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
+    // Combine date and time for scheduled transfer
+    const scheduledDateTime = transferDate && transferTime ? 
+      new Date(`${transferDate}T${transferTime}`) : 
+      new Date();
+
     // Create transfer request
     const transfer = new Transfer({
       transferId,
-      patientId,
+      patientId: patient.patientId,
       patient: patient._id,
       fromHospital,
-      fromDepartment,
+      fromDepartment: 'General', // Default since we don't collect in the form
       toHospital,
-      toDepartment,
-      requestedBy,
+      toDepartment: 'General', // Default since we don't collect in the form
+      requestedBy: requestingUser._id,
       reason,
       priority,
-      scheduledDate: scheduledDate ? new Date(scheduledDate) : undefined,
-      notes,
+      status: transferType === 'stat' ? 'urgent' : 'pending',
+      requestedDate: new Date(),
+      scheduledDate: scheduledDateTime,
+      notes: `Issued by: ${issuer}${notes ? `\nAdditional notes: ${notes}` : ''}`,
       medicalDocuments
     });
 
