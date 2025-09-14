@@ -38,7 +38,7 @@ export function FormInput({
           name={name}
           type={type}
           required={required}
-          className={`w-full ${icon ? 'pl-10' : 'px-4'} pr-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
+          className={`w-full ${icon ? 'pl-10' : 'px-4'} pr-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm dark:border-gray-600 dark:text-white shadow-sm hover:shadow-md`}
           placeholder={placeholder}
         />
       </div>

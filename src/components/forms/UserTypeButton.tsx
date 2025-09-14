@@ -13,10 +13,10 @@ export function UserTypeButton({ type, currentType, onClick }: UserTypeButtonPro
     <button
       type="button"
       onClick={onClick}
-      className={`flex-1 py-3 px-4 text-sm font-medium transition-all duration-200 ${
+      className={`flex-1 py-3.5 px-4 text-sm font-medium transition-all duration-300 ${
         currentType === type
-          ? 'bg-blue-600 text-white shadow-md'
-          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+          ? 'bg-green-600 text-white shadow-md scale-105'
+          : 'text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50 backdrop-blur-sm'
       }`}
     >
       {label}

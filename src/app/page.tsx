@@ -15,26 +15,33 @@ export default function SignUpPage() {
   const { userType, setUserType, isLoading, message, handleSubmit } = useSignUpForm();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center">
+    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center relative">
+      <div className="wave-bottom"></div>
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
+        transition={{ duration: 0.7, ease: "easeOut" }}
+        className="w-full max-w-md relative z-10"
       >
-        <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 py-6 px-8">
+        <div className="glass-morphism rounded-xl overflow-hidden shadow-2xl">
+          <motion.div 
+            className="bg-gradient-to-r from-green-500 to-emerald-600 py-6 px-8"
+            initial={{ backgroundPosition: "0% 0%" }}
+            animate={{ backgroundPosition: "100% 0%" }}
+            transition={{ duration: 15, repeat: Infinity, repeatType: "reverse", ease: "linear" }}
+            style={{ backgroundSize: "200% 100%" }}
+          >
             <h1 className="text-2xl font-bold text-white text-center">
               Create Your Account
             </h1>
-            <p className="text-blue-100 text-center text-sm mt-2">
+            <p className="text-green-100 text-center text-sm mt-2">
               Join our patient management platform
             </p>
-          </div>
+          </motion.div>
 
           <div className="p-6">
             {/* User Type Selection */}
-            <div className="flex rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700 mb-6">
+            <div className="flex rounded-lg overflow-hidden bg-white/40 dark:bg-gray-800/40 backdrop-blur-sm mb-6">
               <UserTypeButton 
                 type="employee"
                 currentType={userType}
@@ -60,7 +67,7 @@ export default function SignUpPage() {
 
             <form className="space-y-5" onSubmit={handleSubmit}>
               {/* Name Fields */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormInput
                   id="firstName"
                   name="firstName"
@@ -134,14 +141,19 @@ export default function SignUpPage() {
               </div>
             </form>
 
-            <div className="mt-6 text-center">
+            <motion.div 
+              className="mt-8 text-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+            >
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Already have an account?{' '}
-                <a href="/login" className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400">
+                <a href="/login" className="font-medium text-green-600 hover:text-green-500 dark:text-green-400 transition-colors duration-300 hover:underline">
                   Sign in
                 </a>
               </p>
-            </div>
+            </motion.div>
           </div>
         </div>
       </motion.div>

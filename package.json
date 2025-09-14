@@ -3,12 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
-    "start": "next start"
+    "dev": "node scripts/startup.js && node server.js",
+    "dev:next": "node scripts/startup.js && next dev --turbopack",
+    "build": "node scripts/startup.js && next build --turbopack",
+    "start": "node scripts/startup.js && next start",
+    "dev:verbose": "node scripts/startup.js && NODE_ENV=development node server.js",
+    "build:analyze": "node scripts/startup.js && ANALYZE=true next build --turbopack",
+    "test-logs": "node scripts/test-logs.js",
+    "test-startup": "node scripts/startup.js"
   },
   "dependencies": {
     "framer-motion": "^12.23.12",
+    "mongodb": "^6.19.0",
+    "mongoose": "^8.18.1",
     "next": "15.5.3",
     "react": "19.1.0",
     "react-dom": "19.1.0"
