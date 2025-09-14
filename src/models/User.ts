@@ -7,6 +7,7 @@ export interface IUser extends Document {
   lastName: string;
   email: string;
   phone: string;
+  password: string;
   post?: string;
   class?: string;
   opiqPermit?: string;
@@ -44,6 +45,11 @@ const UserSchema = new Schema<IUser>({
     type: String, 
     required: true,
     trim: true
+  },
+  password: { 
+    type: String, 
+    required: true,
+    minlength: 6
   },
   // Manager specific fields
   post: { 

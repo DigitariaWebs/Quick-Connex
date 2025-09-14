@@ -4,6 +4,7 @@ import path from 'path';
 import dbConnect from '@/lib/mongoose';
 import User from '@/models/User';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
   try {
@@ -18,16 +19,29 @@ export async function POST(request: Request) {
     const lastName = formData.get('lastName') as string;
     const email = formData.get('email') as string;
     const phone = formData.get('phone') as string;
+    const password = formData.get('password') as string;
 
     // Validate required fields
-    if (!userType || !firstName || !lastName || !email || !phone) {
+    if (!userType || !firstName || !lastName || !email || !phone || !password) {
       return NextResponse.json(
         { message: 'Missing required fields' }, 
         { status: 400 }
       );
     }
 
-    const userData: any = { userType, firstName, lastName, email, phone };
+    // Validate password strength
+    if (password.length < 6) {
+      return NextResponse.json(
+        { message: 'Password must be at least 6 characters long' }, 
+        { status: 400 }
+      );
+    }
+
+    // Hash the password
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    
+    const userData: any = { userType, firstName, lastName, email, phone, password: hashedPassword };
 
     // Handle manager-specific fields
     if (userType === 'manager') {
