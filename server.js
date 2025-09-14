@@ -1,7 +1,6 @@
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
-const { logTurbopackStart, logTurbopackComplete, logTurbopackError } = require('./src/lib/turbopack-logger');
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
@@ -23,7 +22,7 @@ console.log('='.repeat(50) + '\n');
 app.prepare().then(() => {
     // Log when Next.js is ready
     console.log('✅ Next.js app prepared successfully');
-    logTurbopackComplete(true, 0);
+    console.log('🎉 Turbopack: First compilation completed - app is ready!');
 
     createServer(async (req, res) => {
         try {
@@ -31,21 +30,24 @@ app.prepare().then(() => {
             await handle(req, res, parsedUrl);
         } catch (err) {
             console.error('❌ Server error:', err);
-            logTurbopackError(err);
+            console.error('❌ TURBOPACK COMPILATION ERROR');
+            console.error(`📋 Error: ${err.message || err}`);
             res.statusCode = 500;
             res.end('Internal Server Error');
         }
     }).listen(port, (err) => {
         if (err) {
             console.error('❌ Failed to start server:', err);
-            logTurbopackError(err);
+            console.error('❌ TURBOPACK COMPILATION ERROR');
+            console.error(`📋 Error: ${err.message || err}`);
             throw err;
         }
         console.log(`🎉 Server ready on http://${hostname}:${port}`);
     });
 }).catch((err) => {
     console.error('❌ Failed to prepare Next.js app:', err);
-    logTurbopackError(err);
+    console.error('❌ TURBOPACK COMPILATION ERROR');
+    console.error(`📋 Error: ${err.message || err}`);
     process.exit(1);
 });
 
