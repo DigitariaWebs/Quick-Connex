@@ -55,24 +55,13 @@ const StatCard = ({
       animate={controls}
       variants={{
         hidden: { opacity: 0, y: 20 },
-        visible: {
-          opacity: 1,
-          y: isActive ? -4 : 0,
-          boxShadow: isActive
-            ? "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
-            : "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-          transition: { duration: 0.5, delay },
-        },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.5, delay } },
       }}
-      whileHover={
-        !isActive
-          ? {
-              y: -5,
-              boxShadow:
-                "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-            }
-          : {}
-      }
+      whileHover={{
+        y: -5,
+        boxShadow:
+          "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+      }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
       className={`relative overflow-hidden rounded-2xl bg-white cursor-pointer transition-all duration-200 ${
@@ -110,6 +99,15 @@ const StatCard = ({
 
         <div>
           <h3 className="text-base font-semibold text-gray-700">{title}</h3>
+          {isActive && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mt-2 text-xs font-medium text-indigo-600"
+            >
+              Currently viewing
+            </motion.div>
+          )}
         </div>
       </div>
     </motion.div>

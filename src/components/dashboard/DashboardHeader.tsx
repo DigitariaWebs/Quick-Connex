@@ -1,17 +1,11 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Menu, 
-  X, 
-  User, 
-  LogOut, 
-  ChevronDown
-} from 'lucide-react';
+import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X, User, LogOut, ChevronDown } from "lucide-react";
 
 interface DashboardHeaderProps {
-  userType: 'employee' | 'manager';
+  userType: "employee" | "manager";
 }
 
 export default function DashboardHeader({ userType }: DashboardHeaderProps) {
@@ -22,24 +16,31 @@ export default function DashboardHeader({ userType }: DashboardHeaderProps) {
   // Close profile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target as Node)
+      ) {
         setProfileMenuOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
   const handleLogout = () => {
-    // Here you would implement actual logout logic
-    console.log('Logout clicked');
-    // For now, just close the menu
+    // Close the menu
     setProfileMenuOpen(false);
-    // You could redirect to login page or clear session
-    // window.location.href = '/login';
+    setMobileMenuOpen(false);
+
+    // Clear any stored session data (if you have any)
+    // localStorage.removeItem('user');
+    // sessionStorage.clear();
+
+    // Redirect to login page
+    window.location.href = "/login";
   };
 
   return (
@@ -79,14 +80,16 @@ export default function DashboardHeader({ userType }: DashboardHeaderProps) {
                   <User size={16} className="text-white" />
                 </div>
                 <div className="hidden lg:block text-left">
-                  <p className="text-sm font-medium text-gray-800">John Smith</p>
+                  <p className="text-sm font-medium text-gray-800">
+                    John Smith
+                  </p>
                   <p className="text-xs text-gray-500 capitalize">{userType}</p>
                 </div>
-                <ChevronDown 
-                  size={14} 
+                <ChevronDown
+                  size={14}
                   className={`text-gray-400 transition-transform duration-200 ${
-                    profileMenuOpen ? 'rotate-180' : ''
-                  }`} 
+                    profileMenuOpen ? "rotate-180" : ""
+                  }`}
                 />
               </button>
 
@@ -107,9 +110,15 @@ export default function DashboardHeader({ userType }: DashboardHeaderProps) {
                           <User size={18} className="text-white" />
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-gray-800">John Smith</p>
-                          <p className="text-xs text-gray-500">john.smith@hospital.com</p>
-                          <p className="text-xs text-blue-600 capitalize font-medium mt-1">{userType}</p>
+                          <p className="text-sm font-semibold text-gray-800">
+                            John Smith
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            john.smith@hospital.com
+                          </p>
+                          <p className="text-xs text-blue-600 capitalize font-medium mt-1">
+                            {userType}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -131,7 +140,7 @@ export default function DashboardHeader({ userType }: DashboardHeaderProps) {
           </div>
 
           {/* Mobile Menu Button */}
-          <button 
+          <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
@@ -144,7 +153,7 @@ export default function DashboardHeader({ userType }: DashboardHeaderProps) {
           {mobileMenuOpen && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
+              animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               className="md:hidden mt-3 py-3 border-t border-gray-200"
             >
@@ -155,14 +164,18 @@ export default function DashboardHeader({ userType }: DashboardHeaderProps) {
                     <User size={16} className="text-white" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-800">John Smith</p>
-                    <p className="text-xs text-gray-500 capitalize">{userType}</p>
+                    <p className="text-sm font-medium text-gray-800">
+                      John Smith
+                    </p>
+                    <p className="text-xs text-gray-500 capitalize">
+                      {userType}
+                    </p>
                   </div>
                 </div>
 
                 <div className="border-t border-gray-200 my-2"></div>
 
-                <button 
+                <button
                   onClick={handleLogout}
                   className="flex items-center space-x-2 p-2 hover:bg-red-50 rounded-lg transition-colors text-red-600"
                 >
