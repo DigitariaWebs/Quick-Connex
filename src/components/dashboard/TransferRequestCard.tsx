@@ -320,7 +320,7 @@ export default function TransferRequestCard({ transfer, onAccept }: TransferRequ
               <div className="space-y-2 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-500">Transfer ID:</span>
-                  <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{transfer.transferId}</span>
+                  <span className="font-mono text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded border border-blue-200">{transfer.transferId}</span>
                 </div>
                 
                 {transfer.scheduledDate && (

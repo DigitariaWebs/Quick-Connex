@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { logApplicationStartup } from "@/lib/startup-logger";
-import Navigation from "@/components/Navigation";
 
 // Log application startup
 if (typeof window === 'undefined') {
@@ -34,7 +33,6 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Navigation />
         {children}
       </body>
     </html>

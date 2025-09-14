@@ -1,8 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Menu, X, User } from 'lucide-react';
+import { 
+  Menu, 
+  X, 
+  User, 
+  LogOut, 
+  ChevronDown
+} from 'lucide-react';
 
 interface DashboardHeaderProps {
   userType: 'employee' | 'manager';
@@ -10,6 +16,31 @@ interface DashboardHeaderProps {
 
 export default function DashboardHeader({ userType }: DashboardHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    // Here you would implement actual logout logic
+    console.log('Logout clicked');
+    // For now, just close the menu
+    setProfileMenuOpen(false);
+    // You could redirect to login page or clear session
+    // window.location.href = '/login';
+  };
 
   return (
     <motion.header
@@ -38,21 +69,64 @@ export default function DashboardHeader({ userType }: DashboardHeaderProps) {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
-            {/* Notification Icon */}
-            <button className="relative p-2 rounded-full hover:bg-gray-100 transition-colors">
-              <Bell size={20} className="text-gray-600" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
+            {/* User Profile with Dropdown */}
+            <div className="relative" ref={profileMenuRef}>
+              <button
+                onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+                className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center shadow-sm">
+                  <User size={16} className="text-white" />
+                </div>
+                <div className="hidden lg:block text-left">
+                  <p className="text-sm font-medium text-gray-800">John Smith</p>
+                  <p className="text-xs text-gray-500 capitalize">{userType}</p>
+                </div>
+                <ChevronDown 
+                  size={14} 
+                  className={`text-gray-400 transition-transform duration-200 ${
+                    profileMenuOpen ? 'rotate-180' : ''
+                  }`} 
+                />
+              </button>
 
-            {/* User Profile */}
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center shadow-sm">
-                <User size={16} className="text-white" />
-              </div>
-              <div className="hidden lg:block">
-                <p className="text-sm font-medium text-gray-800">John Smith</p>
-                <p className="text-xs text-gray-500">Employee</p>
-              </div>
+              {/* Profile Dropdown Menu */}
+              <AnimatePresence>
+                {profileMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50"
+                  >
+                    {/* User Info Header */}
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center">
+                          <User size={18} className="text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">John Smith</p>
+                          <p className="text-xs text-gray-500">john.smith@hospital.com</p>
+                          <p className="text-xs text-blue-600 capitalize font-medium mt-1">{userType}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sign Out Button */}
+                    <div className="py-2">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut size={16} className="text-red-500" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
@@ -75,18 +149,25 @@ export default function DashboardHeader({ userType }: DashboardHeaderProps) {
               className="md:hidden mt-3 py-3 border-t border-gray-200"
             >
               <div className="flex flex-col space-y-3">
+                {/* User Info */}
                 <div className="flex items-center space-x-3 p-2">
                   <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center">
                     <User size={16} className="text-white" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-800">John Smith</p>
-                    <p className="text-xs text-gray-500">Employee</p>
+                    <p className="text-xs text-gray-500 capitalize">{userType}</p>
                   </div>
                 </div>
-                <button className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                  <Bell size={18} className="text-gray-600" />
-                  <span className="text-sm text-gray-700">Notifications</span>
+
+                <div className="border-t border-gray-200 my-2"></div>
+
+                <button 
+                  onClick={handleLogout}
+                  className="flex items-center space-x-2 p-2 hover:bg-red-50 rounded-lg transition-colors text-red-600"
+                >
+                  <LogOut size={18} className="text-red-500" />
+                  <span className="text-sm">Sign Out</span>
                 </button>
               </div>
             </motion.div>
