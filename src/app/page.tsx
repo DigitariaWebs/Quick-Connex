@@ -7,8 +7,17 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to login page when the app is first loaded
-    router.push("/login");
+    // Check if user is already authenticated
+    const authStatus = localStorage.getItem("isAuthenticated");
+    const userData = localStorage.getItem("user");
+
+    if (authStatus === "true" && userData) {
+      // User is authenticated, redirect to dashboard
+      router.push("/dashboard");
+    } else {
+      // User is not authenticated, redirect to login
+      router.push("/login");
+    }
   }, [router]);
 
   return (
@@ -16,7 +25,7 @@ export default function HomePage() {
       <div className="text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
         <p className="mt-4 text-gray-600 dark:text-gray-400">
-          Redirecting to login...
+          Checking authentication...
         </p>
       </div>
     </div>

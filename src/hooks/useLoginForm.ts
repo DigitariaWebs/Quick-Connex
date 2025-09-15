@@ -1,8 +1,10 @@
 import { useState, FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 
 export function useLoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const router = useRouter();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -25,9 +27,16 @@ export function useLoginForm() {
       const result = await response.json();
       
       if (response.ok) {
-        setMessage({ type: 'success', text: 'Login successful!' });
-        // Redirect to dashboard after successful login
-        window.location.href = '/dashboard';
+        // Store user data in localStorage to maintain authentication state
+        localStorage.setItem('user', JSON.stringify(result.user));
+        localStorage.setItem('isAuthenticated', 'true');
+        
+        setMessage({ type: 'success', text: 'Login successful! Redirecting...' });
+        
+        // Use Next.js router for better navigation
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 1000);
       } else {
         setMessage({ type: 'error', text: result.message || 'Login failed' });
       }

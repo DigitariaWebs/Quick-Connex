@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { useLoginForm } from "@/hooks/useLoginForm";
 import { FormInput } from "@/components/forms/FormInput";
@@ -7,7 +10,18 @@ import { SubmitButton } from "@/components/forms/SubmitButton";
 import { Icon } from "@/components/forms/Icon";
 
 export default function LoginPage() {
+  const router = useRouter();
   const { isLoading, message, handleSubmit } = useLoginForm();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    const authStatus = localStorage.getItem("isAuthenticated");
+    const userData = localStorage.getItem("user");
+
+    if (authStatus === "true" && userData) {
+      router.push("/dashboard");
+    }
+  }, [router]);
 
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center relative">
@@ -110,12 +124,12 @@ export default function LoginPage() {
             >
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Don't have an account?{" "}
-                <a
+                <Link
                   href="/signup"
                   className="font-medium text-green-600 hover:text-green-500 dark:text-green-400 transition-colors duration-300 hover:underline"
                 >
                   Create one
-                </a>
+                </Link>
               </p>
             </motion.div>
           </div>

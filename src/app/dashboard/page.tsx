@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -55,6 +56,7 @@ interface DashboardStats {
 }
 
 export default function EmployeeDashboard() {
+  const router = useRouter();
   const [transfers, setTransfers] = useState<TransferRequest[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
     totalPending: 0,
@@ -72,10 +74,32 @@ export default function EmployeeDashboard() {
   const [showFilters, setShowFilters] = useState(false);
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"date" | "priority">("date");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // Check authentication on component mount
+  useEffect(() => {
+    const checkAuth = () => {
+      const authStatus = localStorage.getItem("isAuthenticated");
+      const userData = localStorage.getItem("user");
+
+      if (authStatus === "true" && userData) {
+        setIsAuthenticated(true);
+        setAuthLoading(false);
+      } else {
+        // Redirect to login if not authenticated
+        router.push("/login");
+      }
+    };
+
+    checkAuth();
+  }, [router]);
 
   useEffect(() => {
-    fetchTransfers();
-  }, [filter]);
+    if (isAuthenticated) {
+      fetchTransfers();
+    }
+  }, [filter, isAuthenticated]);
 
   const fetchTransfers = async () => {
     try {
@@ -194,6 +218,23 @@ export default function EmployeeDashboard() {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0 },
   };
+
+  // Show loading spinner while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-blue-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Verifying authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render dashboard if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { useSignUpForm } from "@/hooks/useSignUpForm";
 import { FormInput } from "@/components/forms/FormInput";
@@ -155,16 +156,12 @@ export default function SignUpPage() {
             >
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Already have an account?{" "}
-                <a
+                <Link
                   href="/login"
                   className="font-medium text-green-600 hover:text-green-500 dark:text-green-400 transition-colors duration-300 hover:underline"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    window.location.href = "/login";
-                  }}
                 >
                   Sign in
-                </a>
+                </Link>
               </p>
             </motion.div>
           </div>

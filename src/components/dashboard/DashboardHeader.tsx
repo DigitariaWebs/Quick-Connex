@@ -35,9 +35,9 @@ export default function DashboardHeader({ userType }: DashboardHeaderProps) {
     setProfileMenuOpen(false);
     setMobileMenuOpen(false);
 
-    // Clear any stored session data (if you have any)
-    // localStorage.removeItem('user');
-    // sessionStorage.clear();
+    // Clear authentication data from localStorage
+    localStorage.removeItem("user");
+    localStorage.removeItem("isAuthenticated");
 
     // Redirect to login page
     window.location.href = "/login";
