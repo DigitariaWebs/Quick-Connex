@@ -1,0 +1,179 @@
+"use client";
+
+import { motion } from "framer-motion";
+import {
+  Plus,
+  FileText,
+  BarChart3,
+  Search,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  Hospital,
+  Users,
+  Calendar,
+} from "lucide-react";
+
+interface QuickAction {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  color: string;
+  bgColor: string;
+  onClick: () => void;
+  badge?: number;
+}
+
+interface QuickActionsProps {
+  userType: "employee" | "manager";
+  onNewTransfer?: () => void;
+  onViewPending?: () => void;
+  onViewSchedule?: () => void;
+  onGenerateReport?: () => void;
+  onViewUrgent?: () => void;
+  onSearchTransfers?: () => void;
+  pendingCount?: number;
+  urgentCount?: number;
+  scheduledToday?: number;
+}
+
+export default function QuickActions({
+  userType,
+  onNewTransfer,
+  onViewPending,
+  onViewSchedule,
+  onGenerateReport,
+  onViewUrgent,
+  onSearchTransfers,
+  pendingCount = 0,
+  urgentCount = 0,
+  scheduledToday = 0,
+}: QuickActionsProps) {
+  const employeeActions: QuickAction[] = [
+    {
+      id: "view-pending",
+      title: "Pending Transfers",
+      description: "Review transfers awaiting your confirmation",
+      icon: <Clock size={20} className="text-orange-600" />,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50 hover:bg-orange-100",
+      onClick: onViewPending || (() => {}),
+      badge: pendingCount,
+    },
+    {
+      id: "view-urgent",
+      title: "Urgent Transfers",
+      description: "Handle high-priority and STAT transfers",
+      icon: <AlertTriangle size={20} className="text-red-600" />,
+      color: "text-red-600",
+      bgColor: "bg-red-50 hover:bg-red-100",
+      onClick: onViewUrgent || (() => {}),
+      badge: urgentCount,
+    },
+    {
+      id: "view-schedule",
+      title: "Today's Schedule",
+      description: "View transfers scheduled for today",
+      icon: <Calendar size={20} className="text-green-600" />,
+      color: "text-green-600",
+      bgColor: "bg-green-50 hover:bg-green-100",
+      onClick: onViewSchedule || (() => {}),
+      badge: scheduledToday,
+    },
+    {
+      id: "search-transfers",
+      title: "Search Transfers",
+      description: "Find specific transfers or patients",
+      icon: <Search size={20} className="text-purple-600" />,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50 hover:bg-purple-100",
+      onClick: onSearchTransfers || (() => {}),
+    },
+  ];
+
+  const managerActions: QuickAction[] = [
+    {
+      id: "new-transfer",
+      title: "Book New Transfer",
+      description: "Create a new patient transfer request",
+      icon: <Plus size={20} className="text-green-600" />,
+      color: "text-green-600",
+      bgColor: "bg-green-50 hover:bg-green-100",
+      onClick: onNewTransfer || (() => {}),
+    },
+    {
+      id: "view-pending",
+      title: "Review Pending",
+      description: "Validate pending transfer requests",
+      icon: <CheckCircle size={20} className="text-green-600" />,
+      color: "text-green-600",
+      bgColor: "bg-green-50 hover:bg-green-100",
+      onClick: onViewPending || (() => {}),
+      badge: pendingCount,
+    },
+    {
+      id: "view-urgent",
+      title: "Monitor Urgent",
+      description: "Oversee urgent and STAT transfers",
+      icon: <AlertTriangle size={20} className="text-red-600" />,
+      color: "text-red-600",
+      bgColor: "bg-red-50 hover:bg-red-100",
+      onClick: onViewUrgent || (() => {}),
+      badge: urgentCount,
+    },
+    {
+      id: "generate-report",
+      title: "Generate Report",
+      description: "Create transfer performance reports",
+      icon: <BarChart3 size={20} className="text-purple-600" />,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50 hover:bg-purple-100",
+      onClick: onGenerateReport || (() => {}),
+    },
+  ];
+
+  const actions = userType === "manager" ? managerActions : employeeActions;
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold text-gray-800">Quick Actions</h3>
+        <span className="text-sm text-gray-500">
+          {userType === "manager" ? "Management tools" : "Your tasks"}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {actions.map((action, index) => (
+          <motion.button
+            key={action.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.1 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={action.onClick}
+            className={`relative p-4 rounded-lg border border-gray-200 text-left transition-all duration-200 ${action.bgColor}`}
+          >
+            {action.badge !== undefined && action.badge > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
+                {action.badge > 99 ? "99+" : action.badge}
+              </span>
+            )}
+
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0">{action.icon}</div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-gray-900 mb-1">
+                  {action.title}
+                </h4>
+                <p className="text-xs text-gray-600">{action.description}</p>
+              </div>
+            </div>
+          </motion.button>
+        ))}
+      </div>
+    </div>
+  );
+}

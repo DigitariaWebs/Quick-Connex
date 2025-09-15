@@ -10,10 +10,15 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
+  Plus,
+  Menu,
 } from "lucide-react";
 import TransferRequestCard from "@/components/dashboard/TransferRequestCard";
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import DashboardStats from "@/components/dashboard/DashboardStats";
+import Sidebar from "@/components/dashboard/Sidebar";
+import TransferOverview from "@/components/dashboard/TransferOverview";
+import UrgentAlerts from "@/components/dashboard/UrgentAlerts";
+import RecentActivity from "@/components/dashboard/RecentActivity";
+import QuickActions from "@/components/dashboard/QuickActions";
 import LoadingSpinner from "@/components/dashboard/LoadingSpinner";
 import TransferForm from "@/components/forms/TransferForm";
 
@@ -87,6 +92,7 @@ export default function EmployeeDashboard() {
   const [showFilters, setShowFilters] = useState(false);
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"date" | "priority">("date");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -222,7 +228,7 @@ export default function EmployeeDashboard() {
   // Show loading spinner while checking authentication
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-blue-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Verifying authentication...</p>
@@ -237,261 +243,342 @@ export default function EmployeeDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
-      {/* Background Elements */}
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-indigo-50 to-transparent opacity-70"></div>
-        <div className="absolute bottom-0 left-0 w-full h-96 bg-gradient-to-t from-blue-50 to-transparent opacity-70"></div>
-        <div className="absolute top-20 right-20 w-96 h-96 rounded-full bg-purple-100 blur-3xl opacity-20"></div>
-        <div className="absolute bottom-20 left-20 w-96 h-96 rounded-full bg-blue-100 blur-3xl opacity-20"></div>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      {user && (
+        <Sidebar user={user} onLogout={logout} onToggle={setSidebarCollapsed} />
+      )}
 
-      {/* Header */}
-      {user && <DashboardHeader user={user} onLogout={logout} />}
-
-      <div className="container mx-auto px-4 py-6 relative z-10">
-        {/* Welcome Section */}
-        {user && (
-          <div className="mb-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-gray-100"
-            >
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-lg">
-                    {user.firstName.charAt(0)}
-                    {user.lastName.charAt(0)}
-                  </span>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-800">
-                    Welcome back, {user.firstName}!
-                  </h1>
-                  <p className="text-gray-600 capitalize">
-                    {user.userType} • {user.email}
-                  </p>
-                  {user.userType === "manager" && (user.post || user.class) && (
-                    <p className="text-sm text-blue-600 font-medium">
-                      {user.post && user.class
-                        ? `${user.post} • ${user.class}`
-                        : user.post || user.class}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-
-        {/* Stats Cards */}
-        <DashboardStats
-          stats={stats}
-          onFilterChange={handleFilterChange}
-          currentFilter={filter}
-        />
-
-        {/* Transfer Form - For Managers to create transfers */}
-        {user?.userType === "manager" && (
-          <div className="mt-8">
-            <TransferForm onSuccess={handleRefresh} />
-          </div>
-        )}
-
-        {/* Main Content */}
-        <div className="mt-8">
-          {/* Toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-            <div className="flex items-center">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent">
-                Transfer Requests
-              </h2>
-              <div className="ml-3 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                {filteredTransfers.length} request
-                {filteredTransfers.length !== 1 ? "s" : ""}
-              </div>
+      {/* Main Content */}
+      <div
+        className={`ml-0 transition-all duration-300 ${
+          sidebarCollapsed ? "lg:ml-20" : "lg:ml-72"
+        }`}
+      >
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 px-4 lg:px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                <Menu size={20} className="text-gray-600" />
+              </button>
+              <h1 className="text-xl lg:text-2xl font-bold text-gray-800">
+                Transfer Management Dashboard
+              </h1>
             </div>
-
-            <div className="flex items-center space-x-3">
-              {/* Search */}
-              <div className="relative">
+            <div className="flex items-center space-x-4">
+              {/* Search - Hidden on mobile, shown on desktop */}
+              <div className="relative hidden md:block">
                 <input
                   type="text"
-                  placeholder="Search transfers..."
+                  placeholder="Search Transfers"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-4 pr-12 py-2 rounded-lg border border-gray-200 text-sm text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-48 md:w-64"
+                  className="pl-4 pr-12 py-2 rounded-lg border border-gray-200 text-sm text-black bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-48 lg:w-64"
                 />
                 <Search
                   size={16}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                 />
               </div>
+              <button className="flex items-center space-x-2 bg-green-600 text-white px-3 lg:px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                <Plus size={16} />
+                <span className="hidden sm:inline">New Transfer</span>
+              </button>
+            </div>
+          </div>
+        </div>
 
-              {/* Filter Button */}
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                onClick={() => setShowFilters(!showFilters)}
-                className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors flex items-center space-x-1"
-              >
-                <Filter size={16} className="text-gray-600" />
-                <span className="text-sm text-gray-700">Filter</span>
-                {showFilters ? (
-                  <ChevronUp size={16} />
-                ) : (
-                  <ChevronDown size={16} />
-                )}
-              </motion.button>
-
-              {/* Refresh Button */}
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                onClick={handleRefresh}
-                disabled={loading || isRefreshing}
-                className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-              >
-                <motion.div
-                  animate={isRefreshing ? { rotate: 360 } : { rotate: 0 }}
-                  transition={{ duration: 0.5, ease: "linear" }}
-                >
-                  <RefreshCw size={16} className="text-gray-600" />
-                </motion.div>
-              </motion.button>
+        <div className="p-4 lg:p-6">
+          {/* Mobile Search */}
+          <div className="md:hidden mb-6">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search Transfers"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-4 pr-12 py-2 rounded-lg border border-gray-200 text-sm text-black bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+              <Search
+                size={16}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              />
             </div>
           </div>
 
-          {/* Filter Panel */}
-          <AnimatePresence>
-            {showFilters && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Priority
-                    </label>
-                    <div className="flex space-x-2">
-                      {["all", "urgent", "high", "medium", "low"].map((p) => (
+          {/* Urgent Alerts */}
+          {user && (
+            <div className="mb-6">
+              <UrgentAlerts
+                urgentTransfers={[
+                  {
+                    id: "1",
+                    transferId: "TRF-STAT-001",
+                    patientName: "John Doe",
+                    fromHospital: "Toronto General Hospital",
+                    toHospital: "Sick Kids Hospital",
+                    priority: "stat",
+                    requestedTime: "2024-01-15 14:30",
+                    reason: "Cardiac emergency - immediate transfer required",
+                    timeElapsed: "15 min",
+                  },
+                ]}
+              />
+            </div>
+          )}
+
+          {/* Transfer Overview Stats */}
+          {user && (
+            <div className="mb-8">
+              <TransferOverview
+                userType={user.userType}
+                stats={{
+                  totalActive:
+                    stats.totalPending +
+                    stats.totalAccepted +
+                    stats.totalInProgress,
+                  completedToday: stats.totalCompleted,
+                  pendingAcceptance: stats.totalPending,
+                  urgent: 3,
+                  averageProcessingTime: "2.5h",
+                  successRate: 94,
+                }}
+              />
+            </div>
+          )}
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Quick Actions */}
+            {user && (
+              <QuickActions
+                userType={user.userType}
+                pendingCount={stats.totalPending}
+                urgentCount={3}
+                scheduledToday={5}
+              />
+            )}
+
+            {/* Recent Activity */}
+            <RecentActivity
+              userType={user?.userType || "employee"}
+              activities={[
+                {
+                  id: "1",
+                  type: "transfer_accepted",
+                  transferId: "TRF-001",
+                  patientName: "Jane Smith",
+                  description:
+                    "Transfer accepted and assigned to transport team",
+                  timestamp: "2 hours ago",
+                  priority: "high",
+                  fromHospital: "Mount Sinai Hospital",
+                  toHospital: "Princess Margaret Hospital",
+                  user: "Dr. Wilson",
+                },
+                {
+                  id: "2",
+                  type: "transfer_completed",
+                  transferId: "TRF-002",
+                  patientName: "Robert Johnson",
+                  description: "Transfer completed successfully",
+                  timestamp: "4 hours ago",
+                  priority: "medium",
+                  fromHospital: "St. Michael's Hospital",
+                  toHospital: "Toronto Western Hospital",
+                  user: "Nurse Kelly",
+                },
+              ]}
+            />
+          </div>
+
+          {/* Transfer Requests Section */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-800">
+                Transfer Requests
+              </h2>
+              <div className="flex items-center space-x-3">
+                <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                  {filteredTransfers.length} request
+                  {filteredTransfers.length !== 1 ? "s" : ""}
+                </div>
+
+                {/* Filter Button */}
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors flex items-center space-x-1"
+                >
+                  <Filter size={16} className="text-gray-600" />
+                  <span className="text-sm text-gray-700">Filter</span>
+                  {showFilters ? (
+                    <ChevronUp size={16} />
+                  ) : (
+                    <ChevronDown size={16} />
+                  )}
+                </motion.button>
+
+                {/* Refresh Button */}
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleRefresh}
+                  disabled={loading || isRefreshing}
+                  className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                >
+                  <motion.div
+                    animate={isRefreshing ? { rotate: 360 } : { rotate: 0 }}
+                    transition={{ duration: 0.5, ease: "linear" }}
+                  >
+                    <RefreshCw size={16} className="text-gray-600" />
+                  </motion.div>
+                </motion.button>
+              </div>
+            </div>
+
+            {/* Filter Panel */}
+            <AnimatePresence>
+              {showFilters && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Priority
+                      </label>
+                      <div className="flex space-x-2">
+                        {["all", "urgent", "high", "medium", "low"].map((p) => (
+                          <button
+                            key={p}
+                            onClick={() =>
+                              setPriorityFilter(p === "all" ? null : p)
+                            }
+                            className={`px-3 py-1 rounded-md text-xs font-medium ${
+                              (p === "all" && !priorityFilter) ||
+                              priorityFilter === p
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            }`}
+                          >
+                            {p === "all"
+                              ? "All"
+                              : p.charAt(0).toUpperCase() + p.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Sort By
+                      </label>
+                      <div className="flex space-x-2">
                         <button
-                          key={p}
-                          onClick={() =>
-                            setPriorityFilter(p === "all" ? null : p)
-                          }
+                          onClick={() => setSortBy("date")}
                           className={`px-3 py-1 rounded-md text-xs font-medium ${
-                            (p === "all" && !priorityFilter) ||
-                            priorityFilter === p
-                              ? "bg-blue-100 text-blue-800"
+                            sortBy === "date"
+                              ? "bg-green-100 text-green-800"
                               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                           }`}
                         >
-                          {p === "all"
-                            ? "All"
-                            : p.charAt(0).toUpperCase() + p.slice(1)}
+                          Date
                         </button>
-                      ))}
+                        <button
+                          onClick={() => setSortBy("priority")}
+                          className={`px-3 py-1 rounded-md text-xs font-medium ${
+                            sortBy === "priority"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
+                        >
+                          Priority
+                        </button>
+                      </div>
                     </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Sort By
-                    </label>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => setSortBy("date")}
-                        className={`px-3 py-1 rounded-md text-xs font-medium ${
-                          sortBy === "date"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
-                      >
-                        Date
-                      </button>
-                      <button
-                        onClick={() => setSortBy("priority")}
-                        className={`px-3 py-1 rounded-md text-xs font-medium ${
-                          sortBy === "priority"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
-                      >
-                        Priority
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Error Message */}
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6"
-            >
-              {error}
-            </motion.div>
-          )}
-
-          {/* Loading State */}
-          {loading && <LoadingSpinner />}
-
-          {/* Transfer Requests Grid */}
-          {!loading && !error && (
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="show"
-              className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
-            >
-              {filteredTransfers.length === 0 ? (
-                <motion.div
-                  variants={itemVariants}
-                  className="col-span-full text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100"
-                >
-                  <div className="flex flex-col items-center justify-center">
-                    <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-                      <Search size={32} className="text-blue-400" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                      No transfer requests found
-                    </h3>
-                    <p className="text-gray-500 max-w-sm">
-                      {searchTerm
-                        ? `No results for "${searchTerm}". Try a different search term.`
-                        : filter === "all"
-                        ? "There are no transfer requests at the moment."
-                        : `There are no ${filter} transfer requests.`}
-                    </p>
-                    {searchTerm && (
-                      <button
-                        onClick={() => setSearchTerm("")}
-                        className="mt-4 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
-                      >
-                        Clear Search
-                      </button>
-                    )}
                   </div>
                 </motion.div>
-              ) : (
-                filteredTransfers.map((transfer) => (
-                  <motion.div key={transfer._id} variants={itemVariants} layout>
-                    <TransferRequestCard
-                      transfer={transfer}
-                      onAccept={handleTransferAccepted}
-                    />
-                  </motion.div>
-                ))
               )}
-            </motion.div>
+            </AnimatePresence>
+
+            {/* Error Message */}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6"
+              >
+                {error}
+              </motion.div>
+            )}
+
+            {/* Loading State */}
+            {loading && <LoadingSpinner />}
+
+            {/* Transfer Requests Grid */}
+            {!loading && !error && (
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="show"
+                className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+              >
+                {filteredTransfers.length === 0 ? (
+                  <motion.div
+                    variants={itemVariants}
+                    className="col-span-full text-center py-12 bg-gray-50 rounded-xl"
+                  >
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4">
+                        <Search size={24} className="text-green-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                        No transfer requests found
+                      </h3>
+                      <p className="text-gray-500 max-w-sm text-sm">
+                        {searchTerm
+                          ? `No results for "${searchTerm}". Try a different search term.`
+                          : filter === "all"
+                          ? "There are no transfer requests at the moment."
+                          : `There are no ${filter} transfer requests.`}
+                      </p>
+                      {searchTerm && (
+                        <button
+                          onClick={() => setSearchTerm("")}
+                          className="mt-4 px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors"
+                        >
+                          Clear Search
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                ) : (
+                  filteredTransfers.map((transfer) => (
+                    <motion.div
+                      key={transfer._id}
+                      variants={itemVariants}
+                      layout
+                    >
+                      <TransferRequestCard
+                        transfer={transfer}
+                        onAccept={handleTransferAccepted}
+                      />
+                    </motion.div>
+                  ))
+                )}
+              </motion.div>
+            )}
+          </div>
+
+          {/* Transfer Form - For Managers to create transfers */}
+          {user?.userType === "manager" && (
+            <div className="mt-8">
+              <TransferForm onSuccess={handleRefresh} />
+            </div>
           )}
         </div>
       </div>

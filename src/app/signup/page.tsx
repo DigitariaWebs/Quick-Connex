@@ -183,7 +183,7 @@ export default function SignUpPage() {
                   <input
                     type="checkbox"
                     required
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                   />
                   <span className="ml-2 text-gray-600">
                     I accept the{" "}
