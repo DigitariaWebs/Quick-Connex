@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
-import path from 'path';
 import dbConnect from '@/lib/mongoose';
 import User from '@/models/User';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { 
+  uploadFileToGridFS, 
+  validateFile, 
+  calculateFileChecksum,
+  type FileMetadata 
+} from '@/lib/gridfs';
 
 // Validation utilities
 const validateEmail = (email: string): boolean => {
@@ -52,26 +56,31 @@ const sanitizeInput = (input: string): string => {
   return input.trim().replace(/[<>]/g, '');
 };
 
-const validateFileUpload = (file: File, allowedTypes: string[], maxSizeMB: number): { isValid: boolean; error?: string } => {
-  // Check file size
-  const maxSizeBytes = maxSizeMB * 1024 * 1024;
-  if (file.size > maxSizeBytes) {
-    return {
-      isValid: false,
-      error: `File size must be less than ${maxSizeMB}MB`
-    };
-  }
+// Helper function to process file upload to GridFS
+const processFileUpload = async (
+  file: File, 
+  documentType: 'opiqPermit' | 'rcr',
+  userId: string
+): Promise<{ fileId: string; metadata: FileMetadata }> => {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const checksum = calculateFileChecksum(buffer);
   
-  // Check file type
-  const fileType = file.type;
-  if (!allowedTypes.includes(fileType)) {
-    return {
-      isValid: false,
-      error: `File type not allowed. Allowed types: ${allowedTypes.join(', ')}`
-    };
-  }
+  const metadata: FileMetadata = {
+    userId,
+    documentType,
+    originalName: file.name,
+    mimeType: file.type,
+    size: file.size,
+    checksum,
+    uploadedAt: new Date()
+  };
   
-  return { isValid: true };
+  const fileId = await uploadFileToGridFS(buffer, file.name, metadata);
+  
+  return {
+    fileId: fileId.toString(),
+    metadata
+  };
 };
 
 export async function POST(request: Request) {
@@ -149,7 +158,15 @@ export async function POST(request: Request) {
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     
-    const userData: any = { userType, firstName, lastName, email, phone, password: hashedPassword };
+    const userData: any = { 
+      userType, 
+      firstName, 
+      lastName, 
+      email, 
+      phone, 
+      password: hashedPassword,
+      documents: [] // Initialize documents array
+    };
 
     // Handle manager-specific fields
     if (userType === 'manager') {
@@ -198,7 +215,7 @@ export async function POST(request: Request) {
       const maxFileSizeMB = 10;
 
       // Validate OPIQ permit file
-      const opiqValidation = validateFileUpload(opiqPermit, allowedFileTypes, maxFileSizeMB);
+      const opiqValidation = validateFile(opiqPermit, allowedFileTypes, maxFileSizeMB);
       if (!opiqValidation.isValid) {
         return NextResponse.json(
           { message: `OPIQ permit validation failed: ${opiqValidation.error}` }, 
@@ -207,7 +224,7 @@ export async function POST(request: Request) {
       }
 
       // Validate RCR file
-      const rcrValidation = validateFileUpload(rcr, allowedFileTypes, maxFileSizeMB);
+      const rcrValidation = validateFile(rcr, allowedFileTypes, maxFileSizeMB);
       if (!rcrValidation.isValid) {
         return NextResponse.json(
           { message: `RCR document validation failed: ${rcrValidation.error}` }, 
@@ -215,38 +232,44 @@ export async function POST(request: Request) {
         );
       }
 
-      // Ensure uploads directory exists
-      const uploadsDir = path.join(process.cwd(), 'public/uploads');
+      // Generate a temporary user ID for file processing
+      const tempUserId = new mongoose.Types.ObjectId().toString();
+
       try {
-        await writeFile(`${uploadsDir}/.keep`, '');
-      } catch (error) {
-        // Directory already exists, continue
-      }
+        // Process OPIQ permit file
+        console.log('📄 API: Processing OPIQ permit file...');
+        const opiqResult = await processFileUpload(opiqPermit, 'opiqPermit', tempUserId);
+        userData.documents.push({
+          fileId: opiqResult.fileId,
+          documentType: 'opiqPermit',
+          originalName: opiqResult.metadata.originalName,
+          mimeType: opiqResult.metadata.mimeType,
+          size: opiqResult.metadata.size,
+          checksum: opiqResult.metadata.checksum,
+          uploadedAt: opiqResult.metadata.uploadedAt
+        });
+        console.log(`✅ API: OPIQ permit uploaded to GridFS - ID: ${opiqResult.fileId}`);
 
-      // Process OPIQ permit file
-      if (opiqPermit && opiqPermit instanceof File) {
-        const opiqPermitBuffer = Buffer.from(await opiqPermit.arrayBuffer());
-        const sanitizedFilename = opiqPermit.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const opiqPermitFilename = `opiq_${Date.now()}_${sanitizedFilename}`;
-        await writeFile(
-          path.join(uploadsDir, opiqPermitFilename),
-          opiqPermitBuffer
-        );
-        userData.opiqPermit = `/uploads/${opiqPermitFilename}`;
-        console.log(`📄 API: OPIQ permit saved: ${opiqPermitFilename}`);
-      }
+        // Process RCR document file
+        console.log('📄 API: Processing RCR document file...');
+        const rcrResult = await processFileUpload(rcr, 'rcr', tempUserId);
+        userData.documents.push({
+          fileId: rcrResult.fileId,
+          documentType: 'rcr',
+          originalName: rcrResult.metadata.originalName,
+          mimeType: rcrResult.metadata.mimeType,
+          size: rcrResult.metadata.size,
+          checksum: rcrResult.metadata.checksum,
+          uploadedAt: rcrResult.metadata.uploadedAt
+        });
+        console.log(`✅ API: RCR document uploaded to GridFS - ID: ${rcrResult.fileId}`);
 
-      // Process RCR document file
-      if (rcr && rcr instanceof File) {
-        const rcrBuffer = Buffer.from(await rcr.arrayBuffer());
-        const sanitizedFilename = rcr.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const rcrFilename = `rcr_${Date.now()}_${sanitizedFilename}`;
-        await writeFile(
-          path.join(uploadsDir, rcrFilename),
-          rcrBuffer
+      } catch (fileError) {
+        console.error('❌ API: File upload to GridFS failed:', fileError);
+        return NextResponse.json(
+          { message: 'Failed to upload documents. Please try again.' }, 
+          { status: 500 }
         );
-        userData.rcr = `/uploads/${rcrFilename}`;
-        console.log(`📄 API: RCR document saved: ${rcrFilename}`);
       }
     }
 
@@ -267,6 +290,22 @@ export async function POST(request: Request) {
       console.log(`💾 API: Creating new ${userType} user in database...`);
       const newUser = new User(userData);
       const savedUser = await newUser.save();
+      
+      // Update file metadata with actual user ID for employees
+      if (userType === 'employee' && savedUser.documents && savedUser.documents.length > 0) {
+        console.log('🔄 API: Updating file metadata with actual user ID...');
+        const { updateFileMetadata } = await import('@/lib/gridfs');
+        
+        for (const doc of savedUser.documents) {
+          try {
+            await updateFileMetadata(doc.fileId, { userId: savedUser._id.toString() });
+            console.log(`✅ API: Updated metadata for file ${doc.fileId}`);
+          } catch (updateError) {
+            console.error(`⚠️ API: Failed to update metadata for file ${doc.fileId}:`, updateError);
+            // Continue with user creation even if metadata update fails
+          }
+        }
+      }
       
       const processingTime = Date.now() - startTime;
       console.log(`✅ API: User successfully saved to database in ${processingTime}ms`);

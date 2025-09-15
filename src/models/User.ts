@@ -1,5 +1,16 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
+// Define the interface for document references
+export interface IDocumentReference {
+  fileId: string; // GridFS file ID
+  documentType: 'opiqPermit' | 'rcr';
+  originalName: string;
+  mimeType: string;
+  size: number;
+  checksum: string;
+  uploadedAt: Date;
+}
+
 // Define the interface for User document
 export interface IUser extends Document {
   userType: 'employee' | 'manager';
@@ -10,8 +21,7 @@ export interface IUser extends Document {
   password: string;
   post?: string;
   class?: string;
-  opiqPermit?: string;
-  rcr?: string;
+  documents?: IDocumentReference[]; // Array of document references
   createdAt: Date;
   updatedAt: Date;
 }
@@ -62,24 +72,69 @@ const UserSchema = new Schema<IUser>({
     required: function(this: IUser) { return this.userType === 'manager'; },
     trim: true
   },
-  // Employee specific fields
-  opiqPermit: { 
-    type: String,
-    required: function(this: IUser) { return this.userType === 'employee'; },
-    trim: true
-  },
-  rcr: { 
-    type: String,
-    required: function(this: IUser) { return this.userType === 'employee'; },
-    trim: true
-  }
+  // Employee specific fields - documents array
+  documents: [{
+    fileId: {
+      type: String,
+      required: true
+    },
+    documentType: {
+      type: String,
+      required: true,
+      enum: ['opiqPermit', 'rcr']
+    },
+    originalName: {
+      type: String,
+      required: true
+    },
+    mimeType: {
+      type: String,
+      required: true
+    },
+    size: {
+      type: Number,
+      required: true
+    },
+    checksum: {
+      type: String,
+      required: true
+    },
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true, // This will automatically add createdAt and updatedAt fields
   versionKey: false // This will remove the __v field
 });
 
+// Add validation to ensure employees have required documents
+UserSchema.pre('save', function(next) {
+  if (this.userType === 'employee') {
+    const hasOpiqPermit = this.documents?.some(doc => doc.documentType === 'opiqPermit');
+    const hasRcr = this.documents?.some(doc => doc.documentType === 'rcr');
+    
+    if (!hasOpiqPermit || !hasRcr) {
+      return next(new Error('Employee must have both OPIQ permit and RCR documents'));
+    }
+  }
+  next();
+});
+
+// Remove old field validations that are no longer needed
+UserSchema.pre('validate', function(next) {
+  // Remove validation errors for old fields that no longer exist
+  if (this.userType === 'employee') {
+    delete this.opiqPermit;
+    delete this.rcr;
+  }
+  next();
+});
+
 // Add index for faster queries
 UserSchema.index({ email: 1 });
+UserSchema.index({ 'documents.fileId': 1 });
 
 // Create or get the User model
 const User: Model<IUser> = mongoose.models.User as Model<IUser> || 

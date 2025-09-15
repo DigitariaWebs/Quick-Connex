@@ -9,8 +9,12 @@
     "start": "node scripts/startup.js && next start",
     "dev:verbose": "node scripts/startup.js && NODE_ENV=development node server.js",
     "build:analyze": "node scripts/startup.js && ANALYZE=true next build --turbopack",
-    "test-logs": "node scripts/test-logs.js",
-    "test-startup": "node scripts/startup.js"
+    "test-startup": "node scripts/startup.js",
+    "test:gridfs": "node scripts/run-gridfs-tests.js",
+    "test:gridfs:utilities": "node scripts/gridfs-utilities-test.js",
+    "test:gridfs:comprehensive": "node scripts/comprehensive-gridfs-test.js",
+    "test:gridfs:verify": "node scripts/verify-file-user-relationships.js",
+    "reset-db": "node scripts/reset-database-and-create-test-user.js"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
