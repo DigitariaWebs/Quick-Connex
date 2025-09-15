@@ -1,4 +1,5 @@
-import React from 'react';
+import React from "react";
+import { motion } from "framer-motion";
 
 type UserTypeButtonProps = {
   type: string;
@@ -6,20 +7,45 @@ type UserTypeButtonProps = {
   onClick: () => void;
 };
 
-export function UserTypeButton({ type, currentType, onClick }: UserTypeButtonProps) {
+export function UserTypeButton({
+  type,
+  currentType,
+  onClick,
+}: UserTypeButtonProps) {
   const label = type.charAt(0).toUpperCase() + type.slice(1);
-  
+
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
-      className={`flex-1 py-3.5 px-4 text-sm font-medium transition-all duration-300 ${
+      className={`flex-1 py-3.5 px-4 text-sm font-medium transition-all duration-300 relative overflow-hidden ${
         currentType === type
-          ? 'bg-green-600 text-white shadow-md scale-105'
-          : 'text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50 backdrop-blur-sm'
+          ? "text-white shadow-md"
+          : "text-gray-600 bg-gray-50 hover:bg-gray-100"
       }`}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
     >
-      {label}
-    </button>
+      {currentType === type && (
+        <motion.div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(45deg, #10b981, #34d399, #6ee7b7, #10b981)",
+            backgroundSize: "300% 300%",
+          }}
+          animate={{
+            backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+          }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            repeatType: "mirror",
+            ease: "easeInOut",
+          }}
+        />
+      )}
+      <span className="relative z-10">{label}</span>
+    </motion.button>
   );
 }

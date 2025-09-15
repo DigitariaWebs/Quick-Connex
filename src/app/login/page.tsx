@@ -24,117 +24,157 @@ export default function LoginPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center relative">
-      <div className="wave-bottom"></div>
+    <div className="min-h-screen flex relative">
+      {/* Animated Gradient Background */}
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, ease: "easeOut" }}
-        className="w-full max-w-md relative z-10"
-      >
-        <div className="glass-morphism rounded-xl overflow-hidden shadow-2xl">
-          <motion.div
-            className="bg-gradient-to-r from-green-500 to-emerald-600 py-6 px-8"
-            initial={{ backgroundPosition: "0% 0%" }}
-            animate={{ backgroundPosition: "100% 0%" }}
-            transition={{
-              duration: 15,
-              repeat: Infinity,
-              repeatType: "reverse",
-              ease: "linear",
-            }}
-            style={{ backgroundSize: "200% 100%" }}
-          >
-            <h1 className="text-2xl font-bold text-white text-center">
-              Sign In
-            </h1>
-            <p className="text-green-100 text-center text-sm mt-2">
-              Access your patient management account
-            </p>
-          </motion.div>
+        className="absolute inset-0 z-0"
+        style={{
+          background:
+            "linear-gradient(135deg, #d4fce8 0%, #88f5c3 50%, #c7fce0 100%)",
+          backgroundSize: "400% 400%",
+        }}
+        animate={{
+          backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+        }}
+        transition={{
+          duration: 20,
+          repeat: Infinity,
+          repeatType: "mirror",
+          ease: "easeInOut",
+        }}
+      />
 
-          <div className="p-6">
+      {/* Left Side Content */}
+      <div className="flex-1 flex items-center justify-center px-8 lg:px-16 z-10">
+        <motion.div
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="max-w-lg text-white"
+        >
+          <h1 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight">
+            Fast, Efficient and Productive
+          </h1>
+          <p className="text-lg lg:text-xl text-white/80 leading-relaxed">
+            Access your patient management account with our secure and
+            streamlined platform
+          </p>
+        </motion.div>
+      </div>
+
+      {/* Right Side - Login Form */}
+      <div className="flex items-center justify-center px-8 lg:px-16 z-10">
+        <motion.div
+          initial={{ opacity: 0, x: 50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+          className="w-full max-w-md"
+        >
+          <div className="bg-white rounded-3xl p-8 shadow-2xl max-h-[90vh] min-h-[600px] overflow-y-auto">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Sign In</h2>
+              <p className="text-gray-600">
+                Access your patient management account
+              </p>
+            </div>
+
             {/* Status Message */}
             {message.text && (
               <div
-                className={`rounded-md p-3 mb-4 ${
+                className={`rounded-lg p-3 mb-6 text-sm ${
                   message.type === "success"
-                    ? "bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-100"
-                    : "bg-red-50 text-red-700 dark:bg-red-900 dark:text-red-100"
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : "bg-red-50 text-red-700 border border-red-200"
                 }`}
               >
                 {message.text}
               </div>
             )}
 
-            <form className="space-y-5" onSubmit={handleSubmit}>
-              <FormInput
-                id="email"
-                name="email"
-                label="Email Address"
-                type="email"
-                placeholder="you@example.com"
-                icon={<Icon name="email" />}
-              />
-              <FormInput
-                id="password"
-                name="password"
-                label="Password"
-                type="password"
-                placeholder="••••••••"
-                icon={<Icon name="lock" />}
-              />
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Email
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Enter your email"
+                />
+              </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Password
+                </label>
+                <div className="relative">
                   <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-10"
+                    placeholder="Enter your password"
                   />
-                  <label
-                    htmlFor="remember-me"
-                    className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                   >
-                    Remember me
-                  </label>
-                </div>
-
-                <div className="text-sm">
-                  <a
-                    href="#"
-                    className="font-medium text-green-600 hover:text-green-500 dark:text-green-400 transition-colors duration-300 hover:underline"
-                  >
-                    Forgot password?
-                  </a>
+                    <svg
+                      className="h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </div>
 
               <div className="pt-4">
-                <SubmitButton isLoading={isLoading} label="Sign In" />
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? "Signing In..." : "Sign In"}
+                </button>
               </div>
             </form>
 
-            <motion.div
-              className="mt-8 text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-            >
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Don't have an account?{" "}
-                <Link
-                  href="/signup"
-                  className="font-medium text-green-600 hover:text-green-500 dark:text-green-400 transition-colors duration-300 hover:underline"
-                >
-                  Create one
-                </Link>
-              </p>
-            </motion.div>
+            <p className="text-center text-sm text-gray-600 mt-6">
+              Already have an account?{" "}
+              <Link
+                href="/signup"
+                className="font-medium text-green-600 hover:text-green-500 transition-colors duration-200"
+              >
+                Sign Up
+              </Link>
+            </p>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 }
