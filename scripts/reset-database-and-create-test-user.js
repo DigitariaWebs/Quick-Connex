@@ -3,14 +3,26 @@ const { GridFSBucket } = require('mongodb');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
-// Test user configuration
-const TEST_USER = {
+// Test user configurations
+const TEST_EMPLOYEE = {
     userType: 'employee',
     firstName: 'Test',
-    lastName: 'User',
-    email: 'test.user@example.com',
+    lastName: 'Employee',
+    email: 'test.employee@example.com',
     phone: '+1234567890',
     password: 'TestPass123!',
+    documents: []
+};
+
+const TEST_MANAGER = {
+    userType: 'manager',
+    firstName: 'Test',
+    lastName: 'Manager',
+    email: 'test.manager@example.com',
+    phone: '+1234567890',
+    password: 'TestPass123!',
+    post: 'Senior Manager',
+    class: 'A',
     documents: []
 };
 
@@ -148,138 +160,161 @@ async function clearAllData() {
     }
 }
 
-// Create test user with documents
-async function createTestUser() {
-    console.log('👤 Creating test user with documents...');
+// Create test users
+async function createTestUsers() {
+    console.log('👤 Creating test users...');
 
     try {
         const client = mongoose.connection.getClient();
         const db = client.db();
         const bucket = new GridFSBucket(db, { bucketName: 'documents' });
 
-        // Hash password
-        const saltRounds = 12;
-        const hashedPassword = await bcrypt.hash(TEST_USER.password, saltRounds);
+        const createdUsers = [];
 
-        // Create user data
-        const userData = {
-            ...TEST_USER,
-            password: hashedPassword,
-            documents: []
-        };
+        // Create Employee user with documents
+        console.log('   👷 Creating employee user with documents...');
+        const employeeUser = await createEmployeeUser(bucket);
+        createdUsers.push(employeeUser);
 
-        // Upload documents to GridFS
-        console.log('   📄 Uploading test documents to GridFS...');
-        for (const doc of TEST_DOCUMENTS) {
-            const checksum = calculateChecksum(doc.content);
-            const timestamp = Date.now();
-            const sanitizedFilename = doc.originalName.replace(/[^a-zA-Z0-9.-]/g, '_');
-            const gridFSFilename = `${doc.documentType}_test_user_${timestamp}_${sanitizedFilename}`;
+        // Create Manager user without documents
+        console.log('   👔 Creating manager user...');
+        const managerUser = await createManagerUser();
+        createdUsers.push(managerUser);
 
-            const metadata = {
-                userId: 'test_user_id', // Temporary ID, will be updated after user creation
-                documentType: doc.documentType,
-                originalName: doc.originalName,
-                mimeType: doc.mimeType,
-                size: doc.content.length,
-                checksum: checksum,
-                uploadedAt: new Date()
-            };
-
-            // Upload to GridFS
-            const uploadStream = bucket.openUploadStream(gridFSFilename, { metadata });
-            uploadStream.write(doc.content);
-            uploadStream.end();
-
-            const fileId = await new Promise((resolve, reject) => {
-                uploadStream.on('finish', () => resolve(uploadStream.id));
-                uploadStream.on('error', reject);
-            });
-
-            // Add document reference to user data
-            userData.documents.push({
-                fileId: fileId.toString(),
-                documentType: doc.documentType,
-                originalName: doc.originalName,
-                mimeType: doc.mimeType,
-                size: doc.content.length,
-                checksum: checksum,
-                uploadedAt: new Date()
-            });
-
-            console.log(`     ✅ Uploaded: ${doc.originalName} (${doc.documentType})`);
-        }
-
-        // Create user in database
-        console.log('   💾 Creating user in database...');
-        let User;
-        try {
-            User = mongoose.model('User');
-        } catch (error) {
-            User = mongoose.model('User', new mongoose.Schema({}, { strict: false }));
-        }
-        const newUser = new User(userData);
-        const savedUser = await newUser.save();
-
-        console.log(`   ✅ User created with ID: ${savedUser._id}`);
-
-        // Update file metadata with actual user ID
-        console.log('   🔄 Updating file metadata with actual user ID...');
-        for (const doc of savedUser.documents) {
-            try {
-                await db.collection('documents.files').updateOne(
-                    { _id: new mongoose.Types.ObjectId(doc.fileId) },
-                    { $set: { 'metadata.userId': savedUser._id.toString() } }
-                );
-                console.log(`     ✅ Updated metadata for: ${doc.originalName}`);
-            } catch (error) {
-                console.log(`     ⚠️ Failed to update metadata for: ${doc.originalName} - ${error.message}`);
-            }
-        }
-
-        // Update GridFS filenames with actual user ID
-        console.log('   📁 Updating GridFS filenames with actual user ID...');
-        for (const doc of savedUser.documents) {
-            try {
-                const timestamp = Date.now();
-                const sanitizedFilename = doc.originalName.replace(/[^a-zA-Z0-9.-]/g, '_');
-                const newGridFSFilename = `${doc.documentType}_${savedUser._id}_${timestamp}_${sanitizedFilename}`;
-
-                await db.collection('documents.files').updateOne(
-                    { _id: new mongoose.Types.ObjectId(doc.fileId) },
-                    { $set: { filename: newGridFSFilename } }
-                );
-                console.log(`     ✅ Updated filename for: ${doc.originalName}`);
-            } catch (error) {
-                console.log(`     ⚠️ Failed to update filename for: ${doc.originalName} - ${error.message}`);
-            }
-        }
-
-        console.log('✅ Test user created successfully');
-
-        // Display user information
-        console.log('\n📋 Test User Information:');
-        console.log('─'.repeat(50));
-        console.log(`👤 Name: ${savedUser.firstName} ${savedUser.lastName}`);
-        console.log(`📧 Email: ${savedUser.email}`);
-        console.log(`📱 Phone: ${savedUser.phone}`);
-        console.log(`🔑 Password: ${TEST_USER.password}`);
-        console.log(`👥 User Type: ${savedUser.userType}`);
-        console.log(`🆔 User ID: ${savedUser._id}`);
-        console.log(`📄 Documents: ${savedUser.documents.length}`);
-
-        savedUser.documents.forEach((doc, index) => {
-            console.log(`   ${index + 1}. ${doc.documentType}: ${doc.originalName}`);
-            console.log(`      📁 File ID: ${doc.fileId}`);
-            console.log(`      📏 Size: ${(doc.size / 1024).toFixed(2)} KB`);
-        });
-
-        return savedUser;
+        return createdUsers;
 
     } catch (error) {
-        console.error('❌ Error creating test user:', error);
+        console.error('❌ Error creating test users:', error);
         throw error;
     }
+}
+
+// Create employee user with documents
+async function createEmployeeUser(bucket) {
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(TEST_EMPLOYEE.password, saltRounds);
+
+    const userData = {
+        ...TEST_EMPLOYEE,
+        password: hashedPassword,
+        documents: []
+    };
+
+    // Upload documents to GridFS
+    console.log('     📄 Uploading test documents to GridFS...');
+    for (const doc of TEST_DOCUMENTS) {
+        const checksum = calculateChecksum(doc.content);
+        const timestamp = Date.now();
+        const sanitizedFilename = doc.originalName.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const gridFSFilename = `${doc.documentType}_test_employee_${timestamp}_${sanitizedFilename}`;
+
+        const metadata = {
+            userId: 'test_employee_id', // Temporary ID, will be updated after user creation
+            documentType: doc.documentType,
+            originalName: doc.originalName,
+            mimeType: doc.mimeType,
+            size: doc.content.length,
+            checksum: checksum,
+            uploadedAt: new Date()
+        };
+
+        // Upload to GridFS
+        const uploadStream = bucket.openUploadStream(gridFSFilename, { metadata });
+        uploadStream.write(doc.content);
+        uploadStream.end();
+
+        const fileId = await new Promise((resolve, reject) => {
+            uploadStream.on('finish', () => resolve(uploadStream.id));
+            uploadStream.on('error', reject);
+        });
+
+        // Add document reference to user data
+        userData.documents.push({
+            fileId: fileId.toString(),
+            documentType: doc.documentType,
+            originalName: doc.originalName,
+            mimeType: doc.mimeType,
+            size: doc.content.length,
+            checksum: checksum,
+            uploadedAt: new Date()
+        });
+
+        console.log(`       ✅ Uploaded: ${doc.originalName} (${doc.documentType})`);
+    }
+
+    // Create user in database
+    console.log('     💾 Creating employee in database...');
+    let User;
+    try {
+        User = mongoose.model('User');
+    } catch (error) {
+        User = mongoose.model('User', new mongoose.Schema({}, { strict: false }));
+    }
+    const newUser = new User(userData);
+    const savedUser = await newUser.save();
+
+    console.log(`     ✅ Employee created with ID: ${savedUser._id}`);
+
+    // Update file metadata with actual user ID
+    console.log('     🔄 Updating file metadata with actual user ID...');
+    const db = (await mongoose.connection.getClient()).db();
+    for (const doc of savedUser.documents) {
+        try {
+            await db.collection('documents.files').updateOne(
+                { _id: new mongoose.Types.ObjectId(doc.fileId) },
+                { $set: { 'metadata.userId': savedUser._id.toString() } }
+            );
+            console.log(`       ✅ Updated metadata for: ${doc.originalName}`);
+        } catch (error) {
+            console.log(`       ⚠️ Failed to update metadata for: ${doc.originalName} - ${error.message}`);
+        }
+    }
+
+    // Update GridFS filenames with actual user ID
+    console.log('     📁 Updating GridFS filenames with actual user ID...');
+    for (const doc of savedUser.documents) {
+        try {
+            const timestamp = Date.now();
+            const sanitizedFilename = doc.originalName.replace(/[^a-zA-Z0-9.-]/g, '_');
+            const newGridFSFilename = `${doc.documentType}_${savedUser._id}_${timestamp}_${sanitizedFilename}`;
+
+            await db.collection('documents.files').updateOne(
+                { _id: new mongoose.Types.ObjectId(doc.fileId) },
+                { $set: { filename: newGridFSFilename } }
+            );
+            console.log(`       ✅ Updated filename for: ${doc.originalName}`);
+        } catch (error) {
+            console.log(`       ⚠️ Failed to update filename for: ${doc.originalName} - ${error.message}`);
+        }
+    }
+
+    return savedUser;
+}
+
+// Create manager user without documents
+async function createManagerUser() {
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(TEST_MANAGER.password, saltRounds);
+
+    const userData = {
+        ...TEST_MANAGER,
+        password: hashedPassword
+    };
+
+    // Create user in database
+    console.log('     💾 Creating manager in database...');
+    let User;
+    try {
+        User = mongoose.model('User');
+    } catch (error) {
+        User = mongoose.model('User', new mongoose.Schema({}, { strict: false }));
+    }
+    const newUser = new User(userData);
+    const savedUser = await newUser.save();
+
+    console.log(`     ✅ Manager created with ID: ${savedUser._id}`);
+
+    return savedUser;
 }
 
 // Verify the created data
@@ -342,16 +377,31 @@ async function resetDatabaseAndCreateTestUser() {
         // Clear all data
         await clearAllData();
 
-        // Create test user
-        const testUser = await createTestUser();
+        // Create test users
+        const testUsers = await createTestUsers();
 
         // Verify created data
         await verifyCreatedData();
 
-        console.log('\n🎉 Database reset and test user creation completed successfully!');
-        console.log('\n💡 You can now use the test user for signup phase testing:');
-        console.log(`   📧 Email: ${testUser.email}`);
-        console.log(`   🔑 Password: ${TEST_USER.password}`);
+        console.log('\n🎉 Database reset and test users creation completed successfully!');
+        console.log('\n💡 You can now use these test users for signup phase testing:');
+
+        console.log('\n👷 Employee User:');
+        const employeeUser = testUsers.find(u => u.userType === 'employee');
+        if (employeeUser) {
+            console.log(`   📧 Email: ${employeeUser.email}`);
+            console.log(`   🔑 Password: ${TEST_EMPLOYEE.password}`);
+            console.log(`   📄 Documents: ${employeeUser.documents.length}`);
+        }
+
+        console.log('\n👔 Manager User:');
+        const managerUser = testUsers.find(u => u.userType === 'manager');
+        if (managerUser) {
+            console.log(`   📧 Email: ${managerUser.email}`);
+            console.log(`   🔑 Password: ${TEST_MANAGER.password}`);
+            console.log(`   💼 Post: ${managerUser.post}`);
+            console.log(`   📊 Class: ${managerUser.class}`);
+        }
 
     } catch (error) {
         console.error('❌ Operation failed:', error);
