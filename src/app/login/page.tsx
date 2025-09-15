@@ -15,12 +15,23 @@ export default function LoginPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    const authStatus = localStorage.getItem("isAuthenticated");
-    const userData = localStorage.getItem("user");
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/verify", {
+          method: "GET",
+          credentials: "include",
+        });
 
-    if (authStatus === "true" && userData) {
-      router.push("/dashboard");
-    }
+        if (response.ok) {
+          router.push("/dashboard");
+        }
+      } catch (error) {
+        // User is not authenticated, stay on login page
+        console.log("User not authenticated");
+      }
+    };
+
+    checkAuth();
   }, [router]);
 
   return (

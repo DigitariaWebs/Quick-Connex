@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -55,8 +56,20 @@ interface DashboardStats {
   totalCompleted: number;
 }
 
+interface User {
+  _id: string;
+  userType: "employee" | "manager";
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  post?: string;
+  class?: string;
+}
+
 export default function EmployeeDashboard() {
   const router = useRouter();
+  const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
   const [transfers, setTransfers] = useState<TransferRequest[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
     totalPending: 0,
@@ -74,26 +87,13 @@ export default function EmployeeDashboard() {
   const [showFilters, setShowFilters] = useState(false);
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"date" | "priority">("date");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authLoading, setAuthLoading] = useState(true);
 
-  // Check authentication on component mount
+  // Redirect to login if not authenticated
   useEffect(() => {
-    const checkAuth = () => {
-      const authStatus = localStorage.getItem("isAuthenticated");
-      const userData = localStorage.getItem("user");
-
-      if (authStatus === "true" && userData) {
-        setIsAuthenticated(true);
-        setAuthLoading(false);
-      } else {
-        // Redirect to login if not authenticated
-        router.push("/login");
-      }
-    };
-
-    checkAuth();
-  }, [router]);
+    if (!authLoading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -247,9 +247,45 @@ export default function EmployeeDashboard() {
       </div>
 
       {/* Header */}
-      <DashboardHeader userType="employee" />
+      {user && <DashboardHeader user={user} onLogout={logout} />}
 
       <div className="container mx-auto px-4 py-6 relative z-10">
+        {/* Welcome Section */}
+        {user && (
+          <div className="mb-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-gray-100"
+            >
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-lg">
+                    {user.firstName.charAt(0)}
+                    {user.lastName.charAt(0)}
+                  </span>
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-800">
+                    Welcome back, {user.firstName}!
+                  </h1>
+                  <p className="text-gray-600 capitalize">
+                    {user.userType} • {user.email}
+                  </p>
+                  {user.userType === "manager" && (user.post || user.class) && (
+                    <p className="text-sm text-blue-600 font-medium">
+                      {user.post && user.class
+                        ? `${user.post} • ${user.class}`
+                        : user.post || user.class}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         {/* Stats Cards */}
         <DashboardStats
           stats={stats}
@@ -258,9 +294,11 @@ export default function EmployeeDashboard() {
         />
 
         {/* Transfer Form - For Managers to create transfers */}
-        <div className="mt-8">
-          <TransferForm onSuccess={handleRefresh} />
-        </div>
+        {user?.userType === "manager" && (
+          <div className="mt-8">
+            <TransferForm onSuccess={handleRefresh} />
+          </div>
+        )}
 
         {/* Main Content */}
         <div className="mt-8">

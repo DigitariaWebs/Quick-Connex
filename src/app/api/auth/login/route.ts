@@ -1,10 +1,34 @@
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import dbConnect from '@/lib/mongoose';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
+import { signToken, setAuthCookie } from '@/lib/jwt';
+import { rateLimit } from '@/lib/security';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    // Rate limiting: 5 attempts per 15 minutes
+    const rateLimitResult = rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      maxRequests: 5,
+    })(request);
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { 
+          message: 'Too many login attempts. Please try again later.',
+          retryAfter: Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString(),
+          }
+        }
+      );
+    }
+
     // Connect to MongoDB
     console.log('🔄 API: Attempting to connect to MongoDB...');
     await dbConnect();
@@ -59,13 +83,24 @@ export async function POST(request: Request) {
     // For now, just return the user without sensitive data
     console.log('✅ API: Login successful');
     
+    // Create JWT token
+    const token = await signToken({
+      userId: user._id.toString(),
+      email: user.email,
+      userType: user.userType,
+    });
+
+    // Set secure HTTP-only cookie
+    await setAuthCookie(token);
+    
     const userResponse = user.toObject();
     // Remove any sensitive fields
     delete userResponse.password;
     
     return NextResponse.json({
       message: 'Login successful',
-      user: userResponse
+      user: userResponse,
+      success: true
     });
     
   } catch (error) {

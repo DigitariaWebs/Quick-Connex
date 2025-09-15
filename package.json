@@ -14,13 +14,21 @@
     "test:gridfs:utilities": "node scripts/gridfs-utilities-test.js",
     "test:gridfs:comprehensive": "node scripts/comprehensive-gridfs-test.js",
     "test:gridfs:verify": "node scripts/verify-file-user-relationships.js",
-    "reset-db": "node scripts/reset-database-and-create-test-user.js"
+    "reset-db": "node scripts/reset-database-and-create-test-user.js",
+    "test:auth": "node scripts/run-all-tests.js",
+    "test:auth:quick": "node scripts/quick-auth-test.js",
+    "test:auth:jwt": "node scripts/test-jwt.js",
+    "test:auth:api": "node scripts/test-api-endpoints.js",
+    "test:auth:security": "node scripts/test-authentication.js"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/react-datepicker": "^6.2.0",
     "bcryptjs": "^3.0.2",
     "framer-motion": "^12.23.12",
+    "jose": "^6.1.0",
+    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.544.0",
     "mongodb": "^6.19.0",
     "mongoose": "^8.18.1",

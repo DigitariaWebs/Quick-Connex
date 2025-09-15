@@ -27,10 +27,8 @@ export function useLoginForm() {
       const result = await response.json();
       
       if (response.ok) {
-        // Store user data in localStorage to maintain authentication state
-        localStorage.setItem('user', JSON.stringify(result.user));
-        localStorage.setItem('isAuthenticated', 'true');
-        
+        // JWT token is now stored in secure HTTP-only cookie
+        // No need to store sensitive data in localStorage
         setMessage({ type: 'success', text: 'Login successful! Redirecting...' });
         
         // Use Next.js router for better navigation

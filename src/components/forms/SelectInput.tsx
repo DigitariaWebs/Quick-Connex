@@ -7,7 +7,7 @@ type SelectInputProps = {
   label: string;
   options: Array<{ value: string; label: string }>;
   required?: boolean;
-  variant?: "default" | "priority" | "transfer-type";
+  variant?: "default" | "priority" | "transfer-type" | "issuer";
 };
 
 export function SelectInput({
@@ -28,6 +28,8 @@ export function SelectInput({
         return `${baseStyle} border-indigo-200 focus:ring-indigo-500 focus:border-transparent`;
       case "transfer-type":
         return `${baseStyle} border-blue-200 focus:ring-blue-500 focus:border-transparent`;
+      case "issuer":
+        return `${baseStyle} border-purple-200 focus:ring-purple-500 focus:border-transparent`;
       default:
         return `${baseStyle} border-gray-200 focus:ring-green-500 focus:border-transparent`;
     }

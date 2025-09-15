@@ -103,7 +103,7 @@ export default function TransferForm({ onSuccess }: TransferFormProps) {
     }
 
     if (!validateRequired(issuer)) {
-      errors.issuer = "Issuer name is required";
+      errors.issuer = "Issuer selection is required";
     }
 
     if (!validateRequired(priority)) {
@@ -371,12 +371,17 @@ export default function TransferForm({ onSuccess }: TransferFormProps) {
                     </div>
 
                     <div>
-                      <FormInput
+                      <SelectInput
                         id="issuer"
                         name="issuer"
                         label="Issuer"
                         required
-                        placeholder="Name of issuer"
+                        variant="issuer"
+                        options={[
+                          { value: "gestionnaire", label: "Gestionnaire" },
+                          { value: "assistant_chef", label: "Assistant Chef" },
+                          { value: "coordonateur", label: "Coordonateur" },
+                        ]}
                       />
                       {validationErrors.issuer && (
                         <p className="text-red-600 text-xs mt-1">
