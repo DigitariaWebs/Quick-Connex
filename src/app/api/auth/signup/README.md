@@ -21,7 +21,7 @@ The endpoint accepts `multipart/form-data` with the following fields:
 
 ### Manager-Specific Fields
 - `post` (string): Manager's position/title (min 2 characters)
-- `class` (string): Manager's class/category
+- `ciusss` (string): Manager's CIUSSS organization (required)
 
 ### Employee-Specific Fields
 - `opiqPermit` (file): OPIQ permit document (PDF, DOC, DOCX, JPG, PNG - max 10MB)

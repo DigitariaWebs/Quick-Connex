@@ -11,7 +11,7 @@ import { UserTypeButton } from "@/components/forms/UserTypeButton";
 import { RoleSpecificFields } from "@/components/forms/RoleSpecificFields";
 import { SubmitButton } from "@/components/forms/SubmitButton";
 import { Icon } from "@/components/forms/Icon";
-import { CLASS_OPTIONS } from "@/components/forms/formConfig";
+import { CIUSSS_OPTIONS } from "@/components/forms/formConfig";
 import { TermsModal } from "@/components/modals/TermsModal";
 
 export default function SignUpPage() {
@@ -531,26 +531,28 @@ export default function SignUpPage() {
 
                   <div>
                     <label
-                      htmlFor="class"
+                      htmlFor="ciusss"
                       className="block text-base font-medium text-gray-700 mb-3"
                     >
-                      Class
+                      CIUSSS
                     </label>
                     <div className="relative">
                       <select
-                        id="class"
-                        name="class"
+                        id="ciusss"
+                        name="ciusss"
                         required
                         className={`w-full px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 appearance-none bg-white pr-12 text-black ${
-                          hasFieldError("class")
+                          hasFieldError("ciusss")
                             ? "border-red-300 bg-red-50"
                             : "border-gray-200"
                         }`}
                       >
-                        <option value="">Select Class</option>
-                        <option value="A">Class A</option>
-                        <option value="B">Class B</option>
-                        <option value="C">Class C</option>
+                        <option value="">Select CIUSSS</option>
+                        {CIUSSS_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
                       </select>
                       <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
                         <svg
@@ -568,9 +570,9 @@ export default function SignUpPage() {
                         </svg>
                       </div>
                     </div>
-                    {hasFieldError("class") && (
+                    {hasFieldError("ciusss") && (
                       <div className="mt-2">
-                        {getFieldErrors("class").map((error, index) => (
+                        {getFieldErrors("ciusss").map((error, index) => (
                           <p key={index} className="text-sm text-red-600">
                             {error}
                           </p>

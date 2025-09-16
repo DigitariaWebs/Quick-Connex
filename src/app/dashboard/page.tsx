@@ -253,7 +253,7 @@ export default function EmployeeDashboard() {
       {/* Main Content */}
       <div
         className={`ml-0 transition-all duration-300 ${
-          sidebarCollapsed ? "lg:ml-20" : "lg:ml-72"
+          sidebarCollapsed ? "lg:ml-28" : "lg:ml-80"
         }`}
       >
         {/* Header */}

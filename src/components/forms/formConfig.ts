@@ -30,8 +30,27 @@ export const SVG_PATHS: {
   }
 };
 
-export const CLASS_OPTIONS = [
-  { value: 'Class A', label: 'Class A' },
-  { value: 'Class B', label: 'Class B' },
-  { value: 'Class C', label: 'Class C' },
+export const CIUSSS_OPTIONS = [
+  { value: '01', label: 'CISSS du Bas-Saint-Laurent' },
+  { value: '02', label: 'CIUSSS du Saguenay–Lac-Saint-Jean' },
+  { value: '03', label: 'CIUSSS de la Capitale-Nationale' },
+  { value: '04', label: 'CIUSSS de la Mauricie-et-du-Centre-du-Québec' },
+  { value: '05', label: 'CIUSSS de l\'Estrie – Centre hospitalier universitaire de Sherbrooke' },
+  { value: '06-1', label: 'CIUSSS de l\'Est-de-l\'Île-de-Montréal' },
+  { value: '06-2', label: 'CIUSSS de l\'Ouest-de-l\'Île-de-Montréal' },
+  { value: '06-3', label: 'CIUSSS du Centre-Ouest-de-l\'Île-de-Montréal' },
+  { value: '06-4', label: 'CIUSSS du Centre-Sud-de-l\'Île-de-Montréal' },
+  { value: '06-5', label: 'CIUSSS du Nord-de-l\'Île-de-Montréal' },
+  { value: '07', label: 'CISSS de l\'Outaouais' },
+  { value: '08', label: 'CISSS de l\'Abitibi-Témiscamingue' },
+  { value: '09', label: 'CISSS de la Côte-Nord' },
+  { value: '11-1', label: 'CISSS de la Gaspésie' },
+  { value: '11-2', label: 'CISSS des Îles' },
+  { value: '12', label: 'CISSS de Chaudière-Appalaches' },
+  { value: '13', label: 'CISSS de Laval' },
+  { value: '14', label: 'CISSS de Lanaudière' },
+  { value: '15', label: 'CISSS des Laurentides' },
+  { value: '16-1', label: 'CISSS de la Montérégie-Centre' },
+  { value: '16-2', label: 'CISSS de la Montérégie-Est' },
+  { value: '16-3', label: 'CISSS de la Montérégie-Ouest' },
 ];

@@ -130,7 +130,7 @@ async function createTestUsers() {
             phone: '1234567890',
             password: hashedPassword,
             post: capitalizeName('head of department'),
-            class: 'A',
+            ciusss: '03',
             documents: []
         };
 

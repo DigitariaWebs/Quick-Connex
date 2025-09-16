@@ -66,7 +66,7 @@ async function listUsers() {
 
             if (user.userType === 'manager') {
                 console.log(`   💼 Post: ${user.post || 'N/A'}`);
-                console.log(`   🏫 Class: ${user.class || 'N/A'}`);
+                console.log(`   🏥 CIUSSS: ${user.ciusss || 'N/A'}`);
             }
 
             if (user.documents && user.documents.length > 0) {

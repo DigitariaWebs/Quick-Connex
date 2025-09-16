@@ -4,16 +4,10 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard,
-  Users,
   Calendar,
   Bell,
   LogOut,
-  ChevronLeft,
-  ChevronRight,
-  Moon,
-  Sun,
   User,
-  Activity,
   ArrowRightLeft,
 } from "lucide-react";
 import Link from "next/link";
@@ -69,20 +63,23 @@ const navigation = [
 
 export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(true); // Start collapsed by default
+  const [isHovered, setIsHovered] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const pathname = usePathname();
 
-  const toggleSidebar = () => {
-    const newCollapsedState = !isCollapsed;
-    setIsCollapsed(newCollapsedState);
+  // Auto-expand on hover, collapse when not hovered
+  const handleMouseEnter = () => {
+    setIsHovered(true);
     if (onToggle) {
-      onToggle(newCollapsedState);
+      onToggle(false);
     }
   };
 
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    if (onToggle) {
+      onToggle(true);
+    }
   };
 
   return (
@@ -95,151 +92,230 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
         />
       )}
 
-      {/* Sidebar */}
-      <motion.div
-        initial={{ x: -250 }}
-        animate={{ x: 0 }}
-        transition={{ duration: 0.3 }}
-        className={`${
-          isCollapsed ? "w-20" : "w-72"
-        } text-white h-screen fixed left-0 top-0 z-40 transition-all duration-300 ease-in-out shadow-2xl ${
-          isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        }`}
-        style={{
-          background:
-            "linear-gradient(-45deg, #10b981, #059669, #047857, #065f46)",
-          backgroundSize: "400% 400%",
-          animation: "gradientShift 15s ease infinite",
-        }}
-      >
-        {/* Header */}
-        <div className="p-6 border-b border-green-500/30">
-          <div className="flex items-center justify-between">
-            {!isCollapsed ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex items-center space-x-3"
-              >
-                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                  <span className="text-white font-bold text-lg">
-                    {user.firstName.charAt(0)}
-                    {user.lastName.charAt(0)}
-                  </span>
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-white">
-                    {user.firstName} {user.lastName}
-                  </h2>
-                  <p className="text-green-200 text-sm">{user.email}</p>
-                </div>
-              </motion.div>
-            ) : (
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                <span className="text-white font-bold text-lg">
-                  {user.firstName.charAt(0)}
-                  {user.lastName.charAt(0)}
-                </span>
-              </div>
-            )}
-            <button
-              onClick={toggleSidebar}
-              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-            >
-              {isCollapsed ? (
-                <ChevronRight size={20} />
+      {/* Sidebar Container with spacing */}
+      <div className="fixed left-4 top-4 bottom-4 z-40 lg:block hidden">
+        <motion.div
+          initial={{ x: -300, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          className={`${
+            isHovered ? "w-72" : "w-20"
+          } h-full sidebar-container rounded-3xl sidebar-shadow transition-all duration-500 ease-in-out overflow-hidden`}
+        >
+          {/* Header with User Profile */}
+          <div className="p-6 border-b border-gray-100">
+            <div className="flex items-center justify-center">
+              {isHovered ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex items-center space-x-3"
+                >
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
+                    <User className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-lg font-semibold text-gray-800">
+                      {user.firstName} {user.lastName}
+                    </h2>
+                    <p className="text-gray-500 text-sm">{user.email}</p>
+                  </div>
+                </motion.div>
               ) : (
-                <ChevronLeft size={20} />
+                <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
+                  <User className="w-6 h-6 text-white" />
+                </div>
               )}
-            </button>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="p-4">
+            {navigation.map((item) => {
+              const isActive = pathname === item.href;
+              const Icon = item.icon;
+
+              return (
+                <Link key={item.name} href={item.href}>
+                  <motion.div
+                    whileHover={{ x: isHovered ? 4 : 0 }}
+                    whileTap={{ scale: 0.98 }}
+                    title={!isHovered ? item.name : undefined}
+                    className={`sidebar-nav-item flex items-center space-x-3 ${
+                      isHovered ? "px-4" : "px-2"
+                    } py-3 rounded-2xl transition-all duration-200 relative group mb-4 ${
+                      isActive
+                        ? "active bg-green-50 text-green-700 shadow-sm border border-green-200"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-800"
+                    }`}
+                  >
+                    <div
+                      className={`${
+                        isActive ? "text-green-600" : "text-gray-500"
+                      }`}
+                    >
+                      <Icon size={20} />
+                    </div>
+
+                    {isHovered && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex items-center justify-between flex-1"
+                      >
+                        <span className="font-medium text-sm">{item.name}</span>
+                        {item.badge && (
+                          <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                            {item.badge}
+                          </span>
+                        )}
+                      </motion.div>
+                    )}
+
+                    {!isHovered && item.badge && (
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                        <span className="text-xs text-white font-medium">
+                          {item.badge}
+                        </span>
+                      </div>
+                    )}
+                  </motion.div>
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Bottom Actions */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
+            <div className="space-y-1">
+              {/* Profile Button */}
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  /* Add profile functionality here */
+                }}
+                title={!isHovered ? "Profile" : undefined}
+                className={`flex items-center space-x-3 ${
+                  isHovered ? "px-4" : "px-2"
+                } py-3 rounded-2xl text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-all duration-200 w-full`}
+              >
+                <div className="text-gray-500">
+                  <User size={20} />
+                </div>
+                {isHovered && (
+                  <span className="font-medium text-sm">Profile</span>
+                )}
+              </motion.button>
+
+              {/* Logout */}
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={onLogout}
+                title={!isHovered ? "Sign Out" : undefined}
+                className={`flex items-center space-x-3 ${
+                  isHovered ? "px-4" : "px-2"
+                } py-3 rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200 w-full`}
+              >
+                <div className="text-red-500">
+                  <LogOut size={20} />
+                </div>
+                {isHovered && (
+                  <span className="font-medium text-sm">Sign Out</span>
+                )}
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Mobile Sidebar */}
+      <motion.div
+        initial={{ x: -300 }}
+        animate={{ x: isMobileOpen ? 0 : -300 }}
+        transition={{ duration: 0.3 }}
+        className="lg:hidden fixed left-0 top-0 w-72 h-screen sidebar-container z-40 sidebar-shadow"
+      >
+        {/* Mobile Header */}
+        <div className="p-6 border-b border-gray-100">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
+              <User className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800">
+                {user.firstName} {user.lastName}
+              </h2>
+              <p className="text-gray-500 text-sm">{user.email}</p>
+            </div>
           </div>
         </div>
 
-        {/* Navigation */}
-        <nav className="p-4 space-y-2">
+        {/* Mobile Navigation */}
+        <nav className="p-4">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
 
             return (
-              <Link key={item.name} href={item.href}>
-                <motion.div
-                  whileHover={{ x: isCollapsed ? 0 : 4 }}
-                  whileTap={{ scale: 0.98 }}
-                  title={isCollapsed ? item.name : undefined}
-                  className={`flex items-center space-x-3 px-3 py-3 rounded-xl transition-all duration-200 relative group ${
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={() => setIsMobileOpen(false)}
+              >
+                <div
+                  className={`sidebar-nav-item flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all duration-200 mb-4 ${
                     isActive
-                      ? "bg-white/20 text-white shadow-lg"
-                      : "text-green-100 hover:bg-white/10 hover:text-white"
+                      ? "active bg-green-50 text-green-700 shadow-sm border border-green-200"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-800"
                   }`}
                 >
-                  <div>
+                  <div
+                    className={`${
+                      isActive ? "text-green-600" : "text-gray-500"
+                    }`}
+                  >
                     <Icon size={20} />
                   </div>
-
-                  {!isCollapsed && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex items-center justify-between flex-1"
-                    >
-                      <span className="font-medium">{item.name}</span>
-                      {item.badge && (
-                        <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                          {item.badge}
-                        </span>
-                      )}
-                    </motion.div>
-                  )}
-
-                  {isCollapsed && item.badge && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                      <span className="text-xs text-white">{item.badge}</span>
-                    </div>
-                  )}
-                </motion.div>
+                  <div className="flex items-center justify-between flex-1">
+                    <span className="font-medium text-sm">{item.name}</span>
+                    {item.badge && (
+                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </Link>
             );
           })}
         </nav>
 
-        {/* Bottom Actions */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-green-500/30">
-          <div className="space-y-2">
-            {/* Theme Toggle */}
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={toggleTheme}
-              title={
-                isCollapsed
-                  ? isDarkMode
-                    ? "Light Mode"
-                    : "Dark Mode"
-                  : undefined
-              }
-              className="flex items-center space-x-3 px-3 py-3 rounded-xl text-green-100 hover:bg-white/10 hover:text-white transition-all duration-200 w-full"
+        {/* Mobile Bottom Actions */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
+          <div className="space-y-1">
+            <button
+              onClick={() => {
+                /* Add profile functionality here */
+              }}
+              className="flex items-center space-x-3 px-4 py-3 rounded-2xl text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-all duration-200 w-full"
             >
-              <div>{isDarkMode ? <Sun size={20} /> : <Moon size={20} />}</div>
-              {!isCollapsed && (
-                <span className="font-medium">
-                  {isDarkMode ? "Light" : "Dark"} Mode
-                </span>
-              )}
-            </motion.button>
+              <div className="text-gray-500">
+                <User size={20} />
+              </div>
+              <span className="font-medium text-sm">Profile</span>
+            </button>
 
-            {/* Logout */}
-            <motion.button
-              whileTap={{ scale: 0.98 }}
+            <button
               onClick={onLogout}
-              title={isCollapsed ? "Sign Out" : undefined}
-              className="flex items-center space-x-3 px-3 py-3 rounded-xl text-red-200 hover:bg-red-500/20 hover:text-red-100 transition-all duration-200 w-full"
+              className="flex items-center space-x-3 px-4 py-3 rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200 w-full"
             >
-              <div>
+              <div className="text-red-500">
                 <LogOut size={20} />
               </div>
-              {!isCollapsed && <span className="font-medium">Sign Out</span>}
-            </motion.button>
+              <span className="font-medium text-sm">Sign Out</span>
+            </button>
           </div>
         </div>
       </motion.div>

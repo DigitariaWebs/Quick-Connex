@@ -22,7 +22,7 @@ const TEST_MANAGER = {
     phone: '+1234567890',
     password: 'TestPass123!',
     post: 'Senior Manager',
-    class: 'A',
+    ciusss: '03',
     documents: []
 };
 
@@ -400,7 +400,7 @@ async function resetDatabaseAndCreateTestUser() {
             console.log(`   📧 Email: ${managerUser.email}`);
             console.log(`   🔑 Password: ${TEST_MANAGER.password}`);
             console.log(`   💼 Post: ${managerUser.post}`);
-            console.log(`   📊 Class: ${managerUser.class}`);
+            console.log(`   🏥 CIUSSS: ${managerUser.ciusss}`);
         }
 
     } catch (error) {

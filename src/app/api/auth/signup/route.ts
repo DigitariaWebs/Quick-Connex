@@ -210,7 +210,7 @@ export async function POST(request: Request) {
     // Handle manager-specific fields
     if (userType === 'manager') {
       const post = capitalizeName(sanitizeInput(formData.get('post') as string));
-      const classValue = sanitizeInput(formData.get('class') as string);
+      const ciusssValue = sanitizeInput(formData.get('ciusss') as string);
       
       // Validate manager-specific fields
       if (!post) {
@@ -219,10 +219,17 @@ export async function POST(request: Request) {
         validationErrors.post = ['Post must be at least 2 characters long'];
       }
       
-      if (!classValue) {
-        validationErrors.class = ['Class is required for managers'];
-      } else if (!['A', 'B', 'C'].includes(classValue)) {
-        validationErrors.class = ['Please select a valid class (A, B, or C)'];
+      if (!ciusssValue) {
+        validationErrors.ciusss = ['CIUSSS is required for managers'];
+      } else {
+        // Validate CIUSSS value against allowed options
+        const validCiusssValues = [
+          '01', '02', '03', '04', '05', '06-1', '06-2', '06-3', '06-4', '06-5',
+          '07', '08', '09', '11-1', '11-2', '12', '13', '14', '15', '16-1', '16-2', '16-3'
+        ];
+        if (!validCiusssValues.includes(ciusssValue)) {
+          validationErrors.ciusss = ['Please select a valid CIUSSS'];
+        }
       }
       
       // Return validation errors if any manager fields are invalid
@@ -238,7 +245,7 @@ export async function POST(request: Request) {
       }
       
       userData.post = post;
-      userData.class = classValue;
+      userData.ciusss = ciusssValue;
     }
 
     // Handle employee-specific fields and file uploads
