@@ -26,14 +26,14 @@ export default function SignUpPage() {
         className="absolute inset-0 z-0"
         style={{
           background:
-            "linear-gradient(135deg, #d4fce8 0%, #88f5c3 50%, #c7fce0 100%)",
+            "linear-gradient(135deg, #dbeafe 0%, #88f5c3 25%, #a7f3d0 50%, #bfdbfe 75%, #d4fce8 100%)",
           backgroundSize: "400% 400%",
         }}
         animate={{
           backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
         }}
         transition={{
-          duration: 20,
+          duration: 8,
           repeat: Infinity,
           repeatType: "mirror",
           ease: "easeInOut",
@@ -66,7 +66,7 @@ export default function SignUpPage() {
           transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
           className="w-full max-w-2xl"
         >
-          <div className="bg-white rounded-3xl p-12 shadow-2xl max-h-[90vh] min-h-[700px] overflow-y-auto">
+          <div className="bg-white rounded-3xl p-12 shadow-2xl max-h-[90vh] min-h-[700px] overflow-y-auto hide-scrollbar">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold text-gray-900 mb-3">Sign Up</h2>
               <p className="text-lg text-gray-600">
