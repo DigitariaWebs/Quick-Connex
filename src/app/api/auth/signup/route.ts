@@ -56,6 +56,15 @@ const sanitizeInput = (input: string): string => {
   return input.trim().replace(/[<>]/g, '');
 };
 
+// Helper function to capitalize first letter of each word
+const capitalizeName = (name: string): string => {
+  return name
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 // Helper function to process file upload to GridFS
 const processFileUpload = async (
   file: File, 
@@ -95,8 +104,8 @@ export async function POST(request: Request) {
     
     const formData = await request.formData();
     const userType = formData.get('userType') as 'employee' | 'manager';
-    const firstName = sanitizeInput(formData.get('firstName') as string);
-    const lastName = sanitizeInput(formData.get('lastName') as string);
+    const firstName = capitalizeName(sanitizeInput(formData.get('firstName') as string));
+    const lastName = capitalizeName(sanitizeInput(formData.get('lastName') as string));
     const email = sanitizeInput(formData.get('email') as string);
     const phone = sanitizeInput(formData.get('phone') as string);
     const password = formData.get('password') as string;
@@ -200,7 +209,7 @@ export async function POST(request: Request) {
 
     // Handle manager-specific fields
     if (userType === 'manager') {
-      const post = sanitizeInput(formData.get('post') as string);
+      const post = capitalizeName(sanitizeInput(formData.get('post') as string));
       const classValue = sanitizeInput(formData.get('class') as string);
       
       // Validate manager-specific fields

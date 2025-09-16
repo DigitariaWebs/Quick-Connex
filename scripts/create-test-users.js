@@ -39,6 +39,15 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);
 
+// Helper function to capitalize first letter of each word
+const capitalizeName = (name) => {
+    return name
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+};
+
 // Create a simple test PDF content
 function createTestPDF(filename) {
     const testContent = `%PDF-1.4
@@ -115,12 +124,12 @@ async function createTestUsers() {
         console.log('👨‍💼 Creating manager user...');
         const managerData = {
             userType: 'manager',
-            firstName: 'John',
-            lastName: 'Manager',
+            firstName: capitalizeName('john'),
+            lastName: capitalizeName('manager'),
             email: 'manager@test.com',
             phone: '1234567890',
             password: hashedPassword,
-            post: 'Head of Department',
+            post: capitalizeName('head of department'),
             class: 'A',
             documents: []
         };
@@ -144,8 +153,8 @@ async function createTestUsers() {
 
         const employeeData = {
             userType: 'employee',
-            firstName: 'Jane',
-            lastName: 'Employee',
+            firstName: capitalizeName('jane'),
+            lastName: capitalizeName('employee'),
             email: 'employee@test.com',
             phone: '0987654321',
             password: hashedPassword,
@@ -189,13 +198,15 @@ async function createTestUsers() {
         console.log('\n🎉 Test users created successfully!');
         console.log('\n📊 User Summary:');
         console.log('👨‍💼 Manager:');
+        console.log(`   - Name: ${manager.firstName} ${manager.lastName}`);
         console.log(`   - Email: manager@test.com`);
         console.log(`   - Password: TestPassword123!`);
-        console.log(`   - Post: Head of Department`);
+        console.log(`   - Post: ${manager.post}`);
         console.log(`   - Class: A`);
         console.log(`   - Documents: 0 (managers don't need documents)`);
 
         console.log('\n👨‍💻 Employee:');
+        console.log(`   - Name: ${employee.firstName} ${employee.lastName}`);
         console.log(`   - Email: employee@test.com`);
         console.log(`   - Password: TestPassword123!`);
         console.log(`   - Documents: 3 files (CV, OPIQ Permit, RCR)`);

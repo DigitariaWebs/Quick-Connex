@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useLoginForm } from "@/hooks/useLoginForm";
@@ -11,8 +11,24 @@ import { Icon } from "@/components/forms/Icon";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isLoading, message, handleSubmit } = useLoginForm();
   const [showPassword, setShowPassword] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // Check for success message from signup
+  useEffect(() => {
+    const message = searchParams.get("message");
+    if (message === "account-created") {
+      setSuccessMessage(
+        "Account created successfully! Please log in with your credentials."
+      );
+      // Clear the URL parameter after showing the message
+      const url = new URL(window.location.href);
+      url.searchParams.delete("message");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [searchParams]);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -89,6 +105,13 @@ export default function LoginPage() {
                 Access your patient management account
               </p>
             </div>
+
+            {/* Success Message from Signup */}
+            {successMessage && (
+              <div className="rounded-lg p-3 mb-6 text-sm bg-green-50 text-green-700 border border-green-200">
+                {successMessage}
+              </div>
+            )}
 
             {/* Status Message */}
             {message.text && (
