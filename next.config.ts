@@ -11,22 +11,6 @@ console.log(`⚡ Bundler: Turbopack (Next.js 15+)`);
 console.log('='.repeat(60) + '\n');
 
 const nextConfig: NextConfig = {
-  // Turbopack configuration
-  experimental: {
-    // Enable Turbopack logging
-    turbo: {
-      // Add custom logging for Turbopack
-      logLevel: 'info',
-    },
-    // Enable verbose logging
-    logging: {
-      level: 'verbose',
-      fetches: {
-        fullUrl: true,
-      },
-    },
-  },
-  
   // Add custom logging for build process
   onDemandEntries: {
     // period (in ms) where the server will keep pages in the buffer
