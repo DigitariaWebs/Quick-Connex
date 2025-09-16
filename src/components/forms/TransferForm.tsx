@@ -146,6 +146,28 @@ export default function TransferForm({ onSuccess }: TransferFormProps) {
       issuer,
       priority,
       reason,
+      // Advanced scheduling data
+      scheduling: {
+        isRecurring: false,
+        timeSlot: {
+          startTime: formattedTime,
+          endTime: selectedTime
+            ? new Date(selectedTime.getTime() + 60 * 60000)
+                .toTimeString()
+                .slice(0, 5)
+            : "10:00",
+          duration: 60,
+        },
+        location: {
+          pickupLocation: fromHospital,
+          dropoffLocation: toHospital,
+          transportType: "ambulance",
+        },
+        resources: {
+          requiredEquipment: [],
+          specialInstructions: "",
+        },
+      },
     };
 
     try {

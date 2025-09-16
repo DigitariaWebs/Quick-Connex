@@ -52,8 +52,8 @@ const navigation = [
     bgColor: "bg-green-50",
   },
   {
-    name: "Schedule",
-    href: "/schedule",
+    name: "Calendar",
+    href: "/calendar",
     icon: Calendar,
     color: "text-purple-600",
     bgColor: "bg-purple-50",

@@ -5,7 +5,7 @@ import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } 
 import { validateStatusTransition } from '@/lib/transfer-validation';
 import { getNotificationService } from '@/lib/socket-server';
 
-// PUT /api/transfers/[id]/accept - Accept a transfer request
+// PUT /api/transfers/[id]/start - Start a transfer (assigned employee only)
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -30,16 +30,25 @@ export async function PUT(
     }
 
     // Validate status transition
-    if (!validateStatusTransition(transfer.status, 'accepted')) {
+    if (!validateStatusTransition(transfer.status, 'in_progress')) {
       return createErrorResponse(
         'Invalid status transition', 
         'INVALID_STATUS_TRANSITION', 
         400,
         { 
           currentStatus: transfer.status, 
-          requestedStatus: 'accepted',
-          allowedTransitions: ['pending', 'cancelled']
+          requestedStatus: 'in_progress',
+          allowedTransitions: ['accepted', 'cancelled']
         }
+      );
+    }
+
+    // Check if user is assigned to this transfer (employees only)
+    if (authResult.user.userType === 'employee' && transfer.assignedTo?.toString() !== authResult.user._id) {
+      return createErrorResponse(
+        'You are not assigned to this transfer', 
+        'UNAUTHORIZED', 
+        403
       );
     }
 
@@ -47,12 +56,11 @@ export async function PUT(
     const oldStatus = transfer.status;
 
     // Update transfer status
-    transfer.status = 'accepted';
-    transfer.assignedTo = authResult.user._id; // Assign to current user
+    transfer.status = 'in_progress';
     transfer.lastModifiedBy = authResult.user._id;
     
     if (notes) {
-      transfer.notes = transfer.notes ? `${transfer.notes}\nAccepted: ${notes}` : `Accepted: ${notes}`;
+      transfer.notes = transfer.notes ? `${transfer.notes}\nStarted: ${notes}` : `Started: ${notes}`;
     }
 
     await transfer.save();
@@ -70,7 +78,7 @@ export async function PUT(
         await notificationService.sendTransferStatusChange(
           populatedTransfer,
           oldStatus,
-          'accepted',
+          'in_progress',
           authResult.user
         );
       }
@@ -79,10 +87,10 @@ export async function PUT(
       // Don't fail the request if notification fails
     }
 
-    return createSuccessResponse(populatedTransfer, 'Transfer request accepted successfully');
+    return createSuccessResponse(populatedTransfer, 'Transfer started successfully');
 
   } catch (error) {
-    console.error('Error accepting transfer:', error);
-    return createErrorResponse('Failed to accept transfer request', 'ACCEPT_ERROR', 500);
+    console.error('Error starting transfer:', error);
+    return createErrorResponse('Failed to start transfer', 'START_ERROR', 500);
   }
 }

@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import Transfer from '@/models/Transfer';
 import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware';
-import { validateStatusTransition } from '@/lib/transfer-validation';
+import { validateStatusTransition, isTerminalStatus } from '@/lib/transfer-validation';
 import { getNotificationService } from '@/lib/socket-server';
 
-// PUT /api/transfers/[id]/accept - Accept a transfer request
+// PUT /api/transfers/[id]/cancel - Cancel a transfer
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -21,7 +21,12 @@ export async function PUT(
 
     const transferId = params.id;
     const body = await request.json();
-    const { notes } = body;
+    const { reason, notes } = body;
+
+    // Validate cancellation reason
+    if (!reason || reason.trim().length === 0) {
+      return createErrorResponse('Cancellation reason is required', 'VALIDATION_ERROR', 400);
+    }
 
     // Find the transfer request
     const transfer = await Transfer.findById(transferId);
@@ -29,17 +34,40 @@ export async function PUT(
       return createErrorResponse('Transfer request not found', 'TRANSFER_NOT_FOUND', 404);
     }
 
+    // Check if transfer can be cancelled
+    if (isTerminalStatus(transfer.status)) {
+      return createErrorResponse(
+        'Cannot cancel a transfer that is already completed or cancelled', 
+        'INVALID_STATUS', 
+        400,
+        { currentStatus: transfer.status }
+      );
+    }
+
     // Validate status transition
-    if (!validateStatusTransition(transfer.status, 'accepted')) {
+    if (!validateStatusTransition(transfer.status, 'cancelled')) {
       return createErrorResponse(
         'Invalid status transition', 
         'INVALID_STATUS_TRANSITION', 
         400,
         { 
           currentStatus: transfer.status, 
-          requestedStatus: 'accepted',
-          allowedTransitions: ['pending', 'cancelled']
+          requestedStatus: 'cancelled'
         }
+      );
+    }
+
+    // Check authorization - only assigned employee, requesting manager, or any manager can cancel
+    const canCancel = 
+      authResult.user.userType === 'manager' || // Any manager can cancel
+      transfer.requestedBy?.toString() === authResult.user._id || // Requesting manager
+      transfer.assignedTo?.toString() === authResult.user._id; // Assigned employee
+
+    if (!canCancel) {
+      return createErrorResponse(
+        'You are not authorized to cancel this transfer', 
+        'UNAUTHORIZED', 
+        403
       );
     }
 
@@ -47,12 +75,15 @@ export async function PUT(
     const oldStatus = transfer.status;
 
     // Update transfer status
-    transfer.status = 'accepted';
-    transfer.assignedTo = authResult.user._id; // Assign to current user
+    transfer.status = 'cancelled';
     transfer.lastModifiedBy = authResult.user._id;
     
+    // Add cancellation notes
+    const cancellationNote = `Cancelled by ${authResult.user.firstName} ${authResult.user.lastName}: ${reason}`;
+    transfer.notes = transfer.notes ? `${transfer.notes}\n${cancellationNote}` : cancellationNote;
+    
     if (notes) {
-      transfer.notes = transfer.notes ? `${transfer.notes}\nAccepted: ${notes}` : `Accepted: ${notes}`;
+      transfer.notes = `${transfer.notes}\nAdditional notes: ${notes}`;
     }
 
     await transfer.save();
@@ -70,7 +101,7 @@ export async function PUT(
         await notificationService.sendTransferStatusChange(
           populatedTransfer,
           oldStatus,
-          'accepted',
+          'cancelled',
           authResult.user
         );
       }
@@ -79,10 +110,10 @@ export async function PUT(
       // Don't fail the request if notification fails
     }
 
-    return createSuccessResponse(populatedTransfer, 'Transfer request accepted successfully');
+    return createSuccessResponse(populatedTransfer, 'Transfer cancelled successfully');
 
   } catch (error) {
-    console.error('Error accepting transfer:', error);
-    return createErrorResponse('Failed to accept transfer request', 'ACCEPT_ERROR', 500);
+    console.error('Error cancelling transfer:', error);
+    return createErrorResponse('Failed to cancel transfer', 'CANCEL_ERROR', 500);
   }
 }

@@ -24,7 +24,7 @@ app.prepare().then(() => {
     console.log('✅ Next.js app prepared successfully');
     console.log('🎉 Turbopack: First compilation completed - app is ready!');
 
-    createServer(async (req, res) => {
+    const httpServer = createServer(async (req, res) => {
         try {
             const parsedUrl = parse(req.url, true);
             await handle(req, res, parsedUrl);
@@ -35,7 +35,18 @@ app.prepare().then(() => {
             res.statusCode = 500;
             res.end('Internal Server Error');
         }
-    }).listen(port, (err) => {
+    });
+
+    // Initialize Socket.IO server
+    try {
+        const { initializeSocketServer } = require('./src/lib/socket-server.js');
+        const io = initializeSocketServer(httpServer);
+        console.log('🔌 Socket.IO server initialized successfully');
+    } catch (error) {
+        console.error('❌ Failed to initialize Socket.IO server:', error);
+    }
+
+    httpServer.listen(port, (err) => {
         if (err) {
             console.error('❌ Failed to start server:', err);
             console.error('❌ TURBOPACK COMPILATION ERROR');
@@ -43,6 +54,7 @@ app.prepare().then(() => {
             throw err;
         }
         console.log(`🎉 Server ready on http://${hostname}:${port}`);
+        console.log('🔌 WebSocket server ready for real-time notifications');
     });
 }).catch((err) => {
     console.error('❌ Failed to prepare Next.js app:', err);

@@ -3,10 +3,19 @@ import { connectDB } from '@/lib/mongodb';
 import Transfer from '@/models/Transfer';
 import Patient from '@/models/Patient';
 import User from '@/models/User';
+import { requireManager, requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware';
+import { validateTransferData } from '@/lib/transfer-validation';
+import { getNotificationService } from '@/lib/socket-server';
 
 // GET /api/transfers - Get all transfer requests for employees
 export async function GET(request: NextRequest) {
   try {
+    // Authenticate user
+    const authResult = await requireEmployeeOrManager(request);
+    if (!authResult.success) {
+      return authResult.response;
+    }
+
     await connectDB();
 
     const { searchParams } = new URL(request.url);
@@ -27,24 +36,26 @@ export async function GET(request: NextRequest) {
       .sort({ requestedDate: -1 })
       .limit(50);
 
-    return NextResponse.json({
-      success: true,
-      data: transfers,
+    return createSuccessResponse({
+      transfers,
       count: transfers.length
     });
 
   } catch (error) {
     console.error('Error fetching transfers:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch transfers' },
-      { status: 500 }
-    );
+    return createErrorResponse('Failed to fetch transfers', 'FETCH_ERROR', 500);
   }
 }
 
 // POST /api/transfers - Create a new transfer request (for managers)
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate user - only managers can create transfers
+    const authResult = await requireManager(request);
+    if (!authResult.success) {
+      return authResult.response;
+    }
+
     await connectDB();
 
     const body = await request.json();
@@ -61,61 +72,65 @@ export async function POST(request: NextRequest) {
       priority = 'medium',
       reason,
       notes,
-      medicalDocuments = []
+      medicalDocuments = [],
+      scheduling
     } = body;
 
-    // Validate required fields
-    if (!patientFirstName || !patientLastName || !fromHospital || !toHospital || !transferDate || !reason) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      );
+    // Validate transfer data
+    const validation = validateTransferData(body);
+    if (!validation.isValid) {
+      return createErrorResponse('Validation failed', 'VALIDATION_ERROR', 400, {
+        errors: validation.errors,
+        warnings: validation.warnings
+      });
     }
 
-    // Get current user (would come from session in a real app)
-    // This is a placeholder - in a real app, you'd get the user from the session
-    const requestingUser = await User.findOne({ userType: 'manager' });
-    if (!requestingUser) {
-      return NextResponse.json(
-        { success: false, error: 'User not authorized' },
-        { status: 401 }
-      );
-    }
+    // Use authenticated user
+    const requestingUser = authResult.user;
 
     // Create or find patient
     const dob = new Date();
     dob.setFullYear(dob.getFullYear() - parseInt(patientAge as string));
     
-    // Generate a unique patient ID
-    const patientId = `PAT-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-    
-    // Create new patient record
-    const patient = new Patient({
-      patientId,
+    // Try to find existing patient first
+    let patient = await Patient.findOne({
       firstName: patientFirstName,
       lastName: patientLastName,
-      dateOfBirth: dob,
-      gender: 'other', // Default since we don't collect in the form
-      phone: '000-000-0000', // Default since we don't collect in the form
-      address: {
-        street: 'Unknown',
-        city: 'Unknown',
-        state: 'Unknown',
-        zipCode: 'Unknown',
-        country: 'Unknown'
-      },
-      medicalInfo: {
-        emergencyContact: {
-          name: 'Unknown',
-          relationship: 'Unknown',
-          phone: 'Unknown'
-        }
-      },
-      currentHospital: fromHospital,
-      status: 'active'
+      dateOfBirth: dob
     });
+    
+    if (!patient) {
+      // Generate a unique patient ID
+      const patientId = `PAT-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      
+      // Create new patient record with proper validation
+      patient = new Patient({
+        patientId,
+        firstName: patientFirstName,
+        lastName: patientLastName,
+        dateOfBirth: dob,
+        gender: 'other', // Default since we don't collect in the form
+        phone: '000-000-0000', // Default since we don't collect in the form
+        address: {
+          street: 'Unknown',
+          city: 'Unknown',
+          state: 'Unknown',
+          zipCode: 'Unknown',
+          country: 'Unknown'
+        },
+        medicalInfo: {
+          emergencyContact: {
+            name: 'Unknown',
+            relationship: 'Unknown',
+            phone: 'Unknown'
+          }
+        },
+        currentHospital: fromHospital,
+        status: 'active'
+      });
 
-    await patient.save();
+      await patient.save();
+    }
 
     // Generate unique transfer ID
     const transferId = `TRF-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
@@ -140,8 +155,35 @@ export async function POST(request: NextRequest) {
       status: transferType === 'stat' ? 'urgent' : 'pending',
       requestedDate: new Date(),
       scheduledDate: scheduledDateTime,
+      scheduledEndDate: scheduling?.timeSlot?.endTime ? 
+        new Date(`${transferDate}T${scheduling.timeSlot.endTime}`) : 
+        new Date(scheduledDateTime.getTime() + 60 * 60000), // Default 1 hour duration
       notes: `Issued by: ${issuer}${notes ? `\nAdditional notes: ${notes}` : ''}`,
-      medicalDocuments
+      medicalDocuments,
+      scheduling: scheduling || {
+        isRecurring: false,
+        timeSlot: {
+          startTime: transferTime || '09:00',
+          endTime: scheduling?.timeSlot?.endTime || '10:00',
+          duration: 60
+        },
+        location: {
+          pickupLocation: fromHospital,
+          dropoffLocation: toHospital,
+          transportType: 'ambulance'
+        },
+        resources: {
+          requiredEquipment: [],
+          specialInstructions: ''
+        }
+      },
+      lastModifiedBy: requestingUser._id,
+      statusHistory: [{
+        status: transferType === 'stat' ? 'urgent' : 'pending',
+        changedBy: requestingUser._id,
+        changedAt: new Date(),
+        reason: 'Transfer created'
+      }]
     });
 
     await transfer.save();
@@ -151,16 +193,50 @@ export async function POST(request: NextRequest) {
       .populate('patient', 'patientId firstName lastName dateOfBirth gender phone currentHospital currentDepartment')
       .populate('requestedBy', 'firstName lastName email userType');
 
-    return NextResponse.json({
-      success: true,
-      data: populatedTransfer
-    }, { status: 201 });
+    // Send real-time notification for new transfer
+    try {
+      const notificationService = getNotificationService();
+      if (notificationService) {
+        // Send urgent transfer notification if it's a stat transfer
+        if (transferType === 'stat') {
+          notificationService.sendUrgentTransferNotification(populatedTransfer, 'stat');
+        } else {
+          // Send regular new transfer notification to employees
+          notificationService.sendToRole('employee', 'new_transfer', {
+            id: `new_transfer_${populatedTransfer._id}_${Date.now()}`,
+            type: 'new_transfer',
+            priority: priority === 'urgent' ? 'high' : 'medium',
+            title: 'New Transfer Request',
+            message: `New transfer request for ${populatedTransfer.patient.firstName} ${populatedTransfer.patient.lastName} from ${fromHospital} to ${toHospital}`,
+            transferId: populatedTransfer.transferId,
+            transfer: {
+              id: populatedTransfer._id,
+              transferId: populatedTransfer.transferId,
+              patient: populatedTransfer.patient,
+              fromHospital,
+              toHospital,
+              priority,
+              scheduledDate: populatedTransfer.scheduledDate
+            },
+            requestedBy: {
+              id: requestingUser._id,
+              name: `${requestingUser.firstName} ${requestingUser.lastName}`,
+              userType: requestingUser.userType
+            },
+            timestamp: new Date().toISOString(),
+            read: false
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error sending real-time notification:', error);
+      // Don't fail the request if notification fails
+    }
+
+    return createSuccessResponse(populatedTransfer, 'Transfer request created successfully', 201);
 
   } catch (error) {
     console.error('Error creating transfer:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to create transfer request' },
-      { status: 500 }
-    );
+    return createErrorResponse('Failed to create transfer request', 'CREATE_ERROR', 500);
   }
 }

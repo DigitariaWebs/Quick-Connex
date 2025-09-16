@@ -21,6 +21,7 @@ import RecentActivity from "@/components/dashboard/RecentActivity";
 import QuickActions from "@/components/dashboard/QuickActions";
 import LoadingSpinner from "@/components/dashboard/LoadingSpinner";
 import TransferForm from "@/components/forms/TransferForm";
+import SchedulingNotifications from "@/components/notifications/SchedulingNotifications";
 
 interface TransferRequest {
   _id: string;
@@ -347,6 +348,16 @@ export default function EmployeeDashboard() {
               />
             </div>
           )}
+
+          {/* Scheduling Notifications */}
+          <div className="mb-8">
+            <SchedulingNotifications
+              limit={5}
+              showSummary={true}
+              autoRefresh={true}
+              refreshInterval={30000}
+            />
+          </div>
 
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
