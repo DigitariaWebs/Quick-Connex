@@ -195,26 +195,25 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
             <div className="space-y-1">
               {/* Profile Button */}
-              <motion.button
-                whileHover={{ x: isHovered ? 4 : 0 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  /* Add profile functionality here */
-                }}
-                title={!isHovered ? "Profile" : undefined}
-                className={`sidebar-nav-item flex items-center space-x-3 ${
-                  isHovered ? "px-4" : "px-2"
-                } py-3 rounded-2xl text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-all duration-200 w-full`}
-              >
-                <div className="text-gray-500">
-                  <User size={20} />
-                </div>
-                {isHovered && (
-                  <span className="font-medium text-sm whitespace-nowrap truncate">
-                    Profile
-                  </span>
-                )}
-              </motion.button>
+              <Link href="/profile">
+                <motion.div
+                  whileHover={{ x: isHovered ? 4 : 0 }}
+                  whileTap={{ scale: 0.98 }}
+                  title={!isHovered ? "Profile" : undefined}
+                  className={`sidebar-nav-item flex items-center space-x-3 ${
+                    isHovered ? "px-4" : "px-2"
+                  } py-3 rounded-2xl text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-all duration-200 w-full`}
+                >
+                  <div className="text-gray-500">
+                    <User size={20} />
+                  </div>
+                  {isHovered && (
+                    <span className="font-medium text-sm whitespace-nowrap truncate">
+                      Profile
+                    </span>
+                  )}
+                </motion.div>
+              </Link>
 
               {/* Logout */}
               <motion.button
@@ -307,10 +306,9 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
         {/* Mobile Bottom Actions */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
           <div className="space-y-1">
-            <button
-              onClick={() => {
-                /* Add profile functionality here */
-              }}
+            <Link
+              href="/profile"
+              onClick={() => setIsMobileOpen(false)}
               className="flex items-center space-x-3 px-4 py-3 rounded-2xl text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-all duration-200 w-full"
             >
               <div className="text-gray-500">
@@ -319,7 +317,7 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
               <span className="font-medium text-sm whitespace-nowrap truncate">
                 Profile
               </span>
-            </button>
+            </Link>
 
             <button
               onClick={onLogout}
