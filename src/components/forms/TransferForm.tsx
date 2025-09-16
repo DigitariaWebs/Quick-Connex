@@ -34,9 +34,13 @@ const validateDate = (value: FormDataEntryValue | null): boolean => {
 
 interface TransferFormProps {
   onSuccess?: () => void;
+  isModal?: boolean;
 }
 
-export default function TransferForm({ onSuccess }: TransferFormProps) {
+export default function TransferForm({
+  onSuccess,
+  isModal = false,
+}: TransferFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -204,29 +208,42 @@ export default function TransferForm({ onSuccess }: TransferFormProps) {
     }
   };
 
+  // If it's in a modal, always show the form
+  const shouldShowForm = isModal || showForm;
+
   return (
-    <div className="mb-8">
-      <motion.button
-        whileTap={{ scale: 0.97 }}
-        onClick={() => setShowForm(!showForm)}
-        className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-md flex items-center justify-center"
-      >
-        {showForm ? "Cancel" : "+ Create New Transfer Request"}
-      </motion.button>
+    <div className={isModal ? "" : "mb-8"}>
+      {!isModal && (
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setShowForm(!showForm)}
+          className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-md flex items-center justify-center"
+        >
+          {showForm ? "Cancel" : "+ Create New Transfer Request"}
+        </motion.button>
+      )}
 
       <AnimatePresence>
-        {showForm && (
+        {shouldShowForm && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
-            className="mt-4 overflow-hidden"
+            className={isModal ? "" : "mt-4 overflow-hidden"}
           >
-            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">
-                Create Transfer Request
-              </h2>
+            <div
+              className={
+                isModal
+                  ? ""
+                  : "bg-white rounded-xl shadow-md border border-gray-200 p-6"
+              }
+            >
+              {!isModal && (
+                <h2 className="text-xl font-bold text-gray-800 mb-4">
+                  Create Transfer Request
+                </h2>
+              )}
 
               {error && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-center">

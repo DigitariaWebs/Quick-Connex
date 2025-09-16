@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   Calendar,
-  Bell,
+  Users,
   LogOut,
   User,
   ArrowRightLeft,
@@ -53,11 +53,11 @@ const navigation = [
     bgColor: "bg-purple-50",
   },
   {
-    name: "Notification",
-    href: "/notifications",
-    icon: Bell,
-    color: "text-yellow-600",
-    bgColor: "bg-yellow-50",
+    name: "Nurses",
+    href: "/nurses",
+    icon: Users,
+    color: "text-pink-600",
+    bgColor: "bg-pink-50",
   },
 ];
 

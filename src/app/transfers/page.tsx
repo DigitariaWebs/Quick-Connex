@@ -21,7 +21,9 @@ import {
 } from "lucide-react";
 import TransferRequestCard from "@/components/dashboard/TransferRequestCard";
 import Sidebar from "@/components/dashboard/Sidebar";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import LoadingSpinner from "@/components/dashboard/LoadingSpinner";
+import TransferFormModal from "@/components/modals/TransferFormModal";
 
 interface TransferRequest {
   _id: string;
@@ -70,6 +72,7 @@ export default function TransfersPage() {
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"date" | "priority">("date");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -364,71 +367,25 @@ export default function TransfersPage() {
       {/* Main Content */}
       <div
         className={`ml-0 transition-all duration-300 ${
-          sidebarCollapsed ? "lg:ml-20" : "lg:ml-72"
+          sidebarCollapsed ? "lg:ml-28" : "lg:ml-80"
         }`}
       >
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-4 lg:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                <Menu size={20} className="text-gray-600" />
-              </button>
-              <h1 className="text-xl lg:text-2xl font-bold text-gray-800">
-                All Patient Transfers
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              {/* Search - Hidden on mobile, shown on desktop */}
-              <div className="relative hidden md:block">
-                <input
-                  type="text"
-                  placeholder="Search Transfers"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-4 pr-12 py-2 rounded-lg border border-gray-200 text-sm text-black bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-48 lg:w-64"
-                />
-                <Search
-                  size={16}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                />
-              </div>
-              <button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="flex items-center space-x-2 bg-green-600 text-white px-3 lg:px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
-              >
-                <RefreshCw
-                  size={16}
-                  className={isRefreshing ? "animate-spin" : ""}
-                />
-                <span className="hidden sm:inline">Refresh</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        {user && (
+          <DashboardHeader
+            user={user}
+            onLogout={logout}
+            pageTitle="Transfers"
+            showSearchButton={true}
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+          />
+        )}
 
         <div className="p-4 lg:p-6">
-          {/* Mobile Search */}
-          <div className="md:hidden mb-6">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search Transfers"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-4 pr-12 py-2 rounded-lg border border-gray-200 text-sm text-black bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-              <Search
-                size={16}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              />
-            </div>
-          </div>
-
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-3xl p-6 sidebar-shadow border border-gray-100">
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <Users className="w-6 h-6 text-blue-600" />
@@ -444,9 +401,9 @@ export default function TransfersPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-3xl p-6 sidebar-shadow border border-gray-100">
               <div className="flex items-center">
-                <div className="p-2 bg-amber-100 rounded-lg">
+                <div className="p-2 bg-amber-100 rounded-2xl">
                   <Clock className="w-6 h-6 text-amber-600" />
                 </div>
                 <div className="ml-4">
@@ -458,9 +415,9 @@ export default function TransfersPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-3xl p-6 sidebar-shadow border border-gray-100">
               <div className="flex items-center">
-                <div className="p-2 bg-red-100 rounded-lg">
+                <div className="p-2 bg-red-100 rounded-2xl">
                   <AlertTriangle className="w-6 h-6 text-red-600" />
                 </div>
                 <div className="ml-4">
@@ -472,9 +429,9 @@ export default function TransfersPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-3xl p-6 sidebar-shadow border border-gray-100">
               <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
+                <div className="p-2 bg-green-100 rounded-2xl">
                   <CheckCircle2 className="w-6 h-6 text-green-600" />
                 </div>
                 <div className="ml-4">
@@ -488,7 +445,7 @@ export default function TransfersPage() {
           </div>
 
           {/* Filters */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+          <div className="bg-white rounded-3xl sidebar-shadow border border-gray-100 p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800">
                 Filter & Sort
@@ -539,7 +496,7 @@ export default function TransfersPage() {
                                 | "cancelled"
                             )
                           }
-                          className="w-full appearance-none bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 font-medium shadow-sm hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:shadow-lg transition-all duration-200 cursor-pointer"
+                          className="w-full appearance-none bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-700 font-medium shadow-sm hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:shadow-lg transition-all duration-200 cursor-pointer"
                         >
                           <option value="all">All Statuses</option>
                           <option value="pending">Pending</option>
@@ -565,7 +522,7 @@ export default function TransfersPage() {
                           onChange={(e) =>
                             setPriorityFilter(e.target.value || null)
                           }
-                          className="w-full appearance-none bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 font-medium shadow-sm hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:shadow-lg transition-all duration-200 cursor-pointer"
+                          className="w-full appearance-none bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-700 font-medium shadow-sm hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:shadow-lg transition-all duration-200 cursor-pointer"
                         >
                           <option value="">All Priorities</option>
                           <option value="urgent">🔴 Urgent</option>
@@ -587,7 +544,7 @@ export default function TransfersPage() {
                       <div className="flex space-x-2">
                         <button
                           onClick={() => setSortBy("date")}
-                          className={`px-3 py-1 rounded-md text-xs font-medium ${
+                          className={`px-3 py-1 rounded-xl text-xs font-medium ${
                             sortBy === "date"
                               ? "bg-green-100 text-green-800"
                               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -597,7 +554,7 @@ export default function TransfersPage() {
                         </button>
                         <button
                           onClick={() => setSortBy("priority")}
-                          className={`px-3 py-1 rounded-md text-xs font-medium ${
+                          className={`px-3 py-1 rounded-xl text-xs font-medium ${
                             sortBy === "priority"
                               ? "bg-green-100 text-green-800"
                               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -619,7 +576,7 @@ export default function TransfersPage() {
                           setSearchTerm("");
                           setSortBy("date");
                         }}
-                        className="w-full px-4 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl font-medium hover:from-gray-200 hover:to-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all duration-200 text-sm shadow-sm"
+                        className="w-full px-4 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-2xl font-medium hover:from-gray-200 hover:to-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all duration-200 text-sm shadow-sm"
                       >
                         <span className="flex items-center justify-center">
                           <X className="w-4 h-4 mr-1" />
@@ -638,7 +595,7 @@ export default function TransfersPage() {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6"
+              className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-6"
             >
               {error}
             </motion.div>
@@ -658,10 +615,10 @@ export default function TransfersPage() {
               {filteredTransfers.length === 0 ? (
                 <motion.div
                   variants={itemVariants}
-                  className="col-span-full text-center py-12 bg-gray-50 rounded-xl"
+                  className="col-span-full text-center py-12 bg-gray-50 rounded-3xl sidebar-shadow"
                 >
                   <div className="flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4">
+                    <div className="w-16 h-16 bg-green-50 rounded-3xl flex items-center justify-center mb-4">
                       <MapPin size={24} className="text-green-400" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-700 mb-2">
@@ -680,7 +637,7 @@ export default function TransfersPage() {
                     {searchTerm && (
                       <button
                         onClick={() => setSearchTerm("")}
-                        className="mt-4 px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors"
+                        className="mt-4 px-4 py-2 bg-green-100 text-green-700 rounded-2xl text-sm font-medium hover:bg-green-200 transition-colors"
                       >
                         Clear Search
                       </button>
@@ -711,6 +668,28 @@ export default function TransfersPage() {
           )}
         </div>
       </div>
+
+      {/* Floating Action Button */}
+      <motion.button
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setIsModalOpen(true)}
+        className="fixed bottom-6 right-6 w-16 h-16 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40"
+      >
+        <Plus size={24} className="text-white" />
+      </motion.button>
+
+      {/* Transfer Form Modal */}
+      <TransferFormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={() => {
+          // Refresh the transfers list when a new transfer is created
+          handleRefresh();
+        }}
+      />
     </div>
   );
 }
