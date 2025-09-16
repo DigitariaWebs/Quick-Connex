@@ -74,17 +74,17 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="flex items-center justify-center px-8 lg:px-16 z-10">
+      <div className="w-1/2 flex items-center justify-center px-8 lg:px-16 z-10">
         <motion.div
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-          className="w-full max-w-md"
+          className="w-full max-w-2xl"
         >
-          <div className="bg-white rounded-3xl p-8 shadow-2xl max-h-[90vh] min-h-[600px] overflow-y-auto">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Sign In</h2>
-              <p className="text-gray-600">
+          <div className="bg-white rounded-3xl p-12 shadow-2xl max-h-[90vh] min-h-[700px] overflow-y-auto">
+            <div className="text-center mb-10">
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">Sign In</h2>
+              <p className="text-lg text-gray-600">
                 Access your patient management account
               </p>
             </div>
@@ -102,11 +102,11 @@ export default function LoginPage() {
               </div>
             )}
 
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+                  className="block text-base font-medium text-gray-700 mb-3"
                 >
                   Email
                 </label>
@@ -115,7 +115,7 @@ export default function LoginPage() {
                   name="email"
                   type="email"
                   required
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-5 py-4 text-lg border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                   placeholder="Enter your email"
                 />
               </div>
@@ -123,7 +123,7 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+                  className="block text-base font-medium text-gray-700 mb-3"
                 >
                   Password
                 </label>
@@ -133,7 +133,7 @@ export default function LoginPage() {
                     name="password"
                     type="password"
                     required
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-10"
+                    className="w-full px-5 py-4 text-lg border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-12"
                     placeholder="Enter your password"
                   />
                   <button
@@ -163,19 +163,19 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <div className="pt-4">
+              <div className="pt-6">
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-6 text-lg rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? "Signing In..." : "Sign In"}
                 </button>
               </div>
             </form>
 
-            <p className="text-center text-sm text-gray-600 mt-6">
-              Already have an account?{" "}
+            <p className="text-center text-base text-gray-600 mt-8">
+              Don't have an account?{" "}
               <Link
                 href="/signup"
                 className="font-medium text-green-600 hover:text-green-500 transition-colors duration-200"
