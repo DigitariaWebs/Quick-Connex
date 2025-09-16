@@ -64,12 +64,12 @@ export default function SignUpPage() {
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="max-w-lg text-white"
+          className="max-w-lg text-black"
         >
           <h1 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight">
             Fast, Efficient and Productive
           </h1>
-          <p className="text-lg lg:text-xl text-white/80 leading-relaxed">
+          <p className="text-lg lg:text-xl text-black/80 leading-relaxed">
             Join our patient management platform and streamline your healthcare
             workflow
           </p>
