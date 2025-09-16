@@ -59,7 +59,7 @@ const sanitizeInput = (input: string): string => {
 // Helper function to process file upload to GridFS
 const processFileUpload = async (
   file: File, 
-  documentType: 'opiqPermit' | 'rcr',
+  documentType: 'cv' | 'opiqPermit' | 'rcr',
   userId: string
 ): Promise<{ fileId: string; metadata: FileMetadata }> => {
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -103,51 +103,81 @@ export async function POST(request: Request) {
 
     userEmail = email; // Store for logging
 
-    // Comprehensive validation
-    const validationErrors: string[] = [];
+    // Comprehensive validation with field-specific errors
+    const validationErrors: { [key: string]: string[] } = {};
 
     // Validate required fields
-    if (!userType || !firstName || !lastName || !email || !phone || !password) {
-      validationErrors.push('All fields are required');
+    if (!userType) {
+      validationErrors.userType = ['User type is required'];
+    }
+    if (!firstName) {
+      validationErrors.firstName = ['First name is required'];
+    }
+    if (!lastName) {
+      validationErrors.lastName = ['Last name is required'];
+    }
+    if (!email) {
+      validationErrors.email = ['Email address is required'];
+    }
+    if (!phone) {
+      validationErrors.phone = ['Phone number is required'];
+    }
+    if (!password) {
+      validationErrors.password = ['Password is required'];
     }
 
     // Validate user type
     if (userType && !['employee', 'manager'].includes(userType)) {
-      validationErrors.push('Invalid user type. Must be either "employee" or "manager"');
+      validationErrors.userType = ['Invalid user type. Must be either "employee" or "manager"'];
     }
 
     // Validate name fields
     if (firstName && firstName.length < 2) {
-      validationErrors.push('First name must be at least 2 characters long');
+      validationErrors.firstName = ['First name must be at least 2 characters long'];
     }
     if (lastName && lastName.length < 2) {
-      validationErrors.push('Last name must be at least 2 characters long');
+      validationErrors.lastName = ['Last name must be at least 2 characters long'];
     }
 
-    // Validate email
+    // Validate email format
     if (email && !validateEmail(email)) {
-      validationErrors.push('Please provide a valid email address');
+      validationErrors.email = ['Please provide a valid email address (e.g., user@example.com)'];
     }
 
-    // Validate phone
+    // Validate phone format
     if (phone && !validatePhone(phone)) {
-      validationErrors.push('Please provide a valid phone number');
+      validationErrors.phone = ['Please provide a valid phone number (7-15 digits)'];
     }
 
-    // Validate password
+    // Validate password strength
     if (password) {
       const passwordValidation = validatePassword(password);
       if (!passwordValidation.isValid) {
-        validationErrors.push(...passwordValidation.errors);
+        validationErrors.password = passwordValidation.errors;
+      }
+    }
+
+    // Check for duplicate email and phone before creating user
+    if (email && validateEmail(email)) {
+      const existingUserByEmail = await User.findOne({ email: email.toLowerCase() });
+      if (existingUserByEmail) {
+        validationErrors.email = ['An account with this email address already exists'];
+      }
+    }
+
+    if (phone && validatePhone(phone)) {
+      const existingUserByPhone = await User.findOne({ phone: phone });
+      if (existingUserByPhone) {
+        validationErrors.phone = ['An account with this phone number already exists'];
       }
     }
 
     // Return validation errors if any
-    if (validationErrors.length > 0) {
+    if (Object.keys(validationErrors).length > 0) {
       console.log('❌ API: Validation failed:', validationErrors);
       return NextResponse.json(
         { 
-          message: 'Validation failed', 
+          message: 'Please correct the following errors', 
           errors: validationErrors 
         }, 
         { status: 400 }
@@ -173,16 +203,27 @@ export async function POST(request: Request) {
       const post = sanitizeInput(formData.get('post') as string);
       const classValue = sanitizeInput(formData.get('class') as string);
       
-      if (!post || !classValue) {
-        return NextResponse.json(
-          { message: 'Missing required manager fields (post and class)' }, 
-          { status: 400 }
-        );
+      // Validate manager-specific fields
+      if (!post) {
+        validationErrors.post = ['Post is required for managers'];
+      } else if (post.length < 2) {
+        validationErrors.post = ['Post must be at least 2 characters long'];
       }
       
-      if (post.length < 2) {
+      if (!classValue) {
+        validationErrors.class = ['Class is required for managers'];
+      } else if (!['A', 'B', 'C'].includes(classValue)) {
+        validationErrors.class = ['Please select a valid class (A, B, or C)'];
+      }
+      
+      // Return validation errors if any manager fields are invalid
+      if (Object.keys(validationErrors).length > 0) {
+        console.log('❌ API: Manager validation failed:', validationErrors);
         return NextResponse.json(
-          { message: 'Post must be at least 2 characters long' }, 
+          { 
+            message: 'Please correct the following errors', 
+            errors: validationErrors 
+          }, 
           { status: 400 }
         );
       }
@@ -193,12 +234,31 @@ export async function POST(request: Request) {
 
     // Handle employee-specific fields and file uploads
     if (userType === 'employee') {
+      const cv = formData.get('cv') as File;
       const opiqPermit = formData.get('opiqPermit') as File;
       const rcr = formData.get('rcr') as File;
 
-      if (!opiqPermit || !rcr) {
+      // Validate employee-specific files
+      if (!cv) {
+        validationErrors.cv = ['CV document is required for employees'];
+      }
+      
+      if (!opiqPermit) {
+        validationErrors.opiqPermit = ['OPIQ permit document is required for employees'];
+      }
+      
+      if (!rcr) {
+        validationErrors.rcr = ['RCR document is required for employees'];
+      }
+      
+      // Return validation errors if any employee fields are invalid
+      if (Object.keys(validationErrors).length > 0) {
+        console.log('❌ API: Employee validation failed:', validationErrors);
         return NextResponse.json(
-          { message: 'Missing required employee documents (OPIQ permit and RCR)' }, 
+          { 
+            message: 'Please correct the following errors', 
+            errors: validationErrors 
+          }, 
           { status: 400 }
         );
       }
@@ -214,20 +274,32 @@ export async function POST(request: Request) {
       ];
       const maxFileSizeMB = 10;
 
+      // Validate CV file
+      const cvValidation = validateFile(cv, allowedFileTypes, maxFileSizeMB);
+      if (!cvValidation.isValid) {
+        validationErrors.cv = [`CV document: ${cvValidation.error}`];
+      }
+
       // Validate OPIQ permit file
       const opiqValidation = validateFile(opiqPermit, allowedFileTypes, maxFileSizeMB);
       if (!opiqValidation.isValid) {
-        return NextResponse.json(
-          { message: `OPIQ permit validation failed: ${opiqValidation.error}` }, 
-          { status: 400 }
-        );
+        validationErrors.opiqPermit = [`OPIQ permit: ${opiqValidation.error}`];
       }
 
       // Validate RCR file
       const rcrValidation = validateFile(rcr, allowedFileTypes, maxFileSizeMB);
       if (!rcrValidation.isValid) {
+        validationErrors.rcr = [`RCR document: ${rcrValidation.error}`];
+      }
+      
+      // Return validation errors if any file validations failed
+      if (Object.keys(validationErrors).length > 0) {
+        console.log('❌ API: File validation failed:', validationErrors);
         return NextResponse.json(
-          { message: `RCR document validation failed: ${rcrValidation.error}` }, 
+          { 
+            message: 'Please correct the following errors', 
+            errors: validationErrors 
+          }, 
           { status: 400 }
         );
       }
@@ -236,6 +308,20 @@ export async function POST(request: Request) {
       const tempUserId = new mongoose.Types.ObjectId().toString();
 
       try {
+        // Process CV file
+        console.log('📄 API: Processing CV file...');
+        const cvResult = await processFileUpload(cv, 'cv', tempUserId);
+        userData.documents.push({
+          fileId: cvResult.fileId,
+          documentType: 'cv',
+          originalName: cvResult.metadata.originalName,
+          mimeType: cvResult.metadata.mimeType,
+          size: cvResult.metadata.size,
+          checksum: cvResult.metadata.checksum,
+          uploadedAt: cvResult.metadata.uploadedAt
+        });
+        console.log(`✅ API: CV uploaded to GridFS - ID: ${cvResult.fileId}`);
+
         // Process OPIQ permit file
         console.log('📄 API: Processing OPIQ permit file...');
         const opiqResult = await processFileUpload(opiqPermit, 'opiqPermit', tempUserId);
@@ -273,17 +359,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // Check if user already exists
-    console.log(`🔍 API: Checking if user already exists for email: ${userEmail}`);
-    const existingUser = await User.findOne({ email: userData.email.toLowerCase() });
-    if (existingUser) {
-      console.log(`⚠️ API: User with email ${userEmail} already exists`);
-      return NextResponse.json(
-        { message: 'An account with this email address already exists' }, 
-        { status: 409 }
-      );
-    }
-    console.log('✅ API: Email is available');
+    // Email and phone uniqueness already checked in validation above
+    console.log(`✅ API: Email and phone are available for: ${userEmail}`);
 
     // Create new user in MongoDB using Mongoose
     try {

@@ -4,11 +4,13 @@ export function useSignUpForm() {
   const [userType, setUserType] = useState('employee');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string[] }>({});
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
     setMessage({ type: '', text: '' });
+    setFieldErrors({});
     
     try {
       const formData = new FormData(event.currentTarget);
@@ -25,7 +27,14 @@ export function useSignUpForm() {
         setMessage({ type: 'success', text: 'Account created successfully!' });
         // Could redirect here if needed
       } else {
-        setMessage({ type: 'error', text: result.message || 'An error occurred during sign up' });
+        if (result.errors && typeof result.errors === 'object') {
+          // Handle field-specific errors
+          setFieldErrors(result.errors);
+          setMessage({ type: 'error', text: result.message || 'Please correct the errors below' });
+        } else {
+          // Handle general error messages
+          setMessage({ type: 'error', text: result.message || 'An error occurred during sign up' });
+        }
       }
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to connect to server. Please try again.' });
@@ -39,6 +48,7 @@ export function useSignUpForm() {
     setUserType,
     isLoading,
     message,
+    fieldErrors,
     handleSubmit,
   };
 }

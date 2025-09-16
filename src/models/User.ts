@@ -3,7 +3,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 // Define the interface for document references
 export interface IDocumentReference {
   fileId: string; // GridFS file ID
-  documentType: 'opiqPermit' | 'rcr';
+  documentType: 'cv' | 'opiqPermit' | 'rcr';
   originalName: string;
   mimeType: string;
   size: number;
@@ -81,7 +81,7 @@ const UserSchema = new Schema<IUser>({
     documentType: {
       type: String,
       required: true,
-      enum: ['opiqPermit', 'rcr']
+      enum: ['cv', 'opiqPermit', 'rcr']
     },
     originalName: {
       type: String,
@@ -112,11 +112,12 @@ const UserSchema = new Schema<IUser>({
 // Add validation to ensure employees have required documents
 UserSchema.pre('save', function(next) {
   if (this.userType === 'employee') {
+    const hasCv = this.documents?.some(doc => doc.documentType === 'cv');
     const hasOpiqPermit = this.documents?.some(doc => doc.documentType === 'opiqPermit');
     const hasRcr = this.documents?.some(doc => doc.documentType === 'rcr');
     
-    if (!hasOpiqPermit || !hasRcr) {
-      return next(new Error('Employee must have both OPIQ permit and RCR documents'));
+    if (!hasCv || !hasOpiqPermit || !hasRcr) {
+      return next(new Error('Employee must have CV, OPIQ permit, and RCR documents'));
     }
   }
   next();
@@ -133,7 +134,7 @@ UserSchema.pre('validate', function(next) {
 });
 
 // Add index for faster queries
-UserSchema.index({ email: 1 });
+// Note: email index is already created by unique: true, so we don't need to add it again
 UserSchema.index({ 'documents.fileId': 1 });
 
 // Create or get the User model
