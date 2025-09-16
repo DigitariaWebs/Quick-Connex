@@ -310,6 +310,32 @@ body {
     0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
+/* Red shimmer effect for logout button */
+.sidebar-nav-item-red {
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-nav-item-red::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(239, 68, 68, 0.1),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.sidebar-nav-item-red:hover::before {
+  left: 100%;
+}
+
 /* Background Patterns */
 .bg-pattern-dots {
   background-image: radial-gradient(

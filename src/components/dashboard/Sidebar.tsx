@@ -116,11 +116,13 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
                   <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
                     <User className="w-6 h-6 text-white" />
                   </div>
-                  <div className="flex-1">
-                    <h2 className="text-lg font-semibold text-gray-800">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-lg font-semibold text-gray-800 whitespace-nowrap truncate">
                       {user.firstName} {user.lastName}
                     </h2>
-                    <p className="text-gray-500 text-sm">{user.email}</p>
+                    <p className="text-gray-500 text-sm whitespace-nowrap truncate">
+                      {user.email}
+                    </p>
                   </div>
                 </motion.div>
               ) : (
@@ -163,11 +165,13 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
                       <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="flex items-center justify-between flex-1"
+                        className="flex items-center justify-between flex-1 min-w-0"
                       >
-                        <span className="font-medium text-sm">{item.name}</span>
+                        <span className="font-medium text-sm whitespace-nowrap truncate">
+                          {item.name}
+                        </span>
                         {item.badge && (
-                          <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                          <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium flex-shrink-0">
                             {item.badge}
                           </span>
                         )}
@@ -192,12 +196,13 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
             <div className="space-y-1">
               {/* Profile Button */}
               <motion.button
+                whileHover={{ x: isHovered ? 4 : 0 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => {
                   /* Add profile functionality here */
                 }}
                 title={!isHovered ? "Profile" : undefined}
-                className={`flex items-center space-x-3 ${
+                className={`sidebar-nav-item flex items-center space-x-3 ${
                   isHovered ? "px-4" : "px-2"
                 } py-3 rounded-2xl text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-all duration-200 w-full`}
               >
@@ -205,16 +210,19 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
                   <User size={20} />
                 </div>
                 {isHovered && (
-                  <span className="font-medium text-sm">Profile</span>
+                  <span className="font-medium text-sm whitespace-nowrap truncate">
+                    Profile
+                  </span>
                 )}
               </motion.button>
 
               {/* Logout */}
               <motion.button
+                whileHover={{ x: isHovered ? 4 : 0 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={onLogout}
                 title={!isHovered ? "Sign Out" : undefined}
-                className={`flex items-center space-x-3 ${
+                className={`sidebar-nav-item-red flex items-center space-x-3 ${
                   isHovered ? "px-4" : "px-2"
                 } py-3 rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200 w-full`}
               >
@@ -222,7 +230,9 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
                   <LogOut size={20} />
                 </div>
                 {isHovered && (
-                  <span className="font-medium text-sm">Sign Out</span>
+                  <span className="font-medium text-sm whitespace-nowrap truncate">
+                    Sign Out
+                  </span>
                 )}
               </motion.button>
             </div>
@@ -278,10 +288,12 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
                   >
                     <Icon size={20} />
                   </div>
-                  <div className="flex items-center justify-between flex-1">
-                    <span className="font-medium text-sm">{item.name}</span>
+                  <div className="flex items-center justify-between flex-1 min-w-0">
+                    <span className="font-medium text-sm whitespace-nowrap truncate">
+                      {item.name}
+                    </span>
                     {item.badge && (
-                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium flex-shrink-0">
                         {item.badge}
                       </span>
                     )}
@@ -304,7 +316,9 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
               <div className="text-gray-500">
                 <User size={20} />
               </div>
-              <span className="font-medium text-sm">Profile</span>
+              <span className="font-medium text-sm whitespace-nowrap truncate">
+                Profile
+              </span>
             </button>
 
             <button
@@ -314,7 +328,9 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
               <div className="text-red-500">
                 <LogOut size={20} />
               </div>
-              <span className="font-medium text-sm">Sign Out</span>
+              <span className="font-medium text-sm whitespace-nowrap truncate">
+                Sign Out
+              </span>
             </button>
           </div>
         </div>
