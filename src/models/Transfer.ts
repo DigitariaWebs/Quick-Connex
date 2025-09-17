@@ -3,14 +3,14 @@ import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 // Define the interface for Transfer document
 export interface ITransfer extends Document {
   transferId: string;
-  patientId: string;
-  patient: Types.ObjectId; // Reference to Patient
+  patientInfo: {
+    firstName: string;
+    lastName: string;
+    age: number;
+  };
   fromHospital: string;
-  fromDepartment: string;
   toHospital: string;
-  toDepartment: string;
   requestedBy: Types.ObjectId; // Reference to User (manager)
-  assignedTo?: Types.ObjectId; // Reference to User (employee)
   reason: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
@@ -21,14 +21,8 @@ export interface ITransfer extends Document {
   notes?: string;
   medicalDocuments?: string[]; // Array of file paths
   
-  // Advanced scheduling fields
+  // Simplified scheduling fields
   scheduling: {
-    isRecurring: boolean;
-    recurrencePattern?: 'daily' | 'weekly' | 'monthly' | 'custom';
-    recurrenceInterval?: number; // Every X days/weeks/months
-    recurrenceDays?: number[]; // Days of week (0-6) for weekly recurrence
-    recurrenceEndDate?: Date;
-    recurrenceExceptions?: Date[]; // Dates to skip
     timeSlot: {
       startTime: string; // HH:MM format
       endTime: string; // HH:MM format
@@ -40,20 +34,12 @@ export interface ITransfer extends Document {
       transportType: 'ambulance' | 'helicopter' | 'ground_transport' | 'walking';
     };
     resources: {
-      assignedDriver?: string;
-      assignedVehicle?: string;
       requiredEquipment?: string[];
       specialInstructions?: string;
     };
-    conflicts?: Array<{
-      transferId: string;
-      conflictType: 'time' | 'resource' | 'location';
-      severity: 'low' | 'medium' | 'high';
-      description: string;
-    }>;
   };
   
-  // Enhanced fields for robustness
+  // Status tracking
   statusHistory: Array<{
     status: string;
     changedBy: Types.ObjectId;
@@ -78,22 +64,25 @@ const TransferSchema = new Schema<ITransfer>({
     unique: true,
     trim: true
   },
-  patientId: { 
-    type: String, 
-    required: true,
-    trim: true
-  },
-  patient: { 
-    type: Schema.Types.ObjectId, 
-    ref: 'Patient', 
-    required: true 
+  patientInfo: {
+    firstName: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    lastName: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    age: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 120
+    }
   },
   fromHospital: { 
-    type: String, 
-    required: true,
-    trim: true
-  },
-  fromDepartment: { 
     type: String, 
     required: true,
     trim: true
@@ -103,19 +92,10 @@ const TransferSchema = new Schema<ITransfer>({
     required: true,
     trim: true
   },
-  toDepartment: { 
-    type: String, 
-    required: true,
-    trim: true
-  },
   requestedBy: { 
     type: Schema.Types.ObjectId, 
     ref: 'User', 
     required: true 
-  },
-  assignedTo: { 
-    type: Schema.Types.ObjectId, 
-    ref: 'User' 
   },
   reason: { 
     type: String, 
@@ -157,31 +137,8 @@ const TransferSchema = new Schema<ITransfer>({
     trim: true 
   }],
   
-  // Advanced scheduling fields
+  // Simplified scheduling fields
   scheduling: {
-    isRecurring: {
-      type: Boolean,
-      default: false
-    },
-    recurrencePattern: {
-      type: String,
-      enum: ['daily', 'weekly', 'monthly', 'custom']
-    },
-    recurrenceInterval: {
-      type: Number,
-      min: 1
-    },
-    recurrenceDays: [{
-      type: Number,
-      min: 0,
-      max: 6
-    }],
-    recurrenceEndDate: {
-      type: Date
-    },
-    recurrenceExceptions: [{
-      type: Date
-    }],
     timeSlot: {
       startTime: {
         type: String,
@@ -214,14 +171,6 @@ const TransferSchema = new Schema<ITransfer>({
       }
     },
     resources: {
-      assignedDriver: {
-        type: String,
-        trim: true
-      },
-      assignedVehicle: {
-        type: String,
-        trim: true
-      },
       requiredEquipment: [{
         type: String,
         trim: true
@@ -230,28 +179,7 @@ const TransferSchema = new Schema<ITransfer>({
         type: String,
         trim: true
       }
-    },
-    conflicts: [{
-      transferId: {
-        type: String,
-        required: true
-      },
-      conflictType: {
-        type: String,
-        enum: ['time', 'resource', 'location'],
-        required: true
-      },
-      severity: {
-        type: String,
-        enum: ['low', 'medium', 'high'],
-        required: true
-      },
-      description: {
-        type: String,
-        required: true,
-        trim: true
-      }
-    }]
+    }
   },
   
   // Enhanced fields for robustness
@@ -298,18 +226,15 @@ const TransferSchema = new Schema<ITransfer>({
 
 // Add indexes for faster queries
 TransferSchema.index({ transferId: 1 });
-TransferSchema.index({ patientId: 1 });
+TransferSchema.index({ 'patientInfo.firstName': 1, 'patientInfo.lastName': 1 });
 TransferSchema.index({ status: 1 });
 TransferSchema.index({ priority: 1 });
 TransferSchema.index({ requestedBy: 1 });
-TransferSchema.index({ assignedTo: 1 });
 TransferSchema.index({ requestedDate: -1 });
 TransferSchema.index({ scheduledDate: 1 });
 TransferSchema.index({ scheduledEndDate: 1 });
 TransferSchema.index({ lastModifiedBy: 1 });
 TransferSchema.index({ 'statusHistory.changedAt': -1 });
-TransferSchema.index({ 'scheduling.isRecurring': 1 });
-TransferSchema.index({ 'scheduling.recurrencePattern': 1 });
 
 // Pre-save hook to track status changes
 TransferSchema.pre('save', function(next) {

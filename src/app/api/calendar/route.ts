@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import dbConnect from '@/lib/mongoose';
 import Transfer from '@/models/Transfer';
 import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware';
 
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
       return authResult.response;
     }
 
-    await connectDB();
+    await dbConnect();
 
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('startDate');
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       return authResult.response;
     }
 
-    await connectDB();
+    await dbConnect();
 
     const body = await request.json();
     const {

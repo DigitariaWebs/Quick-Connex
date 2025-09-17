@@ -22,35 +22,11 @@ export interface BaseEntity {
   updatedAt: Date;
 }
 
-// Patient Information
+// Patient Information (embedded in transfer)
 export interface PatientInfo {
-  _id: Types.ObjectId;
-  patientId: string;
   firstName: string;
   lastName: string;
-  dateOfBirth: Date;
-  gender: 'male' | 'female' | 'other';
-  phone: string;
-  currentHospital?: string;
-  currentDepartment?: string;
-  address?: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
-  };
-  medicalInfo?: {
-    emergencyContact: {
-      name: string;
-      relationship: string;
-      phone: string;
-    };
-    allergies?: string[];
-    medications?: string[];
-    conditions?: string[];
-  };
-  status: 'active' | 'inactive' | 'discharged';
+  age: number;
 }
 
 // User Information
@@ -112,10 +88,11 @@ export interface StatusHistoryEntry {
 // Transfer Document Interface (matches MongoDB schema)
 export interface ITransfer extends BaseEntity {
   transferId: string;
-  patientId: string;
-  patient: Types.ObjectId; // Reference to Patient
+  patientInfo: PatientInfo;
   fromHospital: string;
+  fromDepartment: string;
   toHospital: string;
+  toDepartment: string;
   requestedBy: Types.ObjectId; // Reference to User (manager)
   assignedTo?: Types.ObjectId; // Reference to User (employee)
   reason: string;
@@ -146,7 +123,9 @@ export interface TransferRequestData {
   patientLastName: string;
   patientAge: number;
   fromHospital: string;
+  fromDepartment?: string;
   toHospital: string;
+  toDepartment?: string;
   transferDate: string;
   transferTime: string;
   transferType: TransferType;
@@ -162,10 +141,11 @@ export interface TransferRequestData {
 export interface TransferResponse {
   _id: string;
   transferId: string;
-  patientId: string;
-  patient: PatientInfo;
+  patientInfo: PatientInfo;
   fromHospital: string;
+  fromDepartment: string;
   toHospital: string;
+  toDepartment: string;
   requestedBy: UserInfo;
   assignedTo?: UserInfo;
   reason: string;
@@ -291,7 +271,7 @@ export interface TransferNotificationData {
   transfer: {
     id: string;
     transferId: string;
-    patient: PatientInfo;
+    patientInfo: PatientInfo;
     fromHospital: string;
     toHospital: string;
     priority: TransferPriority;
@@ -315,9 +295,9 @@ export interface TransferCalendarEvent {
   start: Date;
   end: Date;
   transferId: string;
-  patient: {
+  patientInfo: {
     name: string;
-    id: string;
+    age: number;
   };
   fromHospital: string;
   toHospital: string;

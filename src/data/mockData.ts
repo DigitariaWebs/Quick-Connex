@@ -56,8 +56,8 @@ export const mockUsers: IUser[] = [
   }
 ];
 
-// Mock Patients
-export const mockPatients: IPatient[] = [
+// Mock Patients - DEPRECATED: No longer needed with embedded patient info
+// export const mockPatients: IPatient[] = [
   {
     _id: 'patient1',
     patientId: 'PAT-001',
@@ -262,15 +262,18 @@ export const mockPatients: IPatient[] = [
     createdAt: new Date('2024-02-05'),
     updatedAt: new Date('2024-02-05')
   }
-];
+// ];
 
 // Mock Transfer Requests
 export const mockTransfers: ITransfer[] = [
   {
     _id: 'transfer1',
     transferId: 'TRF-001',
-    patientId: 'PAT-001',
-    patient: 'patient1' as any,
+    patientInfo: {
+      firstName: 'Alice',
+      lastName: 'Williams',
+      age: 39
+    },
     fromHospital: 'City General Hospital',
     fromDepartment: 'Emergency',
     toHospital: 'Metro Medical Center',
@@ -290,8 +293,11 @@ export const mockTransfers: ITransfer[] = [
   {
     _id: 'transfer2',
     transferId: 'TRF-002',
-    patientId: 'PAT-002',
-    patient: 'patient2' as any,
+    patientInfo: {
+      firstName: 'Michael',
+      lastName: 'Brown',
+      age: 46
+    },
     fromHospital: 'Metro Medical Center',
     fromDepartment: 'Cardiology',
     toHospital: 'City General Hospital',
@@ -310,8 +316,11 @@ export const mockTransfers: ITransfer[] = [
   {
     _id: 'transfer3',
     transferId: 'TRF-003',
-    patientId: 'PAT-003',
-    patient: 'patient3' as any,
+    patientInfo: {
+      firstName: 'Emily',
+      lastName: 'Davis',
+      age: 28
+    },
     fromHospital: 'Regional Hospital',
     fromDepartment: 'Pulmonology',
     toHospital: 'City General Hospital',
@@ -332,8 +341,11 @@ export const mockTransfers: ITransfer[] = [
   {
     _id: 'transfer4',
     transferId: 'TRF-004',
-    patientId: 'PAT-004',
-    patient: 'patient4' as any,
+    patientInfo: {
+      firstName: 'Robert',
+      lastName: 'Johnson',
+      age: 55
+    },
     fromHospital: 'Memorial Hospital',
     fromDepartment: 'Endocrinology',
     toHospital: 'Metro Medical Center',
@@ -353,8 +365,11 @@ export const mockTransfers: ITransfer[] = [
   {
     _id: 'transfer5',
     transferId: 'TRF-005',
-    patientId: 'PAT-005',
-    patient: 'patient5' as any,
+    patientInfo: {
+      firstName: 'Jennifer',
+      lastName: 'Wilson',
+      age: 36
+    },
     fromHospital: 'Desert Medical Center',
     fromDepartment: 'Internal Medicine',
     toHospital: 'Regional Hospital',
@@ -375,8 +390,11 @@ export const mockTransfers: ITransfer[] = [
   {
     _id: 'transfer6',
     transferId: 'TRF-006',
-    patientId: 'PAT-006',
-    patient: 'patient6' as any,
+    patientInfo: {
+      firstName: 'David',
+      lastName: 'Martinez',
+      age: 52
+    },
     fromHospital: 'Sunshine Hospital',
     fromDepartment: 'Rheumatology',
     toHospital: 'Memorial Hospital',

@@ -1,14 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * Script to create test users (1 manager and 1 employee)
- * This will create users with proper document uploads for testing
+ * Script to create test users (manager and employee) for transfer system testing
  */
 
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const fs = require('fs');
-const path = require('path');
 require('dotenv').config({ path: '.env.local' });
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/patients_management';
@@ -109,37 +106,16 @@ startxref
 
 async function createTestUsers() {
     try {
-        console.log('👥 Starting test user creation...');
+        console.log('👥 Creating test users for transfer system...');
 
         // Connect to MongoDB
         console.log('🔌 Connecting to MongoDB...');
         await mongoose.connect(MONGODB_URI);
         console.log('✅ Connected to MongoDB');
 
-        // Hash password for both users
+        // Hash password
         const saltRounds = 12;
         const hashedPassword = await bcrypt.hash('TestPassword123!', saltRounds);
-
-        // Create Manager User
-        console.log('👨‍💼 Creating manager user...');
-        const managerData = {
-            userType: 'manager',
-            firstName: capitalizeName('john'),
-            lastName: capitalizeName('manager'),
-            email: 'manager@test.com',
-            phone: '1234567890',
-            password: hashedPassword,
-            post: capitalizeName('head of department'),
-            ciusss: '03',
-            documents: []
-        };
-
-        const manager = new User(managerData);
-        await manager.save();
-        console.log(`✅ Manager created: ${manager.email} (ID: ${manager._id})`);
-
-        // Create Employee User with documents
-        console.log('👨‍💻 Creating employee user...');
 
         // Create test documents
         const cvBuffer = createTestPDF('CV_Document.pdf');
@@ -151,82 +127,102 @@ async function createTestUsers() {
         const opiqFileId = new mongoose.Types.ObjectId().toString();
         const rcrFileId = new mongoose.Types.ObjectId().toString();
 
-        const employeeData = {
-            userType: 'employee',
-            firstName: capitalizeName('jane'),
-            lastName: capitalizeName('employee'),
-            email: 'employee@test.com',
-            phone: '0987654321',
-            password: hashedPassword,
-            documents: [
-                {
-                    fileId: cvFileId,
-                    documentType: 'cv',
-                    originalName: 'CV_Document.pdf',
-                    mimeType: 'application/pdf',
-                    size: cvBuffer.length,
-                    checksum: 'test-cv-checksum',
-                    uploadedAt: new Date()
-                },
-                {
-                    fileId: opiqFileId,
-                    documentType: 'opiqPermit',
-                    originalName: 'OPIQ_Permit.pdf',
-                    mimeType: 'application/pdf',
-                    size: opiqBuffer.length,
-                    checksum: 'test-opiq-checksum',
-                    uploadedAt: new Date()
-                },
-                {
-                    fileId: rcrFileId,
-                    documentType: 'rcr',
-                    originalName: 'RCR_Document.pdf',
-                    mimeType: 'application/pdf',
-                    size: rcrBuffer.length,
-                    checksum: 'test-rcr-checksum',
-                    uploadedAt: new Date()
-                }
-            ]
-        };
+        const testDocuments = [
+            {
+                fileId: cvFileId,
+                documentType: 'cv',
+                originalName: 'CV_Document.pdf',
+                mimeType: 'application/pdf',
+                size: cvBuffer.length,
+                checksum: 'test-cv-checksum',
+                uploadedAt: new Date()
+            },
+            {
+                fileId: opiqFileId,
+                documentType: 'opiqPermit',
+                originalName: 'OPIQ_Permit.pdf',
+                mimeType: 'application/pdf',
+                size: opiqBuffer.length,
+                checksum: 'test-opiq-checksum',
+                uploadedAt: new Date()
+            },
+            {
+                fileId: rcrFileId,
+                documentType: 'rcr',
+                originalName: 'RCR_Document.pdf',
+                mimeType: 'application/pdf',
+                size: rcrBuffer.length,
+                checksum: 'test-rcr-checksum',
+                uploadedAt: new Date()
+            }
+        ];
 
-        const employee = new User(employeeData);
-        await employee.save();
-        console.log(`✅ Employee created: ${employee.email} (ID: ${employee._id})`);
-        console.log(`   - Documents: ${employee.documents.length} files`);
+        // Create Manager
+        console.log('\n👨‍💼 Creating Manager...');
+        const existingManager = await User.findOne({ email: 'manager@test.com' });
+        if (existingManager) {
+            console.log('⚠️ Manager already exists, skipping creation');
+        } else {
+            const managerData = {
+                userType: 'manager',
+                firstName: capitalizeName('john'),
+                lastName: capitalizeName('manager'),
+                email: 'manager@test.com',
+                phone: '0123456789',
+                password: hashedPassword,
+                post: 'Transfer Manager',
+                class: 'Management',
+                documents: testDocuments
+            };
 
-        // Display summary
+            const manager = new User(managerData);
+            await manager.save();
+            console.log(`✅ Manager created: ${manager.email} (ID: ${manager._id})`);
+        }
+
+        // Create Employee
+        console.log('\n👨‍💻 Creating Employee...');
+        const existingEmployee = await User.findOne({ email: 'employee@test.com' });
+        if (existingEmployee) {
+            console.log('⚠️ Employee already exists, skipping creation');
+        } else {
+            const employeeData = {
+                userType: 'employee',
+                firstName: capitalizeName('jane'),
+                lastName: capitalizeName('employee'),
+                email: 'employee@test.com',
+                phone: '0987654321',
+                password: hashedPassword,
+                post: 'Transport Specialist',
+                class: 'Operations',
+                documents: testDocuments
+            };
+
+            const employee = new User(employeeData);
+            await employee.save();
+            console.log(`✅ Employee created: ${employee.email} (ID: ${employee._id})`);
+        }
+
+        // Verify users were created
+        const userCount = await User.countDocuments();
+        const managerCount = await User.countDocuments({ userType: 'manager' });
+        const employeeCount = await User.countDocuments({ userType: 'employee' });
+
         console.log('\n🎉 Test users created successfully!');
-        console.log('\n📊 User Summary:');
-        console.log('👨‍💼 Manager:');
-        console.log(`   - Name: ${manager.firstName} ${manager.lastName}`);
-        console.log(`   - Email: manager@test.com`);
-        console.log(`   - Password: TestPassword123!`);
-        console.log(`   - Post: ${manager.post}`);
-        console.log(`   - Class: A`);
-        console.log(`   - Documents: 0 (managers don't need documents)`);
-
-        console.log('\n👨‍💻 Employee:');
-        console.log(`   - Name: ${employee.firstName} ${employee.lastName}`);
-        console.log(`   - Email: employee@test.com`);
-        console.log(`   - Password: TestPassword123!`);
-        console.log(`   - Documents: 3 files (CV, OPIQ Permit, RCR)`);
-        console.log(`   - CV: ${employee.documents[0].originalName}`);
-        console.log(`   - OPIQ: ${employee.documents[1].originalName}`);
-        console.log(`   - RCR: ${employee.documents[2].originalName}`);
+        console.log('\n📊 Database Summary:');
+        console.log(`   - Total Users: ${userCount}`);
+        console.log(`   - Managers: ${managerCount}`);
+        console.log(`   - Employees: ${employeeCount}`);
 
         console.log('\n🔐 Login Credentials:');
         console.log('   Manager: manager@test.com / TestPassword123!');
         console.log('   Employee: employee@test.com / TestPassword123!');
 
-        // Verify users in database
-        const totalUsers = await User.countDocuments();
-        const managerCount = await User.countDocuments({ userType: 'manager' });
-        const employeeCount = await User.countDocuments({ userType: 'employee' });
-
-        console.log('\n📈 Database Status:');
-        console.log(`   - Total Users: ${totalUsers}`);
-        console.log(`   - Managers: ${managerCount}`);
-        console.log(`   - Employees: ${employeeCount}`);
+        console.log('\n💡 Next Steps:');
+        console.log('   1. Test manager login');
+        console.log('   2. Test employee login');
+        console.log('   3. Create transfer request as manager');
+        console.log('   4. Validate transfer as employee');
 
     } catch (error) {
         console.error('❌ Error creating test users:', error);

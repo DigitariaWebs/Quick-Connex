@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import dbConnect from '@/lib/mongoose';
 import Patient from '@/models/Patient';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
@@ -8,7 +8,7 @@ import { mockUsers, mockPatients, mockTransfers } from '@/data/mockData';
 // POST /api/load-mock-data - Load mock data into the database
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
+    await dbConnect();
 
     // Clear existing data
     await Patient.deleteMany({});
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 // GET /api/load-mock-data - Get information about mock data
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
+    await dbConnect();
 
     const userCount = await User.countDocuments();
     const patientCount = await Patient.countDocuments();

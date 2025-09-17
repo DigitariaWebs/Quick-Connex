@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import dbConnect from '@/lib/mongoose';
 import Transfer from '@/models/Transfer';
 import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware';
 import { validateStatusTransition } from '@/lib/transfer-validation';
@@ -17,7 +17,7 @@ export async function PUT(
       return authResult.response;
     }
 
-    await connectDB();
+    await dbConnect();
 
     const transferId = params.id;
     const body = await request.json();
@@ -43,14 +43,7 @@ export async function PUT(
       );
     }
 
-    // Check if user is assigned to this transfer (employees only)
-    if (authResult.user.userType === 'employee' && transfer.assignedTo?.toString() !== authResult.user._id) {
-      return createErrorResponse(
-        'You are not assigned to this transfer', 
-        'UNAUTHORIZED', 
-        403
-      );
-    }
+    // Any employee can start an accepted transfer
 
     // Store old status for notification
     const oldStatus = transfer.status;
@@ -67,9 +60,7 @@ export async function PUT(
 
     // Populate the response
     const populatedTransfer = await Transfer.findById(transfer._id)
-      .populate('patient', 'patientId firstName lastName dateOfBirth gender phone currentHospital currentDepartment')
-      .populate('requestedBy', 'firstName lastName email userType')
-      .populate('assignedTo', 'firstName lastName email');
+      .populate('requestedBy', 'firstName lastName email userType');
 
     // Send real-time notification
     try {

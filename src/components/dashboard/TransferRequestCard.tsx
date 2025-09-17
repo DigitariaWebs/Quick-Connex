@@ -19,16 +19,10 @@ import {
 interface TransferRequest {
   _id: string;
   transferId: string;
-  patientId: string;
-  patient: {
-    patientId: string;
+  patientInfo: {
     firstName: string;
     lastName: string;
-    dateOfBirth: string;
-    gender: string;
-    phone: string;
-    currentHospital?: string;
-    currentDepartment?: string;
+    age: number;
   };
   fromHospital: string;
   fromDepartment: string;
@@ -187,20 +181,6 @@ export default function TransferRequestCard({
     });
   };
 
-  const calculateAge = (dateOfBirth: string) => {
-    const today = new Date();
-    const birthDate = new Date(dateOfBirth);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birthDate.getDate())
-    ) {
-      age--;
-    }
-    return age;
-  };
-
   const priorityColors = getPriorityColor(transfer.priority);
   const statusColors = getStatusColor(transfer.status);
 
@@ -228,10 +208,10 @@ export default function TransferRequestCard({
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-800">
-                {transfer.patient.firstName} {transfer.patient.lastName}
+                {transfer.patientInfo.firstName} {transfer.patientInfo.lastName}
               </h3>
               <div className="flex items-center text-xs text-gray-500">
-                <span className="mr-2">ID: {transfer.patient.patientId}</span>
+                <span className="mr-2">Age: {transfer.patientInfo.age}</span>
                 <span className="flex items-center">
                   {statusColors.icon}
                   <span className={`capitalize ${statusColors.text}`}>
@@ -250,24 +230,11 @@ export default function TransferRequestCard({
         </div>
 
         {/* Patient Info */}
-        <div className="grid grid-cols-2 gap-y-2 gap-x-4 mt-4">
+        <div className="grid grid-cols-1 gap-y-2 gap-x-4 mt-4">
           <div className="flex items-center text-sm">
             <User size={14} className="mr-2 text-gray-400" />
             <span className="text-gray-700">
-              {calculateAge(transfer.patient.dateOfBirth)} yrs,{" "}
-              {transfer.patient.gender}
-            </span>
-          </div>
-          <div className="flex items-center text-sm">
-            <Phone size={14} className="mr-2 text-gray-400" />
-            <span className="text-gray-700">{transfer.patient.phone}</span>
-          </div>
-          <div className="flex items-center text-sm col-span-2">
-            <MapPin size={14} className="mr-2 text-gray-400 flex-shrink-0" />
-            <span className="text-gray-700 truncate">
-              {transfer.patient.currentHospital || "No current hospital"}
-              {transfer.patient.currentDepartment &&
-                ` - ${transfer.patient.currentDepartment}`}
+              {transfer.patientInfo.age} years old
             </span>
           </div>
         </div>

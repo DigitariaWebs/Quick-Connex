@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import dbConnect from '@/lib/mongoose';
 import Transfer from '@/models/Transfer';
 import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware';
 import { validateStatusTransition } from '@/lib/transfer-validation';
@@ -17,7 +17,7 @@ export async function PUT(
       return authResult.response;
     }
 
-    await connectDB();
+    await dbConnect();
 
     const transferId = params.id;
     const body = await request.json();
@@ -48,7 +48,6 @@ export async function PUT(
 
     // Update transfer status
     transfer.status = 'accepted';
-    transfer.assignedTo = authResult.user._id; // Assign to current user
     transfer.lastModifiedBy = authResult.user._id;
     
     if (notes) {
@@ -59,9 +58,7 @@ export async function PUT(
 
     // Populate the response
     const populatedTransfer = await Transfer.findById(transfer._id)
-      .populate('patient', 'patientId firstName lastName dateOfBirth gender phone currentHospital currentDepartment')
-      .populate('requestedBy', 'firstName lastName email userType')
-      .populate('assignedTo', 'firstName lastName email');
+      .populate('requestedBy', 'firstName lastName email userType');
 
     // Send real-time notification
     try {

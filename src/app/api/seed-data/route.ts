@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import dbConnect from '@/lib/mongoose';
 import Patient from '@/models/Patient';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
@@ -7,7 +7,7 @@ import User from '@/models/User';
 // POST /api/seed-data - Create sample data for testing
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
+    await dbConnect();
 
     // Clear existing data
     await Patient.deleteMany({});

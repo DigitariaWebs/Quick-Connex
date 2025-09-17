@@ -8,7 +8,6 @@
 import { Types } from 'mongoose';
 import dbConnect from './mongoose';
 import Transfer from '@/models/Transfer';
-import Patient from '@/models/Patient';
 import User from '@/models/User';
 import {
   TransferStatus,
@@ -60,28 +59,24 @@ export class TransferService {
         };
       }
 
-      // Create or find patient
-      const patient = await this.createOrFindPatient(transferData);
-      if (!patient) {
-        return {
-          success: false,
-          error: 'Failed to create or find patient'
-        };
-      }
-
       // Generate unique transfer ID
       const transferId = this.generateTransferId();
 
       // Create scheduling configuration
       const scheduling = this.createSchedulingConfig(transferData);
 
-      // Create transfer document
+      // Create transfer document with embedded patient info
       const transfer = new Transfer({
         transferId,
-        patientId: patient.patientId,
-        patient: patient._id,
+        patientInfo: {
+          firstName: transferData.patientFirstName,
+          lastName: transferData.patientLastName,
+          age: transferData.patientAge
+        },
         fromHospital: transferData.fromHospital,
+        fromDepartment: transferData.fromDepartment || 'General',
         toHospital: transferData.toHospital,
+        toDepartment: transferData.toDepartment || 'General',
         requestedBy: requestingUser._id,
         reason: transferData.reason,
         priority: transferData.priority,
@@ -131,7 +126,6 @@ export class TransferService {
       await dbConnect();
 
       const transfer = await Transfer.findById(transferId)
-        .populate('patient', 'patientId firstName lastName dateOfBirth gender phone currentHospital currentDepartment')
         .populate('requestedBy', 'firstName lastName email userType')
         .populate('assignedTo', 'firstName lastName email userType')
         .populate('lastModifiedBy', 'firstName lastName email userType')
@@ -221,7 +215,6 @@ export class TransferService {
 
       // Execute query
       const transfers = await Transfer.find(query)
-        .populate('patient', 'patientId firstName lastName dateOfBirth gender phone currentHospital currentDepartment')
         .populate('requestedBy', 'firstName lastName email userType')
         .populate('assignedTo', 'firstName lastName email userType')
         .populate('lastModifiedBy', 'firstName lastName email userType')
@@ -626,52 +619,6 @@ export class TransferService {
     };
   }
 
-  private static async createOrFindPatient(transferData: TransferRequestData): Promise<any> {
-    const dob = new Date();
-    dob.setFullYear(dob.getFullYear() - transferData.patientAge);
-    
-    // Try to find existing patient first
-    let patient = await Patient.findOne({
-      firstName: transferData.patientFirstName,
-      lastName: transferData.patientLastName,
-      dateOfBirth: dob
-    });
-    
-    if (!patient) {
-      // Generate a unique patient ID
-      const patientId = `PAT-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-      
-      // Create new patient record
-      patient = new Patient({
-        patientId,
-        firstName: transferData.patientFirstName,
-        lastName: transferData.patientLastName,
-        dateOfBirth: dob,
-        gender: 'other', // Default since we don't collect in the form
-        phone: '000-000-0000', // Default since we don't collect in the form
-        address: {
-          street: 'Unknown',
-          city: 'Unknown',
-          state: 'Unknown',
-          zipCode: 'Unknown',
-          country: 'Unknown'
-        },
-        medicalInfo: {
-          emergencyContact: {
-            name: 'Unknown',
-            relationship: 'Unknown',
-            phone: 'Unknown'
-          }
-        },
-        currentHospital: transferData.fromHospital,
-        status: 'active'
-      });
-
-      await patient.save();
-    }
-
-    return patient;
-  }
 
   private static generateTransferId(): string {
     return `${TRANSFER_CONFIG.ID_PREFIXES.TRANSFER}-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
@@ -702,10 +649,11 @@ export class TransferService {
     return {
       _id: transfer._id.toString(),
       transferId: transfer.transferId,
-      patientId: transfer.patientId,
-      patient: transfer.patient,
+      patientInfo: transfer.patientInfo,
       fromHospital: transfer.fromHospital,
+      fromDepartment: transfer.fromDepartment,
       toHospital: transfer.toHospital,
+      toDepartment: transfer.toDepartment,
       requestedBy: transfer.requestedBy,
       assignedTo: transfer.assignedTo,
       reason: transfer.reason,

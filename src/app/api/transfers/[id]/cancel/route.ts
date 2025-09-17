@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
+import dbConnect from '@/lib/mongoose';
 import Transfer from '@/models/Transfer';
 import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware';
 import { validateStatusTransition, isTerminalStatus } from '@/lib/transfer-validation';
@@ -17,7 +17,7 @@ export async function PUT(
       return authResult.response;
     }
 
-    await connectDB();
+    await dbConnect();
 
     const transferId = params.id;
     const body = await request.json();
@@ -60,8 +60,7 @@ export async function PUT(
     // Check authorization - only assigned employee, requesting manager, or any manager can cancel
     const canCancel = 
       authResult.user.userType === 'manager' || // Any manager can cancel
-      transfer.requestedBy?.toString() === authResult.user._id || // Requesting manager
-      transfer.assignedTo?.toString() === authResult.user._id; // Assigned employee
+      transfer.requestedBy?.toString() === authResult.user._id; // Requesting manager
 
     if (!canCancel) {
       return createErrorResponse(
@@ -90,9 +89,7 @@ export async function PUT(
 
     // Populate the response
     const populatedTransfer = await Transfer.findById(transfer._id)
-      .populate('patient', 'patientId firstName lastName dateOfBirth gender phone currentHospital currentDepartment')
-      .populate('requestedBy', 'firstName lastName email userType')
-      .populate('assignedTo', 'firstName lastName email');
+      .populate('requestedBy', 'firstName lastName email userType');
 
     // Send real-time notification
     try {
