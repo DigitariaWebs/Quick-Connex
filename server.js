@@ -1,10 +1,24 @@
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
+const os = require('os');
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = process.env.PORT || 3000;
+
+// Function to get local network IP
+function getLocalNetworkIP() {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;
+            }
+        }
+    }
+    return 'localhost';
+}
 
 // Create Next.js app
 const app = next({ dev, hostname, port });
@@ -55,6 +69,19 @@ app.prepare().then(() => {
         }
         console.log(`🎉 Server ready on http://${hostname}:${port}`);
         console.log('🔌 WebSocket server ready for real-time notifications');
+
+        // Display network access information
+        const networkIP = getLocalNetworkIP();
+        console.log('\n📡 NETWORK ACCESS:');
+        console.log('='.repeat(50));
+        console.log(`🏠 Local:    http://localhost:${port}`);
+        if (networkIP !== 'localhost') {
+            console.log(`🌐 Network:  http://${networkIP}:${port}`);
+            console.log(`📱 Mobile:   http://${networkIP}:${port}`);
+        }
+        console.log('='.repeat(50));
+        console.log('💡 Share the Network URL with other devices on the same network');
+        console.log('');
     });
 }).catch((err) => {
     console.error('❌ Failed to prepare Next.js app:', err);
