@@ -134,11 +134,21 @@ export default function CalendarPage() {
   };
 
   const handleDateClick = (date: Date) => {
+    // Only allow managers to create transfers
+    if (user?.userType !== "manager") {
+      alert("Only managers can create transfer requests");
+      return;
+    }
     setSelectedDate(date);
     setShowSchedulingForm(true);
   };
 
   const handleCreateTransfer = (date: Date) => {
+    // Only allow managers to create transfers
+    if (user?.userType !== "manager") {
+      alert("Only managers can create transfer requests");
+      return;
+    }
     setSelectedDate(date);
     setShowSchedulingForm(true);
   };

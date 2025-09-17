@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
@@ -47,16 +47,57 @@ export default function TransferForm({
   const [showForm, setShowForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<Date | null>(null);
+  const [user, setUser] = useState<any>(null);
 
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
+
+  // Check user authentication and role
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const response = await fetch("/api/auth/verify", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+
+          // Check if user is a manager
+          if (data.user.userType !== "manager") {
+            setError(
+              "Only managers can create transfer requests. Please contact your administrator if you need access."
+            );
+          }
+        } else {
+          setError("Authentication required");
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        setError("Authentication failed");
+      }
+    };
+
+    checkUser();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
     setValidationErrors({});
+
+    // Check if user is a manager before proceeding
+    if (!user || user.userType !== "manager") {
+      setError(
+        "Only managers can create transfer requests. Please contact your administrator if you need access."
+      );
+      setIsSubmitting(false);
+      return;
+    }
 
     const formData = new FormData(e.currentTarget);
     const patientFirstName = formData.get("patientFirstName");
@@ -211,9 +252,27 @@ export default function TransferForm({
   // If it's in a modal, always show the form
   const shouldShowForm = isModal || showForm;
 
+  // Don't render the form if user is not a manager
+  if (user && user.userType !== "manager") {
+    return (
+      <div className={isModal ? "" : "mb-8"}>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+          <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-3" />
+          <h3 className="text-lg font-semibold text-red-800 mb-2">
+            Access Restricted
+          </h3>
+          <p className="text-red-600">
+            Only managers can create transfer requests. Please contact your
+            administrator if you need access.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={isModal ? "" : "mb-8"}>
-      {!isModal && (
+      {!isModal && user?.userType === "manager" && (
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={() => setShowForm(!showForm)}

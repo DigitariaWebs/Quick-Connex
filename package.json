@@ -19,7 +19,10 @@
     "test:auth:quick": "node scripts/quick-auth-test.js",
     "test:auth:jwt": "node scripts/test-jwt.js",
     "test:auth:api": "node scripts/test-api-endpoints.js",
-    "test:auth:security": "node scripts/test-authentication.js"
+    "test:auth:security": "node scripts/test-authentication.js",
+    "test:transfers": "node scripts/run-transfer-tests.js",
+    "test:transfers:setup": "node scripts/setup-test-users.js",
+    "test:transfers:workflow": "node scripts/test-transfer-workflow.js"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -35,6 +38,7 @@
     "mongodb": "^6.19.0",
     "mongoose": "^8.18.1",
     "next": "15.5.3",
+    "node-fetch": "^3.3.2",
     "react": "19.1.0",
     "react-datepicker": "^8.7.0",
     "react-dom": "19.1.0",

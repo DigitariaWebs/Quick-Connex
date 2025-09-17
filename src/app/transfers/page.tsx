@@ -650,6 +650,7 @@ export default function TransfersPage() {
                     <TransferRequestCard
                       transfer={transfer}
                       onAccept={handleAcceptTransfer}
+                      currentUserId={user?._id || ""}
                     />
                   </motion.div>
                 ))
@@ -669,17 +670,19 @@ export default function TransfersPage() {
         </div>
       </div>
 
-      {/* Floating Action Button */}
-      <motion.button
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-6 right-6 w-16 h-16 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40"
-      >
-        <Plus size={24} className="text-white" />
-      </motion.button>
+      {/* Floating Action Button - Only show for managers */}
+      {user?.userType === "manager" && (
+        <motion.button
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setIsModalOpen(true)}
+          className="fixed bottom-6 right-6 w-16 h-16 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40"
+        >
+          <Plus size={24} className="text-white" />
+        </motion.button>
+      )}
 
       {/* Transfer Form Modal */}
       <TransferFormModal

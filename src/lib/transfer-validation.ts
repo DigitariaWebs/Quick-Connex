@@ -117,6 +117,7 @@ export interface TransferActionPermissions {
   canStart: boolean;
   canComplete: boolean;
   canCancel: boolean;
+  canCreate: boolean;
   reason?: string;
 }
 
@@ -128,7 +129,8 @@ export function getTransferActionPermissions(
     canAccept: false,
     canStart: false,
     canComplete: false,
-    canCancel: false
+    canCancel: false,
+    canCreate: user.userType === 'manager' // Only managers can create transfers
   };
 
   // Only employees can accept transfers

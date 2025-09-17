@@ -447,6 +447,7 @@ export default function TestDashboard() {
                     <TransferRequestCard
                       transfer={transfer}
                       onAccept={handleTransferAccepted}
+                      currentUserId="test-user-id"
                     />
                   </motion.div>
                 ))

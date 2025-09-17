@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireManager } from '@/lib/auth-middleware';
 import { getPopulatedTransfers, getMockStats } from '@/data/mockData';
 
 // GET /api/mock-transfers - Get mock transfer data for testing
@@ -39,9 +40,15 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/mock-transfers - Create a new mock transfer request
+// POST /api/mock-transfers - Create a new mock transfer request (for managers only)
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate user - only managers can create transfers
+    const authResult = await requireManager(request);
+    if (!authResult.success) {
+      return authResult.response;
+    }
+
     const body = await request.json();
     const {
       patientId,

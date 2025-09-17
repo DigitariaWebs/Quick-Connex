@@ -51,11 +51,13 @@ interface TransferRequest {
 interface TransferRequestCardProps {
   transfer: TransferRequest;
   onAccept: (transferId: string) => void;
+  currentUserId: string;
 }
 
 export default function TransferRequestCard({
   transfer,
   onAccept,
+  currentUserId,
 }: TransferRequestCardProps) {
   const [isAccepting, setIsAccepting] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -155,7 +157,7 @@ export default function TransferRequestCard({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          assignedTo: "current-user-id", // This should come from auth context
+          assignedTo: currentUserId,
           notes: "Transfer accepted by employee",
         }),
       });
