@@ -28,21 +28,13 @@ import TransferFormModal from "@/components/modals/TransferFormModal";
 interface TransferRequest {
   _id: string;
   transferId: string;
-  patientId: string;
-  patient: {
-    patientId: string;
+  patientInfo: {
     firstName: string;
     lastName: string;
-    dateOfBirth: string;
-    gender: string;
-    phone: string;
-    currentHospital?: string;
-    currentDepartment?: string;
+    age: number;
   };
   fromHospital: string;
-  fromDepartment: string;
   toHospital: string;
-  toDepartment: string;
   requestedBy: {
     firstName: string;
     lastName: string;
@@ -81,204 +73,81 @@ export default function TransfersPage() {
     }
   }, [authLoading, isAuthenticated, router]);
 
-  // Mock data for development - replace with actual API call
-  useEffect(() => {
-    const fetchTransfers = async () => {
-      setLoading(true);
-      try {
-        // Simulating API call with mock data
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+  // Fetch transfers from API
+  const fetchTransfers = async (statusFilter?: string) => {
+    if (!isAuthenticated) return; // Don't fetch if not authenticated
 
-        const mockTransfers: TransferRequest[] = [
-          {
-            _id: "1",
-            transferId: "TRF-001",
-            patientId: "PAT-001",
-            patient: {
-              patientId: "PAT-001",
-              firstName: "John",
-              lastName: "Doe",
-              dateOfBirth: "1980-05-15",
-              gender: "Male",
-              phone: "+1234567890",
-              currentHospital: "City General Hospital",
-              currentDepartment: "Emergency",
-            },
-            fromHospital: "City General Hospital",
-            fromDepartment: "Emergency",
-            toHospital: "Metro Medical Center",
-            toDepartment: "Internal Medicine",
-            requestedBy: {
-              firstName: "Dr. Sarah",
-              lastName: "Wilson",
-              email: "sarah.wilson@hospital.com",
-              userType: "manager",
-            },
-            reason:
-              "Patient requires specialized diabetes management and blood sugar stabilization",
-            priority: "high",
-            status: "pending",
-            requestedDate: "2024-02-10T08:30:00Z",
-            scheduledDate: "2024-02-12T10:00:00Z",
-            notes:
-              "Patient has been stable but needs better diabetes management.",
-          },
-          {
-            _id: "2",
-            transferId: "TRF-002",
-            patientId: "PAT-002",
-            patient: {
-              patientId: "PAT-002",
-              firstName: "Jane",
-              lastName: "Smith",
-              dateOfBirth: "1975-08-22",
-              gender: "Female",
-              phone: "+1234567891",
-              currentHospital: "Metro Medical Center",
-              currentDepartment: "Cardiology",
-            },
-            fromHospital: "Metro Medical Center",
-            fromDepartment: "Cardiology",
-            toHospital: "City General Hospital",
-            toDepartment: "Cardiac Surgery",
-            requestedBy: {
-              firstName: "Dr. Michael",
-              lastName: "Johnson",
-              email: "michael.johnson@hospital.com",
-              userType: "manager",
-            },
-            reason:
-              "Patient requires urgent cardiac surgery consultation for valve replacement",
-            priority: "urgent",
-            status: "accepted",
-            requestedDate: "2024-02-11T14:15:00Z",
-            notes: "Urgent transfer needed for surgical evaluation.",
-          },
-          {
-            _id: "3",
-            transferId: "TRF-003",
-            patientId: "PAT-003",
-            patient: {
-              patientId: "PAT-003",
-              firstName: "Robert",
-              lastName: "Brown",
-              dateOfBirth: "1965-12-03",
-              gender: "Male",
-              phone: "+1234567892",
-              currentHospital: "Regional Hospital",
-              currentDepartment: "Orthopedics",
-            },
-            fromHospital: "Regional Hospital",
-            fromDepartment: "Orthopedics",
-            toHospital: "Specialty Care Center",
-            toDepartment: "Rehabilitation",
-            requestedBy: {
-              firstName: "Dr. Emily",
-              lastName: "Davis",
-              email: "emily.davis@hospital.com",
-              userType: "manager",
-            },
-            reason: "Post-surgery rehabilitation and physical therapy needed",
-            priority: "medium",
-            status: "in_progress",
-            requestedDate: "2024-02-09T11:20:00Z",
-            scheduledDate: "2024-02-13T14:30:00Z",
-          },
-          {
-            _id: "4",
-            transferId: "TRF-004",
-            patientId: "PAT-004",
-            patient: {
-              patientId: "PAT-004",
-              firstName: "Maria",
-              lastName: "Garcia",
-              dateOfBirth: "1990-03-18",
-              gender: "Female",
-              phone: "+1234567893",
-              currentHospital: "Women's Health Center",
-              currentDepartment: "Obstetrics",
-            },
-            fromHospital: "Women's Health Center",
-            fromDepartment: "Obstetrics",
-            toHospital: "Children's Hospital",
-            toDepartment: "NICU",
-            requestedBy: {
-              firstName: "Dr. Lisa",
-              lastName: "Martinez",
-              email: "lisa.martinez@hospital.com",
-              userType: "manager",
-            },
-            reason: "Newborn requires specialized neonatal intensive care",
-            priority: "urgent",
-            status: "completed",
-            requestedDate: "2024-02-08T16:45:00Z",
-            scheduledDate: "2024-02-09T08:00:00Z",
-          },
-          {
-            _id: "5",
-            transferId: "TRF-005",
-            patientId: "PAT-005",
-            patient: {
-              patientId: "PAT-005",
-              firstName: "David",
-              lastName: "Wilson",
-              dateOfBirth: "1955-07-11",
-              gender: "Male",
-              phone: "+1234567894",
-              currentHospital: "Community Hospital",
-              currentDepartment: "Neurology",
-            },
-            fromHospital: "Community Hospital",
-            fromDepartment: "Neurology",
-            toHospital: "Neurological Institute",
-            toDepartment: "Neurosurgery",
-            requestedBy: {
-              firstName: "Dr. James",
-              lastName: "Taylor",
-              email: "james.taylor@hospital.com",
-              userType: "manager",
-            },
-            reason:
-              "Complex neurological condition requires specialized neurosurgical evaluation",
-            priority: "low",
-            status: "cancelled",
-            requestedDate: "2024-02-07T09:15:00Z",
-          },
-        ];
+    setLoading(true);
+    setError(null);
 
-        setTransfers(mockTransfers);
-      } catch (error) {
-        console.error("Error fetching transfers:", error);
-      } finally {
-        setLoading(false);
+    try {
+      // Build URL with status filter
+      const url = new URL("/api/transfers", window.location.origin);
+      if (statusFilter && statusFilter !== "all") {
+        url.searchParams.set("status", statusFilter);
       }
-    };
 
-    fetchTransfers();
-  }, []);
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        credentials: "include", // Include cookies for authentication
+      });
 
-  // Filter transfers based on status, priority, and search term
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || `HTTP error! status: ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        setTransfers(data.data.transfers || []);
+      } else {
+        throw new Error(data.error || "Failed to fetch transfers");
+      }
+    } catch (error) {
+      console.error("Error fetching transfers:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to fetch transfers"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchTransfers();
+    }
+  }, [isAuthenticated]);
+
+  // Refetch when filter changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchTransfers(filter);
+    }
+  }, [filter, isAuthenticated]);
+
+  // Filter transfers based on priority and search term (status filtering is done server-side)
   let filteredTransfers = transfers.filter((transfer) => {
-    const matchesStatus = filter === "all" || transfer.status === filter;
     const matchesPriority =
       !priorityFilter || transfer.priority === priorityFilter;
     const matchesSearch =
       !searchTerm ||
-      transfer.patient.firstName
+      transfer.patientInfo.firstName
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      transfer.patient.lastName
+      transfer.patientInfo.lastName
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
       transfer.transferId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transfer.patient.patientId
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
       transfer.fromHospital.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transfer.toHospital.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transfer.reason.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return matchesStatus && matchesPriority && matchesSearch;
+    return matchesPriority && matchesSearch;
   });
 
   // Sort transfers
@@ -319,9 +188,14 @@ export default function TransfersPage() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    // Simulate API refresh
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsRefreshing(false);
+    try {
+      await fetchTransfers(filter);
+    } catch (error) {
+      console.error("Error refreshing transfers:", error);
+      // Don't show error to user during refresh, just log it
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   // Animation variants
@@ -691,6 +565,7 @@ export default function TransfersPage() {
         onSuccess={() => {
           // Refresh the transfers list when a new transfer is created
           handleRefresh();
+          setIsModalOpen(false);
         }}
       />
     </div>

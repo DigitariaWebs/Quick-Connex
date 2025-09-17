@@ -221,19 +221,38 @@ export default function TransferForm({
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Add credentials for authentication
         body: JSON.stringify(transferData),
       });
 
       const data = await response.json();
 
       if (data.success) {
+        // Clear any existing errors first
+        setError(null);
         setSuccess("Transfer request created successfully");
-        e.currentTarget.reset();
+
+        // Store form reference before async operations
+        const form = e.currentTarget;
+        if (form) {
+          form.reset();
+        }
+
         setSelectedDate(null);
         setSelectedTime(null);
-        if (onSuccess) {
-          onSuccess();
-        }
+
+        // Add a small delay before calling onSuccess to avoid race conditions
+        setTimeout(() => {
+          try {
+            if (onSuccess) {
+              onSuccess();
+            }
+          } catch (refreshError) {
+            console.error("Error in onSuccess callback:", refreshError);
+            // Don't show this error to the user since the transfer was created successfully
+          }
+        }, 500);
+
         setTimeout(() => {
           setSuccess(null);
           setShowForm(false);
@@ -242,8 +261,12 @@ export default function TransferForm({
         setError(data.error || "Failed to create transfer request");
       }
     } catch (err) {
-      setError("Network error occurred");
       console.error("Error creating transfer:", err);
+      setError(
+        `Network error occurred: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -521,7 +544,7 @@ export default function TransferForm({
                       name="reason"
                       rows={3}
                       required
-                      className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 bg-white shadow-sm hover:shadow-md placeholder:text-gray-500 text-gray-900"
                       placeholder="Provide details about the reason for the transfer"
                     ></textarea>
                     {validationErrors.reason && (

@@ -192,7 +192,8 @@ export default function TransferRequestCard({
           "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)",
       }}
       transition={{ duration: 0.2 }}
-      className="bg-white rounded-3xl sidebar-shadow overflow-hidden border border-gray-100 hover:border-gray-200"
+      className="bg-white rounded-3xl sidebar-shadow overflow-hidden border border-gray-100 hover:border-gray-200 cursor-pointer"
+      onClick={() => setShowDetails(!showDetails)}
     >
       {/* Priority Indicator */}
       <div
@@ -276,13 +277,6 @@ export default function TransferRequestCard({
               {formatDate(transfer.requestedDate)}
             </span>
           </div>
-
-          <div className="text-xs text-gray-500">
-            Requested by{" "}
-            <span className="font-medium text-gray-700">
-              {transfer.requestedBy.firstName}
-            </span>
-          </div>
         </div>
 
         <div className="mb-3">
@@ -296,28 +290,37 @@ export default function TransferRequestCard({
         </div>
 
         {/* Actions */}
-        {transfer.status === "pending" && (
+        {transfer.status === "pending" ? (
           <div className="mt-4 flex space-x-3">
             <motion.button
               whileTap={{ scale: 0.97 }}
-              onClick={handleAccept}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent card click
+                handleAccept();
+              }}
               disabled={isAccepting}
               className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-2xl font-medium hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               {isAccepting ? "Accepting..." : "Accept Transfer"}
             </motion.button>
 
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setShowDetails(!showDetails)}
-              className="px-3 py-2 border border-gray-200 text-gray-700 rounded-2xl font-medium hover:bg-gray-50 transition-colors duration-200 flex items-center justify-center"
-            >
+            <div className="px-3 py-2 border border-gray-200 text-gray-700 rounded-2xl font-medium flex items-center justify-center">
               {showDetails ? (
                 <ChevronUp size={18} />
               ) : (
                 <ChevronDown size={18} />
               )}
-            </motion.button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-4 flex justify-end">
+            <div className="px-3 py-2 border border-gray-200 text-gray-700 rounded-2xl font-medium flex items-center justify-center">
+              {showDetails ? (
+                <ChevronUp size={18} />
+              ) : (
+                <ChevronDown size={18} />
+              )}
+            </div>
           </div>
         )}
 
@@ -336,6 +339,14 @@ export default function TransferRequestCard({
                   <span className="text-gray-500">Transfer ID:</span>
                   <span className="font-mono text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-2xl border border-blue-200">
                     {transfer.transferId}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Requested by:</span>
+                  <span className="font-medium text-gray-700">
+                    {transfer.requestedBy.firstName}{" "}
+                    {transfer.requestedBy.lastName}
                   </span>
                 </div>
 
