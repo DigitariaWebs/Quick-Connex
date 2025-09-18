@@ -127,251 +127,67 @@ function generateApprovalEmailHTML(userDetails: any): string {
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>New User Registration - Approval Required</title>
-      <style>
-        body { 
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; 
-          line-height: 1.6; 
-          color: #374151; 
-          max-width: 600px; 
-          margin: 0 auto; 
-          padding: 20px; 
-          background-color: #f9fafb;
-        }
-        .container {
-          background: white;
-          border-radius: 16px;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-          overflow: hidden;
-        }
-        .header { 
-          background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
-          color: white; 
-          padding: 40px 30px; 
-          text-align: center; 
-        }
-        .header h1 {
-          margin: 0 0 8px 0;
-          font-size: 28px;
-          font-weight: 700;
-        }
-        .header p {
-          margin: 0;
-          font-size: 16px;
-          opacity: 0.9;
-        }
-        .content { 
-          padding: 40px 30px; 
-        }
-        .alert { 
-          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); 
-          border: 1px solid #f59e0b; 
-          padding: 20px; 
-          border-radius: 12px; 
-          margin: 0 0 30px 0;
-          border-left: 4px solid #f59e0b;
-        }
-        .alert h3 {
-          margin: 0 0 8px 0;
-          color: #92400e;
-          font-size: 18px;
-          font-weight: 600;
-        }
-        .alert p {
-          margin: 0;
-          color: #92400e;
-        }
-        .user-info { 
-          background: #f8fafc; 
-          padding: 24px; 
-          border-radius: 12px; 
-          margin: 0 0 30px 0; 
-          border-left: 4px solid #10b981;
-        }
-        .user-info h3 {
-          margin: 0 0 16px 0;
-          color: #1f2937;
-          font-size: 20px;
-          font-weight: 600;
-        }
-        .user-info p {
-          margin: 0 0 8px 0;
-          color: #4b5563;
-        }
-        .user-info strong {
-          color: #1f2937;
-          font-weight: 600;
-        }
-        .documents { 
-          background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); 
-          padding: 24px; 
-          border-radius: 12px; 
-          margin: 0 0 30px 0;
-          border: 1px solid #a7f3d0;
-        }
-        .documents h3 {
-          margin: 0 0 12px 0;
-          color: #065f46;
-          font-size: 18px;
-          font-weight: 600;
-        }
-        .documents p {
-          margin: 0 0 16px 0;
-          color: #047857;
-          font-size: 14px;
-        }
-        .documents ul {
-          margin: 0;
-          padding: 0;
-          list-style: none;
-        }
-        .documents li {
-          margin: 0 0 8px 0;
-          padding: 8px 12px;
-          background: white;
-          border-radius: 8px;
-          color: #065f46;
-          font-size: 14px;
-        }
-        .documents strong {
-          color: #047857;
-          font-weight: 600;
-        }
-        .actions { 
-          text-align: center; 
-          margin: 40px 0; 
-        }
-        .btn { 
-          display: inline-block; 
-          padding: 16px 32px; 
-          margin: 0 8px; 
-          text-decoration: none; 
-          border-radius: 12px; 
-          font-weight: 600;
-          font-size: 16px;
-          transition: all 0.2s ease;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .btn-approve { 
-          background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
-          color: white; 
-        }
-        .btn-approve:hover { 
-          transform: translateY(-1px);
-          box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
-        }
-        .btn-reject { 
-          background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
-          color: white; 
-        }
-        .btn-reject:hover { 
-          transform: translateY(-1px);
-          box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
-        }
-        .note { 
-          background: #f1f5f9; 
-          padding: 20px; 
-          border-radius: 12px; 
-          margin: 30px 0 0 0;
-          border-left: 4px solid #64748b;
-        }
-        .note p {
-          margin: 0;
-          color: #475569;
-          font-size: 14px;
-        }
-        .note strong {
-          color: #334155;
-          font-weight: 600;
-        }
-        .footer { 
-          text-align: center; 
-          color: #6b7280; 
-          font-size: 14px; 
-          margin-top: 40px; 
-          padding: 30px;
-          background: #f9fafb;
-          border-top: 1px solid #e5e7eb;
-        }
-        .footer p {
-          margin: 0 0 8px 0;
-        }
-        .platform-name {
-          font-weight: 700;
-          color: #10b981;
-        }
-        @media (max-width: 600px) {
-          .btn {
-            display: block;
-            margin: 8px 0;
-            width: 100%;
-            text-align: center;
-          }
-          .content {
-            padding: 30px 20px;
-          }
-          .header {
-            padding: 30px 20px;
-          }
-        }
-      </style>
     </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>🔔 New User Registration</h1>
-          <p>Approval Required for <span class="platform-name">Groupe BZ Services</span></p>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #dbeafe 0%, #88f5c3 25%, #a7f3d0 50%, #bfdbfe 75%, #d4fce8 100%); padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #1f2937; margin: 0; font-size: 28px;">🔔 New User Registration</h1>
+        <p style="color: #1f2937; margin: 8px 0 0 0; font-size: 16px; opacity: 0.9;">Approval Required for <strong>Groupe BZ Services</strong></p>
+      </div>
+      
+      <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b; padding: 20px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #f59e0b;">
+          <h3 style="margin: 0 0 8px 0; color: #92400e; font-size: 18px; font-weight: 600;">⚠️ Action Required</h3>
+          <p style="margin: 0; color: #92400e;">A new user has registered and requires your approval to access <strong>Groupe BZ Services</strong>.</p>
         </div>
         
-        <div class="content">
-          <div class="alert">
-            <h3>⚠️ Action Required</h3>
-            <p>A new user has registered and requires your approval to access <span class="platform-name">Groupe BZ Services</span>.</p>
-          </div>
-          
-          <div class="user-info">
-            <h3>👤 User Information</h3>
-            <p><strong>Name:</strong> ${userDetails.name}</p>
-            <p><strong>Email:</strong> ${userDetails.email}</p>
-            <p><strong>Phone:</strong> ${userDetails.phone}</p>
-            <p><strong>User Type:</strong> ${userDetails.userType.charAt(0).toUpperCase() + userDetails.userType.slice(1)}</p>
-            <p><strong>Registration Date:</strong> ${userDetails.signupDate}</p>
-            ${userDetails.userType === 'manager' ? `
-              <p><strong>Position:</strong> ${userDetails.post}</p>
-              <p><strong>CIUSSS:</strong> ${userDetails.ciusss}</p>
-            ` : ''}
-          </div>
-          
-          ${userDetails.documents.length > 0 ? `
-            <div class="documents">
-              <h3>📄 Submitted Documents</h3>
-              <p><strong>Note:</strong> All documents are attached to this email for your review. You can also download them directly using the links below.</p>
-              <ul>
-                ${userDetails.documents.map((doc: any) => `
-                  <li>
-                    <strong>${doc.type.toUpperCase()}:</strong> ${doc.name} (${doc.size})
-                    <br>
-                    <a href="${doc.downloadUrl}" style="color: #10b981; text-decoration: none; font-size: 12px; margin-left: 20px;">📥 Download File</a>
-                  </li>
-                `).join('')}
-              </ul>
-            </div>
+        <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #10b981;">
+          <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">👤 User Information</h3>
+          <p style="margin: 0 0 8px 0; color: #4b5563;"><strong>Name:</strong> ${userDetails.name}</p>
+          <p style="margin: 0 0 8px 0; color: #4b5563;"><strong>Email:</strong> ${userDetails.email}</p>
+          <p style="margin: 0 0 8px 0; color: #4b5563;"><strong>Phone:</strong> ${userDetails.phone}</p>
+          <p style="margin: 0 0 8px 0; color: #4b5563;"><strong>User Type:</strong> ${userDetails.userType.charAt(0).toUpperCase() + userDetails.userType.slice(1)}</p>
+          <p style="margin: 0 0 8px 0; color: #4b5563;"><strong>Registration Date:</strong> ${userDetails.signupDate}</p>
+          ${userDetails.userType === 'manager' ? `
+            <p style="margin: 0 0 8px 0; color: #4b5563;"><strong>Position:</strong> ${userDetails.post}</p>
+            <p style="margin: 0 0 8px 0; color: #4b5563;"><strong>CIUSSS:</strong> ${userDetails.ciusss}</p>
           ` : ''}
-          
-          <div class="actions">
-            <a href="${userDetails.approvalUrl}" class="btn btn-approve">✅ Approve User</a>
-            <a href="${userDetails.rejectionUrl}" class="btn btn-reject">❌ Reject User</a>
-          </div>
-          
-          <div class="note">
-            <p><strong>Note:</strong> Please review the user's information and documents carefully before making a decision. 
-            Once approved, the user will receive an email notification and can access <span class="platform-name">Groupe BZ Services</span>.</p>
-          </div>
         </div>
         
-        <div class="footer">
-          <p>This is an automated message from <span class="platform-name">Groupe BZ Services</span>.</p>
-          <p>If you have any questions, please contact the system administrator.</p>
+        ${userDetails.documents.length > 0 ? `
+          <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); padding: 24px; border-radius: 12px; margin-bottom: 30px; border: 1px solid #a7f3d0;">
+            <h3 style="margin: 0 0 12px 0; color: #065f46; font-size: 18px; font-weight: 600;">📄 Submitted Documents</h3>
+            <p style="margin: 0 0 16px 0; color: #047857; font-size: 14px;"><strong>Note:</strong> All documents are attached to this email for your review. You can also download them directly using the links below.</p>
+            <div style="margin: 0; padding: 0;">
+              ${userDetails.documents.map((doc: any) => `
+                <div style="margin: 0 0 8px 0; padding: 8px 12px; background: white; border-radius: 8px; color: #065f46; font-size: 14px;">
+                  <strong>${doc.type.toUpperCase()}:</strong> ${doc.name} (${doc.size})
+                  <br>
+                  <a href="${doc.downloadUrl}" style="color: #10b981; text-decoration: none; font-size: 12px; margin-left: 20px;">📥 Download File</a>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+        
+        <div style="text-align: center; margin: 40px 0;">
+          <a href="${userDetails.approvalUrl}" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3); margin: 0 8px;">
+            ✅ Approve User
+          </a>
+          <a href="${userDetails.rejectionUrl}" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3); margin: 0 8px;">
+            ❌ Reject User
+          </a>
         </div>
+        
+        <div style="background: #f1f5f9; padding: 20px; border-radius: 12px; margin: 30px 0 0 0; border-left: 4px solid #64748b;">
+          <p style="margin: 0; color: #475569; font-size: 14px;"><strong>Note:</strong> Please review the user's information and documents carefully before making a decision. Once approved, the user will receive an email notification and can access <strong>Groupe BZ Services</strong>.</p>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+        
+        <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
+          This is an automated message from <strong>Groupe BZ Services</strong>.<br>
+          If you have any questions, please contact the system administrator.
+        </p>
       </div>
     </body>
     </html>

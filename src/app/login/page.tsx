@@ -35,6 +35,14 @@ export default function LoginPage() {
       const url = new URL(window.location.href);
       url.searchParams.delete("message");
       window.history.replaceState({}, "", url.toString());
+    } else if (message === "password-reset-success") {
+      setSuccessMessage(
+        "Password has been reset successfully! You can now sign in with your new password."
+      );
+      // Clear the URL parameter after showing the message
+      const url = new URL(window.location.href);
+      url.searchParams.delete("message");
+      window.history.replaceState({}, "", url.toString());
     }
   }, [searchParams]);
 
@@ -224,6 +232,25 @@ export default function LoginPage() {
                 </button>
               </div>
             </form>
+
+            <div className="text-center mt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  console.log("Forgot password button clicked!");
+                  console.log("Current URL:", window.location.href);
+                  try {
+                    router.push("/forgot-password");
+                  } catch (error) {
+                    console.error("Router error:", error);
+                    window.location.href = "/forgot-password";
+                  }
+                }}
+                className="text-sm text-green-600 hover:text-green-500 transition-colors duration-200 cursor-pointer underline bg-transparent border-none p-0"
+              >
+                Forgot your password?
+              </button>
+            </div>
 
             <p className="text-center text-base text-gray-600 mt-8">
               Don't have an account?{" "}

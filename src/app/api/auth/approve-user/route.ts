@@ -130,199 +130,50 @@ function generateApprovalNotificationHTML(user: any, baseUrl: string): string {
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Account Approved</title>
-      <style>
-        body { 
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; 
-          line-height: 1.6; 
-          color: #374151; 
-          max-width: 600px; 
-          margin: 0 auto; 
-          padding: 20px; 
-          background-color: #f9fafb;
-        }
-        .container {
-          background: white;
-          border-radius: 16px;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-          overflow: hidden;
-        }
-        .header { 
-          background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
-          color: white; 
-          padding: 40px 30px; 
-          text-align: center; 
-        }
-        .header h1 {
-          margin: 0 0 8px 0;
-          font-size: 28px;
-          font-weight: 700;
-        }
-        .header p {
-          margin: 0;
-          font-size: 16px;
-          opacity: 0.9;
-        }
-        .content { 
-          padding: 40px 30px; 
-        }
-        .success { 
-          background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); 
-          border: 1px solid #a7f3d0; 
-          padding: 24px; 
-          border-radius: 12px; 
-          margin: 0 0 30px 0;
-          border-left: 4px solid #10b981;
-        }
-        .success h3 {
-          margin: 0 0 12px 0;
-          color: #065f46;
-          font-size: 20px;
-          font-weight: 600;
-        }
-        .success p {
-          margin: 0 0 8px 0;
-          color: #047857;
-        }
-        .success strong {
-          color: #065f46;
-          font-weight: 600;
-        }
-        .section h3 {
-          margin: 0 0 16px 0;
-          color: #1f2937;
-          font-size: 20px;
-          font-weight: 600;
-        }
-        .section p {
-          margin: 0 0 12px 0;
-          color: #4b5563;
-        }
-        .section ul {
-          margin: 0 0 20px 0;
-          padding-left: 20px;
-        }
-        .section li {
-          margin: 0 0 8px 0;
-          color: #4b5563;
-        }
-        .section strong {
-          color: #1f2937;
-          font-weight: 600;
-        }
-        .cta { 
-          text-align: center; 
-          margin: 40px 0; 
-        }
-        .btn { 
-          display: inline-block; 
-          padding: 16px 32px; 
-          background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
-          color: white; 
-          text-decoration: none; 
-          border-radius: 12px; 
-          font-weight: 600;
-          font-size: 16px;
-          transition: all 0.2s ease;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .btn:hover { 
-          transform: translateY(-1px);
-          box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
-        }
-        .features { 
-          background: #f1f5f9; 
-          padding: 24px; 
-          border-radius: 12px; 
-          margin: 30px 0;
-          border-left: 4px solid #64748b;
-        }
-        .features h4 {
-          margin: 0 0 16px 0;
-          color: #1f2937;
-          font-size: 18px;
-          font-weight: 600;
-        }
-        .features p {
-          margin: 0 0 12px 0;
-          color: #4b5563;
-        }
-        .features ul {
-          margin: 0;
-          padding-left: 20px;
-        }
-        .features li {
-          margin: 0 0 8px 0;
-          color: #4b5563;
-        }
-        .footer { 
-          text-align: center; 
-          color: #6b7280; 
-          font-size: 14px; 
-          margin-top: 40px; 
-          padding: 30px;
-          background: #f9fafb;
-          border-top: 1px solid #e5e7eb;
-        }
-        .footer p {
-          margin: 0 0 8px 0;
-        }
-        .platform-name {
-          font-weight: 700;
-          color: #10b981;
-        }
-        @media (max-width: 600px) {
-          .content {
-            padding: 30px 20px;
-          }
-          .header {
-            padding: 30px 20px;
-          }
-        }
-      </style>
     </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>🎉 Congratulations!</h1>
-          <p>Your Account Has Been Approved</p>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #dbeafe 0%, #88f5c3 25%, #a7f3d0 50%, #bfdbfe 75%, #d4fce8 100%); padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #1f2937; margin: 0; font-size: 28px;">🎉 Congratulations!</h1>
+        <p style="color: #1f2937; margin: 8px 0 0 0; font-size: 16px; opacity: 0.9;">Your Account Has Been Approved</p>
+      </div>
+      
+      <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #a7f3d0; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #10b981;">
+          <h3 style="margin: 0 0 12px 0; color: #065f46; font-size: 20px; font-weight: 600;">✅ Account Approved</h3>
+          <p style="margin: 0 0 8px 0; color: #047857;">Dear <strong>${user.firstName}</strong>,</p>
+          <p style="margin: 0; color: #047857;">Great news! Your registration for <strong>Groupe BZ Services</strong> has been approved by our administrators.</p>
         </div>
         
-        <div class="content">
-          <div class="success">
-            <h3>✅ Account Approved</h3>
-            <p>Dear <strong>${user.firstName}</strong>,</p>
-            <p>Great news! Your registration for <span class="platform-name">Groupe BZ Services</span> has been approved by our administrators.</p>
-          </div>
-          
-          <div class="section">
-            <h3>What's Next?</h3>
-            <p>You can now access <span class="platform-name">Groupe BZ Services</span> with your registered credentials:</p>
-            <ul>
-              <li><strong>Email:</strong> ${user.email}</li>
-              <li><strong>User Type:</strong> ${user.userType.charAt(0).toUpperCase() + user.userType.slice(1)}</li>
-            </ul>
-          </div>
-          
-          <div class="cta">
-            <a href="${baseUrl}/login" class="btn">Login to Your Account</a>
-          </div>
-          
-          <div class="features">
-            <h4>📋 Getting Started</h4>
-            <p>Once you log in, you'll be able to:</p>
-            <ul>
-              <li>Access your personalized dashboard</li>
-              <li>Manage patient transfers</li>
-              <li>View and update your profile</li>
-              <li>Collaborate with your team</li>
-            </ul>
-          </div>
+        <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #10b981;">
+          <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">🚀 What's Next?</h3>
+          <p style="margin: 0 0 12px 0; color: #4b5563;">You can now access <strong>Groupe BZ Services</strong> with your registered credentials:</p>
+          <p style="margin: 0 0 8px 0; color: #4b5563;"><strong>Email:</strong> ${user.email}</p>
+          <p style="margin: 0 0 8px 0; color: #4b5563;"><strong>User Type:</strong> ${user.userType.charAt(0).toUpperCase() + user.userType.slice(1)}</p>
         </div>
         
-        <div class="footer">
-          <p>Welcome to <span class="platform-name">Groupe BZ Services</span>!</p>
-          <p>If you have any questions, please contact our support team.</p>
+        <div style="text-align: center; margin: 40px 0;">
+          <a href="${baseUrl}/login" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);">
+            🎯 Login to Your Account
+          </a>
         </div>
+        
+        <div style="background: #f1f5f9; padding: 24px; border-radius: 12px; margin: 30px 0; border-left: 4px solid #64748b;">
+          <h4 style="margin: 0 0 16px 0; color: #1f2937; font-size: 18px; font-weight: 600;">🌟 Getting Started</h4>
+          <p style="margin: 0 0 12px 0; color: #4b5563;">Once you log in, you'll be able to:</p>
+          <ul style="margin: 0; padding-left: 20px; color: #4b5563;">
+            <li style="margin: 0 0 8px 0;">Access your personalized dashboard</li>
+            <li style="margin: 0 0 8px 0;">Manage patient transfers</li>
+            <li style="margin: 0 0 8px 0;">View and update your profile</li>
+            <li style="margin: 0 0 8px 0;">Collaborate with your team</li>
+          </ul>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+        
+        <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
+          Welcome to <strong>Groupe BZ Services</strong>!<br>
+          If you have any questions, please contact our support team.
+        </p>
       </div>
     </body>
     </html>
@@ -340,182 +191,41 @@ function generateRejectionNotificationHTML(user: any, baseUrl: string): string {
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Account Registration Update</title>
-      <style>
-        body { 
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; 
-          line-height: 1.6; 
-          color: #374151; 
-          max-width: 600px; 
-          margin: 0 auto; 
-          padding: 20px; 
-          background-color: #f9fafb;
-        }
-        .container {
-          background: white;
-          border-radius: 16px;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-          overflow: hidden;
-        }
-        .header { 
-          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
-          color: white; 
-          padding: 40px 30px; 
-          text-align: center; 
-        }
-        .header h1 {
-          margin: 0 0 8px 0;
-          font-size: 28px;
-          font-weight: 700;
-        }
-        .header p {
-          margin: 0;
-          font-size: 16px;
-          opacity: 0.9;
-        }
-        .content { 
-          padding: 40px 30px; 
-        }
-        .notice { 
-          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); 
-          border: 1px solid #f59e0b; 
-          padding: 24px; 
-          border-radius: 12px; 
-          margin: 0 0 30px 0;
-          border-left: 4px solid #f59e0b;
-        }
-        .notice h3 {
-          margin: 0 0 12px 0;
-          color: #92400e;
-          font-size: 20px;
-          font-weight: 600;
-        }
-        .notice p {
-          margin: 0 0 8px 0;
-          color: #92400e;
-        }
-        .notice strong {
-          color: #92400e;
-          font-weight: 600;
-        }
-        .section h3 {
-          margin: 0 0 16px 0;
-          color: #1f2937;
-          font-size: 20px;
-          font-weight: 600;
-        }
-        .section p {
-          margin: 0 0 12px 0;
-          color: #4b5563;
-        }
-        .cta { 
-          text-align: center; 
-          margin: 40px 0; 
-        }
-        .btn { 
-          display: inline-block; 
-          padding: 16px 32px; 
-          background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
-          color: white; 
-          text-decoration: none; 
-          border-radius: 12px; 
-          font-weight: 600;
-          font-size: 16px;
-          transition: all 0.2s ease;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .btn:hover { 
-          transform: translateY(-1px);
-          box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
-        }
-        .next-steps { 
-          background: #f1f5f9; 
-          padding: 24px; 
-          border-radius: 12px; 
-          margin: 30px 0;
-          border-left: 4px solid #64748b;
-        }
-        .next-steps h4 {
-          margin: 0 0 16px 0;
-          color: #1f2937;
-          font-size: 18px;
-          font-weight: 600;
-        }
-        .next-steps p {
-          margin: 0 0 12px 0;
-          color: #4b5563;
-        }
-        .next-steps ul {
-          margin: 0;
-          padding-left: 20px;
-        }
-        .next-steps li {
-          margin: 0 0 8px 0;
-          color: #4b5563;
-        }
-        .footer { 
-          text-align: center; 
-          color: #6b7280; 
-          font-size: 14px; 
-          margin-top: 40px; 
-          padding: 30px;
-          background: #f9fafb;
-          border-top: 1px solid #e5e7eb;
-        }
-        .footer p {
-          margin: 0 0 8px 0;
-        }
-        .platform-name {
-          font-weight: 700;
-          color: #10b981;
-        }
-        @media (max-width: 600px) {
-          .content {
-            padding: 30px 20px;
-          }
-          .header {
-            padding: 30px 20px;
-          }
-        }
-      </style>
     </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>📋 Account Registration Update</h1>
-          <p>Important Information About Your Application</p>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #dbeafe 0%, #88f5c3 25%, #a7f3d0 50%, #bfdbfe 75%, #d4fce8 100%); padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #1f2937; margin: 0; font-size: 28px;">❌ Registration Update</h1>
+        <p style="color: #1f2937; margin: 8px 0 0 0; font-size: 16px; opacity: 0.9;">Account Registration Status</p>
+      </div>
+      
+      <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 1px solid #fca5a5; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #ef4444;">
+          <h3 style="margin: 0 0 12px 0; color: #991b1b; font-size: 20px; font-weight: 600;">❌ Registration Not Approved</h3>
+          <p style="margin: 0 0 8px 0; color: #b91c1c;">Dear <strong>${user.firstName}</strong>,</p>
+          <p style="margin: 0; color: #b91c1c;">We regret to inform you that your registration for <strong>Groupe BZ Services</strong> has not been approved at this time.</p>
         </div>
         
-        <div class="content">
-          <div class="notice">
-            <h3>📝 Application Status Update</h3>
-            <p>Dear <strong>${user.firstName}</strong>,</p>
-            <p>Thank you for your interest in <span class="platform-name">Groupe BZ Services</span>. After careful review of your application, we regret to inform you that your registration could not be approved at this time.</p>
-          </div>
-          
-          <div class="section">
-            <h3>What This Means</h3>
-            <p>Your account registration has been reviewed by our administrators, and unfortunately, it does not meet our current requirements.</p>
-          </div>
-          
-          <div class="next-steps">
-            <h4>💡 Next Steps</h4>
-            <p>If you believe this decision was made in error or if you have additional information to provide, please:</p>
-            <ul>
-              <li>Contact our support team for more information</li>
-              <li>Review the registration requirements</li>
-              <li>Consider reapplying with updated information</li>
-            </ul>
-          </div>
-          
-          <div class="cta">
-            <a href="${baseUrl}/signup" class="btn">Apply Again</a>
-          </div>
+        <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #64748b;">
+          <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">📋 Next Steps</h3>
+          <p style="margin: 0 0 12px 0; color: #4b5563;">If you believe this is an error or would like to reapply, please:</p>
+          <ul style="margin: 0; padding-left: 20px; color: #4b5563;">
+            <li style="margin: 0 0 8px 0;">Contact our support team for more information</li>
+            <li style="margin: 0 0 8px 0;">Review your application details</li>
+            <li style="margin: 0 0 8px 0;">Submit a new application if needed</li>
+          </ul>
         </div>
         
-        <div class="footer">
-          <p>Thank you for your interest in <span class="platform-name">Groupe BZ Services</span>.</p>
-          <p>If you have any questions, please contact our support team.</p>
+        <div style="background: #f1f5f9; padding: 24px; border-radius: 12px; margin: 30px 0; border-left: 4px solid #64748b;">
+          <h4 style="margin: 0 0 16px 0; color: #1f2937; font-size: 18px; font-weight: 600;">💬 Contact Support</h4>
+          <p style="margin: 0 0 12px 0; color: #4b5563;">If you have any questions about this decision, please don't hesitate to contact our support team. We're here to help.</p>
         </div>
+        
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+        
+        <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
+          Thank you for your interest in <strong>Groupe BZ Services</strong>.<br>
+          We appreciate your understanding.
+        </p>
       </div>
     </body>
     </html>
@@ -557,24 +267,22 @@ If you have any questions, please contact our support team.
  */
 function generateRejectionNotificationText(user: any, baseUrl: string): string {
   return `
-ACCOUNT REGISTRATION UPDATE
+REGISTRATION UPDATE
 
 Dear ${user.firstName},
 
-Thank you for your interest in Groupe BZ Services. After careful review of your application, we regret to inform you that your registration could not be approved at this time.
-
-WHAT THIS MEANS:
-Your account registration has been reviewed by our administrators, and unfortunately, it does not meet our current requirements.
+We regret to inform you that your registration for Groupe BZ Services has not been approved at this time.
 
 NEXT STEPS:
-If you believe this decision was made in error or if you have additional information to provide, please:
+If you believe this is an error or would like to reapply, please:
 - Contact our support team for more information
-- Review the registration requirements
-- Consider reapplying with updated information
+- Review your application details
+- Submit a new application if needed
 
-APPLY AGAIN: ${baseUrl}/signup
+CONTACT SUPPORT:
+If you have any questions about this decision, please don't hesitate to contact our support team. We're here to help.
 
 Thank you for your interest in Groupe BZ Services.
-If you have any questions, please contact our support team.
+We appreciate your understanding.
   `;
 }

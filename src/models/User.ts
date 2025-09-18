@@ -27,6 +27,9 @@ export interface IUser extends Document {
   approvedBy?: string; // Admin email who approved/rejected
   approvedAt?: Date;
   rejectionReason?: string;
+  // Password reset fields
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -129,6 +132,14 @@ const UserSchema = new Schema<IUser>({
   rejectionReason: {
     type: String,
     trim: true
+  },
+  // Password reset fields
+  resetPasswordToken: {
+    type: String,
+    trim: true
+  },
+  resetPasswordExpires: {
+    type: Date
   }
 }, {
   timestamps: true, // This will automatically add createdAt and updatedAt fields

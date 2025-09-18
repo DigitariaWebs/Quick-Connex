@@ -14,11 +14,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/signup', '/'];
+  const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/'];
   const isPublicRoute = publicRoutes.includes(pathname);
 
   // API routes that don't require authentication
-  const publicApiRoutes = ['/api/auth/login', '/api/auth/signup', '/api/auth/gmail', '/api/auth/approve-user', '/api/auth/signup-approval', '/api/files'];
+  const publicApiRoutes = ['/api/auth/login', '/api/auth/signup', '/api/auth/gmail', '/api/auth/approve-user', '/api/auth/signup-approval', '/api/auth/forgot-password', '/api/auth/reset-password', '/api/files'];
   const isPublicApiRoute = publicApiRoutes.some(route => pathname.startsWith(route));
 
   // Skip authentication for public routes and API routes
