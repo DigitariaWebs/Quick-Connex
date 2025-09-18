@@ -25,8 +25,32 @@ interface TransferRequest {
     age: number;
     dossierNumber?: string;
   };
-  fromHospital: string;
-  toHospital: string;
+  fromHospital:
+    | string
+    | {
+        _id: string;
+        name: string;
+        address: string;
+        organization: {
+          type: string;
+          name: string;
+          region: string;
+        };
+      };
+  toHospital:
+    | string
+    | {
+        _id: string;
+        name: string;
+        address: string;
+        organization: {
+          type: string;
+          name: string;
+          region: string;
+        };
+      };
+  fromHospitalName?: string;
+  toHospitalName?: string;
   requestedBy: {
     firstName: string;
     lastName: string;
@@ -180,6 +204,14 @@ export default function TransferRequestCard({
     });
   };
 
+  // Helper functions to get hospital names
+  const getHospitalName = (hospital: string | any) => {
+    if (typeof hospital === "string") {
+      return hospital;
+    }
+    return hospital?.name || "Unknown Hospital";
+  };
+
   const priorityColors = getPriorityColor(transfer.priority);
   const statusColors = getStatusColor(transfer.status);
 
@@ -244,24 +276,30 @@ export default function TransferRequestCard({
 
       {/* Transfer Route */}
       <div className="px-5 py-3 bg-gray-50 border-y border-gray-100">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
+        <div className="flex items-center">
+          <div className="flex-1 min-w-0 pr-3">
             <p className="text-xs text-gray-500 mb-1">From</p>
-            <p className="text-sm font-medium text-gray-800 truncate">
-              {transfer.fromHospital}
+            <p
+              className="text-sm font-medium text-gray-800 truncate"
+              title={getHospitalName(transfer.fromHospital)}
+            >
+              {getHospitalName(transfer.fromHospital)}
             </p>
           </div>
 
-          <div className="px-3">
+          <div className="flex-shrink-0 px-2">
             <div className="w-8 h-8 rounded-2xl bg-blue-100 flex items-center justify-center">
               <ArrowRight size={16} className="text-blue-600" />
             </div>
           </div>
 
-          <div className="flex-1 text-right">
+          <div className="flex-1 min-w-0 pl-3 text-right">
             <p className="text-xs text-gray-500 mb-1">To</p>
-            <p className="text-sm font-medium text-gray-800 truncate">
-              {transfer.toHospital}
+            <p
+              className="text-sm font-medium text-gray-800 truncate"
+              title={getHospitalName(transfer.toHospital)}
+            >
+              {getHospitalName(transfer.toHospital)}
             </p>
           </div>
         </div>

@@ -709,14 +709,22 @@ export default function CalendarView({
                           <MapPin size={16} className="text-gray-500" />
                           <span className="text-gray-600">From:</span>
                           <span className="font-medium">
-                            {selectedEvent.extendedProps.fromHospital}
+                            {typeof selectedEvent.extendedProps.fromHospital ===
+                            "string"
+                              ? selectedEvent.extendedProps.fromHospital
+                              : selectedEvent.extendedProps.fromHospital
+                                  ?.name || "Unknown Hospital"}
                           </span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <MapPin size={16} className="text-gray-500" />
                           <span className="text-gray-600">To:</span>
                           <span className="font-medium">
-                            {selectedEvent.extendedProps.toHospital}
+                            {typeof selectedEvent.extendedProps.toHospital ===
+                            "string"
+                              ? selectedEvent.extendedProps.toHospital
+                              : selectedEvent.extendedProps.toHospital?.name ||
+                                "Unknown Hospital"}
                           </span>
                         </div>
                         <div className="flex items-center space-x-2">

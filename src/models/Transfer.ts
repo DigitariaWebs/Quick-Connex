@@ -9,8 +9,10 @@ export interface ITransfer extends Document {
     age: number;
     dossierNumber?: string;
   };
-  fromHospital: string;
-  toHospital: string;
+  fromHospital: Types.ObjectId; // Reference to Hospital
+  toHospital: Types.ObjectId; // Reference to Hospital
+  fromHospitalName: string; // Keep name for backward compatibility and display
+  toHospitalName: string; // Keep name for backward compatibility and display
   requestedBy: Types.ObjectId; // Reference to User (manager)
   reason: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
@@ -75,11 +77,21 @@ const TransferSchema = new Schema<ITransfer>({
     }
   },
   fromHospital: { 
+    type: Schema.Types.ObjectId, 
+    ref: 'Hospital', 
+    required: true 
+  },
+  toHospital: { 
+    type: Schema.Types.ObjectId, 
+    ref: 'Hospital', 
+    required: true 
+  },
+  fromHospitalName: { 
     type: String, 
     required: true,
     trim: true
   },
-  toHospital: { 
+  toHospitalName: { 
     type: String, 
     required: true,
     trim: true

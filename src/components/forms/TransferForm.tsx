@@ -14,6 +14,7 @@ import { FormInput } from "./FormInput";
 import { SelectInput } from "./SelectInput";
 import { DatePickerInput } from "./DatePickerInput";
 import { TimePickerInput } from "./TimePickerInput";
+import HospitalAutocomplete from "./HospitalAutocomplete";
 
 // Validation helpers
 const validateRequired = (value: FormDataEntryValue | null): boolean => {
@@ -48,6 +49,8 @@ export default function TransferForm({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<Date | null>(null);
   const [user, setUser] = useState<any>(null);
+  const [selectedFromHospital, setSelectedFromHospital] = useState<any>(null);
+  const [selectedToHospital, setSelectedToHospital] = useState<any>(null);
 
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
@@ -104,8 +107,6 @@ export default function TransferForm({
     const patientLastName = formData.get("patientLastName");
     const patientAge = formData.get("patientAge");
     const patientDossierNumber = formData.get("patientDossierNumber");
-    const fromHospital = formData.get("fromHospital");
-    const toHospital = formData.get("toHospital");
     const transferDate = formData.get("transferDate");
     const transferTime = formData.get("transferTime");
     const transferType = formData.get("transferType");
@@ -132,12 +133,23 @@ export default function TransferForm({
       errors.patientDossierNumber = "Dossier number is required";
     }
 
-    if (!validateRequired(fromHospital)) {
-      errors.fromHospital = "Source hospital is required";
+    // Validate hospital selection
+    if (!selectedFromHospital) {
+      errors.fromHospital = "Please select a source hospital from the list";
     }
 
-    if (!validateRequired(toHospital)) {
-      errors.toHospital = "Destination hospital is required";
+    if (!selectedToHospital) {
+      errors.toHospital = "Please select a destination hospital from the list";
+    }
+
+    // Validate that from and to hospitals are different
+    if (
+      selectedFromHospital &&
+      selectedToHospital &&
+      selectedFromHospital._id === selectedToHospital._id
+    ) {
+      errors.toHospital =
+        "Destination hospital must be different from source hospital";
     }
 
     if (!selectedDate) {
@@ -211,8 +223,10 @@ export default function TransferForm({
       patientLastName,
       patientAge,
       patientDossierNumber,
-      fromHospital,
-      toHospital,
+      fromHospital: selectedFromHospital?.name || "",
+      toHospital: selectedToHospital?.name || "",
+      fromHospitalId: selectedFromHospital?._id || "",
+      toHospitalId: selectedToHospital?._id || "",
       transferDate: formattedDate,
       transferTime: formattedTime,
       transferType,
@@ -463,36 +477,48 @@ export default function TransferForm({
                         <Building2 size={18} className="mr-2" />
                         From
                       </h3>
-                      <FormInput
+                      <HospitalAutocomplete
                         id="fromHospital"
                         name="fromHospital"
                         label="Source Hospital"
                         required
-                        placeholder="Hospital name"
+                        placeholder="Search source hospital..."
+                        onChange={(value, hospital) => {
+                          setSelectedFromHospital(hospital);
+                          // Clear validation error when user selects a hospital
+                          if (hospital && validationErrors.fromHospital) {
+                            setValidationErrors((prev) => ({
+                              ...prev,
+                              fromHospital: "",
+                            }));
+                          }
+                        }}
+                        error={validationErrors.fromHospital}
                       />
-                      {validationErrors.fromHospital && (
-                        <p className="text-red-600 text-xs mt-1">
-                          {validationErrors.fromHospital}
-                        </p>
-                      )}
                     </div>
                     <div>
                       <h3 className="text-md font-semibold text-black mb-3 flex items-center">
                         <ArrowRight size={18} className="mr-2" />
                         To
                       </h3>
-                      <FormInput
+                      <HospitalAutocomplete
                         id="toHospital"
                         name="toHospital"
                         label="Destination Hospital"
                         required
-                        placeholder="Hospital name"
+                        placeholder="Search destination hospital..."
+                        onChange={(value, hospital) => {
+                          setSelectedToHospital(hospital);
+                          // Clear validation error when user selects a hospital
+                          if (hospital && validationErrors.toHospital) {
+                            setValidationErrors((prev) => ({
+                              ...prev,
+                              toHospital: "",
+                            }));
+                          }
+                        }}
+                        error={validationErrors.toHospital}
                       />
-                      {validationErrors.toHospital && (
-                        <p className="text-red-600 text-xs mt-1">
-                          {validationErrors.toHospital}
-                        </p>
-                      )}
                     </div>
                   </div>
 

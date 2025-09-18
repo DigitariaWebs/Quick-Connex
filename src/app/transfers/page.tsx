@@ -33,8 +33,32 @@ interface TransferRequest {
     lastName: string;
     age: number;
   };
-  fromHospital: string;
-  toHospital: string;
+  fromHospital:
+    | string
+    | {
+        _id: string;
+        name: string;
+        address: string;
+        organization: {
+          type: string;
+          name: string;
+          region: string;
+        };
+      };
+  toHospital:
+    | string
+    | {
+        _id: string;
+        name: string;
+        address: string;
+        organization: {
+          type: string;
+          name: string;
+          region: string;
+        };
+      };
+  fromHospitalName?: string;
+  toHospitalName?: string;
   requestedBy: {
     firstName: string;
     lastName: string;

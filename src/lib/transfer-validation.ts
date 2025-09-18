@@ -81,7 +81,11 @@ export function validateTransferData(data: any): TransferValidationResult {
   }
 
   // Business logic validation
-  if (data.fromHospital && data.toHospital && data.fromHospital === data.toHospital) {
+  // Check if hospitals are the same (by name or ID)
+  const fromHospitalValue = data.fromHospitalId || data.fromHospital;
+  const toHospitalValue = data.toHospitalId || data.toHospital;
+  
+  if (fromHospitalValue && toHospitalValue && fromHospitalValue === toHospitalValue) {
     errors.push('From and to hospitals cannot be the same');
   }
 

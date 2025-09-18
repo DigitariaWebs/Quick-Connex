@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongoose';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
+import Hospital from '@/models/Hospital';
 import { requireManager, requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware';
 import { validateTransferData } from '@/lib/transfer-validation';
 import { getNotificationService } from '@/lib/socket-server';
@@ -29,6 +30,8 @@ export async function GET(request: NextRequest) {
     // Get transfers with populated data
     const transfers = await Transfer.find(query)
       .populate('requestedBy', 'firstName lastName email userType')
+      .populate('fromHospital', 'name address organization')
+      .populate('toHospital', 'name address organization')
       .sort({ requestedDate: -1 })
       .limit(50);
 
@@ -62,6 +65,8 @@ export async function POST(request: NextRequest) {
       patientDossierNumber,
       fromHospital,
       toHospital,
+      fromHospitalId,
+      toHospitalId,
       transferDate,
       transferTime,
       transferType,
@@ -85,6 +90,43 @@ export async function POST(request: NextRequest) {
     // Use authenticated user
     const requestingUser = authResult.user;
 
+    // Validate and get hospital references
+    let fromHospitalRef, toHospitalRef;
+    let fromHospitalName = fromHospital, toHospitalName = toHospital;
+
+    if (fromHospitalId) {
+      fromHospitalRef = await Hospital.findById(fromHospitalId);
+      if (!fromHospitalRef) {
+        return createErrorResponse('Invalid source hospital ID', 'VALIDATION_ERROR', 400);
+      }
+      fromHospitalName = fromHospitalRef.name;
+    } else {
+      // Fallback: find hospital by name
+      fromHospitalRef = await Hospital.findOne({ name: fromHospital, isActive: true });
+      if (!fromHospitalRef) {
+        return createErrorResponse('Source hospital not found in system', 'VALIDATION_ERROR', 400);
+      }
+    }
+
+    if (toHospitalId) {
+      toHospitalRef = await Hospital.findById(toHospitalId);
+      if (!toHospitalRef) {
+        return createErrorResponse('Invalid destination hospital ID', 'VALIDATION_ERROR', 400);
+      }
+      toHospitalName = toHospitalRef.name;
+    } else {
+      // Fallback: find hospital by name
+      toHospitalRef = await Hospital.findOne({ name: toHospital, isActive: true });
+      if (!toHospitalRef) {
+        return createErrorResponse('Destination hospital not found in system', 'VALIDATION_ERROR', 400);
+      }
+    }
+
+    // Validate that hospitals are different
+    if (fromHospitalRef._id.toString() === toHospitalRef._id.toString()) {
+      return createErrorResponse('Source and destination hospitals must be different', 'VALIDATION_ERROR', 400);
+    }
+
     // Generate unique transfer ID
     const transferId = `TRF-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
@@ -102,8 +144,10 @@ export async function POST(request: NextRequest) {
         age: parseInt(patientAge as string),
         dossierNumber: patientDossierNumber
       },
-      fromHospital,
-      toHospital,
+      fromHospital: fromHospitalRef._id,
+      toHospital: toHospitalRef._id,
+      fromHospitalName,
+      toHospitalName,
       requestedBy: requestingUser._id,
       reason,
       priority,
@@ -128,7 +172,9 @@ export async function POST(request: NextRequest) {
 
     // Populate the response
     const populatedTransfer = await Transfer.findById(transfer._id)
-      .populate('requestedBy', 'firstName lastName email userType phone');
+      .populate('requestedBy', 'firstName lastName email userType phone')
+      .populate('fromHospital', 'name address organization')
+      .populate('toHospital', 'name address organization');
 
     // Send real-time notification for new transfer
     try {

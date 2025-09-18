@@ -61,8 +61,10 @@ export interface StatusHistoryEntry {
 export interface ITransfer extends BaseEntity {
   transferId: string;
   patientInfo: PatientInfo;
-  fromHospital: string;
-  toHospital: string;
+  fromHospital: Types.ObjectId; // Reference to Hospital
+  toHospital: Types.ObjectId; // Reference to Hospital
+  fromHospitalName: string; // Keep name for backward compatibility and display
+  toHospitalName: string; // Keep name for backward compatibility and display
   requestedBy: Types.ObjectId; // Reference to User (manager)
   assignedTo?: Types.ObjectId; // Reference to User (employee)
   reason: string;
@@ -92,8 +94,10 @@ export interface TransferRequestData {
   patientLastName: string;
   patientAge: number;
   patientDossierNumber: string;
-  fromHospital: string;
-  toHospital: string;
+  fromHospital: string; // Hospital name for backward compatibility
+  toHospital: string; // Hospital name for backward compatibility
+  fromHospitalId?: string; // Hospital ID for new references
+  toHospitalId?: string; // Hospital ID for new references
   transferDate: string;
   transferTime: string;
   transferType: TransferType;

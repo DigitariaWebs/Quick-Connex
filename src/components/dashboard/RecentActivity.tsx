@@ -125,9 +125,17 @@ export default function RecentActivity({
                 {activity.fromHospital && activity.toHospital && (
                   <div className="flex items-center space-x-1 text-xs text-gray-500 mb-1">
                     <Hospital size={12} />
-                    <span>{activity.fromHospital}</span>
+                    <span>
+                      {typeof activity.fromHospital === "string"
+                        ? activity.fromHospital
+                        : activity.fromHospital.name}
+                    </span>
                     <ArrowRight size={12} />
-                    <span>{activity.toHospital}</span>
+                    <span>
+                      {typeof activity.toHospital === "string"
+                        ? activity.toHospital
+                        : activity.toHospital.name}
+                    </span>
                   </div>
                 )}
 

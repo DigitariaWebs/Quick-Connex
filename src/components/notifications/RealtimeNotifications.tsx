@@ -491,9 +491,15 @@ export default function RealtimeNotifications({
                               <span>
                                 {notification.transfer.patient.firstName}{" "}
                                 {notification.transfer.patient.lastName}
-                                {notification.transfer.patient.dossierNumber && (
+                                {notification.transfer.patient
+                                  .dossierNumber && (
                                   <span className="ml-1 text-gray-500">
-                                    (Dossier: {notification.transfer.patient.dossierNumber})
+                                    (Dossier:{" "}
+                                    {
+                                      notification.transfer.patient
+                                        .dossierNumber
+                                    }
+                                    )
                                   </span>
                                 )}
                               </span>
@@ -505,8 +511,16 @@ export default function RealtimeNotifications({
                               <span className="flex items-center space-x-1">
                                 <MapPin size={14} />
                                 <span>
-                                  {notification.transfer.fromHospital} →{" "}
-                                  {notification.transfer.toHospital}
+                                  {typeof notification.transfer.fromHospital ===
+                                  "string"
+                                    ? notification.transfer.fromHospital
+                                    : notification.transfer.fromHospital
+                                        .name}{" "}
+                                  →{" "}
+                                  {typeof notification.transfer.toHospital ===
+                                  "string"
+                                    ? notification.transfer.toHospital
+                                    : notification.transfer.toHospital.name}
                                 </span>
                               </span>
                             )}

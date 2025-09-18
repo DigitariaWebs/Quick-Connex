@@ -36,8 +36,10 @@ const transferSchema = new mongoose.Schema({
         age: { type: Number, required: true, min: 0, max: 120 },
         dossierNumber: { type: String, required: true, trim: true }
     },
-    fromHospital: { type: String, required: true, trim: true },
-    toHospital: { type: String, required: true, trim: true },
+    fromHospital: { type: mongoose.Schema.Types.ObjectId, ref: 'Hospital', required: true },
+    toHospital: { type: mongoose.Schema.Types.ObjectId, ref: 'Hospital', required: true },
+    fromHospitalName: { type: String, required: true, trim: true },
+    toHospitalName: { type: String, required: true, trim: true },
     requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     reason: { type: String, required: true, trim: true },
     priority: { type: String, required: true, enum: ['low', 'medium', 'high', 'urgent'], default: 'medium' },
@@ -64,8 +66,24 @@ const transferSchema = new mongoose.Schema({
     versionKey: false
 });
 
+// Hospital schema
+const hospitalSchema = new mongoose.Schema({
+    name: { type: String, required: true, trim: true, unique: true },
+    address: { type: String, required: true, trim: true },
+    organization: {
+        type: { type: String, required: true, enum: ['CIUSSS', 'CISSS', 'CUSM'] },
+        name: { type: String, required: true, trim: true },
+        region: { type: String, required: true, trim: true }
+    },
+    isActive: { type: Boolean, default: true }
+}, {
+    timestamps: true,
+    versionKey: false
+});
+
 const User = mongoose.models.User || mongoose.model('User', userSchema);
 const Transfer = mongoose.models.Transfer || mongoose.model('Transfer', transferSchema);
+const Hospital = mongoose.models.Hospital || mongoose.model('Hospital', hospitalSchema);
 
 // Test data
 const hospitals = [
@@ -155,18 +173,27 @@ async function createTestTransfers() {
 
         console.log(`👤 Using manager: ${manager.firstName} ${manager.lastName} (${manager.email})`);
 
+        // Get available hospitals from database
+        const availableHospitals = await Hospital.find({ isActive: true });
+        if (availableHospitals.length < 2) {
+            console.error('❌ Not enough hospitals found in database. Please run seed-hospitals.js first');
+            process.exit(1);
+        }
+
+        console.log(`🏥 Found ${availableHospitals.length} hospitals in database`);
+
         let createdCount = 0;
 
         console.log(`\n🚑 Creating ${count} test transfer(s)...`);
 
         for (let i = 0; i < count; i++) {
             const patient = getRandomElement(patientNames);
-            const fromHospital = getRandomElement(hospitals);
-            let toHospital = getRandomElement(hospitals);
+            const fromHospital = getRandomElement(availableHospitals);
+            let toHospital = getRandomElement(availableHospitals);
 
             // Ensure from and to hospitals are different
-            while (toHospital === fromHospital) {
-                toHospital = getRandomElement(hospitals);
+            while (toHospital._id.toString() === fromHospital._id.toString()) {
+                toHospital = getRandomElement(availableHospitals);
             }
 
             const transferData = {
@@ -177,8 +204,10 @@ async function createTestTransfers() {
                     age: getRandomAge(),
                     dossierNumber: generateDossierNumber()
                 },
-                fromHospital,
-                toHospital,
+                fromHospital: fromHospital._id,
+                toHospital: toHospital._id,
+                fromHospitalName: fromHospital.name,
+                toHospitalName: toHospital.name,
                 requestedBy: manager._id,
                 reason: getRandomElement(transferReasons),
                 priority: priority || getRandomElement(['low', 'medium', 'high', 'urgent']),
@@ -219,7 +248,7 @@ async function createTestTransfers() {
                 await transfer.save();
                 console.log(`   ✅ Created transfer: ${transfer.transferId}`);
                 console.log(`      Patient: ${patient.firstName} ${patient.lastName} (${transfer.patientInfo.age} years)`);
-                console.log(`      From: ${fromHospital} → To: ${toHospital}`);
+                console.log(`      From: ${fromHospital.name} → To: ${toHospital.name}`);
                 console.log(`      Priority: ${transfer.priority} | Status: ${transfer.status}`);
                 createdCount++;
             } catch (error) {
