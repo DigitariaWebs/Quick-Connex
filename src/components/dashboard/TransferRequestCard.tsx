@@ -269,14 +269,16 @@ export default function TransferRequestCard({
 
       {/* Transfer Details */}
       <div className="px-5 py-3">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center text-sm">
-            <Calendar size={14} className="mr-2 text-gray-400" />
-            <span className="text-gray-700">
-              {formatDate(transfer.requestedDate)}
-            </span>
+        {transfer.scheduledDate && (
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center text-sm">
+              <Calendar size={14} className="mr-2 text-gray-400" />
+              <span className="text-gray-700">
+                {formatDate(transfer.scheduledDate)}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="mb-3">
           <div className="flex items-start mb-1">
@@ -349,14 +351,12 @@ export default function TransferRequestCard({
                   </span>
                 </div>
 
-                {transfer.scheduledDate && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-500">Scheduled Date:</span>
-                    <span className="text-gray-700">
-                      {formatDate(transfer.scheduledDate)}
-                    </span>
-                  </div>
-                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">Created:</span>
+                  <span className="text-gray-700">
+                    {formatDate(transfer.requestedDate)}
+                  </span>
+                </div>
 
                 {transfer.notes && (
                   <div className="mt-2">
