@@ -412,13 +412,14 @@ export async function POST(request: Request) {
       
       // Return a success response with sanitized user data
       const userResponse = savedUser.toObject();
-      // Remove sensitive fields from response
-      const { password, _id, ...sanitizedUser } = userResponse;
+      // Remove sensitive fields from response but keep the user ID for testing
+      const { password, ...sanitizedUser } = userResponse;
       
       return NextResponse.json(
         { 
           message: 'Account created successfully. Your registration is pending approval. You will receive an email notification once approved.',
           user: sanitizedUser,
+          userId: savedUser._id.toString(), // Include user ID for testing purposes
           status: 'pending',
           processingTime: `${processingTime}ms`
         }, 
