@@ -71,7 +71,8 @@ export class TransferService {
         patientInfo: {
           firstName: transferData.patientFirstName,
           lastName: transferData.patientLastName,
-          age: transferData.patientAge
+          age: transferData.patientAge,
+          dossierNumber: transferData.patientDossierNumber
         },
         fromHospital: transferData.fromHospital,
         toHospital: transferData.toHospital,
@@ -82,9 +83,6 @@ export class TransferService {
           TransferStatus.PENDING : TransferStatus.PENDING,
         requestedDate: new Date(),
         scheduledDate: new Date(`${transferData.transferDate}T${transferData.transferTime}`),
-        scheduledEndDate: scheduling.timeSlot.endTime ? 
-          new Date(`${transferData.transferDate}T${scheduling.timeSlot.endTime}`) :
-          new Date(new Date(`${transferData.transferDate}T${transferData.transferTime}`).getTime() + 60 * 60000),
         notes: `Issued by: ${transferData.issuer}${transferData.notes ? `\nAdditional notes: ${transferData.notes}` : ''}`,
         medicalDocuments: transferData.medicalDocuments || [],
         scheduling,
@@ -558,7 +556,8 @@ export class TransferService {
     // Required fields
     const requiredFields = [
       'patientFirstName',
-      'patientLastName', 
+      'patientLastName',
+      'patientDossierNumber',
       'fromHospital',
       'toHospital',
       'transferDate',
@@ -610,6 +609,25 @@ export class TransferService {
       }
     }
 
+    // Dossier number validation (optional field)
+    if (data.patientDossierNumber && data.patientDossierNumber.toString().trim() !== '') {
+      const dossierNumber = data.patientDossierNumber.toString().trim();
+      
+      // Check if dossier number contains only alphanumeric characters and common separators
+      if (!/^[A-Za-z0-9\-_\/]+$/.test(dossierNumber)) {
+        errors.push('Dossier number can only contain letters, numbers, hyphens, underscores, and forward slashes');
+      }
+      
+      // Check length (reasonable limits)
+      if (dossierNumber.length < 3) {
+        errors.push('Dossier number must be at least 3 characters long');
+      }
+      
+      if (dossierNumber.length > 50) {
+        errors.push('Dossier number cannot exceed 50 characters');
+      }
+    }
+
     return {
       isValid: errors.length === 0,
       errors,
@@ -624,18 +642,7 @@ export class TransferService {
 
   private static createSchedulingConfig(transferData: TransferRequestData): SchedulingConfig {
     return {
-      isRecurring: false,
-      timeSlot: {
-        startTime: transferData.transferTime,
-        endTime: transferData.scheduling?.timeSlot?.endTime || 
-          new Date(new Date(`2000-01-01T${transferData.transferTime}`).getTime() + 60 * 60000)
-            .toTimeString().slice(0, 5),
-        duration: transferData.scheduling?.timeSlot?.duration || TRANSFER_CONFIG.DEFAULTS.DURATION_MINUTES
-      },
-      location: {
-        pickupLocation: transferData.fromHospital,
-        dropoffLocation: transferData.toHospital
-      },
+      transferTime: transferData.transferTime,
     };
   }
 
@@ -653,7 +660,6 @@ export class TransferService {
       status: transfer.status,
       requestedDate: transfer.requestedDate.toISOString(),
       scheduledDate: transfer.scheduledDate?.toISOString(),
-      scheduledEndDate: transfer.scheduledEndDate?.toISOString(),
       completedDate: transfer.completedDate?.toISOString(),
       notes: transfer.notes,
       medicalDocuments: transfer.medicalDocuments,

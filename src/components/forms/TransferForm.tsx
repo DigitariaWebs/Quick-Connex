@@ -103,6 +103,7 @@ export default function TransferForm({
     const patientFirstName = formData.get("patientFirstName");
     const patientLastName = formData.get("patientLastName");
     const patientAge = formData.get("patientAge");
+    const patientDossierNumber = formData.get("patientDossierNumber");
     const fromHospital = formData.get("fromHospital");
     const toHospital = formData.get("toHospital");
     const transferDate = formData.get("transferDate");
@@ -125,6 +126,10 @@ export default function TransferForm({
 
     if (!validateAge(patientAge)) {
       errors.patientAge = "Valid age is required (1-120)";
+    }
+
+    if (!validateRequired(patientDossierNumber)) {
+      errors.patientDossierNumber = "Dossier number is required";
     }
 
     if (!validateRequired(fromHospital)) {
@@ -159,6 +164,28 @@ export default function TransferForm({
       errors.reason = "Reason for transfer is required";
     }
 
+    // Validate dossier number if provided
+    if (patientDossierNumber && patientDossierNumber.toString().trim() !== "") {
+      const dossierNumber = patientDossierNumber.toString().trim();
+
+      // Check if dossier number contains only alphanumeric characters and common separators
+      if (!/^[A-Za-z0-9\-_\/]+$/.test(dossierNumber)) {
+        errors.patientDossierNumber =
+          "Dossier number can only contain letters, numbers, hyphens, underscores, and forward slashes";
+      }
+
+      // Check length (reasonable limits)
+      if (dossierNumber.length < 3) {
+        errors.patientDossierNumber =
+          "Dossier number seems quite short. Please verify it is correct.";
+      }
+
+      if (dossierNumber.length > 50) {
+        errors.patientDossierNumber =
+          "Dossier number seems quite long. Please verify it is correct.";
+      }
+    }
+
     // If there are validation errors, stop submission
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -183,6 +210,7 @@ export default function TransferForm({
       patientFirstName,
       patientLastName,
       patientAge,
+      patientDossierNumber,
       fromHospital,
       toHospital,
       transferDate: formattedDate,
@@ -191,22 +219,9 @@ export default function TransferForm({
       issuer,
       priority,
       reason,
-      // Advanced scheduling data
+      // Simplified scheduling data
       scheduling: {
-        isRecurring: false,
-        timeSlot: {
-          startTime: formattedTime,
-          endTime: selectedTime
-            ? new Date(selectedTime.getTime() + 60 * 60000)
-                .toTimeString()
-                .slice(0, 5)
-            : "10:00",
-          duration: 60,
-        },
-        location: {
-          pickupLocation: fromHospital,
-          dropoffLocation: toHospital,
-        },
+        transferTime: formattedTime,
       },
     };
 
@@ -225,6 +240,7 @@ export default function TransferForm({
       if (data.success) {
         // Clear any existing errors first
         setError(null);
+        setValidationErrors({});
         setSuccess("Transfer request created successfully");
 
         // Store form reference before async operations
@@ -253,7 +269,42 @@ export default function TransferForm({
           setShowForm(false);
         }, 3000);
       } else {
-        setError(data.error || "Failed to create transfer request");
+        // Handle validation errors from backend
+        if (data.errorCode === "VALIDATION_ERROR" && data.errors) {
+          const backendErrors: Record<string, string> = {};
+
+          // Map backend validation errors to form fields
+          data.errors.forEach((error: string) => {
+            if (error.includes("patientFirstName")) {
+              backendErrors.patientFirstName = "Patient first name is required";
+            } else if (error.includes("patientLastName")) {
+              backendErrors.patientLastName = "Patient last name is required";
+            } else if (error.includes("fromHospital")) {
+              backendErrors.fromHospital = "Source hospital is required";
+            } else if (error.includes("toHospital")) {
+              backendErrors.toHospital = "Destination hospital is required";
+            } else if (error.includes("transferDate")) {
+              backendErrors.transferDate = "Valid transfer date is required";
+            } else if (error.includes("reason")) {
+              backendErrors.reason = "Reason for transfer is required";
+            } else if (error.includes("dossier number")) {
+              backendErrors.patientDossierNumber = error;
+            } else if (error.includes("same hospitals")) {
+              backendErrors.fromHospital =
+                "Source and destination hospitals cannot be the same";
+              backendErrors.toHospital =
+                "Source and destination hospitals cannot be the same";
+            } else if (error.includes("past")) {
+              backendErrors.transferDate =
+                "Transfer date cannot be in the past";
+            }
+          });
+
+          setValidationErrors(backendErrors);
+          setError("Please correct the validation errors below");
+        } else {
+          setError(data.error || "Failed to create transfer request");
+        }
       }
     } catch (err) {
       console.error("Error creating transfer:", err);
@@ -342,7 +393,7 @@ export default function TransferForm({
                       <User size={18} className="mr-2" />
                       Patient Information
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div>
                         <FormInput
                           id="patientFirstName"
@@ -385,6 +436,21 @@ export default function TransferForm({
                         {validationErrors.patientAge && (
                           <p className="text-red-600 text-xs mt-1">
                             {validationErrors.patientAge}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <FormInput
+                          id="patientDossierNumber"
+                          name="patientDossierNumber"
+                          label="Dossier Number"
+                          required
+                          placeholder="Patient's dossier number"
+                        />
+                        {validationErrors.patientDossierNumber && (
+                          <p className="text-red-600 text-xs mt-1">
+                            {validationErrors.patientDossierNumber}
                           </p>
                         )}
                       </div>

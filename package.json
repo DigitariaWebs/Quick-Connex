@@ -9,8 +9,7 @@
     "start": "next start",
     "dev:verbose": "NODE_ENV=development node server.js",
     "build:analyze": "ANALYZE=true next build --turbopack",
-    "clear-db": "node scripts/clear-database.js",
-    "create-test-users": "node scripts/create-test-users.js"
+    "clear-db": "node scripts/clear-database.js"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",

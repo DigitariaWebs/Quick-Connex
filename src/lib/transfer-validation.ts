@@ -56,7 +56,8 @@ export function validateTransferData(data: any): TransferValidationResult {
   // Required fields
   const requiredFields = [
     'patientFirstName',
-    'patientLastName', 
+    'patientLastName',
+    'patientDossierNumber',
     'fromHospital',
     'toHospital',
     'transferDate',
@@ -65,7 +66,17 @@ export function validateTransferData(data: any): TransferValidationResult {
 
   for (const field of requiredFields) {
     if (!data[field] || (typeof data[field] === 'string' && data[field].trim().length === 0)) {
-      errors.push(`${field} is required`);
+      // Provide more user-friendly field names
+      const fieldNames: Record<string, string> = {
+        'patientFirstName': 'Patient first name',
+        'patientLastName': 'Patient last name',
+        'patientDossierNumber': 'Dossier number',
+        'fromHospital': 'Source hospital',
+        'toHospital': 'Destination hospital',
+        'transferDate': 'Transfer date',
+        'reason': 'Reason for transfer'
+      };
+      errors.push(`${fieldNames[field] || field} is required`);
     }
   }
 
@@ -100,6 +111,25 @@ export function validateTransferData(data: any): TransferValidationResult {
   // Reason length validation
   if (data.reason && data.reason.length < 10) {
     warnings.push('Transfer reason is quite short. Consider providing more details.');
+  }
+
+  // Dossier number validation (optional field)
+  if (data.patientDossierNumber && data.patientDossierNumber.toString().trim() !== '') {
+    const dossierNumber = data.patientDossierNumber.toString().trim();
+    
+    // Check if dossier number contains only alphanumeric characters and common separators
+    if (!/^[A-Za-z0-9\-_\/]+$/.test(dossierNumber)) {
+      errors.push('Dossier number can only contain letters, numbers, hyphens, underscores, and forward slashes');
+    }
+    
+    // Check length (reasonable limits)
+    if (dossierNumber.length < 3) {
+      errors.push('Dossier number must be at least 3 characters long');
+    }
+    
+    if (dossierNumber.length > 50) {
+      errors.push('Dossier number cannot exceed 50 characters');
+    }
   }
 
   return {

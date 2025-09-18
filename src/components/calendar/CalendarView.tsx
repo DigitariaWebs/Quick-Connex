@@ -49,18 +49,9 @@ interface CalendarEvent {
       lastName: string;
     };
     scheduling?: {
-      timeSlot?: {
-        startTime: string;
-        endTime: string;
-        duration: number;
-      };
-      location?: {
-        pickupLocation: string;
-        dropoffLocation: string;
-      };
+      transferTime: string;
     };
     notes?: string;
-    isRecurring?: boolean;
   };
 }
 
@@ -684,18 +675,24 @@ export default function CalendarView({
                     <h4 className="font-semibold text-blue-800 mb-2">
                       Patient Information
                     </h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="grid grid-cols-1 gap-4 text-sm">
                       <div>
                         <span className="text-gray-600">Name:</span>
-                        <span className="ml-2 font-medium">
-                          {selectedEvent.extendedProps.patient.firstName}{" "}
-                          {selectedEvent.extendedProps.patient.lastName}
-                        </span>
+                        <div className="ml-2">
+                          <div className="font-medium">
+                            {selectedEvent.extendedProps.patient.firstName}{" "}
+                            {selectedEvent.extendedProps.patient.lastName}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Dossier:{" "}
+                            {selectedEvent.extendedProps.patient.dossierNumber}
+                          </div>
+                        </div>
                       </div>
                       <div>
-                        <span className="text-gray-600">Patient ID:</span>
+                        <span className="text-gray-600">Age:</span>
                         <span className="ml-2 font-medium">
-                          {selectedEvent.extendedProps.patient.patientId}
+                          {selectedEvent.extendedProps.patient.age} years
                         </span>
                       </div>
                     </div>

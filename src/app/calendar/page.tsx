@@ -20,7 +20,6 @@ import {
   MapPin,
 } from "lucide-react";
 import CalendarView from "@/components/calendar/CalendarView";
-import AdvancedSchedulingForm from "@/components/forms/AdvancedSchedulingForm";
 import Sidebar from "@/components/dashboard/Sidebar";
 import LoadingSpinner from "@/components/dashboard/LoadingSpinner";
 
@@ -41,7 +40,6 @@ export default function CalendarPage() {
   const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-  const [showSchedulingForm, setShowSchedulingForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
     null
@@ -134,37 +132,13 @@ export default function CalendarPage() {
   };
 
   const handleDateClick = (date: Date) => {
-    // Only allow managers to create transfers
-    if (user?.userType !== "manager") {
-      alert("Only managers can create transfer requests");
-      return;
-    }
-    setSelectedDate(date);
-    setShowSchedulingForm(true);
+    // Date click functionality removed - no longer needed with simplified scheduling
+    console.log("Date clicked:", date);
   };
 
   const handleCreateTransfer = (date: Date) => {
-    // Only allow managers to create transfers
-    if (user?.userType !== "manager") {
-      alert("Only managers can create transfer requests");
-      return;
-    }
-    setSelectedDate(date);
-    setShowSchedulingForm(true);
-  };
-
-  const handleSaveScheduling = async (schedulingData: any) => {
-    try {
-      // Here you would typically save the scheduling data
-      // For now, we'll just close the form
-      setShowSchedulingForm(false);
-      setSelectedDate(null);
-
-      // Refresh calendar data
-      // This would trigger a refresh in the CalendarView component
-    } catch (error) {
-      console.error("Error saving scheduling:", error);
-    }
+    // Redirect to transfers page for creating new transfers
+    router.push("/transfers");
   };
 
   const handleExportCalendar = () => {
@@ -321,34 +295,6 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* Scheduling Form Modal */}
-      <AnimatePresence>
-        {showSchedulingForm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-            onClick={() => setShowSchedulingForm(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-6xl max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <AdvancedSchedulingForm
-                onSave={handleSaveScheduling}
-                onCancel={() => setShowSchedulingForm(false)}
-                transferId={selectedEvent?.transferId}
-                isEditing={!!selectedEvent}
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Event Details Modal */}
       <AnimatePresence>
         {showEventDetails && selectedEvent && (
@@ -385,18 +331,24 @@ export default function CalendarPage() {
                     <h4 className="font-semibold text-blue-800 mb-2">
                       Patient Information
                     </h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="grid grid-cols-1 gap-4 text-sm">
                       <div>
                         <span className="text-gray-600">Name:</span>
-                        <span className="ml-2 font-medium">
-                          {selectedEvent.extendedProps.patient.firstName}{" "}
-                          {selectedEvent.extendedProps.patient.lastName}
-                        </span>
+                        <div className="ml-2">
+                          <div className="font-medium">
+                            {selectedEvent.extendedProps.patient.firstName}{" "}
+                            {selectedEvent.extendedProps.patient.lastName}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Dossier:{" "}
+                            {selectedEvent.extendedProps.patient.dossierNumber}
+                          </div>
+                        </div>
                       </div>
                       <div>
-                        <span className="text-gray-600">Patient ID:</span>
+                        <span className="text-gray-600">Age:</span>
                         <span className="ml-2 font-medium">
-                          {selectedEvent.extendedProps.patient.patientId}
+                          {selectedEvent.extendedProps.patient.age} years
                         </span>
                       </div>
                     </div>

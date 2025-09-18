@@ -27,6 +27,7 @@ export interface PatientInfo {
   firstName: string;
   lastName: string;
   age: number;
+  dossierNumber: string;
 }
 
 // User Information
@@ -40,28 +41,11 @@ export interface UserInfo {
   phone?: string;
 }
 
-// Time Slot Configuration
-export interface TimeSlot {
-  startTime: string; // HH:MM format
-  endTime: string; // HH:MM format
-  duration: number; // in minutes
-}
-
-// Location Configuration
-export interface LocationConfig {
-  pickupLocation: string;
-  dropoffLocation: string;
-  estimatedDistance?: number; // in kilometers
-  estimatedDuration?: number; // in minutes
-}
-
 // Note: ConflictInfo interface removed as hospitals handle their own logistics
 
 // Scheduling Configuration
 export interface SchedulingConfig {
-  isRecurring: boolean;
-  timeSlot: TimeSlot;
-  location: LocationConfig;
+  transferTime: string; // HH:MM format
 }
 
 // Status History Entry
@@ -86,7 +70,6 @@ export interface ITransfer extends BaseEntity {
   status: TransferStatus;
   requestedDate: Date;
   scheduledDate?: Date;
-  scheduledEndDate?: Date;
   completedDate?: Date;
   notes?: string;
   medicalDocuments?: string[]; // Array of file paths
@@ -108,6 +91,7 @@ export interface TransferRequestData {
   patientFirstName: string;
   patientLastName: string;
   patientAge: number;
+  patientDossierNumber: string;
   fromHospital: string;
   toHospital: string;
   transferDate: string;
@@ -135,7 +119,6 @@ export interface TransferResponse {
   status: TransferStatus;
   requestedDate: string;
   scheduledDate?: string;
-  scheduledEndDate?: string;
   completedDate?: string;
   notes?: string;
   medicalDocuments?: string[];
@@ -287,19 +270,9 @@ export interface TransferCalendarEvent {
   status: TransferStatus;
   assignedTo?: string;
   color: string;
-  isRecurring: boolean;
 }
 
 // Note: ConflictDetectionResult interface removed as hospitals handle their own logistics
-
-// Recurring Transfer Instance
-export interface RecurringTransferInstance {
-  parentTransferId: string;
-  instanceDate: Date;
-  status: TransferStatus;
-  assignedTo?: Types.ObjectId;
-  notes?: string;
-}
 
 // Transfer Analytics Data
 export interface TransferAnalytics {

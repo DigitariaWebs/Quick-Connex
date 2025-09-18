@@ -7,6 +7,7 @@ export interface ITransfer extends Document {
     firstName: string;
     lastName: string;
     age: number;
+    dossierNumber?: string;
   };
   fromHospital: string;
   toHospital: string;
@@ -16,22 +17,13 @@ export interface ITransfer extends Document {
   status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
   requestedDate: Date;
   scheduledDate?: Date;
-  scheduledEndDate?: Date; // End time for the transfer
   completedDate?: Date;
   notes?: string;
   medicalDocuments?: string[]; // Array of file paths
   
   // Simplified scheduling fields
   scheduling: {
-    timeSlot: {
-      startTime: string; // HH:MM format
-      endTime: string; // HH:MM format
-      duration: number; // in minutes
-    };
-    location: {
-      pickupLocation: string;
-      dropoffLocation: string;
-    };
+    transferTime: string; // HH:MM format
   };
   
   // Status tracking
@@ -75,6 +67,11 @@ const TransferSchema = new Schema<ITransfer>({
       required: true,
       min: 0,
       max: 120
+    },
+    dossierNumber: {
+      type: String,
+      required: true,
+      trim: true
     }
   },
   fromHospital: { 
@@ -117,9 +114,6 @@ const TransferSchema = new Schema<ITransfer>({
   scheduledDate: { 
     type: Date
   },
-  scheduledEndDate: { 
-    type: Date
-  },
   completedDate: { 
     type: Date
   },
@@ -134,31 +128,9 @@ const TransferSchema = new Schema<ITransfer>({
   
   // Simplified scheduling fields
   scheduling: {
-    timeSlot: {
-      startTime: {
-        type: String,
-        match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
-      },
-      endTime: {
-        type: String,
-        match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
-      },
-      duration: {
-        type: Number,
-        min: 0
-      }
-    },
-    location: {
-      pickupLocation: {
-        type: String,
-        required: true,
-        trim: true
-      },
-      dropoffLocation: {
-        type: String,
-        required: true,
-        trim: true
-      }
+    transferTime: {
+      type: String,
+      match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
     }
   },
   
@@ -207,12 +179,12 @@ const TransferSchema = new Schema<ITransfer>({
 // Add indexes for faster queries
 TransferSchema.index({ transferId: 1 });
 TransferSchema.index({ 'patientInfo.firstName': 1, 'patientInfo.lastName': 1 });
+TransferSchema.index({ 'patientInfo.dossierNumber': 1 });
 TransferSchema.index({ status: 1 });
 TransferSchema.index({ priority: 1 });
 TransferSchema.index({ requestedBy: 1 });
 TransferSchema.index({ requestedDate: -1 });
 TransferSchema.index({ scheduledDate: 1 });
-TransferSchema.index({ scheduledEndDate: 1 });
 TransferSchema.index({ lastModifiedBy: 1 });
 TransferSchema.index({ 'statusHistory.changedAt': -1 });
 

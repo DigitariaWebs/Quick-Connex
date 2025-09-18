@@ -30,6 +30,7 @@ interface NotificationToastProps {
     patient?: {
       firstName: string;
       lastName: string;
+      dossierNumber?: string;
     };
     fromHospital?: string;
     toHospital?: string;
@@ -210,6 +211,11 @@ export default function NotificationToast({
                         <span>
                           {transfer.patient.firstName}{" "}
                           {transfer.patient.lastName}
+                          {transfer.patient.dossierNumber && (
+                            <span className="ml-2 text-gray-500">
+                              (Dossier: {transfer.patient.dossierNumber})
+                            </span>
+                          )}
                         </span>
                       </div>
                     )}

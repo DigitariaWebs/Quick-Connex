@@ -35,6 +35,7 @@ interface RealtimeNotification {
     patient?: {
       firstName: string;
       lastName: string;
+      dossierNumber?: string;
     };
     fromHospital?: string;
     toHospital?: string;
@@ -490,6 +491,11 @@ export default function RealtimeNotifications({
                               <span>
                                 {notification.transfer.patient.firstName}{" "}
                                 {notification.transfer.patient.lastName}
+                                {notification.transfer.patient.dossierNumber && (
+                                  <span className="ml-1 text-gray-500">
+                                    (Dossier: {notification.transfer.patient.dossierNumber})
+                                  </span>
+                                )}
                               </span>
                             </span>
                           )}

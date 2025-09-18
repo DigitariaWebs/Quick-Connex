@@ -23,6 +23,7 @@ interface TransferRequest {
     firstName: string;
     lastName: string;
     age: number;
+    dossierNumber?: string;
   };
   fromHospital: string;
   toHospital: string;
@@ -210,7 +211,9 @@ export default function TransferRequestCard({
                 {transfer.patientInfo.firstName} {transfer.patientInfo.lastName}
               </h3>
               <div className="flex items-center text-xs text-gray-500">
-                <span className="mr-2">Age: {transfer.patientInfo.age}</span>
+                <span className="mr-2">
+                  {transfer.patientInfo.dossierNumber}
+                </span>
                 <span className="flex items-center">
                   {statusColors.icon}
                   <span className={`capitalize ${statusColors.text}`}>

@@ -22,6 +22,7 @@ interface RealtimeNotification {
     patient?: {
       firstName: string;
       lastName: string;
+      dossierNumber?: string;
     };
     fromHospital?: string;
     toHospital?: string;

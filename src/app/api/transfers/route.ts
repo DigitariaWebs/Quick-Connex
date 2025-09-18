@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
       patientFirstName,
       patientLastName,
       patientAge,
+      patientDossierNumber,
       fromHospital,
       toHospital,
       transferDate,
@@ -98,7 +99,8 @@ export async function POST(request: NextRequest) {
       patientInfo: {
         firstName: patientFirstName,
         lastName: patientLastName,
-        age: parseInt(patientAge as string)
+        age: parseInt(patientAge as string),
+        dossierNumber: patientDossierNumber
       },
       fromHospital,
       toHospital,
@@ -108,19 +110,10 @@ export async function POST(request: NextRequest) {
       status: 'pending',
       requestedDate: new Date(),
       scheduledDate: scheduledDateTime,
-      scheduledEndDate: new Date(scheduledDateTime.getTime() + 60 * 60000), // Default 1 hour duration
       notes: `Issued by: ${issuer}${notes ? `\nAdditional notes: ${notes}` : ''}`,
       medicalDocuments,
       scheduling: {
-        timeSlot: {
-          startTime: transferTime || '09:00',
-          endTime: '10:00',
-          duration: 60
-        },
-        location: {
-          pickupLocation: fromHospital,
-          dropoffLocation: toHospital
-        }
+        transferTime: transferTime || '09:00'
       },
       lastModifiedBy: requestingUser._id,
       statusHistory: [{
