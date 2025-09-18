@@ -248,23 +248,67 @@ export class SMSService {
   private async getDefaultTemplates(): Promise<CommunicationTemplate[]> {
     return [
       {
+        id: 'new_transfer_request_sms',
+        name: 'New Transfer Request SMS',
+        channel: 'sms',
+        category: 'transfer',
+        text: '🆕 New transfer request: {{patientName}} ({{patientAge}}y) from {{fromHospital}} to {{toHospital}}. Priority: {{priority}}. Requested by: {{requestedBy}}',
+        variables: ['patientName', 'patientAge', 'fromHospital', 'toHospital', 'priority', 'requestedBy'],
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'transfer_approved_sms',
+        name: 'Transfer Approved SMS',
+        channel: 'sms',
+        category: 'transfer',
+        text: '✅ Transfer approved: {{patientName}} from {{fromHospital}} to {{toHospital}}. Transfer ID: {{transferId}}. Please check dashboard for details.',
+        variables: ['patientName', 'fromHospital', 'toHospital', 'transferId'],
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'transfer_accepted_sms',
+        name: 'Transfer Accepted SMS',
+        channel: 'sms',
+        category: 'transfer',
+        text: '👤 Transfer accepted: {{patientName}} from {{fromHospital}} to {{toHospital}}. Accepted by: {{acceptedBy}}. Transfer ID: {{transferId}}',
+        variables: ['patientName', 'fromHospital', 'toHospital', 'acceptedBy', 'transferId'],
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'transfer_completed_sms',
+        name: 'Transfer Completed SMS',
+        channel: 'sms',
+        category: 'transfer',
+        text: '✅ Transfer completed: {{patientName}} from {{fromHospital}} to {{toHospital}}. Completed by: {{completedBy}}. Duration: {{duration}}',
+        variables: ['patientName', 'fromHospital', 'toHospital', 'completedBy', 'duration'],
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'urgent_transfer_alert_sms',
+        name: 'Urgent Transfer Alert SMS',
+        channel: 'sms',
+        category: 'urgent',
+        text: '🚨 URGENT TRANSFER: {{patientName}} ({{patientAge}}y) needs immediate transfer from {{fromHospital}} to {{toHospital}}. Priority: {{priority}}. Requested by: {{requestedBy}}',
+        variables: ['patientName', 'patientAge', 'fromHospital', 'toHospital', 'priority', 'requestedBy'],
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
         id: 'transfer_notification_sms',
         name: 'Transfer Notification SMS',
         channel: 'sms',
         category: 'transfer',
         text: 'Transfer update: {{patientName}} from {{fromHospital}} to {{toHospital}}. Status: {{status}}',
         variables: ['patientName', 'fromHospital', 'toHospital', 'status'],
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 'urgent_alert_sms',
-        name: 'Urgent Transfer Alert SMS',
-        channel: 'sms',
-        category: 'urgent',
-        text: '🚨 URGENT: {{patientName}} needs immediate transfer from {{fromHospital}} to {{toHospital}}. Priority: {{priority}}',
-        variables: ['patientName', 'fromHospital', 'toHospital', 'priority'],
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -316,17 +360,45 @@ class TwilioProvider extends BaseSMSProvider {
   providerType: SMSProvider = 'twilio';
 
   async send(message: SMSMessage): Promise<CommunicationServiceResponse> {
-    // Implementation would use Twilio API
-    console.log('Sending SMS via Twilio:', message.id);
-    
-    return {
-      success: true,
-      messageId: message.id,
-      providerId: `tw_${Date.now()}`,
-      status: 'sent',
-      cost: 0.0075, // Twilio pricing (varies by country)
-      currency: 'USD',
-    };
+    try {
+      // Check if Twilio is configured
+      if (!this.config.accountSid || !this.config.authToken) {
+        throw new Error('Twilio not configured. Please set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN');
+      }
+
+      // For now, we'll use a mock implementation
+      // In production, you would use the actual Twilio SDK:
+      // const client = require('twilio')(this.config.accountSid, this.config.authToken);
+      // const result = await client.messages.create({
+      //   body: message.content.text,
+      //   from: this.config.fromNumber,
+      //   to: message.recipient.phone
+      // });
+
+      console.log('Sending SMS via Twilio:', {
+        to: message.recipient.phone,
+        from: this.config.fromNumber,
+        message: message.content.text.substring(0, 50) + '...'
+      });
+      
+      // Mock successful response
+      return {
+        success: true,
+        messageId: message.id,
+        providerId: `tw_${Date.now()}`,
+        status: 'sent',
+        cost: 0.0075, // Twilio pricing (varies by country)
+        currency: 'USD',
+      };
+    } catch (error) {
+      console.error('Twilio SMS error:', error);
+      return {
+        success: false,
+        messageId: message.id,
+        status: 'failed',
+        error: error instanceof Error ? error.message : 'Unknown Twilio error',
+      };
+    }
   }
 
   async getStatus(messageId: string): Promise<CommunicationStatus> {

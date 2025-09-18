@@ -140,10 +140,36 @@ export async function POST(request: NextRequest) {
 
     // Populate the response
     const populatedTransfer = await Transfer.findById(transfer._id)
-      .populate('requestedBy', 'firstName lastName email userType');
+      .populate('requestedBy', 'firstName lastName email userType phone');
 
-    // Send real-time notification for new transfer (temporarily disabled for debugging)
-    console.log('Notification service temporarily disabled for debugging');
+    // Send real-time notification for new transfer
+    try {
+      const { getNotificationService } = await import('@/lib/socket-server');
+      const notificationService = getNotificationService();
+      if (notificationService) {
+        await notificationService.sendTransferStatusChange(
+          populatedTransfer,
+          null,
+          'pending',
+          requestingUser
+        );
+      }
+    } catch (notificationError) {
+      console.error('Error sending real-time notification:', notificationError);
+    }
+
+    // Send SMS notification to admins
+    try {
+      const TransferSMSService = (await import('@/lib/communication/transfer-sms-service')).default;
+      
+      if (populatedTransfer.priority === 'urgent') {
+        await TransferSMSService.sendUrgentTransferRequestSMS(populatedTransfer, requestingUser);
+      } else {
+        await TransferSMSService.sendNewTransferRequestSMS(populatedTransfer, requestingUser);
+      }
+    } catch (smsError) {
+      console.error('Error sending SMS notification:', smsError);
+    }
 
     return createSuccessResponse(populatedTransfer, 'Transfer request created successfully', 201);
 

@@ -72,7 +72,7 @@ export async function PUT(
 
     // Populate the response
     const populatedTransfer = await Transfer.findById(transfer._id)
-      .populate('requestedBy', 'firstName lastName email userType');
+      .populate('requestedBy', 'firstName lastName email userType phone');
 
     // Send real-time notification
     try {
@@ -88,6 +88,14 @@ export async function PUT(
     } catch (error) {
       console.error('Error sending real-time notification:', error);
       // Don't fail the request if notification fails
+    }
+
+    // Send SMS notification to manager
+    try {
+      const TransferSMSService = (await import('@/lib/communication/transfer-sms-service')).default;
+      await TransferSMSService.sendTransferCompletedSMS(populatedTransfer, authResult.user);
+    } catch (smsError) {
+      console.error('Error sending SMS notification:', smsError);
     }
 
     return createSuccessResponse({

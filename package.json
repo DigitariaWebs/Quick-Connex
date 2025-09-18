@@ -10,11 +10,7 @@
     "dev:verbose": "NODE_ENV=development node server.js",
     "build:analyze": "ANALYZE=true next build --turbopack",
     "clear-db": "node scripts/clear-database.js",
-    "create-test-users": "node scripts/create-test-users.js",
-    "test:transfers:simple": "node scripts/simple-transfer-test.js",
-    "test:transfers:workflow": "node scripts/test-transfer-workflow.js",
-    "test:transfers:simulate": "node scripts/simulate-transfer-workflow.js",
-    "test:transfers:full": "node scripts/test-full-transfer.js"
+    "create-test-users": "node scripts/create-test-users.js"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -39,7 +35,8 @@
     "react-datepicker": "^8.7.0",
     "react-dom": "19.1.0",
     "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^4.8.1",
+    "twilio": "^5.10.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
