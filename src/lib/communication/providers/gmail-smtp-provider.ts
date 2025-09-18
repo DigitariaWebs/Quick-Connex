@@ -126,7 +126,7 @@ export class GmailSMTPProvider implements ICommunicationProvider {
    * Prepare SMTP message format
    */
   private prepareSMTPMessage(message: EmailMessage): any {
-    return {
+    const smtpMessage: any = {
       from: `${this.fromName || 'Patient Management'} <${this.fromEmail}>`,
       to: message.recipient.email,
       subject: message.content.subject,
@@ -139,6 +139,18 @@ export class GmailSMTPProvider implements ICommunicationProvider {
         'X-Category': message.metadata?.category || 'general',
       },
     };
+
+    // Add attachments if present
+    if (message.content.attachments && message.content.attachments.length > 0) {
+      smtpMessage.attachments = message.content.attachments.map(attachment => ({
+        filename: attachment.filename,
+        content: attachment.content,
+        contentType: attachment.contentType,
+        size: attachment.size,
+      }));
+    }
+
+    return smtpMessage;
   }
 
   /**

@@ -131,55 +131,198 @@ function generateApprovalNotificationHTML(user: any, baseUrl: string): string {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Account Approved</title>
       <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px; }
-        .content { background: #f8f9fa; padding: 30px; border-radius: 10px; margin-bottom: 20px; }
-        .success { background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 8px; margin: 20px 0; }
-        .cta { text-align: center; margin: 30px 0; }
-        .btn { display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; }
-        .btn:hover { opacity: 0.9; }
-        .footer { text-align: center; color: #666; font-size: 14px; margin-top: 30px; }
+        body { 
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; 
+          line-height: 1.6; 
+          color: #374151; 
+          max-width: 600px; 
+          margin: 0 auto; 
+          padding: 20px; 
+          background-color: #f9fafb;
+        }
+        .container {
+          background: white;
+          border-radius: 16px;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          overflow: hidden;
+        }
+        .header { 
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+          color: white; 
+          padding: 40px 30px; 
+          text-align: center; 
+        }
+        .header h1 {
+          margin: 0 0 8px 0;
+          font-size: 28px;
+          font-weight: 700;
+        }
+        .header p {
+          margin: 0;
+          font-size: 16px;
+          opacity: 0.9;
+        }
+        .content { 
+          padding: 40px 30px; 
+        }
+        .success { 
+          background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); 
+          border: 1px solid #a7f3d0; 
+          padding: 24px; 
+          border-radius: 12px; 
+          margin: 0 0 30px 0;
+          border-left: 4px solid #10b981;
+        }
+        .success h3 {
+          margin: 0 0 12px 0;
+          color: #065f46;
+          font-size: 20px;
+          font-weight: 600;
+        }
+        .success p {
+          margin: 0 0 8px 0;
+          color: #047857;
+        }
+        .success strong {
+          color: #065f46;
+          font-weight: 600;
+        }
+        .section h3 {
+          margin: 0 0 16px 0;
+          color: #1f2937;
+          font-size: 20px;
+          font-weight: 600;
+        }
+        .section p {
+          margin: 0 0 12px 0;
+          color: #4b5563;
+        }
+        .section ul {
+          margin: 0 0 20px 0;
+          padding-left: 20px;
+        }
+        .section li {
+          margin: 0 0 8px 0;
+          color: #4b5563;
+        }
+        .section strong {
+          color: #1f2937;
+          font-weight: 600;
+        }
+        .cta { 
+          text-align: center; 
+          margin: 40px 0; 
+        }
+        .btn { 
+          display: inline-block; 
+          padding: 16px 32px; 
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+          color: white; 
+          text-decoration: none; 
+          border-radius: 12px; 
+          font-weight: 600;
+          font-size: 16px;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .btn:hover { 
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+        }
+        .features { 
+          background: #f1f5f9; 
+          padding: 24px; 
+          border-radius: 12px; 
+          margin: 30px 0;
+          border-left: 4px solid #64748b;
+        }
+        .features h4 {
+          margin: 0 0 16px 0;
+          color: #1f2937;
+          font-size: 18px;
+          font-weight: 600;
+        }
+        .features p {
+          margin: 0 0 12px 0;
+          color: #4b5563;
+        }
+        .features ul {
+          margin: 0;
+          padding-left: 20px;
+        }
+        .features li {
+          margin: 0 0 8px 0;
+          color: #4b5563;
+        }
+        .footer { 
+          text-align: center; 
+          color: #6b7280; 
+          font-size: 14px; 
+          margin-top: 40px; 
+          padding: 30px;
+          background: #f9fafb;
+          border-top: 1px solid #e5e7eb;
+        }
+        .footer p {
+          margin: 0 0 8px 0;
+        }
+        .platform-name {
+          font-weight: 700;
+          color: #10b981;
+        }
+        @media (max-width: 600px) {
+          .content {
+            padding: 30px 20px;
+          }
+          .header {
+            padding: 30px 20px;
+          }
+        }
       </style>
     </head>
     <body>
-      <div class="header">
-        <h1>🎉 Congratulations!</h1>
-        <p>Your Account Has Been Approved</p>
-      </div>
-      
-      <div class="content">
-        <div class="success">
-          <h3>✅ Account Approved</h3>
-          <p>Dear ${user.firstName},</p>
-          <p>Great news! Your registration for the Patient Management System has been approved by our administrators.</p>
+      <div class="container">
+        <div class="header">
+          <h1>🎉 Congratulations!</h1>
+          <p>Your Account Has Been Approved</p>
         </div>
         
-        <h3>What's Next?</h3>
-        <p>You can now access the Patient Management System with your registered credentials:</p>
-        <ul>
-          <li><strong>Email:</strong> ${user.email}</li>
-          <li><strong>User Type:</strong> ${user.userType.charAt(0).toUpperCase() + user.userType.slice(1)}</li>
-        </ul>
-        
-        <div class="cta">
-          <a href="${baseUrl}/login" class="btn">Login to Your Account</a>
+        <div class="content">
+          <div class="success">
+            <h3>✅ Account Approved</h3>
+            <p>Dear <strong>${user.firstName}</strong>,</p>
+            <p>Great news! Your registration for <span class="platform-name">Groupe BZ Services</span> has been approved by our administrators.</p>
+          </div>
+          
+          <div class="section">
+            <h3>What's Next?</h3>
+            <p>You can now access <span class="platform-name">Groupe BZ Services</span> with your registered credentials:</p>
+            <ul>
+              <li><strong>Email:</strong> ${user.email}</li>
+              <li><strong>User Type:</strong> ${user.userType.charAt(0).toUpperCase() + user.userType.slice(1)}</li>
+            </ul>
+          </div>
+          
+          <div class="cta">
+            <a href="${baseUrl}/login" class="btn">Login to Your Account</a>
+          </div>
+          
+          <div class="features">
+            <h4>📋 Getting Started</h4>
+            <p>Once you log in, you'll be able to:</p>
+            <ul>
+              <li>Access your personalized dashboard</li>
+              <li>Manage patient transfers</li>
+              <li>View and update your profile</li>
+              <li>Collaborate with your team</li>
+            </ul>
+          </div>
         </div>
         
-        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
-          <h4>📋 Getting Started</h4>
-          <p>Once you log in, you'll be able to:</p>
-          <ul>
-            <li>Access your personalized dashboard</li>
-            <li>Manage patient transfers</li>
-            <li>View and update your profile</li>
-            <li>Collaborate with your team</li>
-          </ul>
+        <div class="footer">
+          <p>Welcome to <span class="platform-name">Groupe BZ Services</span>!</p>
+          <p>If you have any questions, please contact our support team.</p>
         </div>
-      </div>
-      
-      <div class="footer">
-        <p>Welcome to the Patient Management System!</p>
-        <p>If you have any questions, please contact our support team.</p>
       </div>
     </body>
     </html>
@@ -198,50 +341,181 @@ function generateRejectionNotificationHTML(user: any, baseUrl: string): string {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Account Registration Update</title>
       <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px; }
-        .content { background: #f8f9fa; padding: 30px; border-radius: 10px; margin-bottom: 20px; }
-        .notice { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin: 20px 0; }
-        .cta { text-align: center; margin: 30px 0; }
-        .btn { display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; }
-        .btn:hover { opacity: 0.9; }
-        .footer { text-align: center; color: #666; font-size: 14px; margin-top: 30px; }
+        body { 
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; 
+          line-height: 1.6; 
+          color: #374151; 
+          max-width: 600px; 
+          margin: 0 auto; 
+          padding: 20px; 
+          background-color: #f9fafb;
+        }
+        .container {
+          background: white;
+          border-radius: 16px;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          overflow: hidden;
+        }
+        .header { 
+          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
+          color: white; 
+          padding: 40px 30px; 
+          text-align: center; 
+        }
+        .header h1 {
+          margin: 0 0 8px 0;
+          font-size: 28px;
+          font-weight: 700;
+        }
+        .header p {
+          margin: 0;
+          font-size: 16px;
+          opacity: 0.9;
+        }
+        .content { 
+          padding: 40px 30px; 
+        }
+        .notice { 
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); 
+          border: 1px solid #f59e0b; 
+          padding: 24px; 
+          border-radius: 12px; 
+          margin: 0 0 30px 0;
+          border-left: 4px solid #f59e0b;
+        }
+        .notice h3 {
+          margin: 0 0 12px 0;
+          color: #92400e;
+          font-size: 20px;
+          font-weight: 600;
+        }
+        .notice p {
+          margin: 0 0 8px 0;
+          color: #92400e;
+        }
+        .notice strong {
+          color: #92400e;
+          font-weight: 600;
+        }
+        .section h3 {
+          margin: 0 0 16px 0;
+          color: #1f2937;
+          font-size: 20px;
+          font-weight: 600;
+        }
+        .section p {
+          margin: 0 0 12px 0;
+          color: #4b5563;
+        }
+        .cta { 
+          text-align: center; 
+          margin: 40px 0; 
+        }
+        .btn { 
+          display: inline-block; 
+          padding: 16px 32px; 
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+          color: white; 
+          text-decoration: none; 
+          border-radius: 12px; 
+          font-weight: 600;
+          font-size: 16px;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .btn:hover { 
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+        }
+        .next-steps { 
+          background: #f1f5f9; 
+          padding: 24px; 
+          border-radius: 12px; 
+          margin: 30px 0;
+          border-left: 4px solid #64748b;
+        }
+        .next-steps h4 {
+          margin: 0 0 16px 0;
+          color: #1f2937;
+          font-size: 18px;
+          font-weight: 600;
+        }
+        .next-steps p {
+          margin: 0 0 12px 0;
+          color: #4b5563;
+        }
+        .next-steps ul {
+          margin: 0;
+          padding-left: 20px;
+        }
+        .next-steps li {
+          margin: 0 0 8px 0;
+          color: #4b5563;
+        }
+        .footer { 
+          text-align: center; 
+          color: #6b7280; 
+          font-size: 14px; 
+          margin-top: 40px; 
+          padding: 30px;
+          background: #f9fafb;
+          border-top: 1px solid #e5e7eb;
+        }
+        .footer p {
+          margin: 0 0 8px 0;
+        }
+        .platform-name {
+          font-weight: 700;
+          color: #10b981;
+        }
+        @media (max-width: 600px) {
+          .content {
+            padding: 30px 20px;
+          }
+          .header {
+            padding: 30px 20px;
+          }
+        }
       </style>
     </head>
     <body>
-      <div class="header">
-        <h1>📋 Account Registration Update</h1>
-        <p>Important Information About Your Application</p>
-      </div>
-      
-      <div class="content">
-        <div class="notice">
-          <h3>📝 Application Status Update</h3>
-          <p>Dear ${user.firstName},</p>
-          <p>Thank you for your interest in the Patient Management System. After careful review of your application, we regret to inform you that your registration could not be approved at this time.</p>
+      <div class="container">
+        <div class="header">
+          <h1>📋 Account Registration Update</h1>
+          <p>Important Information About Your Application</p>
         </div>
         
-        <h3>What This Means</h3>
-        <p>Your account registration has been reviewed by our administrators, and unfortunately, it does not meet our current requirements.</p>
-        
-        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
-          <h4>💡 Next Steps</h4>
-          <p>If you believe this decision was made in error or if you have additional information to provide, please:</p>
-          <ul>
-            <li>Contact our support team for more information</li>
-            <li>Review the registration requirements</li>
-            <li>Consider reapplying with updated information</li>
-          </ul>
+        <div class="content">
+          <div class="notice">
+            <h3>📝 Application Status Update</h3>
+            <p>Dear <strong>${user.firstName}</strong>,</p>
+            <p>Thank you for your interest in <span class="platform-name">Groupe BZ Services</span>. After careful review of your application, we regret to inform you that your registration could not be approved at this time.</p>
+          </div>
+          
+          <div class="section">
+            <h3>What This Means</h3>
+            <p>Your account registration has been reviewed by our administrators, and unfortunately, it does not meet our current requirements.</p>
+          </div>
+          
+          <div class="next-steps">
+            <h4>💡 Next Steps</h4>
+            <p>If you believe this decision was made in error or if you have additional information to provide, please:</p>
+            <ul>
+              <li>Contact our support team for more information</li>
+              <li>Review the registration requirements</li>
+              <li>Consider reapplying with updated information</li>
+            </ul>
+          </div>
+          
+          <div class="cta">
+            <a href="${baseUrl}/signup" class="btn">Apply Again</a>
+          </div>
         </div>
         
-        <div class="cta">
-          <a href="${baseUrl}/signup" class="btn">Apply Again</a>
+        <div class="footer">
+          <p>Thank you for your interest in <span class="platform-name">Groupe BZ Services</span>.</p>
+          <p>If you have any questions, please contact our support team.</p>
         </div>
-      </div>
-      
-      <div class="footer">
-        <p>Thank you for your interest in the Patient Management System.</p>
-        <p>If you have any questions, please contact our support team.</p>
       </div>
     </body>
     </html>
@@ -257,10 +531,10 @@ CONGRATULATIONS! YOUR ACCOUNT HAS BEEN APPROVED
 
 Dear ${user.firstName},
 
-Great news! Your registration for the Patient Management System has been approved by our administrators.
+Great news! Your registration for Groupe BZ Services has been approved by our administrators.
 
 WHAT'S NEXT?
-You can now access the Patient Management System with your registered credentials:
+You can now access Groupe BZ Services with your registered credentials:
 - Email: ${user.email}
 - User Type: ${user.userType.charAt(0).toUpperCase() + user.userType.slice(1)}
 
@@ -273,7 +547,7 @@ Once you log in, you'll be able to:
 - View and update your profile
 - Collaborate with your team
 
-Welcome to the Patient Management System!
+Welcome to Groupe BZ Services!
 If you have any questions, please contact our support team.
   `;
 }
@@ -287,7 +561,7 @@ ACCOUNT REGISTRATION UPDATE
 
 Dear ${user.firstName},
 
-Thank you for your interest in the Patient Management System. After careful review of your application, we regret to inform you that your registration could not be approved at this time.
+Thank you for your interest in Groupe BZ Services. After careful review of your application, we regret to inform you that your registration could not be approved at this time.
 
 WHAT THIS MEANS:
 Your account registration has been reviewed by our administrators, and unfortunately, it does not meet our current requirements.
@@ -300,7 +574,7 @@ If you believe this decision was made in error or if you have additional informa
 
 APPLY AGAIN: ${baseUrl}/signup
 
-Thank you for your interest in the Patient Management System.
+Thank you for your interest in Groupe BZ Services.
 If you have any questions, please contact our support team.
   `;
 }
