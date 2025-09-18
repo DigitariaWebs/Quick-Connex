@@ -403,6 +403,12 @@ export async function POST(request: Request) {
       const processingTime = Date.now() - startTime;
       console.log(`✅ API: User successfully saved to database in ${processingTime}ms`);
       console.log(`👤 API: User ID: ${savedUser._id}, Type: ${savedUser.userType}, Email: ${userEmail}`);
+      console.log(`📧 API: User status: ${savedUser.status} (pending approval)`);
+      
+      // Send approval email to admin (async, don't wait for it)
+      sendApprovalEmailToAdmin(savedUser._id.toString()).catch(error => {
+        console.error('❌ API: Failed to send approval email:', error);
+      });
       
       // Return a success response with sanitized user data
       const userResponse = savedUser.toObject();
@@ -411,8 +417,9 @@ export async function POST(request: Request) {
       
       return NextResponse.json(
         { 
-          message: 'Account created successfully',
+          message: 'Account created successfully. Your registration is pending approval. You will receive an email notification once approved.',
           user: sanitizedUser,
+          status: 'pending',
           processingTime: `${processingTime}ms`
         }, 
         { status: 201 }
@@ -464,5 +471,29 @@ export async function POST(request: Request) {
       { message: 'An unexpected error occurred during registration' }, 
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Send approval email to admin (async helper function)
+ */
+async function sendApprovalEmailToAdmin(userId: string) {
+  try {
+    const response = await fetch(`${process.env.BASE_URL || 'http://localhost:3000'}/api/auth/signup-approval`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId }),
+    });
+
+    if (response.ok) {
+      console.log(`✅ API: Approval email sent successfully for user ${userId}`);
+    } else {
+      const error = await response.json();
+      console.error(`❌ API: Failed to send approval email for user ${userId}:`, error);
+    }
+  } catch (error) {
+    console.error(`❌ API: Error sending approval email for user ${userId}:`, error);
   }
 }

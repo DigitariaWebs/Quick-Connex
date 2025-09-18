@@ -22,6 +22,11 @@ export interface IUser extends Document {
   post?: string;
   ciusss?: string;
   documents?: IDocumentReference[]; // Array of document references
+  // Approval system fields
+  status: 'pending' | 'approved' | 'rejected';
+  approvedBy?: string; // Admin email who approved/rejected
+  approvedAt?: Date;
+  rejectionReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -107,7 +112,24 @@ const UserSchema = new Schema<IUser>({
       type: Date,
       default: Date.now
     }
-  }]
+  }],
+  // Approval system fields
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+  approvedBy: {
+    type: String,
+    trim: true
+  },
+  approvedAt: {
+    type: Date
+  },
+  rejectionReason: {
+    type: String,
+    trim: true
+  }
 }, {
   timestamps: true, // This will automatically add createdAt and updatedAt fields
   versionKey: false // This will remove the __v field

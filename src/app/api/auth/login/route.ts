@@ -79,6 +79,30 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ API: Password validated successfully');
 
+    // Check user approval status
+    if (user.status === 'pending') {
+      console.log('⏳ API: User account is pending approval');
+      return NextResponse.json(
+        { 
+          message: 'Your account is pending approval. You will receive an email notification once approved.',
+          status: 'pending'
+        },
+        { status: 403 }
+      );
+    }
+
+    if (user.status === 'rejected') {
+      console.log('❌ API: User account has been rejected');
+      return NextResponse.json(
+        { 
+          message: 'Your account registration has been rejected. Please contact support for more information.',
+          status: 'rejected',
+          rejectionReason: user.rejectionReason
+        },
+        { status: 403 }
+      );
+    }
+
     // Create a session or token
     // For now, just return the user without sensitive data
     console.log('✅ API: Login successful');

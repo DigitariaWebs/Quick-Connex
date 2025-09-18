@@ -26,17 +26,15 @@ export function useSignUpForm() {
       const result = await response.json();
       
       if (response.ok) {
-        setMessage({ type: 'success', text: 'Account created successfully! Redirecting to login...' });
+        setMessage({ 
+          type: 'success', 
+          text: 'Account created successfully! Your registration is pending approval. You will receive an email notification once approved.' 
+        });
         
-        // Redirect to login page after a short delay
+        // Redirect to login page after a longer delay to let user read the message
         setTimeout(() => {
-          router.push('/login?message=account-created');
-        }, 2000);
-        
-        // Alternative: Auto-login after signup (uncomment if you want this behavior)
-        // setTimeout(() => {
-        //   router.push('/login?auto-login=true');
-        // }, 2000);
+          router.push('/login?message=account-pending-approval');
+        }, 4000);
       } else {
         if (result.errors && typeof result.errors === 'object') {
           // Handle field-specific errors

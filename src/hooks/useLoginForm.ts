@@ -36,7 +36,20 @@ export function useLoginForm() {
           router.push('/dashboard');
         }, 1000);
       } else {
-        setMessage({ type: 'error', text: result.message || 'Login failed' });
+        // Handle different error types
+        if (response.status === 403 && result.status === 'pending') {
+          setMessage({ 
+            type: 'warning', 
+            text: 'Your account is pending approval. You will receive an email notification once approved.' 
+          });
+        } else if (response.status === 403 && result.status === 'rejected') {
+          setMessage({ 
+            type: 'error', 
+            text: 'Your account registration has been rejected. Please contact support for more information.' 
+          });
+        } else {
+          setMessage({ type: 'error', text: result.message || 'Login failed' });
+        }
       }
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to connect to server. Please try again.' });

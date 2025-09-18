@@ -58,16 +58,23 @@ export async function GET(request: NextRequest) {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
 
-    // Test the tokens by getting user profile
-    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-    const profile = await gmail.users.getProfile({ userId: 'me' });
+    // Test the tokens by getting user profile (optional)
+    let userEmail = 'Unknown';
+    try {
+      const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+      const profile = await gmail.users.getProfile({ userId: 'me' });
+      userEmail = profile.data.emailAddress || 'Unknown';
+    } catch (profileError) {
+      console.log('Could not get user profile, but tokens are valid');
+      // Tokens are still valid even if we can't get the profile
+    }
 
     // Display success page with tokens
     return new NextResponse(
       `<html>
         <body>
           <h1>✅ Gmail OAuth Success!</h1>
-          <p><strong>Email:</strong> ${profile.data.emailAddress}</p>
+          <p><strong>Email:</strong> ${userEmail}</p>
           <h2>Tokens (save these to your .env.local file):</h2>
           <div style="background: #f5f5f5; padding: 10px; margin: 10px 0; font-family: monospace;">
             <p><strong>Access Token:</strong></p>

@@ -27,6 +27,14 @@ export default function LoginPage() {
       const url = new URL(window.location.href);
       url.searchParams.delete("message");
       window.history.replaceState({}, "", url.toString());
+    } else if (message === "account-pending-approval") {
+      setSuccessMessage(
+        "Account created successfully! Your registration is pending approval. You will receive an email notification once approved."
+      );
+      // Clear the URL parameter after showing the message
+      const url = new URL(window.location.href);
+      url.searchParams.delete("message");
+      window.history.replaceState({}, "", url.toString());
     }
   }, [searchParams]);
 
@@ -119,6 +127,8 @@ export default function LoginPage() {
                 className={`rounded-lg p-3 mb-6 text-sm ${
                   message.type === "success"
                     ? "bg-green-50 text-green-700 border border-green-200"
+                    : message.type === "warning"
+                    ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
                     : "bg-red-50 text-red-700 border border-red-200"
                 }`}
               >

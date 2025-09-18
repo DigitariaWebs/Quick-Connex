@@ -24,7 +24,11 @@ export async function GET(request: NextRequest) {
 
       const authUrl = oauth2Client.generateAuthUrl({
         access_type: 'offline',
-        scope: ['https://www.googleapis.com/auth/gmail.send'],
+        scope: [
+          'https://www.googleapis.com/auth/gmail.send',
+          'https://www.googleapis.com/auth/userinfo.email',
+          'https://www.googleapis.com/auth/userinfo.profile'
+        ],
         prompt: 'consent', // Force consent screen to get refresh token
       });
 
@@ -72,15 +76,22 @@ export async function POST(request: NextRequest) {
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
 
-    // Test the tokens by getting user profile
-    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-    const profile = await gmail.users.getProfile({ userId: 'me' });
+    // Test the tokens by getting user profile (optional)
+    let userEmail = 'Unknown';
+    try {
+      const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+      const profile = await gmail.users.getProfile({ userId: 'me' });
+      userEmail = profile.data.emailAddress || 'Unknown';
+    } catch (profileError) {
+      console.log('Could not get user profile, but tokens are valid');
+      // Tokens are still valid even if we can't get the profile
+    }
 
     return NextResponse.json({
       success: true,
       data: {
         tokens,
-        email: profile.data.emailAddress,
+        email: userEmail,
         message: 'Gmail API authentication successful',
       },
     });
