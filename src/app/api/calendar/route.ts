@@ -336,42 +336,6 @@ async function checkSchedulingConflicts(
     });
   }
 
-  // Check for resource conflicts
-  if (scheduling?.resources) {
-    const resourceQueries = [];
-    
-    if (scheduling.resources.assignedDriver) {
-      resourceQueries.push({
-        'scheduling.resources.assignedDriver': scheduling.resources.assignedDriver,
-        scheduledDate: { $lt: endTime },
-        scheduledEndDate: { $gt: startTime },
-        status: { $in: ['pending', 'accepted', 'in_progress'] }
-      });
-    }
-
-    if (scheduling.resources.assignedVehicle) {
-      resourceQueries.push({
-        'scheduling.resources.assignedVehicle': scheduling.resources.assignedVehicle,
-        scheduledDate: { $lt: endTime },
-        scheduledEndDate: { $gt: startTime },
-        status: { $in: ['pending', 'accepted', 'in_progress'] }
-      });
-    }
-
-    for (const query of resourceQueries) {
-      query._id = { $ne: transferId };
-      const resourceConflicts = await Transfer.find(query);
-      
-      for (const conflict of resourceConflicts) {
-        conflicts.push({
-          transferId: conflict.transferId,
-          conflictType: 'resource',
-          severity: 'high',
-          description: `Resource conflict with transfer ${conflict.transferId}`
-        });
-      }
-    }
-  }
 
   return conflicts;
 }

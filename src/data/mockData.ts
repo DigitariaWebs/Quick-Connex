@@ -10,7 +10,7 @@ export const mockUsers: IUser[] = [
     email: 'sarah.johnson@hospital.com',
     phone: '(555) 123-4567',
     password: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8KzKz2K', // password123
-    post: 'Head of Emergency Department',
+    post: 'Head of Emergency',
     class: 'A',
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01')
@@ -86,7 +86,6 @@ export const mockUsers: IUser[] = [
       }
     },
     currentHospital: 'City General Hospital',
-    currentDepartment: 'Emergency',
     admissionDate: new Date('2024-01-15'),
     status: 'active',
     createdAt: new Date('2024-01-15'),
@@ -120,7 +119,6 @@ export const mockUsers: IUser[] = [
       }
     },
     currentHospital: 'Metro Medical Center',
-    currentDepartment: 'Cardiology',
     admissionDate: new Date('2024-01-20'),
     status: 'active',
     createdAt: new Date('2024-01-20'),
@@ -154,7 +152,6 @@ export const mockUsers: IUser[] = [
       }
     },
     currentHospital: 'Regional Hospital',
-    currentDepartment: 'Pulmonology',
     admissionDate: new Date('2024-01-25'),
     status: 'active',
     createdAt: new Date('2024-01-25'),
@@ -188,7 +185,6 @@ export const mockUsers: IUser[] = [
       }
     },
     currentHospital: 'Memorial Hospital',
-    currentDepartment: 'Endocrinology',
     admissionDate: new Date('2024-01-28'),
     status: 'active',
     createdAt: new Date('2024-01-28'),
@@ -222,7 +218,6 @@ export const mockUsers: IUser[] = [
       }
     },
     currentHospital: 'Desert Medical Center',
-    currentDepartment: 'Internal Medicine',
     admissionDate: new Date('2024-02-01'),
     status: 'active',
     createdAt: new Date('2024-02-01'),
@@ -256,7 +251,6 @@ export const mockUsers: IUser[] = [
       }
     },
     currentHospital: 'Sunshine Hospital',
-    currentDepartment: 'Rheumatology',
     admissionDate: new Date('2024-02-05'),
     status: 'active',
     createdAt: new Date('2024-02-05'),
@@ -275,9 +269,7 @@ export const mockTransfers: ITransfer[] = [
       age: 39
     },
     fromHospital: 'City General Hospital',
-    fromDepartment: 'Emergency',
     toHospital: 'Metro Medical Center',
-    toDepartment: 'Internal Medicine',
     requestedBy: 'user1' as any,
     assignedTo: undefined,
     reason: 'Patient requires specialized care for diabetes management and blood sugar stabilization',
@@ -299,9 +291,7 @@ export const mockTransfers: ITransfer[] = [
       age: 46
     },
     fromHospital: 'Metro Medical Center',
-    fromDepartment: 'Cardiology',
     toHospital: 'City General Hospital',
-    toDepartment: 'Cardiac Surgery',
     requestedBy: 'user2' as any,
     assignedTo: undefined,
     reason: 'Patient requires urgent cardiac surgery consultation for valve replacement',
@@ -322,9 +312,7 @@ export const mockTransfers: ITransfer[] = [
       age: 28
     },
     fromHospital: 'Regional Hospital',
-    fromDepartment: 'Pulmonology',
     toHospital: 'City General Hospital',
-    toDepartment: 'Respiratory Therapy',
     requestedBy: 'user1' as any,
     assignedTo: 'user3' as any,
     reason: 'Patient needs advanced respiratory therapy and pulmonary rehabilitation',
@@ -347,9 +335,7 @@ export const mockTransfers: ITransfer[] = [
       age: 55
     },
     fromHospital: 'Memorial Hospital',
-    fromDepartment: 'Endocrinology',
     toHospital: 'Metro Medical Center',
-    toDepartment: 'Nephrology',
     requestedBy: 'user2' as any,
     assignedTo: 'user4' as any,
     reason: 'Patient requires specialized nephrology care for diabetic kidney complications',
@@ -371,9 +357,7 @@ export const mockTransfers: ITransfer[] = [
       age: 36
     },
     fromHospital: 'Desert Medical Center',
-    fromDepartment: 'Internal Medicine',
     toHospital: 'Regional Hospital',
-    toDepartment: 'Psychiatry',
     requestedBy: 'user1' as any,
     assignedTo: 'user3' as any,
     reason: 'Patient requires psychiatric evaluation and mental health support',
@@ -396,9 +380,7 @@ export const mockTransfers: ITransfer[] = [
       age: 52
     },
     fromHospital: 'Sunshine Hospital',
-    fromDepartment: 'Rheumatology',
     toHospital: 'Memorial Hospital',
-    toDepartment: 'Orthopedics',
     requestedBy: 'user2' as any,
     assignedTo: undefined,
     reason: 'Patient needs orthopedic consultation for joint replacement surgery',
@@ -417,9 +399,7 @@ export const mockTransfers: ITransfer[] = [
     patientId: 'PAT-001',
     patient: 'patient1' as any,
     fromHospital: 'Metro Medical Center',
-    fromDepartment: 'Internal Medicine',
     toHospital: 'City General Hospital',
-    toDepartment: 'Endocrinology',
     requestedBy: 'user1' as any,
     assignedTo: 'user4' as any,
     reason: 'Patient requires specialized endocrinology care for diabetes management',
@@ -427,7 +407,7 @@ export const mockTransfers: ITransfer[] = [
     status: 'in_progress',
     requestedDate: new Date('2024-02-13T07:00:00Z'),
     scheduledDate: new Date('2024-02-14T08:00:00Z'),
-    notes: 'Transfer in progress. Patient being transported to endocrinology department.',
+    notes: 'Transfer in progress. Patient being transported to endocrinology.',
     medicalDocuments: ['diabetes_management.pdf', 'blood_glucose_log.pdf'],
     createdAt: new Date('2024-02-13T07:00:00Z'),
     updatedAt: new Date('2024-02-13T07:00:00Z')
@@ -438,9 +418,7 @@ export const mockTransfers: ITransfer[] = [
     patientId: 'PAT-002',
     patient: 'patient2' as any,
     fromHospital: 'City General Hospital',
-    fromDepartment: 'Cardiac Surgery',
     toHospital: 'Metro Medical Center',
-    toDepartment: 'Cardiology',
     requestedBy: 'user2' as any,
     assignedTo: 'user3' as any,
     reason: 'Patient requires post-surgical cardiac monitoring and rehabilitation',

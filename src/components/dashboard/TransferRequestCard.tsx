@@ -25,9 +25,7 @@ interface TransferRequest {
     age: number;
   };
   fromHospital: string;
-  fromDepartment: string;
   toHospital: string;
-  toDepartment: string;
   requestedBy: {
     firstName: string;
     lastName: string;
@@ -249,7 +247,6 @@ export default function TransferRequestCard({
             <p className="text-sm font-medium text-gray-800 truncate">
               {transfer.fromHospital}
             </p>
-            <p className="text-xs text-gray-600">{transfer.fromDepartment}</p>
           </div>
 
           <div className="px-3">
@@ -263,7 +260,6 @@ export default function TransferRequestCard({
             <p className="text-sm font-medium text-gray-800 truncate">
               {transfer.toHospital}
             </p>
-            <p className="text-xs text-gray-600">{transfer.toDepartment}</p>
           </div>
         </div>
       </div>

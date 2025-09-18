@@ -31,11 +31,6 @@ export interface ITransfer extends Document {
     location: {
       pickupLocation: string;
       dropoffLocation: string;
-      transportType: 'ambulance' | 'helicopter' | 'ground_transport' | 'walking';
-    };
-    resources: {
-      requiredEquipment?: string[];
-      specialInstructions?: string;
     };
   };
   
@@ -162,21 +157,6 @@ const TransferSchema = new Schema<ITransfer>({
       dropoffLocation: {
         type: String,
         required: true,
-        trim: true
-      },
-      transportType: {
-        type: String,
-        enum: ['ambulance', 'helicopter', 'ground_transport', 'walking'],
-        default: 'ambulance'
-      }
-    },
-    resources: {
-      requiredEquipment: [{
-        type: String,
-        trim: true
-      }],
-      specialInstructions: {
-        type: String,
         trim: true
       }
     }

@@ -300,7 +300,6 @@ export const DB_INDEXES = {
 //   TransferStatus,
 //   TransferPriority,
 //   TransferType,
-//   TransportType,
 //   RecurrencePattern,
 //   ConflictType,
 //   ConflictSeverity,

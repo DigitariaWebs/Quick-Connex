@@ -18,10 +18,6 @@ import {
   Edit,
   Trash2,
   Repeat,
-  Car,
-  Plane,
-  Truck,
-  User,
 } from "lucide-react";
 
 interface CalendarEvent {
@@ -61,12 +57,6 @@ interface CalendarEvent {
       location?: {
         pickupLocation: string;
         dropoffLocation: string;
-        transportType: string;
-      };
-      resources?: {
-        assignedDriver?: string;
-        assignedVehicle?: string;
-        requiredEquipment?: string[];
       };
     };
     notes?: string;
@@ -98,7 +88,6 @@ export default function CalendarView({
   const [filters, setFilters] = useState({
     status: "all",
     priority: "all",
-    transportType: "all",
     showRecurring: true,
   });
 
@@ -140,14 +129,6 @@ export default function CalendarView({
           filteredEvents = filteredEvents.filter(
             (event: CalendarEvent) =>
               event.extendedProps.priority === filters.priority
-          );
-        }
-
-        if (filters.transportType !== "all") {
-          filteredEvents = filteredEvents.filter(
-            (event: CalendarEvent) =>
-              event.extendedProps.scheduling?.location?.transportType ===
-              filters.transportType
           );
         }
 
@@ -205,19 +186,6 @@ export default function CalendarView({
     }
 
     setCurrentDate(newDate);
-  };
-
-  const getTransportIcon = (transportType: string) => {
-    switch (transportType) {
-      case "helicopter":
-        return <Plane size={16} />;
-      case "ground_transport":
-        return <Truck size={16} />;
-      case "walking":
-        return <User size={16} />;
-      default:
-        return <Car size={16} />;
-    }
   };
 
   const getPriorityBadge = (priority: string) => {
@@ -638,28 +606,6 @@ export default function CalendarView({
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Transport Type
-                  </label>
-                  <select
-                    value={filters.transportType}
-                    onChange={(e) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        transportType: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="all">All Types</option>
-                    <option value="ambulance">Ambulance</option>
-                    <option value="helicopter">Helicopter</option>
-                    <option value="ground_transport">Ground Transport</option>
-                    <option value="walking">Walking</option>
-                  </select>
-                </div>
-
                 <div className="flex items-end">
                   <label className="flex items-center space-x-2">
                     <input
@@ -804,55 +750,7 @@ export default function CalendarView({
                       <h4 className="font-semibold text-gray-800 mb-2">
                         Scheduling Details
                       </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        {selectedEvent.extendedProps.scheduling.location && (
-                          <div>
-                            <span className="text-gray-600">
-                              Transport Type:
-                            </span>
-                            <div className="flex items-center space-x-2 mt-1">
-                              {getTransportIcon(
-                                selectedEvent.extendedProps.scheduling.location
-                                  .transportType
-                              )}
-                              <span className="font-medium capitalize">
-                                {selectedEvent.extendedProps.scheduling.location.transportType.replace(
-                                  "_",
-                                  " "
-                                )}
-                              </span>
-                            </div>
-                          </div>
-                        )}
-
-                        {selectedEvent.extendedProps.scheduling.resources
-                          ?.assignedDriver && (
-                          <div>
-                            <span className="text-gray-600">
-                              Assigned Driver:
-                            </span>
-                            <span className="ml-2 font-medium">
-                              {
-                                selectedEvent.extendedProps.scheduling.resources
-                                  .assignedDriver
-                              }
-                            </span>
-                          </div>
-                        )}
-
-                        {selectedEvent.extendedProps.scheduling.resources
-                          ?.assignedVehicle && (
-                          <div>
-                            <span className="text-gray-600">Vehicle:</span>
-                            <span className="ml-2 font-medium">
-                              {
-                                selectedEvent.extendedProps.scheduling.resources
-                                  .assignedVehicle
-                              }
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm"></div>
                     </div>
                   )}
 

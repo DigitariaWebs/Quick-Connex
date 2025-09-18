@@ -119,12 +119,7 @@ export async function POST(request: NextRequest) {
         },
         location: {
           pickupLocation: fromHospital,
-          dropoffLocation: toHospital,
-          transportType: 'ambulance'
-        },
-        resources: {
-          requiredEquipment: [],
-          specialInstructions: ''
+          dropoffLocation: toHospital
         }
       },
       lastModifiedBy: requestingUser._id,

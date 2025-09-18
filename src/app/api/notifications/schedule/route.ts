@@ -167,46 +167,7 @@ export async function GET(request: NextRequest) {
       const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
       // Check for unassigned drivers/vehicles
-      const unassignedTransfers = await Transfer.find({
-        scheduledDate: {
-          $gte: now,
-          $lte: next24Hours
-        },
-        $or: [
-          { 'scheduling.resources.assignedDriver': { $exists: false } },
-          { 'scheduling.resources.assignedDriver': '' },
-          { 'scheduling.resources.assignedVehicle': { $exists: false } },
-          { 'scheduling.resources.assignedVehicle': '' }
-        ],
-        status: { $in: ['pending', 'accepted'] }
-      })
-      .populate('patient', 'firstName lastName patientId')
-      .sort({ scheduledDate: 1 })
-      .limit(10);
 
-      for (const transfer of unassignedTransfers) {
-        const missingResources = [];
-        if (!transfer.scheduling?.resources?.assignedDriver) {
-          missingResources.push('driver');
-        }
-        if (!transfer.scheduling?.resources?.assignedVehicle) {
-          missingResources.push('vehicle');
-        }
-
-        notifications.push({
-          id: `resource_${transfer._id}`,
-          type: 'resource',
-          priority: 'medium',
-          title: 'Missing Resources',
-          message: `Transfer ${transfer.transferId} is missing: ${missingResources.join(', ')}`,
-          transferId: transfer.transferId,
-          scheduledDate: transfer.scheduledDate,
-          patient: transfer.patient,
-          missingResources,
-          createdAt: new Date(),
-          read: false
-        });
-      }
     }
 
     // Sort notifications by priority and date

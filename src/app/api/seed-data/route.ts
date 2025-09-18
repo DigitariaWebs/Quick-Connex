@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       lastName: 'Johnson',
       email: 'sarah.johnson@hospital.com',
       phone: '(555) 123-4567',
-      post: 'Head of Emergency Department',
+      post: 'Head of Emergency',
       class: 'A'
     });
     await manager.save();
@@ -66,7 +66,6 @@ export async function POST(request: NextRequest) {
           }
         },
         currentHospital: 'City General Hospital',
-        currentDepartment: 'Emergency',
         admissionDate: new Date('2024-01-15'),
         status: 'active'
       },
@@ -97,7 +96,6 @@ export async function POST(request: NextRequest) {
           }
         },
         currentHospital: 'Metro Medical Center',
-        currentDepartment: 'Cardiology',
         admissionDate: new Date('2024-01-20'),
         status: 'active'
       },
@@ -128,7 +126,6 @@ export async function POST(request: NextRequest) {
           }
         },
         currentHospital: 'Regional Hospital',
-        currentDepartment: 'Pulmonology',
         admissionDate: new Date('2024-01-25'),
         status: 'active'
       }
@@ -143,9 +140,7 @@ export async function POST(request: NextRequest) {
         patientId: 'PAT-001',
         patient: createdPatients[0]._id,
         fromHospital: 'City General Hospital',
-        fromDepartment: 'Emergency',
         toHospital: 'Metro Medical Center',
-        toDepartment: 'Internal Medicine',
         requestedBy: manager._id,
         reason: 'Patient requires specialized care for diabetes management',
         priority: 'high',
@@ -159,9 +154,7 @@ export async function POST(request: NextRequest) {
         patientId: 'PAT-002',
         patient: createdPatients[1]._id,
         fromHospital: 'Metro Medical Center',
-        fromDepartment: 'Cardiology',
         toHospital: 'City General Hospital',
-        toDepartment: 'Cardiac Surgery',
         requestedBy: manager._id,
         reason: 'Patient requires cardiac surgery consultation',
         priority: 'urgent',
@@ -174,9 +167,7 @@ export async function POST(request: NextRequest) {
         patientId: 'PAT-003',
         patient: createdPatients[2]._id,
         fromHospital: 'Regional Hospital',
-        fromDepartment: 'Pulmonology',
         toHospital: 'City General Hospital',
-        toDepartment: 'Respiratory Therapy',
         requestedBy: manager._id,
         reason: 'Patient needs advanced respiratory therapy',
         priority: 'medium',

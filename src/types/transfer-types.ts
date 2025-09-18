@@ -37,7 +37,6 @@ export interface UserInfo {
   email: string;
   userType: UserRole;
   isActive: boolean;
-  department?: string;
   phone?: string;
 }
 
@@ -56,16 +55,6 @@ export interface LocationConfig {
   estimatedDuration?: number; // in minutes
 }
 
-// Resource Configuration
-export interface ResourceConfig {
-  assignedDriver?: string;
-  assignedVehicle?: string;
-  requiredEquipment?: string[];
-  specialInstructions?: string;
-  backupDriver?: string;
-  backupVehicle?: string;
-}
-
 // Note: ConflictInfo interface removed as hospitals handle their own logistics
 
 // Scheduling Configuration
@@ -73,7 +62,6 @@ export interface SchedulingConfig {
   isRecurring: boolean;
   timeSlot: TimeSlot;
   location: LocationConfig;
-  resources: ResourceConfig;
 }
 
 // Status History Entry
@@ -90,9 +78,7 @@ export interface ITransfer extends BaseEntity {
   transferId: string;
   patientInfo: PatientInfo;
   fromHospital: string;
-  fromDepartment: string;
   toHospital: string;
-  toDepartment: string;
   requestedBy: Types.ObjectId; // Reference to User (manager)
   assignedTo?: Types.ObjectId; // Reference to User (employee)
   reason: string;
@@ -123,9 +109,7 @@ export interface TransferRequestData {
   patientLastName: string;
   patientAge: number;
   fromHospital: string;
-  fromDepartment?: string;
   toHospital: string;
-  toDepartment?: string;
   transferDate: string;
   transferTime: string;
   transferType: TransferType;
@@ -143,9 +127,7 @@ export interface TransferResponse {
   transferId: string;
   patientInfo: PatientInfo;
   fromHospital: string;
-  fromDepartment: string;
   toHospital: string;
-  toDepartment: string;
   requestedBy: UserInfo;
   assignedTo?: UserInfo;
   reason: string;
@@ -366,7 +348,6 @@ export interface TransferAnalytics {
 export type TransferStatusType = keyof typeof TransferStatus;
 export type TransferPriorityType = keyof typeof TransferPriority;
 export type TransferTypeType = keyof typeof TransferType;
-// Note: TransportTypeType removed as transport types are not needed
 export type UserRoleType = keyof typeof UserRole;
 
 // Generic API Response

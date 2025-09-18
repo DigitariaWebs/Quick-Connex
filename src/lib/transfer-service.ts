@@ -74,9 +74,7 @@ export class TransferService {
           age: transferData.patientAge
         },
         fromHospital: transferData.fromHospital,
-        fromDepartment: transferData.fromDepartment || 'General',
         toHospital: transferData.toHospital,
-        toDepartment: transferData.toDepartment || 'General',
         requestedBy: requestingUser._id,
         reason: transferData.reason,
         priority: transferData.priority,
@@ -638,10 +636,6 @@ export class TransferService {
         pickupLocation: transferData.fromHospital,
         dropoffLocation: transferData.toHospital
       },
-      resources: {
-        requiredEquipment: transferData.scheduling?.resources?.requiredEquipment || [],
-        specialInstructions: transferData.scheduling?.resources?.specialInstructions || ''
-      }
     };
   }
 
@@ -651,9 +645,7 @@ export class TransferService {
       transferId: transfer.transferId,
       patientInfo: transfer.patientInfo,
       fromHospital: transfer.fromHospital,
-      fromDepartment: transfer.fromDepartment,
       toHospital: transfer.toHospital,
-      toDepartment: transfer.toDepartment,
       requestedBy: transfer.requestedBy,
       assignedTo: transfer.assignedTo,
       reason: transfer.reason,

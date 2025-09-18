@@ -206,11 +206,6 @@ export default function TransferForm({
         location: {
           pickupLocation: fromHospital,
           dropoffLocation: toHospital,
-          transportType: "ambulance",
-        },
-        resources: {
-          requiredEquipment: [],
-          specialInstructions: "",
         },
       },
     };

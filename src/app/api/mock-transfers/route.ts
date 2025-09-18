@@ -53,9 +53,7 @@ export async function POST(request: NextRequest) {
     const {
       patientId,
       fromHospital,
-      fromDepartment,
       toHospital,
-      toDepartment,
       reason,
       priority = 'medium',
       notes,
@@ -77,9 +75,7 @@ export async function POST(request: NextRequest) {
       patientId,
       patient: null, // Will be populated by the frontend
       fromHospital,
-      fromDepartment,
       toHospital,
-      toDepartment,
       requestedBy: null, // Will be populated by the frontend
       assignedTo: undefined,
       reason,

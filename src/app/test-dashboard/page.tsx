@@ -28,12 +28,9 @@ interface TransferRequest {
     gender: string;
     phone: string;
     currentHospital?: string;
-    currentDepartment?: string;
   };
   fromHospital: string;
-  fromDepartment: string;
   toHospital: string;
-  toDepartment: string;
   requestedBy: {
     firstName: string;
     lastName: string;

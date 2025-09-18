@@ -39,18 +39,6 @@ export async function GET(request: NextRequest) {
       query._id = { $ne: transferId };
     }
 
-    // Add resource-specific filters
-    if (resourceType === 'driver') {
-      const driverId = searchParams.get('driverId');
-      if (driverId) {
-        query['scheduling.resources.assignedDriver'] = driverId;
-      }
-    } else if (resourceType === 'vehicle') {
-      const vehicleId = searchParams.get('vehicleId');
-      if (vehicleId) {
-        query['scheduling.resources.assignedVehicle'] = vehicleId;
-      }
-    }
 
     const conflictingTransfers = await Transfer.find(query)
       .populate('patient', 'patientId firstName lastName')
@@ -198,10 +186,6 @@ export async function POST(request: NextRequest) {
             await Transfer.findByIdAndUpdate(
               affectedTransfer._id,
               {
-                $unset: {
-                  'scheduling.resources.assignedDriver': 1,
-                  'scheduling.resources.assignedVehicle': 1
-                },
                 lastModifiedBy: authResult.user._id,
                 $push: {
                   statusHistory: {
@@ -215,9 +199,8 @@ export async function POST(request: NextRequest) {
             );
 
             results.push({
-              action: 'resource_reassigned',
-              transferId: affectedTransfer.transferId,
-              clearedResources: ['assignedDriver', 'assignedVehicle']
+              action: 'transfer_updated',
+              transferId: affectedTransfer.transferId
             });
           }
         }

@@ -516,7 +516,7 @@ export default function SignUpPage() {
                           ? "border-red-300 bg-red-50"
                           : "border-gray-200"
                       }`}
-                      placeholder="Head of Department"
+                      placeholder="Head of Service"
                     />
                     {hasFieldError("post") && (
                       <div className="mt-2">

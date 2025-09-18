@@ -6,10 +6,6 @@ import {
   Calendar,
   Clock,
   MapPin,
-  Car,
-  Plane,
-  Truck,
-  User,
   Repeat,
   AlertTriangle,
   CheckCircle2,
@@ -35,13 +31,6 @@ interface SchedulingData {
   location: {
     pickupLocation: string;
     dropoffLocation: string;
-    transportType: "ambulance" | "helicopter" | "ground_transport" | "walking";
-  };
-  resources: {
-    assignedDriver?: string;
-    assignedVehicle?: string;
-    requiredEquipment?: string[];
-    specialInstructions?: string;
   };
 }
 
@@ -70,11 +59,6 @@ export default function AdvancedSchedulingForm({
     location: {
       pickupLocation: "",
       dropoffLocation: "",
-      transportType: "ambulance",
-    },
-    resources: {
-      requiredEquipment: [],
-      specialInstructions: "",
     },
     ...initialData,
   });
@@ -82,7 +66,6 @@ export default function AdvancedSchedulingForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [conflicts, setConflicts] = useState<any[]>([]);
   const [checkingConflicts, setCheckingConflicts] = useState(false);
-  const [equipmentInput, setEquipmentInput] = useState("");
   const [exceptionInput, setExceptionInput] = useState("");
 
   // Check for conflicts when scheduling data changes
@@ -90,7 +73,7 @@ export default function AdvancedSchedulingForm({
     if (formData.timeSlot.startTime && formData.timeSlot.endTime) {
       checkConflicts();
     }
-  }, [formData.timeSlot, formData.resources, transferId]);
+  }, [formData.timeSlot, transferId]);
 
   const checkConflicts = async () => {
     if (
@@ -119,16 +102,6 @@ export default function AdvancedSchedulingForm({
         startDate: startDateTime.toISOString(),
         endDate: endDateTime.toISOString(),
       });
-
-      if (formData.resources.assignedDriver) {
-        params.append("resourceType", "driver");
-        params.append("driverId", formData.resources.assignedDriver);
-      }
-
-      if (formData.resources.assignedVehicle) {
-        params.append("resourceType", "vehicle");
-        params.append("vehicleId", formData.resources.assignedVehicle);
-      }
 
       const response = await fetch(`/api/calendar/conflicts?${params}`);
       const data = await response.json();
@@ -196,37 +169,6 @@ export default function AdvancedSchedulingForm({
     }
   };
 
-  const addEquipment = () => {
-    if (
-      equipmentInput.trim() &&
-      !formData.resources.requiredEquipment?.includes(equipmentInput.trim())
-    ) {
-      setFormData((prev) => ({
-        ...prev,
-        resources: {
-          ...prev.resources,
-          requiredEquipment: [
-            ...(prev.resources.requiredEquipment || []),
-            equipmentInput.trim(),
-          ],
-        },
-      }));
-      setEquipmentInput("");
-    }
-  };
-
-  const removeEquipment = (equipment: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      resources: {
-        ...prev.resources,
-        requiredEquipment:
-          prev.resources.requiredEquipment?.filter((e) => e !== equipment) ||
-          [],
-      },
-    }));
-  };
-
   const addException = () => {
     if (exceptionInput) {
       const date = new Date(exceptionInput);
@@ -266,19 +208,6 @@ export default function AdvancedSchedulingForm({
 
       return { ...prev, timeSlot: newTimeSlot };
     });
-  };
-
-  const getTransportIcon = (type: string) => {
-    switch (type) {
-      case "helicopter":
-        return <Plane size={20} />;
-      case "ground_transport":
-        return <Truck size={20} />;
-      case "walking":
-        return <User size={20} />;
-      default:
-        return <Car size={20} />;
-    }
   };
 
   const getConflictSeverityColor = (severity: string) => {
@@ -433,177 +362,6 @@ export default function AdvancedSchedulingForm({
                 </p>
               )}
             </div>
-          </div>
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Transport Type
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[
-                {
-                  value: "ambulance",
-                  label: "Ambulance",
-                  icon: <Car size={20} />,
-                },
-                {
-                  value: "helicopter",
-                  label: "Helicopter",
-                  icon: <Plane size={20} />,
-                },
-                {
-                  value: "ground_transport",
-                  label: "Ground Transport",
-                  icon: <Truck size={20} />,
-                },
-                {
-                  value: "walking",
-                  label: "Walking",
-                  icon: <User size={20} />,
-                },
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      location: {
-                        ...prev.location,
-                        transportType: option.value as any,
-                      },
-                    }))
-                  }
-                  className={`flex items-center space-x-2 p-3 border rounded-lg transition-colors ${
-                    formData.location.transportType === option.value
-                      ? "border-green-500 bg-green-50 text-green-700"
-                      : "border-gray-300 hover:border-gray-400"
-                  }`}
-                >
-                  {option.icon}
-                  <span className="text-sm font-medium">{option.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Resources */}
-        <div className="bg-purple-50 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold text-purple-800 mb-4 flex items-center">
-            <User size={20} className="mr-2" />
-            Resources & Equipment
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Assigned Driver
-              </label>
-              <input
-                type="text"
-                value={formData.resources.assignedDriver || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    resources: {
-                      ...prev.resources,
-                      assignedDriver: e.target.value,
-                    },
-                  }))
-                }
-                placeholder="Enter driver name or ID"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Assigned Vehicle
-              </label>
-              <input
-                type="text"
-                value={formData.resources.assignedVehicle || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    resources: {
-                      ...prev.resources,
-                      assignedVehicle: e.target.value,
-                    },
-                  }))
-                }
-                placeholder="Enter vehicle ID or description"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Required Equipment
-            </label>
-            <div className="flex space-x-2 mb-2">
-              <input
-                type="text"
-                value={equipmentInput}
-                onChange={(e) => setEquipmentInput(e.target.value)}
-                placeholder="Add equipment"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                onKeyPress={(e) => e.key === "Enter" && addEquipment()}
-              />
-              <button
-                type="button"
-                onClick={addEquipment}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                <Plus size={16} />
-              </button>
-            </div>
-
-            {formData.resources.requiredEquipment &&
-              formData.resources.requiredEquipment.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {formData.resources.requiredEquipment.map(
-                    (equipment, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center space-x-1 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
-                      >
-                        <span>{equipment}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeEquipment(equipment)}
-                          className="hover:text-purple-600"
-                        >
-                          <X size={14} />
-                        </button>
-                      </span>
-                    )
-                  )}
-                </div>
-              )}
-          </div>
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Special Instructions
-            </label>
-            <textarea
-              value={formData.resources.specialInstructions || ""}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  resources: {
-                    ...prev.resources,
-                    specialInstructions: e.target.value,
-                  },
-                }))
-              }
-              placeholder="Enter any special instructions for the transfer"
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
           </div>
         </div>
 
