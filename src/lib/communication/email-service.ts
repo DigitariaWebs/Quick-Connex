@@ -52,17 +52,17 @@ export class EmailService {
         this.providers.set('gmail-smtp', new GmailSMTPProvider(this.config.providers.email));
         break;
       case 'ses':
-        this.providers.set('ses', new SESProvider(this.config.providers.email));
+        console.warn('SES provider not implemented yet');
         break;
       case 'mailgun':
-        this.providers.set('mailgun', new MailgunProvider(this.config.providers.email));
+        console.warn('Mailgun provider not implemented yet');
         break;
       case 'resend':
-        this.providers.set('resend', new ResendProvider(this.config.providers.email));
+        console.warn('Resend provider not implemented yet');
         break;
       case 'nodemailer':
       default:
-        this.providers.set('nodemailer', new NodemailerProvider(this.config.providers.email));
+        console.warn('Nodemailer provider not implemented yet');
         break;
     }
   }
@@ -329,181 +329,15 @@ abstract class BaseEmailProvider implements ICommunicationProvider {
   abstract getCostEstimate(message: EmailMessage): Promise<number>;
 }
 
-/**
- * SendGrid Provider Implementation
- */
-class SendGridProvider extends BaseEmailProvider {
-  providerType: EmailProvider = 'sendgrid';
+// SendGrid Provider is imported from './providers/sendgrid-provider'
 
-  async send(message: EmailMessage): Promise<CommunicationServiceResponse> {
-    // Implementation would use SendGrid API
-    // This is a placeholder implementation
-    console.log('Sending email via SendGrid:', message.id);
-    
-    return {
-      success: true,
-      messageId: message.id,
-      providerId: `sg_${Date.now()}`,
-      status: 'sent',
-      cost: 0.00075, // SendGrid pricing
-      currency: 'USD',
-    };
-  }
+// SES Provider would need to be implemented separately
 
-  async getStatus(messageId: string): Promise<CommunicationStatus> {
-    // Implementation would query SendGrid API
-    return 'delivered';
-  }
+// Mailgun Provider would need to be implemented separately
 
-  async validateConfiguration(): Promise<boolean> {
-    return !!(this.config.apiKey);
-  }
+// Resend Provider would need to be implemented separately
 
-  async getCostEstimate(message: EmailMessage): Promise<number> {
-    // SendGrid charges per email
-    return 0.00075;
-  }
-}
-
-/**
- * AWS SES Provider Implementation
- */
-class SESProvider extends BaseEmailProvider {
-  providerType: EmailProvider = 'ses';
-
-  async send(message: EmailMessage): Promise<CommunicationServiceResponse> {
-    // Implementation would use AWS SES API
-    console.log('Sending email via AWS SES:', message.id);
-    
-    return {
-      success: true,
-      messageId: message.id,
-      providerId: `ses_${Date.now()}`,
-      status: 'sent',
-      cost: 0.0001, // AWS SES pricing
-      currency: 'USD',
-    };
-  }
-
-  async getStatus(messageId: string): Promise<CommunicationStatus> {
-    // Implementation would query AWS SES API
-    return 'delivered';
-  }
-
-  async validateConfiguration(): Promise<boolean> {
-    return !!(this.config.apiKey && this.config.apiSecret);
-  }
-
-  async getCostEstimate(message: EmailMessage): Promise<number> {
-    // AWS SES charges per email
-    return 0.0001;
-  }
-}
-
-/**
- * Mailgun Provider Implementation
- */
-class MailgunProvider extends BaseEmailProvider {
-  providerType: EmailProvider = 'mailgun';
-
-  async send(message: EmailMessage): Promise<CommunicationServiceResponse> {
-    // Implementation would use Mailgun API
-    console.log('Sending email via Mailgun:', message.id);
-    
-    return {
-      success: true,
-      messageId: message.id,
-      providerId: `mg_${Date.now()}`,
-      status: 'sent',
-      cost: 0.0008, // Mailgun pricing
-      currency: 'USD',
-    };
-  }
-
-  async getStatus(messageId: string): Promise<CommunicationStatus> {
-    // Implementation would query Mailgun API
-    return 'delivered';
-  }
-
-  async validateConfiguration(): Promise<boolean> {
-    return !!(this.config.apiKey && this.config.domain);
-  }
-
-  async getCostEstimate(message: EmailMessage): Promise<number> {
-    // Mailgun charges per email
-    return 0.0008;
-  }
-}
-
-/**
- * Resend Provider Implementation
- */
-class ResendProvider extends BaseEmailProvider {
-  providerType: EmailProvider = 'resend';
-
-  async send(message: EmailMessage): Promise<CommunicationServiceResponse> {
-    // Implementation would use Resend API
-    console.log('Sending email via Resend:', message.id);
-    
-    return {
-      success: true,
-      messageId: message.id,
-      providerId: `resend_${Date.now()}`,
-      status: 'sent',
-      cost: 0.0004, // Resend pricing
-      currency: 'USD',
-    };
-  }
-
-  async getStatus(messageId: string): Promise<CommunicationStatus> {
-    // Implementation would query Resend API
-    return 'delivered';
-  }
-
-  async validateConfiguration(): Promise<boolean> {
-    return !!(this.config.apiKey);
-  }
-
-  async getCostEstimate(message: EmailMessage): Promise<number> {
-    // Resend charges per email
-    return 0.0004;
-  }
-}
-
-/**
- * Nodemailer Provider Implementation
- */
-class NodemailerProvider extends BaseEmailProvider {
-  providerType: EmailProvider = 'nodemailer';
-
-  async send(message: EmailMessage): Promise<CommunicationServiceResponse> {
-    // Implementation would use Nodemailer with SMTP
-    console.log('Sending email via Nodemailer/SMTP:', message.id);
-    
-    return {
-      success: true,
-      messageId: message.id,
-      providerId: `smtp_${Date.now()}`,
-      status: 'sent',
-      cost: 0, // SMTP is typically free
-      currency: 'USD',
-    };
-  }
-
-  async getStatus(messageId: string): Promise<CommunicationStatus> {
-    // SMTP doesn't provide delivery status
-    return 'sent';
-  }
-
-  async validateConfiguration(): Promise<boolean> {
-    return !!(this.config.host && this.config.port);
-  }
-
-  async getCostEstimate(message: EmailMessage): Promise<number> {
-    // SMTP is typically free
-    return 0;
-  }
-}
+// Nodemailer Provider would need to be implemented separately
 
 // Export the main service
 export default EmailService;

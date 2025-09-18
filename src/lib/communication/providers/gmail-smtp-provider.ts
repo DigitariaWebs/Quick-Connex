@@ -5,7 +5,7 @@
  * for sending emails through Gmail's SMTP server using app passwords.
  */
 
-import nodemailer from 'nodemailer';
+import * as nodemailer from 'nodemailer';
 import {
   EmailMessage,
   CommunicationServiceResponse,
@@ -32,7 +32,7 @@ export class GmailSMTPProvider implements ICommunicationProvider {
     this.fromName = config.fromName;
     
     // Create Nodemailer transporter
-    this.transporter = nodemailer.createTransporter({
+    this.transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 587,
       secure: false, // true for 465, false for other ports

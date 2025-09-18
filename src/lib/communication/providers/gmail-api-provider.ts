@@ -22,9 +22,17 @@ export class GmailAPIProvider implements ICommunicationProvider {
   private oauth2Client: any;
   private gmail: any;
   private fromEmail: string;
+  private clientId: string;
+  private clientSecret: string;
+  private accessToken: string;
+  private refreshToken: string;
 
   constructor(config: any) {
     this.fromEmail = config.fromEmail;
+    this.clientId = config.clientId;
+    this.clientSecret = config.clientSecret;
+    this.accessToken = config.accessToken;
+    this.refreshToken = config.refreshToken;
     
     // Initialize OAuth2 client
     this.oauth2Client = new google.auth.OAuth2(
