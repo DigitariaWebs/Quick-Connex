@@ -175,7 +175,7 @@ export default function HospitalAutocomplete({
     <div className={`relative ${className}`}>
       <label
         htmlFor={id}
-        className="block text-sm font-medium text-gray-700 mb-1"
+        className="block text-sm font-semibold text-black dark:text-black mb-1"
       >
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
@@ -195,8 +195,8 @@ export default function HospitalAutocomplete({
           onChange={handleInputChange}
           onFocus={handleInputFocus}
           placeholder={placeholder}
-          className={`w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-            error ? "border-red-500" : "border-gray-300"
+          className={`w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm dark:border-gray-600 dark:text-white shadow-sm hover:shadow-md ${
+            error ? "border-red-500" : "border-gray-200"
           }`}
           autoComplete="off"
         />
@@ -217,7 +217,7 @@ export default function HospitalAutocomplete({
       {isOpen && (
         <div
           ref={dropdownRef}
-          className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+          className="absolute z-50 w-full mt-1 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
         >
           {isLoading ? (
             <div className="p-3 text-center text-gray-500">
