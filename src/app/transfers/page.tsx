@@ -32,6 +32,7 @@ interface TransferRequest {
     firstName: string;
     lastName: string;
     age: number;
+    dossierNumber?: string;
   };
   fromHospital:
     | string
@@ -147,6 +148,17 @@ export default function TransfersPage() {
     }
   }, [isAuthenticated]);
 
+  // Reset filter for employees if they have pending selected
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      user?.userType === "employee" &&
+      filter === "pending"
+    ) {
+      setFilter("all");
+    }
+  }, [isAuthenticated, user, filter]);
+
   // Refetch when filter changes
   useEffect(() => {
     if (isAuthenticated) {
@@ -158,6 +170,14 @@ export default function TransfersPage() {
   let filteredTransfers = transfers.filter((transfer) => {
     const matchesPriority =
       !priorityFilter || transfer.priority === priorityFilter;
+
+    // Helper function to get hospital name from either string or object
+    const getHospitalName = (
+      hospital: string | { name: string; [key: string]: any }
+    ) => {
+      return typeof hospital === "string" ? hospital : hospital?.name || "";
+    };
+
     const matchesSearch =
       !searchTerm ||
       transfer.patientInfo.firstName
@@ -166,9 +186,16 @@ export default function TransfersPage() {
       transfer.patientInfo.lastName
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
+      transfer.patientInfo.dossierNumber
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       transfer.transferId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transfer.fromHospital.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transfer.toHospital.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getHospitalName(transfer.fromHospital)
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      getHospitalName(transfer.toHospital)
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       transfer.reason.toLowerCase().includes(searchTerm.toLowerCase());
 
     return matchesPriority && matchesSearch;
@@ -299,19 +326,21 @@ export default function TransfersPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl p-6 sidebar-shadow border border-gray-100">
-              <div className="flex items-center">
-                <div className="p-2 bg-amber-100 rounded-2xl">
-                  <Clock className="w-6 h-6 text-amber-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Pending</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {stats.pending}
-                  </p>
+            {user?.userType === "manager" && (
+              <div className="bg-white rounded-3xl p-6 sidebar-shadow border border-gray-100">
+                <div className="flex items-center">
+                  <div className="p-2 bg-amber-100 rounded-2xl">
+                    <Clock className="w-6 h-6 text-amber-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Pending</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {stats.pending}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <div className="bg-white rounded-3xl p-6 sidebar-shadow border border-gray-100">
               <div className="flex items-center">
@@ -397,7 +426,9 @@ export default function TransfersPage() {
                           className="w-full appearance-none bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-700 font-medium shadow-sm hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:shadow-lg transition-all duration-200 cursor-pointer"
                         >
                           <option value="all">All Statuses</option>
-                          <option value="pending">Pending</option>
+                          {user?.userType === "manager" && (
+                            <option value="pending">Pending</option>
+                          )}
                           <option value="accepted">Accepted</option>
                           <option value="in_progress">In Progress</option>
                           <option value="completed">Completed</option>

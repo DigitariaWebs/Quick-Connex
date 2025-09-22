@@ -51,8 +51,8 @@ export class TransferNotificationService {
         requestorEmail: requestedBy.email,
         requestorPhone: requestedBy.phone,
         notes: transfer.notes || 'No additional notes',
-        approvalLink: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/transfers/${transfer._id}/approve?admin=${adminContact.email}`,
-        rejectionLink: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/transfers/${transfer._id}/reject?admin=${adminContact.email}`,
+        approvalUrl: `${process.env.BASE_URL || 'http://localhost:3000'}/api/transfers/${transfer._id}/approve?admin=${adminContact.email}`,
+        rejectionUrl: `${process.env.BASE_URL || 'http://localhost:3000'}/api/transfers/${transfer._id}/reject?admin=${adminContact.email}`,
         // New template variables for modern design
         priorityGradient: transfer.priority.toUpperCase() === 'URGENT' 
           ? 'linear-gradient(135deg, #fef2f2 0%, #fecaca 25%, #fca5a5 50%, #f87171 75%, #ef4444 100%)'

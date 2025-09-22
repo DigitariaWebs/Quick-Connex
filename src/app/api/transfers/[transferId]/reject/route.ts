@@ -9,16 +9,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongoose';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
+import Hospital from '@/models/Hospital';
 import AdminService from '@/lib/admin-service';
 import { CommunicationService } from '@/lib/communication/communication-service';
 import { EmailMessage } from '@/types/communication-types';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { transferId: string } }
+  { params }: { params: Promise<{ transferId: string }> }
 ) {
   try {
-    const { transferId } = params;
+    console.log('Rejection endpoint called');
+    const { transferId } = await params;
     const { searchParams } = new URL(request.url);
     const adminEmail = searchParams.get('admin') || 'system@admin.com';
     const reason = searchParams.get('reason') || 'Rejected by administrator';
@@ -35,8 +37,6 @@ export async function GET(
     // Find the transfer
     const transfer = await Transfer.findById(transferId)
       .populate('requestedBy', 'firstName lastName email phone userType')
-      .populate('fromHospital', 'name address')
-      .populate('toHospital', 'name address');
 
     if (!transfer) {
       return NextResponse.json(
@@ -84,14 +84,14 @@ export async function GET(
 
     // Send rejection notification to manager
     try {
-      await sendTransferRejectionNotification(transfer, admin, reason);
+      // await sendTransferRejectionNotification(transfer, admin, reason);
     } catch (notificationError) {
       console.error('Error sending rejection notification:', notificationError);
       // Don't fail the rejection if notifications fail
     }
 
     // Return success response with redirect
-    const redirectUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/dashboard?message=transfer-rejected&transferId=${transferId}`;
+    const redirectUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/dashboard?message=transfer-rejected&transferId=${transferId}`;
     
     return NextResponse.redirect(new URL(redirectUrl, request.url));
 
@@ -106,10 +106,10 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { transferId: string } }
+  { params }: { params: Promise<{ transferId: string }> }
 ) {
   try {
-    const { transferId } = params;
+    const { transferId } = await params;
     const body = await request.json();
     const { adminEmail, reason = 'Rejected by administrator' } = body;
 
@@ -132,8 +132,6 @@ export async function POST(
     // Find the transfer
     const transfer = await Transfer.findById(transferId)
       .populate('requestedBy', 'firstName lastName email phone userType')
-      .populate('fromHospital', 'name address')
-      .populate('toHospital', 'name address');
 
     if (!transfer) {
       return NextResponse.json(
@@ -181,7 +179,7 @@ export async function POST(
 
     // Send rejection notification to manager
     try {
-      await sendTransferRejectionNotification(transfer, admin, reason);
+      // await sendTransferRejectionNotification(transfer, admin, reason);
     } catch (notificationError) {
       console.error('Error sending rejection notification:', notificationError);
       // Don't fail the rejection if notifications fail

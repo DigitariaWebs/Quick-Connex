@@ -9,15 +9,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongoose';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
+import Hospital from '@/models/Hospital';
 import AdminService from '@/lib/admin-service';
 import TransferNotificationService from '@/lib/communication/transfer-notification-service';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { transferId: string } }
+  { params }: { params: Promise<{ transferId: string }> }
 ) {
   try {
-    const { transferId } = params;
+    const { transferId } = await params;
     const { searchParams } = new URL(request.url);
     const adminEmail = searchParams.get('admin') || 'system@admin.com';
     const reason = searchParams.get('reason') || 'Approved by administrator';
@@ -34,8 +35,6 @@ export async function GET(
     // Find the transfer
     const transfer = await Transfer.findById(transferId)
       .populate('requestedBy', 'firstName lastName email phone userType')
-      .populate('fromHospital', 'name address')
-      .populate('toHospital', 'name address');
 
     if (!transfer) {
       return NextResponse.json(
@@ -105,10 +104,10 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { transferId: string } }
+  { params }: { params: Promise<{ transferId: string }> }
 ) {
   try {
-    const { transferId } = params;
+    const { transferId } = await params;
     const body = await request.json();
     const { adminEmail, reason = 'Approved by administrator' } = body;
 
@@ -131,8 +130,6 @@ export async function POST(
     // Find the transfer
     const transfer = await Transfer.findById(transferId)
       .populate('requestedBy', 'firstName lastName email phone userType')
-      .populate('fromHospital', 'name address')
-      .populate('toHospital', 'name address');
 
     if (!transfer) {
       return NextResponse.json(

@@ -450,13 +450,19 @@ export class TransferFilterUtils {
       // Search term filter
       if (filters.searchTerm) {
         const searchTerm = filters.searchTerm.toLowerCase();
+        
+        // Helper function to get hospital name from either string or object
+        const getHospitalName = (hospital: string | { name: string; [key: string]: any }) => {
+          return typeof hospital === 'string' ? hospital : hospital?.name || '';
+        };
+        
         const searchableText = [
           transfer.transferId,
           transfer.patient.firstName,
           transfer.patient.lastName,
-          transfer.patient.patientId,
-          transfer.fromHospital,
-          transfer.toHospital,
+          transfer.patient.dossierNumber,
+          getHospitalName(transfer.fromHospital),
+          getHospitalName(transfer.toHospital),
           transfer.reason
         ].join(' ').toLowerCase();
 

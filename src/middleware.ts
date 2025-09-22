@@ -19,10 +19,13 @@ export async function middleware(request: NextRequest) {
 
   // API routes that don't require authentication
   const publicApiRoutes = ['/api/auth/login', '/api/auth/signup', '/api/auth/gmail', '/api/auth/approve-user', '/api/auth/signup-approval', '/api/auth/forgot-password', '/api/auth/reset-password', '/api/files', '/api/hospitals'];
+  
+  // Check for specific transfer approval/rejection endpoints
+  const isTransferApprovalRoute = pathname.match(/^\/api\/transfers\/[^\/]+\/(approve|reject)$/);
   const isPublicApiRoute = publicApiRoutes.some(route => pathname.startsWith(route));
 
   // Skip authentication for public routes and API routes
-  if (isPublicRoute || isPublicApiRoute) {
+  if (isPublicRoute || isPublicApiRoute || isTransferApprovalRoute) {
     return NextResponse.next();
   }
 

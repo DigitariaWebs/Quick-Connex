@@ -7,7 +7,7 @@ import { requireManager, requireEmployeeOrManager, createErrorResponse, createSu
 import { validateTransferData } from '@/lib/transfer-validation';
 import { getNotificationService } from '@/lib/socket-server';
 
-// GET /api/transfers - Get all transfer requests for employees
+// GET /api/transfers - Get transfer requests for employees
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
@@ -20,11 +20,33 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
+    const user = authResult.user;
 
-    // Build query - if no status specified, get all transfers
+    // Build query based on user type
     const query: any = {};
-    if (status && status !== 'all') {
-      query.status = status;
+    
+    if (user.userType === 'employee') {
+      // Employees can only see approved transfers (not pending ones)
+      // If no status specified, show only approved transfers
+      if (status && status !== 'all') {
+        if (status === 'pending') {
+          // Employees cannot see pending transfers
+          return createSuccessResponse({
+            transfers: [],
+            count: 0
+          });
+        }
+        query.status = status;
+      } else {
+        // Default: only show approved and active transfers to employees
+        query.status = { $in: ['accepted', 'in_progress', 'completed', 'cancelled'] };
+      }
+    } else if (user.userType === 'manager') {
+      // Managers can see all transfers including pending ones
+      if (status && status !== 'all') {
+        query.status = status;
+      }
+      // If no status specified, get all transfers for managers
     }
 
     // Get transfers with populated data
