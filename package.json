@@ -19,7 +19,19 @@
     "approve-user": "node scripts/approve-user.js",
     "create-transfers": "node scripts/create-test-transfers.js",
     "list-transfers": "node scripts/list-transfers.js",
-    "update-transfer": "node scripts/update-transfer-status.js"
+    "update-transfer": "node scripts/update-transfer-status.js",
+    "setup-admin": "node scripts/setup-admin.js",
+    "test-transfer-flow": "node scripts/test-transfer-flow.js",
+    "test-api": "node scripts/test-api-endpoints.js",
+    "test-notifications": "node scripts/test-notifications.js",
+    "test-real-notifications": "node scripts/test-real-notifications.js",
+    "test-api-calls": "node scripts/test-api-calls.js",
+    "test-email": "node scripts/test-email-config.js",
+    "create-transfer-notify": "node scripts/create-test-transfer-with-notifications.js",
+    "test-sms": "node scripts/test-sms-config.js",
+    "check-twilio": "node scripts/check-twilio-status.js",
+    "check-sms": "node scripts/check-sms-details.js",
+    "preview-emails": "node scripts/preview-email-designs.js"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",

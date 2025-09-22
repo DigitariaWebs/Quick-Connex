@@ -192,17 +192,12 @@ export async function POST(request: NextRequest) {
       console.error('Error sending real-time notification:', notificationError);
     }
 
-    // Send SMS notification to admins
+    // Send comprehensive notifications to admins (email + SMS)
     try {
-      const TransferSMSService = (await import('@/lib/communication/transfer-sms-service')).default;
-      
-      if (populatedTransfer.priority === 'urgent') {
-        await TransferSMSService.sendUrgentTransferRequestSMS(populatedTransfer, requestingUser);
-      } else {
-        await TransferSMSService.sendNewTransferRequestSMS(populatedTransfer, requestingUser);
-      }
-    } catch (smsError) {
-      console.error('Error sending SMS notification:', smsError);
+      const TransferNotificationService = (await import('@/lib/communication/transfer-notification-service')).default;
+      await TransferNotificationService.sendNewTransferRequestNotification(populatedTransfer, requestingUser);
+    } catch (notificationError) {
+      console.error('Error sending transfer request notifications:', notificationError);
     }
 
     return createSuccessResponse(populatedTransfer, 'Transfer request created successfully', 201);
