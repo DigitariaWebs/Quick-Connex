@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
   Calendar,
-  ChevronDown,
-  ChevronUp,
   Clock,
   MapPin,
   Phone,
@@ -68,16 +66,19 @@ interface TransferRequest {
 interface TransferRequestCardProps {
   transfer: TransferRequest;
   onAccept: (transferId: string) => void;
+  onSelect: (transfer: TransferRequest) => void;
   currentUserId: string;
+  isSelected?: boolean;
 }
 
 export default function TransferRequestCard({
   transfer,
   onAccept,
+  onSelect,
   currentUserId,
+  isSelected = false,
 }: TransferRequestCardProps) {
   const [isAccepting, setIsAccepting] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -218,13 +219,19 @@ export default function TransferRequestCard({
   return (
     <motion.div
       whileHover={{
-        y: -4,
-        boxShadow:
-          "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)",
+        y: isSelected ? 0 : -4,
+        boxShadow: isSelected
+          ? "0 25px 50px -5px rgba(59, 130, 246, 0.3), 0 20px 25px -6px rgba(59, 130, 246, 0.2)"
+          : "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)",
       }}
+      whileTap={{ scale: isSelected ? 1 : 0.98 }}
       transition={{ duration: 0.2 }}
-      className="bg-white rounded-3xl sidebar-shadow overflow-hidden border border-gray-100 hover:border-gray-200 cursor-pointer"
-      onClick={() => setShowDetails(!showDetails)}
+      className={`bg-white rounded-3xl sidebar-shadow overflow-hidden cursor-pointer transition-all ${
+        isSelected
+          ? "border-2 border-blue-400 bg-gradient-to-br from-white to-blue-50 shadow-2xl ring-4 ring-blue-100"
+          : "border border-gray-100 hover:border-gray-200"
+      }`}
+      onClick={() => onSelect(transfer)}
     >
       {/* Priority Indicator */}
       <div
@@ -343,71 +350,37 @@ export default function TransferRequestCard({
               {isAccepting ? "Accepting..." : "Accept Transfer"}
             </motion.button>
 
-            <div className="px-3 py-2 border border-gray-200 text-gray-700 rounded-2xl font-medium flex items-center justify-center">
-              {showDetails ? (
-                <ChevronUp size={18} />
-              ) : (
-                <ChevronDown size={18} />
-              )}
-            </div>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className={`px-3 py-2 text-gray-700 rounded-2xl font-medium flex items-center justify-center ${
+                isSelected
+                  ? "bg-blue-100 border border-blue-300 text-blue-700"
+                  : "border border-gray-200"
+              }`}
+            >
+              <ArrowRight
+                size={18}
+                className="transform transition-transform"
+              />
+            </motion.div>
           </div>
         ) : (
           <div className="mt-4 flex justify-end">
-            <div className="px-3 py-2 border border-gray-200 text-gray-700 rounded-2xl font-medium flex items-center justify-center">
-              {showDetails ? (
-                <ChevronUp size={18} />
-              ) : (
-                <ChevronDown size={18} />
-              )}
-            </div>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className={`px-3 py-2 text-gray-700 rounded-2xl font-medium flex items-center justify-center ${
+                isSelected
+                  ? "bg-blue-100 border border-blue-300 text-blue-700"
+                  : "border border-gray-200"
+              }`}
+            >
+              <ArrowRight
+                size={18}
+                className="transform transition-transform"
+              />
+            </motion.div>
           </div>
         )}
-
-        {/* Additional Details */}
-        <AnimatePresence>
-          {showDetails && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="mt-4 pt-4 border-t border-gray-100 overflow-hidden"
-            >
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">Transfer ID:</span>
-                  <span className="font-mono text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-2xl border border-blue-200">
-                    {transfer.transferId}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">Requested by:</span>
-                  <span className="font-medium text-gray-700">
-                    {transfer.requestedBy.firstName}{" "}
-                    {transfer.requestedBy.lastName}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">Created:</span>
-                  <span className="text-gray-700">
-                    {formatDate(transfer.requestedDate)}
-                  </span>
-                </div>
-
-                {transfer.notes && (
-                  <div className="mt-2">
-                    <p className="text-gray-500 mb-1">Notes:</p>
-                    <p className="text-gray-700 bg-gray-50 p-2 rounded-2xl text-xs">
-                      {transfer.notes}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </motion.div>
   );

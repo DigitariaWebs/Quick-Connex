@@ -24,6 +24,7 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import LoadingSpinner from "@/components/dashboard/LoadingSpinner";
 import TransferFormModal from "@/components/modals/TransferFormModal";
+import TransferTimeline from "@/components/transfers/TransferTimeline";
 
 interface TransferRequest {
   _id: string;
@@ -90,6 +91,8 @@ export default function TransfersPage() {
   const [sortBy, setSortBy] = useState<"date" | "priority">("date");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTransfer, setSelectedTransfer] =
+    useState<TransferRequest | null>(null);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -247,6 +250,19 @@ export default function TransfersPage() {
     } finally {
       setIsRefreshing(false);
     }
+  };
+
+  const handleSelectTransfer = (transfer: TransferRequest) => {
+    // If clicking the same transfer, close it; otherwise select the new one
+    if (selectedTransfer?._id === transfer._id) {
+      setSelectedTransfer(null);
+    } else {
+      setSelectedTransfer(transfer);
+    }
+  };
+
+  const handleCloseTimeline = () => {
+    setSelectedTransfer(null);
   };
 
   // Animation variants
@@ -575,11 +591,39 @@ export default function TransfersPage() {
                 </motion.div>
               ) : (
                 filteredTransfers.map((transfer) => (
-                  <motion.div key={transfer._id} variants={itemVariants} layout>
+                  <motion.div
+                    key={transfer._id}
+                    variants={itemVariants}
+                    layout
+                    className={`${
+                      selectedTransfer?._id === transfer._id
+                        ? "fixed top-1/2 left-1/4 transform -translate-x-1/2 -translate-y-1/2 z-50 w-96"
+                        : ""
+                    }`}
+                    animate={
+                      selectedTransfer?._id === transfer._id
+                        ? {
+                            scale: 1.05,
+                            zIndex: 50,
+                          }
+                        : {
+                            scale: 1,
+                            zIndex: 1,
+                          }
+                    }
+                    transition={{
+                      type: "spring",
+                      damping: 25,
+                      stiffness: 200,
+                      duration: 0.5,
+                    }}
+                  >
                     <TransferRequestCard
                       transfer={transfer}
                       onAccept={handleAcceptTransfer}
+                      onSelect={handleSelectTransfer}
                       currentUserId={user?._id || ""}
+                      isSelected={selectedTransfer?._id === transfer._id}
                     />
                   </motion.div>
                 ))
@@ -598,6 +642,15 @@ export default function TransfersPage() {
           )}
         </div>
       </div>
+
+      {/* Transfer Timeline */}
+      {selectedTransfer && (
+        <TransferTimeline
+          transfer={selectedTransfer}
+          onClose={handleCloseTimeline}
+          isVisible={!!selectedTransfer}
+        />
+      )}
 
       {/* Floating Action Button - Only show for managers */}
       {user?.userType === "manager" && (
