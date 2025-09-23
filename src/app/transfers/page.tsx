@@ -623,6 +623,7 @@ export default function TransfersPage() {
                       onAccept={handleAcceptTransfer}
                       onSelect={handleSelectTransfer}
                       currentUserId={user?._id || ""}
+                      currentUserType={user?.userType || "employee"}
                       isSelected={selectedTransfer?._id === transfer._id}
                     />
                   </motion.div>

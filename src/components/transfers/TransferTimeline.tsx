@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -72,21 +72,25 @@ interface TransferRequest {
 
 interface TimelineEvent {
   id: string;
+  type: string;
   title: string;
   description: string;
   timestamp: string;
-  type:
-    | "request"
-    | "approval"
-    | "preparation"
-    | "transport"
-    | "arrival"
-    | "completion"
-    | "note";
-  status: "completed" | "current" | "pending";
-  actor?: string;
-  icon: React.ReactNode;
-  details?: string;
+  actor: {
+    id: string;
+    name: string;
+    email: string;
+    userType: string;
+  };
+  metadata?: {
+    oldValue?: any;
+    newValue?: any;
+    reason?: string;
+    details?: string;
+    [key: string]: any;
+  };
+  isSystemEvent?: boolean;
+  isVisible?: boolean;
 }
 
 interface TransferTimelineProps {
@@ -101,8 +105,48 @@ export default function TransferTimeline({
   isVisible,
 }: TransferTimelineProps) {
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Generate hardcoded timeline data based on transfer status
+  // Fetch timeline data from API
+  useEffect(() => {
+    if (isVisible && transfer.transferId) {
+      fetchTimelineData();
+    }
+  }, [isVisible, transfer.transferId]);
+
+  const fetchTimelineData = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `/api/transfers/${transfer.transferId}/timeline`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch timeline data");
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setTimelineEvents(data.data.timeline || []);
+      } else {
+        throw new Error(data.message || "Failed to fetch timeline data");
+      }
+    } catch (err) {
+      console.error("Error fetching timeline:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch timeline data"
+      );
+      // Fallback to empty array
+      setTimelineEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Generate hardcoded timeline data based on transfer status (fallback)
   const generateTimelineEvents = (
     transfer: TransferRequest
   ): TimelineEvent[] => {
@@ -245,7 +289,82 @@ export default function TransferTimeline({
     );
   };
 
-  const timelineEvents = generateTimelineEvents(transfer);
+  // Get icon for timeline event type
+  const getEventIcon = (type: string) => {
+    switch (type) {
+      case "created":
+        return <FileText size={16} className="text-blue-500" />;
+      case "approved":
+        return <CheckCircle2 size={16} className="text-green-500" />;
+      case "rejected":
+        return <AlertTriangle size={16} className="text-red-500" />;
+      case "status_changed":
+        return <Activity size={16} className="text-purple-500" />;
+      case "assigned":
+        return <User size={16} className="text-indigo-500" />;
+      case "accepted":
+        return <CheckCircle2 size={16} className="text-green-500" />;
+      case "completed":
+        return <CheckCircle2 size={16} className="text-green-500" />;
+      case "cancelled":
+        return <AlertTriangle size={16} className="text-red-500" />;
+      case "patient_updated":
+        return <Stethoscope size={16} className="text-blue-500" />;
+      case "hospital_updated":
+        return <Hospital size={16} className="text-orange-500" />;
+      case "priority_changed":
+        return <AlertTriangle size={16} className="text-yellow-500" />;
+      case "document_uploaded":
+        return <FileText size={16} className="text-gray-500" />;
+      case "notes_updated":
+        return <MessageSquare size={16} className="text-indigo-500" />;
+      case "communication":
+        return <Phone size={16} className="text-blue-500" />;
+      case "system":
+        return <Activity size={16} className="text-gray-500" />;
+      case "scheduled":
+      case "rescheduled":
+        return <Calendar size={16} className="text-purple-500" />;
+      default:
+        return <Activity size={16} className="text-gray-500" />;
+    }
+  };
+
+  // Get status color for timeline event
+  const getEventStatusColor = (type: string, isSystemEvent?: boolean) => {
+    if (isSystemEvent) {
+      return "bg-gray-500";
+    }
+
+    switch (type) {
+      case "created":
+      case "approved":
+      case "accepted":
+      case "completed":
+        return "bg-green-500";
+      case "rejected":
+      case "cancelled":
+        return "bg-red-500";
+      case "status_changed":
+        return "bg-blue-500";
+      case "assigned":
+        return "bg-indigo-500";
+      case "priority_changed":
+        return "bg-yellow-500";
+      case "communication":
+        return "bg-blue-500";
+      case "system":
+        return "bg-gray-500";
+      default:
+        return "bg-gray-400";
+    }
+  };
+
+  // Use real timeline events or fallback to generated ones
+  const displayEvents =
+    timelineEvents.length > 0
+      ? timelineEvents
+      : generateTimelineEvents(transfer);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -399,91 +518,150 @@ export default function TransferTimeline({
 
             {/* Timeline Content */}
             <div className="p-6 overflow-y-auto h-full pb-20">
-              <div className="relative">
-                {/* Timeline Line */}
-                <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-purple-200 to-green-200" />
-
-                {/* Timeline Events */}
-                <div className="space-y-6">
-                  {timelineEvents.map((event, index) => (
-                    <motion.div
-                      key={event.id}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="relative flex items-start space-x-4"
-                    >
-                      {/* Timeline Dot */}
-                      <div
-                        className={`relative flex-shrink-0 w-12 h-12 rounded-2xl ${getStatusColor(
-                          event.status
-                        )} flex items-center justify-center shadow-lg`}
-                      >
-                        {event.icon}
-                      </div>
-
-                      {/* Event Content */}
-                      <motion.div
-                        whileHover={{ scale: 1.02 }}
-                        className="flex-1 bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-white/20 hover:shadow-md transition-all cursor-pointer"
-                        onClick={() =>
-                          setExpandedEvent(
-                            expandedEvent === event.id ? null : event.id
-                          )
-                        }
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <h3
-                            className={`font-semibold ${getStatusTextColor(
-                              event.status
-                            )}`}
-                          >
-                            {event.title}
-                          </h3>
-                          <span className="text-xs text-gray-500 bg-gray-100/50 px-2 py-1 rounded-lg backdrop-blur-sm">
-                            {formatTimestamp(event.timestamp)}
-                          </span>
-                        </div>
-
-                        <p className="text-sm text-gray-600 mb-2">
-                          {event.description}
-                        </p>
-
-                        {event.actor && (
-                          <div className="flex items-center space-x-2 text-xs text-gray-500">
-                            <User size={12} />
-                            <span>{event.actor}</span>
-                          </div>
-                        )}
-
-                        {/* Expanded Details */}
-                        <AnimatePresence>
-                          {expandedEvent === event.id && event.details && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.2 }}
-                              className="mt-3 pt-3 border-t border-gray-200/50 overflow-hidden"
-                            >
-                              <p className="text-xs text-gray-600 bg-gray-50/50 p-2 rounded-lg backdrop-blur-sm">
-                                {event.details}
-                              </p>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </motion.div>
-                    </motion.div>
-                  ))}
+              {loading && (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  <span className="ml-2 text-gray-600">
+                    Loading timeline...
+                  </span>
                 </div>
+              )}
 
-                {/* Timeline End */}
-                <div className="relative flex items-center justify-center mt-8">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-gray-200 to-gray-300 flex items-center justify-center shadow-sm">
-                    <div className="w-2 h-2 rounded-full bg-gray-400" />
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center">
+                    <AlertTriangle size={20} className="text-red-500 mr-2" />
+                    <span className="text-red-700">
+                      Error loading timeline: {error}
+                    </span>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {!loading && !error && (
+                <div className="relative">
+                  {displayEvents.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                        <Activity size={24} className="text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        No Timeline Events
+                      </h3>
+                      <p className="text-gray-600 text-center max-w-md">
+                        This transfer doesn't have any timeline events yet.
+                        Timeline events are automatically created when transfers
+                        are created, approved, or updated.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Timeline Line */}
+                      <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-purple-200 to-green-200" />
+
+                      {/* Timeline Events */}
+                      <div className="space-y-6">
+                        {displayEvents.map((event, index) => (
+                          <motion.div
+                            key={event.id}
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="relative flex items-start space-x-4"
+                          >
+                            {/* Timeline Dot */}
+                            <div
+                              className={`relative flex-shrink-0 w-12 h-12 rounded-2xl ${getEventStatusColor(
+                                event.type,
+                                event.isSystemEvent
+                              )} flex items-center justify-center shadow-lg`}
+                            >
+                              {getEventIcon(event.type)}
+                            </div>
+
+                            {/* Event Content */}
+                            <motion.div
+                              whileHover={{ scale: 1.02 }}
+                              className="flex-1 bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-white/20 hover:shadow-md transition-all cursor-pointer"
+                              onClick={() =>
+                                setExpandedEvent(
+                                  expandedEvent === event.id ? null : event.id
+                                )
+                              }
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className="font-semibold text-gray-900">
+                                  {event.title}
+                                </h3>
+                                <span className="text-xs text-gray-500 bg-gray-100/50 px-2 py-1 rounded-lg backdrop-blur-sm">
+                                  {formatTimestamp(event.timestamp)}
+                                </span>
+                              </div>
+
+                              <p className="text-sm text-gray-600 mb-2">
+                                {event.description}
+                              </p>
+
+                              <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                <User size={12} />
+                                <span>{event.actor.name}</span>
+                                {event.actor.userType && (
+                                  <span className="px-1 py-0.5 bg-gray-100 rounded text-xs">
+                                    {event.actor.userType}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Expanded Details */}
+                              <AnimatePresence>
+                                {expandedEvent === event.id &&
+                                  (event.metadata?.details ||
+                                    event.metadata?.reason) && (
+                                    <motion.div
+                                      initial={{ opacity: 0, height: 0 }}
+                                      animate={{ opacity: 1, height: "auto" }}
+                                      exit={{ opacity: 0, height: 0 }}
+                                      transition={{ duration: 0.2 }}
+                                      className="mt-3 pt-3 border-t border-gray-200/50 overflow-hidden"
+                                    >
+                                      <div className="text-xs text-gray-600 bg-gray-50/50 p-2 rounded-lg backdrop-blur-sm">
+                                        {event.metadata?.details && (
+                                          <p className="mb-1">
+                                            {event.metadata.details}
+                                          </p>
+                                        )}
+                                        {event.metadata?.reason && (
+                                          <p className="text-gray-500">
+                                            Reason: {event.metadata.reason}
+                                          </p>
+                                        )}
+                                        {event.metadata?.oldValue &&
+                                          event.metadata?.newValue && (
+                                            <p className="text-gray-500 mt-1">
+                                              Changed from "
+                                              {event.metadata.oldValue}" to "
+                                              {event.metadata.newValue}"
+                                            </p>
+                                          )}
+                                      </div>
+                                    </motion.div>
+                                  )}
+                              </AnimatePresence>
+                            </motion.div>
+                          </motion.div>
+                        ))}
+                      </div>
+
+                      {/* Timeline End */}
+                      <div className="relative flex items-center justify-center mt-8">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-gray-200 to-gray-300 flex items-center justify-center shadow-sm">
+                          <div className="w-2 h-2 rounded-full bg-gray-400" />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </motion.div>

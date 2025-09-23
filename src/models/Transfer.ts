@@ -14,6 +14,7 @@ export interface ITransfer extends Document {
   fromHospitalName: string; // Keep name for backward compatibility and display
   toHospitalName: string; // Keep name for backward compatibility and display
   requestedBy: Types.ObjectId; // Reference to User (manager)
+  assignedTo?: Types.ObjectId; // Reference to User (employee)
   reason: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
@@ -28,12 +29,36 @@ export interface ITransfer extends Document {
     transferTime: string; // HH:MM format
   };
   
-  // Status tracking
+  // Status tracking (legacy)
   statusHistory: Array<{
     status: string;
     changedBy: Types.ObjectId;
     changedAt: Date;
     reason?: string;
+  }>;
+  
+  // Enhanced timeline tracking
+  timeline: Array<{
+    id: string;
+    type: string;
+    title: string;
+    description: string;
+    timestamp: Date;
+    actor: {
+      id: Types.ObjectId;
+      name: string;
+      email: string;
+      userType: string;
+    };
+    metadata?: {
+      oldValue?: any;
+      newValue?: any;
+      reason?: string;
+      details?: string;
+      [key: string]: any;
+    };
+    isSystemEvent?: boolean;
+    isVisible?: boolean;
   }>;
   
   // Audit fields
@@ -100,6 +125,11 @@ const TransferSchema = new Schema<ITransfer>({
     type: Schema.Types.ObjectId, 
     ref: 'User', 
     required: true 
+  },
+  assignedTo: { 
+    type: Schema.Types.ObjectId, 
+    ref: 'User',
+    required: false
   },
   reason: { 
     type: String, 
@@ -169,6 +199,70 @@ const TransferSchema = new Schema<ITransfer>({
     }
   }],
   
+  // Enhanced timeline tracking
+  timeline: [{
+    id: {
+      type: String,
+      required: true
+    },
+    type: {
+      type: String,
+      required: true,
+      enum: [
+        'created', 'status_changed', 'assigned', 'unassigned', 'patient_updated',
+        'hospital_updated', 'scheduled', 'rescheduled', 'document_uploaded',
+        'document_removed', 'notes_updated', 'priority_changed', 'reason_updated',
+        'approved', 'rejected', 'accepted', 'started', 'completed', 'cancelled',
+        'communication', 'system', 'admin_action', 'manager_action', 'employee_action'
+      ]
+    },
+    title: {
+      type: String,
+      required: true
+    },
+    description: {
+      type: String,
+      required: true
+    },
+    timestamp: {
+      type: Date,
+      required: true,
+      default: Date.now
+    },
+    actor: {
+      id: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+      },
+      name: {
+        type: String,
+        required: true
+      },
+      email: {
+        type: String,
+        required: true
+      },
+      userType: {
+        type: String,
+        required: true,
+        enum: ['manager', 'employee', 'admin']
+      }
+    },
+    metadata: {
+      type: Schema.Types.Mixed,
+      default: {}
+    },
+    isSystemEvent: {
+      type: Boolean,
+      default: false
+    },
+    isVisible: {
+      type: Boolean,
+      default: true
+    }
+  }],
+  
   // Audit fields
   lastModifiedBy: {
     type: Schema.Types.ObjectId,
@@ -199,6 +293,8 @@ TransferSchema.index({ requestedDate: -1 });
 TransferSchema.index({ scheduledDate: 1 });
 TransferSchema.index({ lastModifiedBy: 1 });
 TransferSchema.index({ 'statusHistory.changedAt': -1 });
+TransferSchema.index({ 'timeline.timestamp': -1 });
+TransferSchema.index({ 'timeline.type': 1 });
 
 // Pre-save hook to track status changes
 TransferSchema.pre('save', function(next) {

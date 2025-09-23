@@ -68,6 +68,7 @@ interface TransferRequestCardProps {
   onAccept: (transferId: string) => void;
   onSelect: (transfer: TransferRequest) => void;
   currentUserId: string;
+  currentUserType: "manager" | "employee";
   isSelected?: boolean;
 }
 
@@ -76,6 +77,7 @@ export default function TransferRequestCard({
   onAccept,
   onSelect,
   currentUserId,
+  currentUserType,
   isSelected = false,
 }: TransferRequestCardProps) {
   const [isAccepting, setIsAccepting] = useState(false);
@@ -336,7 +338,7 @@ export default function TransferRequestCard({
         </div>
 
         {/* Actions */}
-        {transfer.status === "pending" ? (
+        {transfer.status === "pending" && currentUserType === "employee" ? (
           <div className="mt-4 flex space-x-3">
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -363,6 +365,15 @@ export default function TransferRequestCard({
                 className="transform transition-transform"
               />
             </motion.div>
+          </div>
+        ) : transfer.status === "pending" && currentUserType === "manager" ? (
+          <div className="mt-4 flex justify-end">
+            <div className="px-4 py-2 bg-amber-100 text-amber-800 rounded-2xl font-medium text-sm border border-amber-200">
+              <div className="flex items-center">
+                <Clock size={16} className="mr-2" />
+                Waiting for Admin Approval
+              </div>
+            </div>
           </div>
         ) : (
           <div className="mt-4 flex justify-end">

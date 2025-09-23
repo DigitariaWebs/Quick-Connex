@@ -48,7 +48,58 @@ export interface SchedulingConfig {
   transferTime: string; // HH:MM format
 }
 
-// Status History Entry
+// Timeline Event Types
+export type TimelineEventType = 
+  | 'created'           // Transfer was created
+  | 'status_changed'    // Status was changed
+  | 'assigned'          // Assigned to employee
+  | 'unassigned'        // Unassigned from employee
+  | 'patient_updated'   // Patient information updated
+  | 'hospital_updated'  // Hospital information updated
+  | 'scheduled'         // Transfer was scheduled
+  | 'rescheduled'       // Transfer was rescheduled
+  | 'document_uploaded' // Medical document uploaded
+  | 'document_removed'  // Medical document removed
+  | 'notes_updated'     // Notes were updated
+  | 'priority_changed'  // Priority was changed
+  | 'reason_updated'    // Transfer reason updated
+  | 'approved'          // Transfer was approved
+  | 'rejected'          // Transfer was rejected
+  | 'accepted'          // Transfer was accepted by employee
+  | 'started'           // Transfer was started
+  | 'completed'         // Transfer was completed
+  | 'cancelled'         // Transfer was cancelled
+  | 'communication'     // Communication event (email, SMS)
+  | 'system'            // System-generated event
+  | 'admin_action'      // Admin action
+  | 'manager_action'    // Manager action
+  | 'employee_action';  // Employee action
+
+// Enhanced Timeline Event Entry
+export interface TimelineEvent {
+  id: string;                    // Unique event ID
+  type: TimelineEventType;       // Event type
+  title: string;                 // Human-readable title
+  description: string;           // Detailed description
+  timestamp: Date;               // When the event occurred
+  actor: {
+    id: Types.ObjectId;          // User who performed the action
+    name: string;                // User's display name
+    email: string;               // User's email
+    userType: 'manager' | 'employee' | 'admin';
+  };
+  metadata?: {                   // Additional event-specific data
+    oldValue?: any;              // Previous value (for updates)
+    newValue?: any;              // New value (for updates)
+    reason?: string;             // Reason for the change
+    details?: string;            // Additional details
+    [key: string]: any;          // Flexible metadata
+  };
+  isSystemEvent?: boolean;       // Whether this is a system-generated event
+  isVisible?: boolean;           // Whether to show in timeline (default: true)
+}
+
+// Legacy Status History Entry (kept for backward compatibility)
 export interface StatusHistoryEntry {
   status: TransferStatus;
   changedBy: Types.ObjectId;
@@ -80,7 +131,8 @@ export interface ITransfer extends BaseEntity {
   scheduling: SchedulingConfig;
   
   // Enhanced fields for robustness
-  statusHistory: StatusHistoryEntry[];
+  statusHistory: StatusHistoryEntry[];  // Legacy - kept for backward compatibility
+  timeline: TimelineEvent[];            // New comprehensive timeline
   
   // Audit fields
   lastModifiedBy: Types.ObjectId;

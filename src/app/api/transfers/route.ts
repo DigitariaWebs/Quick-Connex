@@ -6,6 +6,7 @@ import Hospital from '@/models/Hospital';
 import { requireManager, requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware';
 import { validateTransferData } from '@/lib/transfer-validation';
 import { getNotificationService } from '@/lib/socket-server';
+import TimelineService from '@/lib/timeline-service';
 
 // GET /api/transfers - Get transfer requests for employees
 export async function GET(request: NextRequest) {
@@ -157,6 +158,29 @@ export async function POST(request: NextRequest) {
       new Date(`${transferDate}T${transferTime}`) : 
       new Date();
 
+    // Create timeline event for transfer creation
+    const creationEvent = TimelineService.createTransferCreatedEvent(
+      {
+        id: requestingUser._id,
+        name: `${requestingUser.firstName} ${requestingUser.lastName}`,
+        email: requestingUser.email,
+        userType: requestingUser.userType as 'manager' | 'employee' | 'admin'
+      },
+      {
+        transferId,
+        patientInfo: {
+          firstName: patientFirstName,
+          lastName: patientLastName,
+          age: parseInt(patientAge as string),
+          dossierNumber: patientDossierNumber
+        },
+        fromHospitalName,
+        toHospitalName,
+        priority,
+        reason
+      }
+    );
+
     // Create transfer request with embedded patient info
     const transfer = new Transfer({
       transferId,
@@ -187,7 +211,8 @@ export async function POST(request: NextRequest) {
         changedBy: requestingUser._id,
         changedAt: new Date(),
         reason: 'Transfer created'
-      }]
+      }],
+      timeline: [creationEvent]
     });
 
     await transfer.save();

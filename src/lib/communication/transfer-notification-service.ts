@@ -41,6 +41,7 @@ export class TransferNotificationService {
         patientName: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`,
         patientAge: transfer.patientInfo.age,
         dossierNumber: transfer.patientInfo.dossierNumber,
+        patientDossier: transfer.patientInfo.dossierNumber, // For email template compatibility
         fromHospital: transfer.fromHospitalName,
         toHospital: transfer.toHospitalName,
         priority: transfer.priority.toUpperCase(),
@@ -50,6 +51,8 @@ export class TransferNotificationService {
         requestedBy: `${requestedBy.firstName} ${requestedBy.lastName}`,
         requestorEmail: requestedBy.email,
         requestorPhone: requestedBy.phone,
+        requestedByEmail: requestedBy.email, // For email template compatibility
+        requestedByPhone: requestedBy.phone, // For email template compatibility
         notes: transfer.notes || 'No additional notes',
         approvalUrl: `${process.env.BASE_URL || 'http://localhost:3000'}/api/transfers/${transfer._id}/approve?admin=${adminContact.email}`,
         rejectionUrl: `${process.env.BASE_URL || 'http://localhost:3000'}/api/transfers/${transfer._id}/reject?admin=${adminContact.email}`,

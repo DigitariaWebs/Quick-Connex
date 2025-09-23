@@ -12,6 +12,7 @@ import User from '@/models/User';
 import Hospital from '@/models/Hospital';
 import AdminService from '@/lib/admin-service';
 import TransferNotificationService from '@/lib/communication/transfer-notification-service';
+import TimelineService from '@/lib/timeline-service';
 
 export async function GET(
   request: NextRequest,
@@ -68,6 +69,29 @@ export async function GET(
       );
     }
 
+    // Create timeline events for approval
+    const approvalEvent = TimelineService.createApprovalEvent(
+      {
+        id: admin._id,
+        name: `${admin.firstName} ${admin.lastName}`,
+        email: admin.email,
+        userType: 'admin'
+      },
+      reason
+    );
+
+    const statusChangeEvent = TimelineService.createStatusChangeEvent(
+      {
+        id: admin._id,
+        name: `${admin.firstName} ${admin.lastName}`,
+        email: admin.email,
+        userType: 'admin'
+      },
+      'pending',
+      'accepted',
+      reason
+    );
+
     // Update transfer status to accepted (approved)
     transfer.status = 'accepted';
     transfer.lastModifiedBy = admin._id;
@@ -77,6 +101,12 @@ export async function GET(
       changedAt: new Date(),
       reason: reason
     });
+    
+    // Add timeline events
+    if (!transfer.timeline) {
+      transfer.timeline = [];
+    }
+    transfer.timeline.push(approvalEvent, statusChangeEvent);
 
     await transfer.save();
 
@@ -163,6 +193,29 @@ export async function POST(
       );
     }
 
+    // Create timeline events for approval
+    const approvalEvent = TimelineService.createApprovalEvent(
+      {
+        id: admin._id,
+        name: `${admin.firstName} ${admin.lastName}`,
+        email: admin.email,
+        userType: 'admin'
+      },
+      reason
+    );
+
+    const statusChangeEvent = TimelineService.createStatusChangeEvent(
+      {
+        id: admin._id,
+        name: `${admin.firstName} ${admin.lastName}`,
+        email: admin.email,
+        userType: 'admin'
+      },
+      'pending',
+      'accepted',
+      reason
+    );
+
     // Update transfer status to accepted (approved)
     transfer.status = 'accepted';
     transfer.lastModifiedBy = admin._id;
@@ -172,6 +225,12 @@ export async function POST(
       changedAt: new Date(),
       reason: reason
     });
+    
+    // Add timeline events
+    if (!transfer.timeline) {
+      transfer.timeline = [];
+    }
+    transfer.timeline.push(approvalEvent, statusChangeEvent);
 
     await transfer.save();
 
