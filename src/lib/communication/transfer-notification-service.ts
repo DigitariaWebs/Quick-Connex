@@ -113,7 +113,6 @@ export class TransferNotificationService {
           source: 'transfer_workflow',
           category: 'transfer_request',
           transferId: transferData.transferId,
-          priority: transferData.priority
         },
         tracking: {},
         createdAt: new Date(),
@@ -153,7 +152,6 @@ export class TransferNotificationService {
           source: 'transfer_workflow',
           category: 'transfer_request',
           transferId: transferData.transferId,
-          priority: transferData.priority
         },
         tracking: {},
         createdAt: new Date(),
@@ -238,7 +236,6 @@ export class TransferNotificationService {
           source: 'transfer_workflow',
           category: 'transfer_approved',
           transferId: transferData.transferId,
-          recipientType: 'manager'
         },
         tracking: {},
         createdAt: new Date(),
@@ -266,7 +263,6 @@ export class TransferNotificationService {
             source: 'transfer_workflow',
             category: 'transfer_approved',
             transferId: transferData.transferId,
-            recipientType: 'manager'
           },
           tracking: {},
           createdAt: new Date(),
@@ -304,7 +300,6 @@ export class TransferNotificationService {
           source: 'transfer_workflow',
           category: 'transfer_approved',
           transferId: transferData.transferId,
-          recipientType: 'employee'
         },
         tracking: {},
         createdAt: new Date(),
@@ -332,7 +327,6 @@ export class TransferNotificationService {
             source: 'transfer_workflow',
             category: 'transfer_approved',
             transferId: transferData.transferId,
-            recipientType: 'employee'
           },
           tracking: {},
           createdAt: new Date(),

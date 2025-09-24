@@ -6,7 +6,7 @@
  */
 
 import { Types } from 'mongoose';
-import { connectDB } from './mongodb';
+import connectDB from './mongodb';
 import Notification from '@/models/Notification';
 import { getNotificationService } from './socket-server';
 import {

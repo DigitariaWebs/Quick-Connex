@@ -89,6 +89,8 @@ export async function POST(request: NextRequest) {
       
       const emailMessage: EmailMessage = {
         id: `reset-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        channel: 'email',
+        status: 'pending',
         recipient: {
           email: user.email,
           name: `${user.firstName} ${user.lastName}`
@@ -149,10 +151,13 @@ If you didn't request this password reset, please ignore this email.
 This is an automated message from the Patient Management System.`
         },
         metadata: {
+          source: 'password-reset-system',
           category: 'password_reset',
-          userId: user._id.toString()
+          userId: (user._id as any).toString()
         },
-        priority: 'high'
+        priority: 'high',
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
 
       console.log('📧 API: Sending email with template:', emailMessage.content.template);
@@ -175,7 +180,7 @@ This is an automated message from the Patient Management System.`
       }
     } catch (emailError) {
       console.error('❌ API: Error sending password reset email:', emailError);
-      console.error('❌ API: Error stack:', emailError.stack);
+      console.error('❌ API: Error stack:', (emailError as Error).stack);
       // Don't fail the request if email fails, just log it
     }
 

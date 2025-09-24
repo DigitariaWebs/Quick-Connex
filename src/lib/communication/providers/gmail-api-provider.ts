@@ -87,7 +87,7 @@ export class GmailAPIProvider implements ICommunicationProvider {
       console.error('Gmail API send error:', error);
       
       // Try to refresh token if it's expired
-      if (error.message?.includes('invalid_grant') || error.message?.includes('expired')) {
+      if ((error as Error).message?.includes('invalid_grant') || (error as Error).message?.includes('expired')) {
         const refreshed = await this.refreshAccessToken();
         if (refreshed) {
           // Retry sending

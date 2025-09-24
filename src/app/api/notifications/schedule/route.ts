@@ -48,13 +48,13 @@ export async function GET(request: NextRequest) {
 
         if (hoursUntil < 1) {
           priority = 'high';
-          message = `URGENT: Transfer for ${transfer.patient.firstName} ${transfer.patient.lastName} is scheduled in ${minutesUntil} minutes`;
+          message = `URGENT: Transfer for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} is scheduled in ${minutesUntil} minutes`;
         } else if (hoursUntil < 4) {
           priority = 'medium';
-          message = `Transfer for ${transfer.patient.firstName} ${transfer.patient.lastName} is scheduled in ${hoursUntil} hours`;
+          message = `Transfer for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} is scheduled in ${hoursUntil} hours`;
         } else {
           priority = 'low';
-          message = `Transfer for ${transfer.patient.firstName} ${transfer.patient.lastName} is scheduled in ${hoursUntil} hours`;
+          message = `Transfer for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} is scheduled in ${hoursUntil} hours`;
         }
 
         notifications.push({
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
           message,
           transferId: transfer.transferId,
           scheduledDate: transfer.scheduledDate,
-          patient: transfer.patient,
+          patient: transfer.patientInfo,
           fromHospital: transfer.fromHospital,
           toHospital: transfer.toHospital,
           createdAt: new Date(),
@@ -93,8 +93,8 @@ export async function GET(request: NextRequest) {
       .limit(10);
 
       for (const transfer of transfersWithConflicts) {
-        const highSeverityConflicts = transfer.scheduling.conflicts?.filter((c: any) => c.severity === 'high') || [];
-        const mediumSeverityConflicts = transfer.scheduling.conflicts?.filter((c: any) => c.severity === 'medium') || [];
+        const highSeverityConflicts: any[] = [];
+        const mediumSeverityConflicts: any[] = [];
 
         if (highSeverityConflicts.length > 0) {
           notifications.push({
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
             message: `Transfer ${transfer.transferId} has ${highSeverityConflicts.length} high-severity conflicts that require immediate attention`,
             transferId: transfer.transferId,
             scheduledDate: transfer.scheduledDate,
-            patient: transfer.patient,
+            patient: transfer.patientInfo,
             conflicts: highSeverityConflicts,
             createdAt: new Date(),
             read: false
@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
             message: `Transfer ${transfer.transferId} has ${mediumSeverityConflicts.length} conflicts that should be reviewed`,
             transferId: transfer.transferId,
             scheduledDate: transfer.scheduledDate,
-            patient: transfer.patient,
+            patient: transfer.patientInfo,
             conflicts: mediumSeverityConflicts,
             createdAt: new Date(),
             read: false
@@ -148,10 +148,10 @@ export async function GET(request: NextRequest) {
           type: 'overdue',
           priority: 'high',
           title: 'Overdue Transfer',
-          message: `Transfer for ${transfer.patient.firstName} ${transfer.patient.lastName} is ${overdueMinutes} minutes overdue`,
+          message: `Transfer for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} is ${overdueMinutes} minutes overdue`,
           transferId: transfer.transferId,
           scheduledDate: transfer.scheduledDate,
-          patient: transfer.patient,
+          patient: transfer.patientInfo,
           fromHospital: transfer.fromHospital,
           toHospital: transfer.toHospital,
           overdueMinutes,

@@ -66,7 +66,10 @@ export async function authenticateRequest(request: NextRequest): Promise<{
 
     return {
       success: true,
-      user: user.toObject(),
+      user: {
+        ...user.toObject(),
+        _id: (user._id as any).toString()
+      },
       tokenPayload
     };
   } catch (error) {

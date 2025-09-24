@@ -157,10 +157,12 @@ export default function TransferTimeline({
         description: `Transfer requested by ${transfer.requestedBy.firstName} ${transfer.requestedBy.lastName}`,
         timestamp: transfer.requestedDate,
         type: "request",
-        status: "completed",
-        actor: `${transfer.requestedBy.firstName} ${transfer.requestedBy.lastName}`,
-        icon: <FileText size={16} className="text-blue-500" />,
-        details: `Reason: ${transfer.reason}`,
+        actor: {
+          id: transfer.requestedBy.email, // Using email as ID since _id is not available
+          name: `${transfer.requestedBy.firstName} ${transfer.requestedBy.lastName}`,
+          email: transfer.requestedBy.email,
+          userType: transfer.requestedBy.userType,
+        },
       },
       {
         id: "review",
@@ -171,10 +173,12 @@ export default function TransferTimeline({
           new Date(transfer.requestedDate).getTime() + 15 * 60000
         ).toISOString(),
         type: "approval",
-        status: transfer.status === "pending" ? "current" : "completed",
-        actor: "Dr. Sarah Mitchell",
-        icon: <Stethoscope size={16} className="text-green-500" />,
-        details: "Reviewing medical records and transport requirements",
+        actor: {
+          id: "medical-reviewer",
+          name: "Dr. Sarah Mitchell",
+          email: "sarah.mitchell@hospital.com",
+          userType: "medical",
+        },
       },
     ];
 
@@ -187,10 +191,12 @@ export default function TransferTimeline({
           new Date(transfer.requestedDate).getTime() + 45 * 60000
         ).toISOString(),
         type: "approval",
-        status: "completed",
-        actor: "Dr. Michael Rodriguez",
-        icon: <CheckCircle2 size={16} className="text-green-500" />,
-        details: "All medical requirements met for safe transport",
+        actor: {
+          id: "medical-approver",
+          name: "Dr. Michael Rodriguez",
+          email: "michael.rodriguez@hospital.com",
+          userType: "medical",
+        },
       });
 
       baseEvents.push({
@@ -201,10 +207,12 @@ export default function TransferTimeline({
           new Date(transfer.requestedDate).getTime() + 2 * 3600000
         ).toISOString(),
         type: "preparation",
-        status: transfer.status === "accepted" ? "current" : "completed",
-        actor: "EMT Team Alpha",
-        icon: <Activity size={16} className="text-orange-500" />,
-        details: "Equipment check and route planning completed",
+        actor: {
+          id: "emt-team-alpha",
+          name: "EMT Team Alpha",
+          email: "emt.alpha@hospital.com",
+          userType: "transport",
+        },
       });
     }
 
@@ -217,10 +225,12 @@ export default function TransferTimeline({
           new Date(transfer.requestedDate).getTime() + 3 * 3600000
         ).toISOString(),
         type: "transport",
-        status: "completed",
-        actor: "EMT Team Alpha",
-        icon: <Ambulance size={16} className="text-blue-500" />,
-        details: "Estimated arrival in 45 minutes",
+        actor: {
+          id: "emt-team-alpha",
+          name: "EMT Team Alpha",
+          email: "emt.alpha@hospital.com",
+          userType: "transport",
+        },
       });
 
       baseEvents.push({
@@ -231,10 +241,12 @@ export default function TransferTimeline({
           new Date(transfer.requestedDate).getTime() + 3.5 * 3600000
         ).toISOString(),
         type: "transport",
-        status: transfer.status === "in_progress" ? "current" : "completed",
-        actor: "Paramedic Johnson",
-        icon: <Shield size={16} className="text-green-500" />,
-        details: "Vital signs stable, ETA 15 minutes",
+        actor: {
+          id: "paramedic-johnson",
+          name: "Paramedic Johnson",
+          email: "johnson@hospital.com",
+          userType: "medical",
+        },
       });
     }
 
@@ -247,10 +259,12 @@ export default function TransferTimeline({
           new Date(transfer.requestedDate).getTime() + 4 * 3600000
         ).toISOString(),
         type: "arrival",
-        status: "completed",
-        actor: "Receiving Team",
-        icon: <Hospital size={16} className="text-purple-500" />,
-        details: "Patient handed over to destination medical team",
+        actor: {
+          id: "receiving-team",
+          name: "Receiving Team",
+          email: "receiving@hospital.com",
+          userType: "medical",
+        },
       });
 
       baseEvents.push({
@@ -261,10 +275,12 @@ export default function TransferTimeline({
           new Date(transfer.requestedDate).getTime() + 4.5 * 3600000
         ).toISOString(),
         type: "completion",
-        status: "completed",
-        actor: "System",
-        icon: <CheckCircle2 size={16} className="text-green-500" />,
-        details: "All documentation submitted and verified",
+        actor: {
+          id: "system",
+          name: "System",
+          email: "system@hospital.com",
+          userType: "system",
+        },
       });
     }
 
@@ -277,10 +293,12 @@ export default function TransferTimeline({
         new Date(transfer.requestedDate).getTime() + 1.5 * 3600000
       ).toISOString(),
       type: "note",
-      status: "completed",
-      actor: "Nurse Collins",
-      icon: <MessageSquare size={16} className="text-indigo-500" />,
-      details: "Family members informed via phone call",
+      actor: {
+        id: "nurse-collins",
+        name: "Nurse Collins",
+        email: "collins@hospital.com",
+        userType: "nurse",
+      },
     });
 
     return baseEvents.sort(

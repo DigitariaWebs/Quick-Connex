@@ -63,7 +63,10 @@ export async function POST(request: NextRequest) {
     const { code } = body;
 
     if (!code) {
-      return createErrorResponse('Authorization code is required', 400);
+      return NextResponse.json(
+        { error: 'Authorization code is required' },
+        { status: 400 }
+      );
     }
 
     const oauth2Client = new google.auth.OAuth2(

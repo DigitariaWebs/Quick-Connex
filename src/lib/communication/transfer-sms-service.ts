@@ -252,7 +252,6 @@ export class TransferSMSService {
           source: 'transfer_workflow',
           category: category.toLowerCase().replace(/\s+/g, '_'),
           userId: user._id.toString(),
-          userType: user.userType
         },
         tracking: {},
         createdAt: new Date(),

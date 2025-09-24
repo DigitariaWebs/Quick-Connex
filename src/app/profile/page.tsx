@@ -27,7 +27,7 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
-  const { user, loading, logout } = useAuth();
+  const { user, isLoading: authLoading, logout } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
@@ -62,7 +62,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (loading || isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>

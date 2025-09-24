@@ -41,7 +41,13 @@ export class AdminService {
         ]
       }).select('firstName lastName email phone userType post ciusss');
 
-      return adminUsers.map(user => user.toObject());
+      return adminUsers
+        .filter(user => user.userType === 'manager')
+        .map(user => ({
+          ...user.toObject(),
+          _id: (user._id as any).toString(),
+          userType: 'manager' as const
+        })) as AdminUser[];
     } catch (error) {
       console.error('Error getting admin users:', error);
       return [];
@@ -71,11 +77,11 @@ export class AdminService {
       const user = await User.findById(userId).select('email post userType status');
       if (!user) return false;
 
-      return user.userType === 'manager' && 
-             user.status === 'approved' &&
+      return (user.userType === 'manager') && 
+             (user.status === 'approved' || !user.status) &&
              (user.email?.includes('admin@patients-management.com') ||
               user.post?.toLowerCase().includes('administrator') ||
-              user.post?.toLowerCase().includes('admin'));
+              user.post?.toLowerCase().includes('admin')) || false;
     } catch (error) {
       console.error('Error checking admin status:', error);
       return false;

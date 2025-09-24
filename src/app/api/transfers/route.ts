@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
     // Create timeline event for transfer creation
     const creationEvent = TimelineService.createTransferCreatedEvent(
       {
-        id: requestingUser._id,
+        id: requestingUser._id as any,
         name: `${requestingUser.firstName} ${requestingUser.lastName}`,
         email: requestingUser.email,
         userType: requestingUser.userType as 'manager' | 'employee' | 'admin'
@@ -230,7 +230,7 @@ export async function POST(request: NextRequest) {
       if (notificationService) {
         await notificationService.sendTransferStatusChange(
           populatedTransfer,
-          null,
+          'created',
           'pending',
           requestingUser
         );
@@ -252,13 +252,13 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating transfer:', error);
     console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
+      message: (error as Error).message,
+      stack: (error as Error).stack,
+      name: (error as Error).name
     });
-    return createErrorResponse(`Failed to create transfer request: ${error.message}`, 'CREATE_ERROR', 500, {
-      originalError: error.message,
-      errorType: error.name
+    return createErrorResponse(`Failed to create transfer request: ${(error as Error).message}`, 'CREATE_ERROR', 500, {
+      originalError: (error as Error).message,
+      errorType: (error as Error).name
     });
   }
 }

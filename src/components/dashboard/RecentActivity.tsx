@@ -8,6 +8,7 @@ import {
   ArrowRight,
   User,
   Calendar,
+  Activity,
   FileText,
   Hospital,
 } from "lucide-react";
@@ -128,13 +129,13 @@ export default function RecentActivity({
                     <span>
                       {typeof activity.fromHospital === "string"
                         ? activity.fromHospital
-                        : activity.fromHospital.name}
+                        : activity.fromHospital || "Unknown Hospital"}
                     </span>
                     <ArrowRight size={12} />
                     <span>
                       {typeof activity.toHospital === "string"
                         ? activity.toHospital
-                        : activity.toHospital.name}
+                        : activity.toHospital || "Unknown Hospital"}
                     </span>
                   </div>
                 )}

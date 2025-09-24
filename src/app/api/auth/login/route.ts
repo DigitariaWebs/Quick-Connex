@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     
     // Create JWT token
     const token = await signToken({
-      userId: user._id.toString(),
+      userId: (user._id as any).toString(),
       email: user.email,
       userType: user.userType,
     });
@@ -119,11 +119,11 @@ export async function POST(request: NextRequest) {
     
     const userResponse = user.toObject();
     // Remove any sensitive fields
-    delete userResponse.password;
+    const { password: _, ...userWithoutPassword } = userResponse;
     
     return NextResponse.json({
       message: 'Login successful',
-      user: userResponse,
+      user: userWithoutPassword,
       success: true
     });
     

@@ -27,11 +27,11 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!channel || !recipient || !content) {
-      return createErrorResponse('Missing required fields: channel, recipient, content', 400);
+      return createErrorResponse('Missing required fields: channel, recipient, content', 'MISSING_FIELDS', 400);
     }
 
     if (!['email', 'sms'].includes(channel)) {
-      return createErrorResponse('Invalid channel. Must be "email" or "sms"', 400);
+      return createErrorResponse('Invalid channel. Must be "email" or "sms"', 'INVALID_CHANNEL', 400);
     }
 
     const communicationService = new CommunicationService();
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!response) {
-      return createErrorResponse('Failed to create communication message', 500);
+      return createErrorResponse('Failed to create communication message', 'COMMUNICATION_FAILED', 500);
     }
 
     return createSuccessResponse({
@@ -119,6 +119,7 @@ export async function POST(request: NextRequest) {
     console.error('Error sending communication:', error);
     return createErrorResponse(
       'Failed to send communication message',
+      'SEND_FAILED',
       500,
       error instanceof Error ? error.message : 'Unknown error'
     );
@@ -162,6 +163,7 @@ export async function GET(request: NextRequest) {
     console.error('Error getting communication configuration:', error);
     return createErrorResponse(
       'Failed to get communication configuration',
+      'CONFIG_FAILED',
       500,
       error instanceof Error ? error.message : 'Unknown error'
     );

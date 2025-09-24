@@ -541,14 +541,15 @@ export default function CalendarView({
                           </div>
                           <div className="text-xs text-gray-500">
                             Dossier:{" "}
-                            {selectedEvent.extendedProps.patient.dossierNumber}
+                            {selectedEvent.extendedProps.patient.patientId ||
+                              "N/A"}
                           </div>
                         </div>
                       </div>
                       <div>
-                        <span className="text-gray-600">Age:</span>
+                        <span className="text-gray-600">Patient ID:</span>
                         <span className="ml-2 font-medium">
-                          {selectedEvent.extendedProps.patient.age} years
+                          {selectedEvent.extendedProps.patient.patientId}
                         </span>
                       </div>
                     </div>
@@ -568,8 +569,8 @@ export default function CalendarView({
                             {typeof selectedEvent.extendedProps.fromHospital ===
                             "string"
                               ? selectedEvent.extendedProps.fromHospital
-                              : selectedEvent.extendedProps.fromHospital
-                                  ?.name || "Unknown Hospital"}
+                              : selectedEvent.extendedProps.fromHospital ||
+                                "Unknown Hospital"}
                           </span>
                         </div>
                         <div className="flex items-center space-x-2">
@@ -579,7 +580,7 @@ export default function CalendarView({
                             {typeof selectedEvent.extendedProps.toHospital ===
                             "string"
                               ? selectedEvent.extendedProps.toHospital
-                              : selectedEvent.extendedProps.toHospital?.name ||
+                              : selectedEvent.extendedProps.toHospital ||
                                 "Unknown Hospital"}
                           </span>
                         </div>

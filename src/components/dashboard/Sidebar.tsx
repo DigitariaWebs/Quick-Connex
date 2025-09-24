@@ -170,20 +170,7 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
                         <span className="font-medium text-sm whitespace-nowrap truncate">
                           {item.name}
                         </span>
-                        {item.badge && (
-                          <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium flex-shrink-0">
-                            {item.badge}
-                          </span>
-                        )}
                       </motion.div>
-                    )}
-
-                    {!isHovered && item.badge && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                        <span className="text-xs text-white font-medium">
-                          {item.badge}
-                        </span>
-                      </div>
                     )}
                   </motion.div>
                 </Link>
@@ -291,11 +278,6 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
                     <span className="font-medium text-sm whitespace-nowrap truncate">
                       {item.name}
                     </span>
-                    {item.badge && (
-                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium flex-shrink-0">
-                        {item.badge}
-                      </span>
-                    )}
                   </div>
                 </div>
               </Link>

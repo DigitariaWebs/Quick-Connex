@@ -391,7 +391,7 @@ export async function POST(request: Request) {
         
         for (const doc of savedUser.documents) {
           try {
-            await updateFileMetadata(doc.fileId, { userId: savedUser._id.toString() });
+            await updateFileMetadata(doc.fileId, { userId: (savedUser._id as any).toString() });
             console.log(`✅ API: Updated metadata for file ${doc.fileId}`);
           } catch (updateError) {
             console.error(`⚠️ API: Failed to update metadata for file ${doc.fileId}:`, updateError);
@@ -406,7 +406,7 @@ export async function POST(request: Request) {
       console.log(`📧 API: User status: ${savedUser.status} (pending approval)`);
       
       // Send approval email to admin (async, don't wait for it)
-      sendApprovalEmailToAdmin(savedUser._id.toString()).catch(error => {
+      sendApprovalEmailToAdmin((savedUser._id as any).toString()).catch(error => {
         console.error('❌ API: Failed to send approval email:', error);
       });
       
@@ -419,7 +419,7 @@ export async function POST(request: Request) {
         { 
           message: 'Account created successfully. Your registration is pending approval. You will receive an email notification once approved.',
           user: sanitizedUser,
-          userId: savedUser._id.toString(), // Include user ID for testing purposes
+          userId: (savedUser._id as any).toString(), // Include user ID for testing purposes
           status: 'pending',
           processingTime: `${processingTime}ms`
         }, 

@@ -18,7 +18,7 @@ export const getGridFSBucket = async (): Promise<GridFSBucket> => {
 // File metadata interface
 export interface FileMetadata {
   userId: string;
-  documentType: 'opiqPermit' | 'rcr';
+  documentType: 'cv' | 'opiqPermit' | 'rcr';
   originalName: string;
   mimeType: string;
   size: number;

@@ -364,12 +364,21 @@ export function getDevelopmentConfig(): Partial<CommunicationConfig> {
     },
     queue: {
       enabled: false, // Disable queue in development
+      maxRetries: 3,
+      retryDelay: 5000,
+      batchSize: 10,
+      processingInterval: 30000,
     },
     analytics: {
       enabled: false, // Disable analytics in development
+      retentionDays: 30,
+      aggregationInterval: 3600000,
     },
     rateLimiting: {
       enabled: false, // Disable rate limiting in development
+      maxPerMinute: 60,
+      maxPerHour: 1000,
+      maxPerDay: 10000,
     },
     validation: {
       emailValidation: false, // Relaxed validation in development

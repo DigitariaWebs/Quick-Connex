@@ -1,10 +1,10 @@
 import { Server as NetServer } from 'http';
-import { Server as SocketIOServer } from 'socket.io';
+import { Server as SocketIOServer, Socket } from 'socket.io';
 import { NextApiRequest, NextApiResponse } from 'next';
 import jwt from 'jsonwebtoken';
 import User from '@/models/User';
 import Notification from '@/models/Notification';
-import { connectDB } from '@/lib/mongodb';
+import connectDB from '@/lib/mongodb';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -55,7 +55,7 @@ export function initializeSocketServer(httpServer: NetServer): SocketIOServer {
       }
 
       // Attach user info to socket
-      socket.userId = user._id.toString();
+      socket.userId = (user._id as any).toString();
       socket.userType = user.userType;
       socket.user = user;
       
@@ -182,7 +182,7 @@ export class NotificationService {
 
     // Create persistent notification
     try {
-      await connectDB();
+      await connectDB;
       
       const targetUsers = [];
       if (transfer.requestedBy) targetUsers.push(transfer.requestedBy);
@@ -327,7 +327,7 @@ export class NotificationService {
       'cancelled': 'has been cancelled'
     };
 
-    return `Transfer for ${patientName} ${statusMessages[newStatus]} by ${changedByName}`;
+    return `Transfer for ${patientName} ${(statusMessages as any)[newStatus]} by ${changedByName}`;
   }
 
   private getReminderMessage(transfer: any, reminderType: string): string {

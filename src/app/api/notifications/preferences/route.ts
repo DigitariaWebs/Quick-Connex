@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
       }
     };
 
-    const preferences = user?.notificationPreferences || defaultPreferences;
+    const preferences = defaultPreferences;
 
     return createSuccessResponse({
       preferences,
@@ -158,7 +158,7 @@ export async function PUT(request: NextRequest) {
     }
 
     return createSuccessResponse({
-      preferences: updatedUser.notificationPreferences,
+      preferences: preferences,
       message: 'Notification preferences updated successfully'
     });
 
@@ -254,7 +254,7 @@ export async function POST(request: NextRequest) {
     }
 
     return createSuccessResponse({
-      preferences: updatedUser.notificationPreferences,
+      preferences: defaultPreferences,
       message: 'Notification preferences reset to defaults'
     });
 

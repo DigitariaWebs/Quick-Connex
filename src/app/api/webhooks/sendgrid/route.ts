@@ -16,39 +16,37 @@ export async function POST(request: NextRequest) {
     
     // SendGrid sends an array of events
     if (!Array.isArray(body)) {
-      return createErrorResponse('Invalid webhook payload', 400);
+      return createErrorResponse('Invalid webhook payload', 'INVALID_PAYLOAD', 400);
     }
 
     console.log(`SendGrid webhook received ${body.length} events`);
 
     // Process each event
-    for (const event of body) {
-      const {
-        event,
-        email,
-        timestamp,
-        sg_message_id,
-        sg_event_id,
-        reason,
-        status,
-        response,
-        attempt,
-        type,
-        url,
-        useragent,
-        ip,
-        url_offset,
-        category,
-        unique_args,
-        marketing_campaign_id,
-        marketing_campaign_name,
-        marketing_campaign_version,
-        marketing_campaign_split_id,
-        marketing_campaign_alias,
-      } = event;
+    for (const eventData of body as any[]) {
+      const eventType = eventData.event;
+      const email = eventData.email;
+      const timestamp = eventData.timestamp;
+      const sg_message_id = eventData.sg_message_id;
+      const sg_event_id = eventData.sg_event_id;
+      const reason = eventData.reason;
+      const status = eventData.status;
+      const response = eventData.response;
+      const attempt = eventData.attempt;
+      const type = eventData.type;
+      const url = eventData.url;
+      const useragent = eventData.useragent;
+      const ip = eventData.ip;
+      const url_offset = eventData.url_offset;
+      const category = eventData.category;
+      const unique_args = eventData.unique_args;
+      const marketing_campaign_id = eventData.marketing_campaign_id;
+      const marketing_campaign_name = eventData.marketing_campaign_name;
+      const marketing_campaign_version = eventData.marketing_campaign_version;
+      const marketing_campaign_split_id = eventData.marketing_campaign_split_id;
+      const marketing_campaign_alias = eventData.marketing_campaign_alias;
 
       console.log('SendGrid event:', {
-        event,
+        eventType,
         email,
         sg_message_id,
         timestamp,
@@ -58,7 +56,7 @@ export async function POST(request: NextRequest) {
 
       // Map SendGrid event to our communication status
       let communicationStatus: string;
-      switch (event) {
+      switch (eventType) {
         case 'processed':
           communicationStatus = 'sent';
           break;
@@ -98,7 +96,7 @@ export async function POST(request: NextRequest) {
       // 4. Trigger any follow-up actions if needed
 
       // Handle specific event types
-      switch (event) {
+      switch (eventType) {
         case 'bounce':
           console.log(`Email bounced for ${email}: ${reason}`);
           // Add email to bounce list
@@ -127,6 +125,7 @@ export async function POST(request: NextRequest) {
     console.error('SendGrid webhook error:', error);
     return createErrorResponse(
       'Failed to process SendGrid webhook',
+      'WEBHOOK_ERROR',
       500,
       error instanceof Error ? error.message : 'Unknown error'
     );
@@ -153,6 +152,7 @@ export async function GET(request: NextRequest) {
     console.error('SendGrid webhook GET error:', error);
     return createErrorResponse(
       'Failed to process SendGrid webhook GET request',
+      'WEBHOOK_GET_ERROR',
       500,
       error instanceof Error ? error.message : 'Unknown error'
     );

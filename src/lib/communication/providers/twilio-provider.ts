@@ -144,12 +144,12 @@ export class TwilioProvider implements ICommunicationProvider {
 
     // Add optional parameters
     if (message.metadata?.notificationId) {
-      twilioMessage.StatusCallback = `${process.env.TWILIO_WEBHOOK_URL || 'https://yourdomain.com/api/webhooks/twilio'}`;
+      (twilioMessage as any).StatusCallback = `${process.env.TWILIO_WEBHOOK_URL || 'https://yourdomain.com/api/webhooks/twilio'}`;
     }
 
     // Add custom parameters
     if (message.metadata) {
-      twilioMessage.StatusCallbackEvent = ['sent', 'delivered', 'failed', 'undelivered'];
+      (twilioMessage as any).StatusCallbackEvent = ['sent', 'delivered', 'failed', 'undelivered'];
     }
 
     return twilioMessage;

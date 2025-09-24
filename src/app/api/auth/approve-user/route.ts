@@ -88,6 +88,8 @@ async function sendUserNotificationEmail(user: any, action: string) {
 
     const emailMessage: EmailMessage = {
       id: `notification-${user._id}-${Date.now()}`,
+      channel: 'email',
+      status: 'pending',
       recipient: {
         email: user.email,
         name: `${user.firstName} ${user.lastName}`
@@ -104,11 +106,13 @@ async function sendUserNotificationEmail(user: any, action: string) {
           : generateRejectionNotificationText(user, baseUrl)
       },
       metadata: {
+        source: 'user-approval-system',
         category: 'user-notification',
-        userId: user._id.toString(),
-        action: action
+        userId: (user._id as any).toString()
       },
-      priority: 'high'
+      priority: 'high',
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
 
     await emailService.sendEmail(emailMessage);

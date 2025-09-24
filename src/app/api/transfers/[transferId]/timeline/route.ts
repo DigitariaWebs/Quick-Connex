@@ -123,7 +123,7 @@ export async function POST(
       description,
       timestamp: new Date(),
       actor: {
-        id: user._id,
+        id: user._id as any,
         name: `${user.firstName} ${user.lastName}`,
         email: user.email,
         userType: user.userType
@@ -138,7 +138,7 @@ export async function POST(
       transfer.timeline = [];
     }
     transfer.timeline.push(newEvent);
-    transfer.lastModifiedBy = user._id;
+    transfer.lastModifiedBy = user._id as any;
 
     await transfer.save();
 

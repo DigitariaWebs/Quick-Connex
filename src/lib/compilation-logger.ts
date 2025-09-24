@@ -1,10 +1,10 @@
-import { Compiler, Stats } from 'webpack';
+// import { Compiler, Stats } from 'webpack'; // Webpack types not available in production build
 
 export class CompilationLogger {
   private startTime: number = 0;
   private isFirstCompile: boolean = true;
 
-  apply(compiler: Compiler) {
+  apply(compiler: any) {
     console.log('🔧 CompilationLogger: Plugin applied to webpack compiler');
     
     // Hook into compilation start
@@ -18,7 +18,7 @@ export class CompilationLogger {
     });
 
     // Hook into compilation complete
-    compiler.hooks.done.tap('CompilationLogger', (stats: Stats) => {
+    compiler.hooks.done.tap('CompilationLogger', (stats: any) => {
       const endTime = Date.now();
       const duration = endTime - this.startTime;
       
@@ -67,7 +67,7 @@ export class CompilationLogger {
     });
 
     // Hook into invalid files
-    compiler.hooks.invalid.tap('CompilationLogger', (fileName) => {
+    compiler.hooks.invalid.tap('CompilationLogger', (fileName: any) => {
       console.log(`🔄 Webpack: File changed: ${fileName}`);
     });
   }

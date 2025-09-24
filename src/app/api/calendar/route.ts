@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongoose';
 import Transfer from '@/models/Transfer';
+import mongoose from 'mongoose';
 import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware';
 
 // GET /api/calendar - Get calendar view of transfers
@@ -45,8 +46,7 @@ export async function GET(request: NextRequest) {
     // Process transfers for calendar view
     const calendarEvents = transfers.map(transfer => {
       const startDateTime = new Date(transfer.scheduledDate!);
-      const endDateTime = transfer.scheduledEndDate || 
-        new Date(startDateTime.getTime() + (transfer.scheduling?.timeSlot?.duration || 60) * 60000);
+      const endDateTime = new Date(startDateTime.getTime() + 60 * 60000); // Default 60 minutes duration
 
       return {
         id: transfer._id,
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
     // Add status history entry
     const statusEntry = {
       status: transfer.status,
-      changedBy: authResult.user._id,
+      changedBy: new mongoose.Types.ObjectId(authResult.user._id),
       changedAt: new Date(),
       reason: `Scheduling ${action}`
     };
@@ -224,7 +224,7 @@ function getStatusColor(status: string): string {
 }
 
 function generateRecurringEvents(transfer: any, startDate: Date, endDate: Date) {
-  const events = [];
+  const events: any[] = [];
   const { scheduling } = transfer;
   
   if (!scheduling.isRecurring || !scheduling.recurrencePattern) {
@@ -238,7 +238,7 @@ function generateRecurringEvents(transfer: any, startDate: Date, endDate: Date) 
 
   let currentDate = new Date(Math.max(baseDate.getTime(), startDate.getTime()));
   
-  while (currentDate <= Math.min(recurrenceEnd.getTime(), endDate.getTime())) {
+  while (currentDate.getTime() <= Math.min(recurrenceEnd.getTime(), endDate.getTime())) {
     // Check if this date is in exceptions
     const isException = scheduling.recurrenceExceptions?.some((exception: Date) => 
       new Date(exception).toDateString() === currentDate.toDateString()
@@ -313,7 +313,7 @@ async function checkSchedulingConflicts(
   scheduledEndDate: string, 
   scheduling: any
 ) {
-  const conflicts = [];
+  const conflicts: any[] = [];
   
   if (!scheduledDate || !scheduledEndDate) {
     return conflicts;

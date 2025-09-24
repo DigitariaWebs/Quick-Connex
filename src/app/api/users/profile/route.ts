@@ -29,10 +29,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch transfer statistics
-    const transferStats = await getTransferStats(user._id, user.userType);
+    const transferStats = await getTransferStats((user._id as any).toString(), user.userType);
 
     // Fetch recent activity
-    const recentActivity = await getRecentActivity(user._id, user.userType);
+    const recentActivity = await getRecentActivity((user._id as any).toString(), user.userType);
 
     return NextResponse.json({
       profile: user,
@@ -96,7 +96,7 @@ async function getTransferStats(userId: string, userType: string) {
 
 async function getRecentActivity(userId: string, userType: string) {
   try {
-    const activities = [];
+    const activities: any[] = [];
 
     // Get recent transfers
     let transferQuery: any = {};
@@ -120,10 +120,10 @@ async function getRecentActivity(userId: string, userType: string) {
       let status: 'success' | 'pending' | 'warning' = 'pending';
 
       if (userType === 'manager') {
-        title = `Transfer Request: ${transfer.patient?.firstName} ${transfer.patient?.lastName}`;
+        title = `Transfer Request: ${transfer.patientInfo?.firstName} ${transfer.patientInfo?.lastName}`;
         description = `From ${transfer.fromHospital} to ${transfer.toHospital}`;
       } else {
-        title = `Assigned Transfer: ${transfer.patient?.firstName} ${transfer.patient?.lastName}`;
+        title = `Assigned Transfer: ${transfer.patientInfo?.firstName} ${transfer.patientInfo?.lastName}`;
         description = `From ${transfer.fromHospital} to ${transfer.toHospital}`;
       }
 
@@ -139,7 +139,7 @@ async function getRecentActivity(userId: string, userType: string) {
       }
 
       activities.push({
-        id: transfer._id.toString(),
+        id: (transfer._id as any).toString(),
         type: 'transfer_request',
         title,
         description,

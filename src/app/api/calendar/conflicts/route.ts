@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     const conflicts = conflictingTransfers.map(transfer => {
       const conflictStart = new Date(Math.max(transfer.scheduledDate!.getTime(), startTime.getTime()));
       const conflictEnd = new Date(Math.min(
-        (transfer.scheduledEndDate || new Date(transfer.scheduledDate!.getTime() + 60 * 60000)).getTime(),
+        new Date(transfer.scheduledDate!.getTime() + 60 * 60000).getTime(),
         endTime.getTime()
       ));
 
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 
       return {
         transferId: transfer.transferId,
-        patientName: `${transfer.patient.firstName} ${transfer.patient.lastName}`,
+        patientName: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`,
         conflictType: resourceType || 'time',
         severity: getConflictSeverity(conflictDuration, transfer.priority),
         conflictStart: conflictStart.toISOString(),

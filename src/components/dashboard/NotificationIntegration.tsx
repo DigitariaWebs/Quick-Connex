@@ -16,22 +16,20 @@ export default function NotificationIntegration({
   showPanel = false,
   position = "top-right",
 }: NotificationIntegrationProps) {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
   // Fetch unread notification count
   useEffect(() => {
-    if (!token || !user) return;
+    if (!user) return;
 
     const fetchUnreadCount = async () => {
       try {
         const response = await fetch(
           "/api/notifications?status=unread&limit=1",
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            credentials: "include",
           }
         );
 
@@ -51,9 +49,9 @@ export default function NotificationIntegration({
     const interval = setInterval(fetchUnreadCount, 30000);
 
     return () => clearInterval(interval);
-  }, [token, user]);
+  }, [user]);
 
-  if (!user || !token) {
+  if (!user) {
     return null;
   }
 
@@ -105,7 +103,6 @@ export default function NotificationIntegration({
               <NotificationManager
                 userId={user._id}
                 userType={user.userType}
-                token={token}
                 showToasts={false}
                 showPanel={true}
                 maxToasts={0}
@@ -120,7 +117,6 @@ export default function NotificationIntegration({
         <NotificationManager
           userId={user._id}
           userType={user.userType}
-          token={token}
           showToasts={true}
           showPanel={false}
           maxToasts={3}

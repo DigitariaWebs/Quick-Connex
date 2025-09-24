@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const errorMessage = body.get('ErrorMessage') as string;
 
     if (!messageSid) {
-      return createErrorResponse('Missing MessageSid', 400);
+      return createErrorResponse('Missing MessageSid', 'MISSING_MESSAGE_SID', 400);
     }
 
     console.log('Twilio webhook received:', {
@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
     console.error('Twilio webhook error:', error);
     return createErrorResponse(
       'Failed to process Twilio webhook',
+      'TWILIO_WEBHOOK_ERROR',
       500,
       error instanceof Error ? error.message : 'Unknown error'
     );
@@ -98,6 +99,7 @@ export async function GET(request: NextRequest) {
     console.error('Twilio webhook GET error:', error);
     return createErrorResponse(
       'Failed to process Twilio webhook GET request',
+      'TWILIO_WEBHOOK_GET_ERROR',
       500,
       error instanceof Error ? error.message : 'Unknown error'
     );

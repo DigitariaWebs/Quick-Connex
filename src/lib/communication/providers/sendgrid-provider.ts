@@ -150,21 +150,21 @@ export class SendGridProvider implements ICommunicationProvider {
 
     // Add reply-to if specified
     if (this.replyTo) {
-      sendGridMessage.reply_to = {
+      (sendGridMessage as any).reply_to = {
         email: this.replyTo,
       };
     }
 
     // Add content (text and HTML)
     if (message.content.text) {
-      sendGridMessage.content.push({
+      (sendGridMessage.content as any[]).push({
         type: 'text/plain',
         value: message.content.text,
       });
     }
 
     if (message.content.html) {
-      sendGridMessage.content.push({
+      (sendGridMessage.content as any[]).push({
         type: 'text/html',
         value: message.content.html,
       });
@@ -172,21 +172,21 @@ export class SendGridProvider implements ICommunicationProvider {
 
     // Add CC if specified
     if (message.content.cc && message.content.cc.length > 0) {
-      sendGridMessage.personalizations[0].cc = message.content.cc.map(email => ({
+      (sendGridMessage.personalizations[0] as any).cc = message.content.cc.map(email => ({
         email,
       }));
     }
 
     // Add BCC if specified
     if (message.content.bcc && message.content.bcc.length > 0) {
-      sendGridMessage.personalizations[0].bcc = message.content.bcc.map(email => ({
+      (sendGridMessage.personalizations[0] as any).bcc = message.content.bcc.map(email => ({
         email,
       }));
     }
 
     // Add attachments if specified
     if (message.content.attachments && message.content.attachments.length > 0) {
-      sendGridMessage.attachments = message.content.attachments.map(attachment => ({
+      (sendGridMessage as any).attachments = message.content.attachments.map(attachment => ({
         content: Buffer.from(attachment.content).toString('base64'),
         filename: attachment.filename,
         type: attachment.contentType,

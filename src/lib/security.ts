@@ -10,7 +10,7 @@ export interface RateLimitOptions {
 
 export function rateLimit(options: RateLimitOptions) {
   return (request: NextRequest): { success: boolean; remaining: number; resetTime: number } => {
-    const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+    const ip = (request as any).ip || request.headers.get('x-forwarded-for') || 'unknown';
     const now = Date.now();
     const windowStart = now - options.windowMs;
 

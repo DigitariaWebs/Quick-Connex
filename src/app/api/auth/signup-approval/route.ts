@@ -73,6 +73,8 @@ export async function POST(request: Request) {
     // Create email message
     const emailMessage: EmailMessage = {
       id: `approval-${userId}-${Date.now()}`,
+      channel: 'email',
+      status: 'pending',
       recipient: {
         email: adminEmail,
         name: adminName
@@ -84,11 +86,13 @@ export async function POST(request: Request) {
         attachments: attachments
       },
       metadata: {
+        source: 'user-approval-system',
         category: 'user-approval',
         userId: userId,
-        userType: user.userType
       },
-      priority: 'high'
+      priority: 'high',
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
 
     // Send email

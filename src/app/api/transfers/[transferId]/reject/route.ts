@@ -62,7 +62,7 @@ export async function GET(
     }
 
     // Check if user is admin
-    const isAdmin = await AdminService.isAdmin(admin._id.toString());
+    const isAdmin = await AdminService.isAdmin((admin._id as any).toString());
     if (!isAdmin) {
       return NextResponse.json(
         { error: 'Unauthorized: Admin privileges required' },
@@ -72,10 +72,10 @@ export async function GET(
 
     // Update transfer status to cancelled (rejected)
     transfer.status = 'cancelled';
-    transfer.lastModifiedBy = admin._id;
+    transfer.lastModifiedBy = admin._id as any;
     transfer.statusHistory.push({
       status: 'cancelled',
-      changedBy: admin._id,
+      changedBy: admin._id as any,
       changedAt: new Date(),
       reason: reason
     });
@@ -157,7 +157,7 @@ export async function POST(
     }
 
     // Check if user is admin
-    const isAdmin = await AdminService.isAdmin(admin._id.toString());
+    const isAdmin = await AdminService.isAdmin((admin._id as any).toString());
     if (!isAdmin) {
       return NextResponse.json(
         { error: 'Unauthorized: Admin privileges required' },
@@ -167,10 +167,10 @@ export async function POST(
 
     // Update transfer status to cancelled (rejected)
     transfer.status = 'cancelled';
-    transfer.lastModifiedBy = admin._id;
+    transfer.lastModifiedBy = admin._id as any;
     transfer.statusHistory.push({
       status: 'cancelled',
-      changedBy: admin._id,
+      changedBy: admin._id as any,
       changedAt: new Date(),
       reason: reason
     });

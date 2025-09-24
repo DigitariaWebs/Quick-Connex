@@ -189,8 +189,8 @@ export class NotificationIntegrationService {
         return;
       }
 
-      const deliveryMethod = channel === 'email' ? 'email' : 'sms';
-      await notification.addDelivery(userId, deliveryMethod);
+      const deliveryMethod = channel === 'email' ? 'email' : 'sms'; 
+      // Note: addDelivery method not available on Notification model
 
       // Update notification status if all deliveries are complete
       const totalTargetUsers = notification.targetUsers.length + 

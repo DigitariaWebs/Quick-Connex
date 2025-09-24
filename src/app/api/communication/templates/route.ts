@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
     console.error('Error getting communication templates:', error);
     return createErrorResponse(
       'Failed to get communication templates',
+      'TEMPLATES_FAILED',
       500,
       error instanceof Error ? error.message : 'Unknown error'
     );
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
     const { templateId, data } = body;
 
     if (!templateId || !data) {
-      return createErrorResponse('Missing required fields: templateId, data', 400);
+      return createErrorResponse('Missing required fields: templateId, data', 'MISSING_FIELDS', 400);
     }
 
     const communicationService = new CommunicationService();
@@ -84,6 +85,7 @@ export async function POST(request: NextRequest) {
     console.error('Error rendering template:', error);
     return createErrorResponse(
       'Failed to render template',
+      'RENDER_FAILED',
       500,
       error instanceof Error ? error.message : 'Unknown error'
     );

@@ -17,7 +17,7 @@ import {
   CommunicationContent,
 } from '@/types/communication-types';
 import { getCommunicationConfig } from '@/lib/communication-config';
-import TwilioProvider from './providers/twilio-provider';
+import TwilioProviderClass from './providers/twilio-provider';
 
 /**
  * SMS Service Class
@@ -41,7 +41,7 @@ export class SMSService {
 
     switch (provider) {
       case 'twilio':
-        this.providers.set('twilio', new TwilioProvider(this.config.providers.sms));
+        this.providers.set('twilio', new TwilioProviderClass(this.config.providers.sms));
         break;
       case 'aws-sns':
         this.providers.set('aws-sns', new AWSSNSProvider(this.config.providers.sms));
@@ -56,7 +56,7 @@ export class SMSService {
         this.providers.set('plivo', new PlivoProvider(this.config.providers.sms));
         break;
       default:
-        this.providers.set('twilio', new TwilioProvider(this.config.providers.sms));
+        this.providers.set('twilio', new TwilioProviderClass(this.config.providers.sms));
         break;
     }
   }

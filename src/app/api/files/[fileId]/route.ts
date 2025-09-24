@@ -7,10 +7,10 @@ import { ObjectId } from 'mongodb';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { fileId: string } }
+  { params }: { params: Promise<{ fileId: string }> }
 ) {
   try {
-    const { fileId } = params;
+    const { fileId } = await params;
 
     // Validate fileId format
     if (!ObjectId.isValid(fileId)) {
@@ -31,7 +31,7 @@ export async function GET(
     headers.set('Cache-Control', 'private, max-age=3600'); // Cache for 1 hour
 
     // Return file as response
-    return new NextResponse(fileData.buffer, {
+    return new NextResponse(fileData.buffer as any, {
       status: 200,
       headers,
     });

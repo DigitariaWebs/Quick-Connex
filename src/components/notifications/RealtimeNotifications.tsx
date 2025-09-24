@@ -514,13 +514,14 @@ export default function RealtimeNotifications({
                                   {typeof notification.transfer.fromHospital ===
                                   "string"
                                     ? notification.transfer.fromHospital
-                                    : notification.transfer.fromHospital
-                                        .name}{" "}
+                                    : notification.transfer.fromHospital ||
+                                      "Unknown Hospital"}{" "}
                                   →{" "}
                                   {typeof notification.transfer.toHospital ===
                                   "string"
                                     ? notification.transfer.toHospital
-                                    : notification.transfer.toHospital.name}
+                                    : notification.transfer.toHospital ||
+                                      "Unknown Hospital"}
                                 </span>
                               </span>
                             )}

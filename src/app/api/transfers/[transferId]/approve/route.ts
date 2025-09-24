@@ -61,7 +61,7 @@ export async function GET(
     }
 
     // Check if user is admin
-    const isAdmin = await AdminService.isAdmin(admin._id.toString());
+    const isAdmin = await AdminService.isAdmin((admin._id as any as any).toString());
     if (!isAdmin) {
       return NextResponse.json(
         { error: 'Unauthorized: Admin privileges required' },
@@ -72,7 +72,7 @@ export async function GET(
     // Create timeline events for approval
     const approvalEvent = TimelineService.createApprovalEvent(
       {
-        id: admin._id,
+        id: admin._id as any as any,
         name: `${admin.firstName} ${admin.lastName}`,
         email: admin.email,
         userType: 'admin'
@@ -82,7 +82,7 @@ export async function GET(
 
     const statusChangeEvent = TimelineService.createStatusChangeEvent(
       {
-        id: admin._id,
+        id: admin._id as any as any,
         name: `${admin.firstName} ${admin.lastName}`,
         email: admin.email,
         userType: 'admin'
@@ -94,10 +94,10 @@ export async function GET(
 
     // Update transfer status to accepted (approved)
     transfer.status = 'accepted';
-    transfer.lastModifiedBy = admin._id;
+    transfer.lastModifiedBy = admin._id as any;
     transfer.statusHistory.push({
       status: 'accepted',
-      changedBy: admin._id,
+      changedBy: admin._id as any,
       changedAt: new Date(),
       reason: reason
     });
@@ -185,7 +185,7 @@ export async function POST(
     }
 
     // Check if user is admin
-    const isAdmin = await AdminService.isAdmin(admin._id.toString());
+    const isAdmin = await AdminService.isAdmin((admin._id as any as any).toString());
     if (!isAdmin) {
       return NextResponse.json(
         { error: 'Unauthorized: Admin privileges required' },
@@ -196,7 +196,7 @@ export async function POST(
     // Create timeline events for approval
     const approvalEvent = TimelineService.createApprovalEvent(
       {
-        id: admin._id,
+        id: admin._id as any as any,
         name: `${admin.firstName} ${admin.lastName}`,
         email: admin.email,
         userType: 'admin'
@@ -206,7 +206,7 @@ export async function POST(
 
     const statusChangeEvent = TimelineService.createStatusChangeEvent(
       {
-        id: admin._id,
+        id: admin._id as any as any,
         name: `${admin.firstName} ${admin.lastName}`,
         email: admin.email,
         userType: 'admin'
@@ -218,10 +218,10 @@ export async function POST(
 
     // Update transfer status to accepted (approved)
     transfer.status = 'accepted';
-    transfer.lastModifiedBy = admin._id;
+    transfer.lastModifiedBy = admin._id as any;
     transfer.statusHistory.push({
       status: 'accepted',
-      changedBy: admin._id,
+      changedBy: admin._id as any,
       changedAt: new Date(),
       reason: reason
     });
