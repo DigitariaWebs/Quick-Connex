@@ -36,9 +36,10 @@ export async function GET(request: NextRequest) {
 
     // Get transfers with populated data
     const transfers = await Transfer.find(query)
-      .populate('patient', 'patientId firstName lastName dateOfBirth gender')
       .populate('requestedBy', 'firstName lastName email userType')
       .populate('assignedTo', 'firstName lastName email')
+      .populate('fromHospital', 'name address')
+      .populate('toHospital', 'name address')
       .sort({ scheduledDate: 1 });
 
     // Process transfers for calendar view
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
       return {
         id: transfer._id,
         transferId: transfer.transferId,
-        title: `${transfer.patient.firstName} ${transfer.patient.lastName}`,
+        title: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`,
         start: startDateTime.toISOString(),
         end: endDateTime.toISOString(),
         allDay: false,
@@ -58,9 +59,9 @@ export async function GET(request: NextRequest) {
         borderColor: getStatusColor(transfer.status),
         textColor: '#ffffff',
         extendedProps: {
-          patient: transfer.patient,
-          fromHospital: transfer.fromHospital,
-          toHospital: transfer.toHospital,
+          patient: transfer.patientInfo,
+          fromHospital: transfer.fromHospitalName || (transfer.fromHospital as any)?.name || 'Unknown Hospital',
+          toHospital: transfer.toHospitalName || (transfer.toHospital as any)?.name || 'Unknown Hospital',
           priority: transfer.priority,
           status: transfer.status,
           reason: transfer.reason,
@@ -79,9 +80,10 @@ export async function GET(request: NextRequest) {
         'scheduling.recurrenceEndDate': { $gte: start },
         status: { $in: ['pending', 'accepted', 'in_progress'] }
       })
-      .populate('patient', 'patientId firstName lastName dateOfBirth gender')
       .populate('requestedBy', 'firstName lastName email userType')
-      .populate('assignedTo', 'firstName lastName email');
+      .populate('assignedTo', 'firstName lastName email')
+      .populate('fromHospital', 'name address')
+      .populate('toHospital', 'name address');
 
       for (const transfer of recurringTransfers) {
         const recurringEvents = generateRecurringEvents(transfer, start, end);
@@ -186,9 +188,10 @@ export async function POST(request: NextRequest) {
       updateData,
       { new: true, runValidators: true }
     )
-    .populate('patient', 'patientId firstName lastName dateOfBirth gender')
     .populate('requestedBy', 'firstName lastName email userType')
-    .populate('assignedTo', 'firstName lastName email');
+    .populate('assignedTo', 'firstName lastName email')
+    .populate('fromHospital', 'name address')
+    .populate('toHospital', 'name address');
 
     return createSuccessResponse(updatedTransfer, 'Transfer scheduling updated successfully');
 
@@ -271,7 +274,7 @@ function generateRecurringEvents(transfer: any, startDate: Date, endDate: Date) 
         events.push({
           id: `${transfer._id}_${currentDate.toISOString().split('T')[0]}`,
           transferId: transfer.transferId,
-          title: `${transfer.patient.firstName} ${transfer.patient.lastName} (Recurring)`,
+          title: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} (Recurring)`,
           start: startDateTime.toISOString(),
           end: endDateTime.toISOString(),
           allDay: false,

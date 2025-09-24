@@ -4,24 +4,10 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Calendar as CalendarIcon,
-  Plus,
-  Settings,
-  Bell,
-  Filter,
-  Download,
-  Upload,
-  RefreshCw,
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  Users,
-  MapPin,
-} from "lucide-react";
+import { Settings, MapPin, Clock, X } from "lucide-react";
 import CalendarView from "@/components/calendar/CalendarView";
 import Sidebar from "@/components/dashboard/Sidebar";
-import LoadingSpinner from "@/components/dashboard/LoadingSpinner";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
 
 interface CalendarEvent {
   id: string;
@@ -45,13 +31,6 @@ export default function CalendarPage() {
     null
   );
   const [showEventDetails, setShowEventDetails] = useState(false);
-  const [calendarStats, setCalendarStats] = useState({
-    totalTransfers: 0,
-    todayTransfers: 0,
-    upcomingTransfers: 0,
-    conflicts: 0,
-  });
-  const [loading, setLoading] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -59,72 +38,6 @@ export default function CalendarPage() {
       router.push("/login");
     }
   }, [authLoading, isAuthenticated, router]);
-
-  // Fetch calendar statistics
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchCalendarStats();
-    }
-  }, [isAuthenticated]);
-
-  const fetchCalendarStats = async () => {
-    setLoading(true);
-    try {
-      const today = new Date();
-      const startOfDay = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate()
-      );
-      const endOfDay = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate(),
-        23,
-        59,
-        59
-      );
-
-      const params = new URLSearchParams({
-        startDate: startOfDay.toISOString(),
-        endDate: endOfDay.toISOString(),
-        view: "day",
-      });
-
-      const response = await fetch(`/api/calendar?${params}`);
-      const data = await response.json();
-
-      if (data.success) {
-        const todayTransfers = data.data.events.length;
-
-        // Fetch upcoming transfers (next 7 days)
-        const nextWeek = new Date();
-        nextWeek.setDate(nextWeek.getDate() + 7);
-        const upcomingParams = new URLSearchParams({
-          startDate: endOfDay.toISOString(),
-          endDate: nextWeek.toISOString(),
-          view: "week",
-        });
-
-        const upcomingResponse = await fetch(`/api/calendar?${upcomingParams}`);
-        const upcomingData = await upcomingResponse.json();
-        const upcomingTransfers = upcomingData.success
-          ? upcomingData.data.events.length
-          : 0;
-
-        setCalendarStats({
-          totalTransfers: todayTransfers + upcomingTransfers,
-          todayTransfers,
-          upcomingTransfers,
-          conflicts: 0, // This would be fetched from conflicts API
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching calendar stats:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleEventClick = (event: CalendarEvent) => {
     setSelectedEvent(event);
@@ -139,16 +52,6 @@ export default function CalendarPage() {
   const handleCreateTransfer = (date: Date) => {
     // Redirect to transfers page for creating new transfers
     router.push("/transfers");
-  };
-
-  const handleExportCalendar = () => {
-    // Implement calendar export functionality
-    console.log("Exporting calendar...");
-  };
-
-  const handleImportCalendar = () => {
-    // Implement calendar import functionality
-    console.log("Importing calendar...");
   };
 
   // Show loading spinner while checking authentication
@@ -178,114 +81,21 @@ export default function CalendarPage() {
       {/* Main Content */}
       <div
         className={`ml-0 transition-all duration-300 ${
-          sidebarCollapsed ? "lg:ml-20" : "lg:ml-72"
+          sidebarCollapsed ? "lg:ml-28" : "lg:ml-80"
         }`}
       >
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-4 lg:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <CalendarIcon className="h-8 w-8 text-blue-600" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">
-                  Transfer Calendar
-                </h1>
-                <p className="text-sm text-gray-600">
-                  Manage and schedule patient transfers
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={handleExportCalendar}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                <Download size={16} />
-                <span className="hidden sm:inline">Export</span>
-              </button>
-
-              <button
-                onClick={handleImportCalendar}
-                className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                <Upload size={16} />
-                <span className="hidden sm:inline">Import</span>
-              </button>
-
-              <button
-                onClick={() => setShowSchedulingForm(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-              >
-                <Plus size={16} />
-                <span>Schedule Transfer</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        {user && (
+          <DashboardHeader
+            user={user}
+            onLogout={logout}
+            pageTitle="Transfer Calendar"
+            showPlusButton={true}
+            onPlusClick={() => router.push("/transfers")}
+          />
+        )}
 
         <div className="p-4 lg:p-6">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <CalendarIcon className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">
-                    Total Transfers
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {loading ? "..." : calendarStats.totalTransfers}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Clock className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Today</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {loading ? "..." : calendarStats.todayTransfers}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center">
-                <div className="p-2 bg-amber-100 rounded-lg">
-                  <Users className="w-6 h-6 text-amber-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Upcoming</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {loading ? "..." : calendarStats.upcomingTransfers}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <AlertTriangle className="w-6 h-6 text-red-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Conflicts</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {loading ? "..." : calendarStats.conflicts}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Calendar View */}
           <CalendarView
             onEventClick={handleEventClick}
@@ -450,7 +260,7 @@ export default function CalendarPage() {
                     <button
                       onClick={() => {
                         setShowEventDetails(false);
-                        setShowSchedulingForm(true);
+                        router.push("/transfers");
                       }}
                       className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >

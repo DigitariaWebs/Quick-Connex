@@ -3,21 +3,15 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Calendar as CalendarIcon,
   Clock,
   MapPin,
-  Users,
   AlertTriangle,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Plus,
-  Filter,
   RefreshCw,
-  Eye,
   Edit,
-  Trash2,
-  Repeat,
+  X,
 } from "lucide-react";
 
 interface CalendarEvent {
@@ -75,17 +69,11 @@ export default function CalendarView({
     null
   );
   const [showEventModal, setShowEventModal] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    status: "all",
-    priority: "all",
-    showRecurring: true,
-  });
 
   // Fetch calendar events
   useEffect(() => {
     fetchCalendarEvents();
-  }, [currentDate, view, filters]);
+  }, [currentDate, view]);
 
   const fetchCalendarEvents = async () => {
     setLoading(true);
@@ -99,31 +87,13 @@ export default function CalendarView({
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         view,
-        includeRecurring: filters.showRecurring.toString(),
       });
 
       const response = await fetch(`/api/calendar?${params}`);
       const data = await response.json();
 
       if (data.success) {
-        let filteredEvents = data.data.events;
-
-        // Apply filters
-        if (filters.status !== "all") {
-          filteredEvents = filteredEvents.filter(
-            (event: CalendarEvent) =>
-              event.extendedProps.status === filters.status
-          );
-        }
-
-        if (filters.priority !== "all") {
-          filteredEvents = filteredEvents.filter(
-            (event: CalendarEvent) =>
-              event.extendedProps.priority === filters.priority
-          );
-        }
-
-        setEvents(filteredEvents);
+        setEvents(data.data.events);
       } else {
         setError(data.error || "Failed to fetch calendar events");
       }
@@ -238,13 +208,13 @@ export default function CalendarView({
       days.push(
         <div
           key={i}
-          className={`min-h-[120px] border border-gray-200 p-2 ${
+          className={`min-h-[120px] border border-gray-200 p-2 rounded-lg ${
             currentDay.getMonth() !== month
               ? "bg-gray-50 text-gray-400"
               : "bg-white"
           } ${
             currentDay.toDateString() === new Date().toDateString()
-              ? "bg-blue-50"
+              ? "bg-blue-50 border-blue-200"
               : ""
           }`}
         >
@@ -253,9 +223,9 @@ export default function CalendarView({
             {currentDay.getMonth() === month && (
               <button
                 onClick={() => onCreateTransfer?.(new Date(currentDay))}
-                className="p-1 hover:bg-gray-100 rounded"
+                className="w-6 h-6 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
               >
-                <Plus size={14} />
+                <Plus size={12} />
               </button>
             )}
           </div>
@@ -269,15 +239,14 @@ export default function CalendarView({
                   setShowEventModal(true);
                   onEventClick?.(event);
                 }}
-                className="text-xs p-1 rounded cursor-pointer hover:opacity-80"
+                className="text-xs p-2 rounded-lg cursor-pointer hover:opacity-80 transition-all"
                 style={{
                   backgroundColor: event.backgroundColor,
                   color: event.textColor,
-                  borderLeft: `3px solid ${event.borderColor}`,
                 }}
               >
                 <div className="font-medium truncate">{event.title}</div>
-                <div className="opacity-90">
+                <div className="opacity-75 text-xs">
                   {new Date(event.start).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -298,11 +267,11 @@ export default function CalendarView({
     }
 
     return (
-      <div className="grid grid-cols-7 gap-0">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+      <div className="grid grid-cols-7 gap-2">
+        {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
           <div
-            key={day}
-            className="p-2 text-center font-medium text-gray-600 bg-gray-100 border border-gray-200"
+            key={day + index}
+            className="p-2 text-center text-sm font-medium text-gray-500"
           >
             {day}
           </div>
@@ -327,10 +296,10 @@ export default function CalendarView({
       });
 
       days.push(
-        <div key={i} className="flex-1 border border-gray-200">
-          <div className="p-3 bg-gray-100 border-b border-gray-200">
-            <div className="text-sm font-medium text-gray-600">
-              {day.toLocaleDateString([], { weekday: "short" })}
+        <div key={i} className="flex-1 border border-gray-200 rounded-lg">
+          <div className="p-3 bg-gray-50 rounded-t-lg">
+            <div className="text-xs font-medium text-gray-500">
+              {day.toLocaleDateString([], { weekday: "short" }).charAt(0)}
             </div>
             <div className="text-lg font-bold">{day.getDate()}</div>
           </div>
@@ -344,21 +313,15 @@ export default function CalendarView({
                   setShowEventModal(true);
                   onEventClick?.(event);
                 }}
-                className="p-2 rounded cursor-pointer hover:opacity-80 text-xs"
+                className="p-2 rounded-lg cursor-pointer hover:opacity-80 text-xs transition-all"
                 style={{
                   backgroundColor: event.backgroundColor,
                   color: event.textColor,
-                  borderLeft: `3px solid ${event.borderColor}`,
                 }}
               >
                 <div className="font-medium">{event.title}</div>
-                <div className="opacity-90">
+                <div className="opacity-75 text-xs">
                   {new Date(event.start).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}{" "}
-                  -{" "}
-                  {new Date(event.end).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
@@ -421,17 +384,16 @@ export default function CalendarView({
                         setShowEventModal(true);
                         onEventClick?.(event);
                       }}
-                      className="absolute left-1 right-1 rounded cursor-pointer hover:opacity-80 p-1 text-xs"
+                      className="absolute left-1 right-1 rounded-lg cursor-pointer hover:opacity-80 p-1 text-xs transition-all"
                       style={{
                         top: `${(startMinutes / 60) * 64}px`,
                         height: `${height}px`,
                         backgroundColor: event.backgroundColor,
                         color: event.textColor,
-                        borderLeft: `3px solid ${event.borderColor}`,
                       }}
                     >
                       <div className="font-medium truncate">{event.title}</div>
-                      <div className="opacity-90">
+                      <div className="opacity-75 text-xs">
                         {new Date(event.start).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
@@ -461,177 +423,73 @@ export default function CalendarView({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <RefreshCw className="animate-spin h-8 w-8 text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading calendar...</p>
-        </div>
+        <RefreshCw className="animate-spin h-8 w-8 text-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-      {/* Header */}
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-4">
-            <CalendarIcon className="h-6 w-6 text-blue-600" />
-            <h2 className="text-xl font-bold text-gray-800">
-              Transfer Calendar
-            </h2>
-          </div>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+      {/* Minimal Header with Circular Controls */}
+      <div className="p-4 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => navigateDate("prev")}
+            className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
+          >
+            <ChevronLeft size={18} />
+          </button>
 
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              <Filter size={16} />
-              <span>Filters</span>
-            </button>
+          <h3 className="text-lg font-semibold text-gray-800 min-w-[180px] text-center">
+            {currentDate.toLocaleDateString([], {
+              year: "numeric",
+              month: "long",
+              ...(view === "day" && { day: "numeric" }),
+            })}
+          </h3>
 
-            <button
-              onClick={fetchCalendarEvents}
-              className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <RefreshCw size={16} />
-              <span>Refresh</span>
-            </button>
-          </div>
+          <button
+            onClick={() => navigateDate("next")}
+            className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
+          >
+            <ChevronRight size={18} />
+          </button>
         </div>
 
-        {/* View Controls */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2">
+          {(["month", "week", "day"] as const).map((viewType) => (
             <button
-              onClick={() => navigateDate("prev")}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              key={viewType}
+              onClick={() => setView(viewType)}
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
+                view === viewType
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
             >
-              <ChevronLeft size={20} />
+              {viewType.charAt(0).toUpperCase()}
             </button>
+          ))}
 
-            <h3 className="text-lg font-semibold text-gray-800 min-w-[200px] text-center">
-              {currentDate.toLocaleDateString([], {
-                year: "numeric",
-                month: "long",
-                ...(view === "day" && { day: "numeric" }),
-              })}
-            </h3>
-
-            <button
-              onClick={() => navigateDate("next")}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
-
-          <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
-            {(["month", "week", "day"] as const).map((viewType) => (
-              <button
-                key={viewType}
-                onClick={() => setView(viewType)}
-                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
-                  view === viewType
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-gray-600 hover:text-gray-800"
-                }`}
-              >
-                {viewType.charAt(0).toUpperCase() + viewType.slice(1)}
-              </button>
-            ))}
-          </div>
+          <button
+            onClick={fetchCalendarEvents}
+            className="w-10 h-10 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full flex items-center justify-center transition-colors ml-2"
+          >
+            <RefreshCw size={16} />
+          </button>
         </div>
-
-        {/* Filters */}
-        <AnimatePresence>
-          {showFilters && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-4 pt-4 border-t border-gray-200"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Status
-                  </label>
-                  <select
-                    value={filters.status}
-                    onChange={(e) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        status: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="all">All Statuses</option>
-                    <option value="pending">Pending</option>
-                    <option value="accepted">Accepted</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Priority
-                  </label>
-                  <select
-                    value={filters.priority}
-                    onChange={(e) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        priority: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="all">All Priorities</option>
-                    <option value="urgent">Urgent</option>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                  </select>
-                </div>
-
-                <div className="flex items-end">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={filters.showRecurring}
-                      onChange={(e) =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          showRecurring: e.target.checked,
-                        }))
-                      }
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700">
-                      Show Recurring
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* Calendar Content */}
-      <div className="p-6">
+      <div className="p-4">
         {error ? (
           <div className="text-center py-8">
             <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <p className="text-red-600 mb-4">{error}</p>
             <button
               onClick={fetchCalendarEvents}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors mx-auto"
             >
-              Try Again
+              <RefreshCw size={18} />
             </button>
           </div>
         ) : (
@@ -658,22 +516,20 @@ export default function CalendarView({
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold text-gray-800">
-                    Transfer Details
-                  </h3>
+                  <h3 className="text-xl font-bold text-gray-800">Details</h3>
                   <button
                     onClick={() => setShowEventModal(false)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="w-8 h-8 hover:bg-gray-100 rounded-full flex items-center justify-center transition-colors"
                   >
-                    <X size={20} />
+                    <X size={16} />
                   </button>
                 </div>
 
                 <div className="space-y-4">
                   {/* Patient Info */}
-                  <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="bg-blue-50 p-4 rounded-xl">
                     <h4 className="font-semibold text-blue-800 mb-2">
-                      Patient Information
+                      Patient
                     </h4>
                     <div className="grid grid-cols-1 gap-4 text-sm">
                       <div>
@@ -702,7 +558,7 @@ export default function CalendarView({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <h4 className="font-semibold text-gray-800 mb-2">
-                        Transfer Details
+                        Route
                       </h4>
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center space-x-2">
@@ -740,7 +596,7 @@ export default function CalendarView({
 
                     <div>
                       <h4 className="font-semibold text-gray-800 mb-2">
-                        Status & Priority
+                        Status
                       </h4>
                       <div className="space-y-2">
                         {getPriorityBadge(selectedEvent.extendedProps.priority)}
@@ -761,10 +617,8 @@ export default function CalendarView({
 
                   {/* Reason */}
                   <div>
-                    <h4 className="font-semibold text-gray-800 mb-2">
-                      Reason for Transfer
-                    </h4>
-                    <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                    <h4 className="font-semibold text-gray-800 mb-2">Reason</h4>
+                    <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-xl">
                       {selectedEvent.extendedProps.reason}
                     </p>
                   </div>
@@ -789,9 +643,8 @@ export default function CalendarView({
                     >
                       Close
                     </button>
-                    <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <button className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
                       <Edit size={16} />
-                      <span>Edit</span>
                     </button>
                   </div>
                 </div>
