@@ -12,7 +12,7 @@ export * from '@/constants/transfer-constants';
 export * from '@/types/transfer-types';
 
 // Core Services
-export { TransferService } from './transfer-service';
+// TransferService is exported below in the re-export section
 
 // Utilities and Helpers
 export * from './transfer-utils';
@@ -35,7 +35,6 @@ export {
 } from '@/constants/transfer-constants';
 
 export {
-  TransferService,
   DateUtils,
   TransferDisplayUtils,
   TransferCalculationUtils,
@@ -43,6 +42,10 @@ export {
   TransferCalendarUtils,
   TransferValidationUtils
 } from './transfer-utils';
+
+export {
+  TransferService
+} from './transfer-service';
 
 export {
   TransferError,

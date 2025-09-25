@@ -27,8 +27,7 @@ import {
   TransferFilterOptions,
   TransferQueryOptions,
   TransferListResponse,
-  SchedulingConfig,
-  RecurringTransferInstance
+  SchedulingConfig
 } from '@/types/transfer-types';
 
 export class TransferService {

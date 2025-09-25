@@ -164,8 +164,8 @@ UserSchema.pre('save', function(next) {
 UserSchema.pre('validate', function(next) {
   // Remove validation errors for old fields that no longer exist
   if (this.userType === 'employee') {
-    delete this.opiqPermit;
-    delete this.rcr;
+    delete (this as any).opiqPermit;
+    delete (this as any).rcr;
   }
   next();
 });

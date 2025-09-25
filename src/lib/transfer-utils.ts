@@ -18,7 +18,6 @@ import {
   TransferStats,
   TransferCalendarEvent,
   SchedulingConfig,
-  RecurringTransferInstance,
   TransferFilterOptions,
   TransferQueryOptions
 } from '@/types/transfer-types';
@@ -440,10 +439,7 @@ export class TransferFilterUtils {
         if (transferDate > filters.dateTo) return false;
       }
 
-      // Recurring filter
-      if (filters.isRecurring !== undefined) {
-        if (transfer.scheduling.isRecurring !== filters.isRecurring) return false;
-      }
+      // Note: Recurring filter removed as it's not supported in current implementation
 
       // Note: Conflict filtering removed as hospitals handle their own logistics
 
@@ -458,9 +454,9 @@ export class TransferFilterUtils {
         
         const searchableText = [
           transfer.transferId,
-          transfer.patient.firstName,
-          transfer.patient.lastName,
-          transfer.patient.dossierNumber,
+          transfer.patientInfo.firstName,
+          transfer.patientInfo.lastName,
+          transfer.patientInfo.dossierNumber,
           getHospitalName(transfer.fromHospital),
           getHospitalName(transfer.toHospital),
           transfer.reason
@@ -496,8 +492,8 @@ export class TransferFilterUtils {
           comparison = a.status.localeCompare(b.status);
           break;
         case 'patient':
-          comparison = TransferDisplayUtils.formatPatientName(a.patient.firstName, a.patient.lastName)
-                      .localeCompare(TransferDisplayUtils.formatPatientName(b.patient.firstName, b.patient.lastName));
+          comparison = TransferDisplayUtils.formatPatientName(a.patientInfo.firstName, a.patientInfo.lastName)
+                      .localeCompare(TransferDisplayUtils.formatPatientName(b.patientInfo.firstName, b.patientInfo.lastName));
           break;
       }
 
@@ -552,27 +548,26 @@ export class TransferCalendarUtils {
    */
   static transferToCalendarEvent(transfer: TransferResponse): TransferCalendarEvent {
     const startDate = transfer.scheduledDate ? new Date(transfer.scheduledDate) : new Date(transfer.requestedDate);
-    const endDate = transfer.scheduledEndDate ? new Date(transfer.scheduledEndDate) : DateUtils.addHours(startDate, 1);
+    const endDate = transfer.scheduledDate ? new Date(transfer.scheduledDate) : DateUtils.addHours(startDate, 1);
     
     const priorityInfo = TransferDisplayUtils.getPriorityDisplayInfo(transfer.priority);
     
     return {
       id: transfer._id,
-      title: `${transfer.patient.firstName} ${transfer.patient.lastName}`,
+      title: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`,
       start: startDate,
       end: endDate,
       transferId: transfer.transferId,
-      patient: {
-        name: `${transfer.patient.firstName} ${transfer.patient.lastName}`,
-        id: transfer.patient.patientId
+      patientInfo: {
+        name: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`,
+        age: transfer.patientInfo.age
       },
       fromHospital: transfer.fromHospital,
       toHospital: transfer.toHospital,
       priority: transfer.priority,
       status: transfer.status,
       assignedTo: transfer.assignedTo?.firstName + ' ' + transfer.assignedTo?.lastName,
-      color: this.getEventColor(transfer.priority, transfer.status),
-      isRecurring: transfer.scheduling.isRecurring
+      color: this.getEventColor(transfer.priority, transfer.status)
     };
   }
 
@@ -599,22 +594,18 @@ export class TransferCalendarUtils {
 
   /**
    * Generate recurring transfer instances
+   * Note: Recurring transfers are not supported in current implementation
    */
+  /*
   static generateRecurringInstances(
     transfer: TransferResponse,
     startDate: Date,
     endDate: Date
-  ): RecurringTransferInstance[] {
-    if (!transfer.scheduling.isRecurring) return [];
-
-    const instances: RecurringTransferInstance[] = [];
-    const baseDate = new Date(transfer.scheduledDate || transfer.requestedDate);
-    
-    // Implementation for generating recurring instances based on pattern
-    // This is a simplified version - full implementation would handle all recurrence patterns
-    
-    return instances;
+  ): any[] {
+    // Recurring transfers not supported
+    return [];
   }
+  */
 }
 
 /**
@@ -683,7 +674,7 @@ export class TransferValidationUtils {
     }
     
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    if (!fileExtension || !allowedTypes.includes(fileExtension)) {
+    if (!fileExtension || !allowedTypes.includes(fileExtension as any)) {
       return {
         isValid: false,
         error: `File type not allowed. Allowed types: ${allowedTypes.join(', ')}`
@@ -694,14 +685,3 @@ export class TransferValidationUtils {
   }
 }
 
-/**
- * Export all utility classes
- */
-export {
-  DateUtils,
-  TransferDisplayUtils,
-  TransferCalculationUtils,
-  TransferFilterUtils,
-  TransferCalendarUtils,
-  TransferValidationUtils
-};

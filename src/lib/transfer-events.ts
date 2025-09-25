@@ -63,7 +63,7 @@ export interface TransferEventData {
  */
 export interface TransferEventHandler {
   eventType: TransferEventType;
-  handle(eventData: TransferEventData): Promise<void>;
+  handle(eventType: TransferEventType, eventData: TransferEventData): Promise<void>;
 }
 
 /**
@@ -111,7 +111,7 @@ export class TransferEventManager {
       // Execute all handlers for this event type
       await Promise.all(
         handlers.map(handler => 
-          this.executeHandler(handler, eventData)
+          this.executeHandler(handler, eventType, eventData)
         )
       );
 
@@ -131,10 +131,11 @@ export class TransferEventManager {
    */
   private static async executeHandler(
     handler: TransferEventHandler,
+    eventType: TransferEventType,
     eventData: TransferEventData
   ): Promise<void> {
     try {
-      await handler.handle(eventData);
+      await handler.handle(eventType, eventData);
     } catch (error) {
       console.error(`Error in event handler for ${handler.eventType}:`, error);
     }
@@ -147,8 +148,8 @@ export class TransferEventManager {
 class TransferNotificationHandler implements TransferEventHandler {
   eventType = TransferEventType.TRANSFER_CREATED;
 
-  async handle(eventData: TransferEventData): Promise<void> {
-    const { transfer, eventType } = eventData;
+  async handle(eventType: TransferEventType, eventData: TransferEventData): Promise<void> {
+    const { transfer } = eventData;
     
     // Handle different event types
     switch (eventType) {
@@ -184,12 +185,12 @@ class TransferNotificationHandler implements TransferEventHandler {
       type: NOTIFICATION_TYPES.NEW_TRANSFER,
       priority: transfer.priority === TransferPriority.URGENT ? 'urgent' : 'medium',
       title: 'New Transfer Request',
-      message: `New transfer request for ${transfer.patient.firstName} ${transfer.patient.lastName} from ${transfer.fromHospital} to ${transfer.toHospital}`,
+      message: `New transfer request for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} from ${transfer.fromHospital} to ${transfer.toHospital}`,
       transferId: transfer.transferId,
       transfer: {
         id: transfer._id,
         transferId: transfer.transferId,
-        patient: transfer.patient,
+        patientInfo: transfer.patientInfo,
         fromHospital: transfer.fromHospital,
         toHospital: transfer.toHospital,
         priority: transfer.priority,
@@ -216,12 +217,12 @@ class TransferNotificationHandler implements TransferEventHandler {
       type: NOTIFICATION_TYPES.TRANSFER_ACCEPTED,
       priority: 'medium',
       title: 'Transfer Accepted',
-      message: `Transfer for ${transfer.patient.firstName} ${transfer.patient.lastName} has been accepted by ${changedBy.firstName} ${changedBy.lastName}`,
+      message: `Transfer for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} has been accepted by ${changedBy.firstName} ${changedBy.lastName}`,
       transferId: transfer.transferId,
       transfer: {
         id: transfer._id,
         transferId: transfer.transferId,
-        patient: transfer.patient,
+        patientInfo: transfer.patientInfo,
         fromHospital: transfer.fromHospital,
         toHospital: transfer.toHospital,
         priority: transfer.priority,
@@ -251,12 +252,12 @@ class TransferNotificationHandler implements TransferEventHandler {
       type: NOTIFICATION_TYPES.TRANSFER_STARTED,
       priority: 'medium',
       title: 'Transfer Started',
-      message: `Transfer for ${transfer.patient.firstName} ${transfer.patient.lastName} has been started`,
+      message: `Transfer for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} has been started`,
       transferId: transfer.transferId,
       transfer: {
         id: transfer._id,
         transferId: transfer.transferId,
-        patient: transfer.patient,
+        patientInfo: transfer.patientInfo,
         fromHospital: transfer.fromHospital,
         toHospital: transfer.toHospital,
         priority: transfer.priority,
@@ -284,12 +285,12 @@ class TransferNotificationHandler implements TransferEventHandler {
       type: NOTIFICATION_TYPES.TRANSFER_COMPLETED,
       priority: 'medium',
       title: 'Transfer Completed',
-      message: `Transfer for ${transfer.patient.firstName} ${transfer.patient.lastName} has been completed successfully`,
+      message: `Transfer for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} has been completed successfully`,
       transferId: transfer.transferId,
       transfer: {
         id: transfer._id,
         transferId: transfer.transferId,
-        patient: transfer.patient,
+        patientInfo: transfer.patientInfo,
         fromHospital: transfer.fromHospital,
         toHospital: transfer.toHospital,
         priority: transfer.priority,
@@ -317,12 +318,12 @@ class TransferNotificationHandler implements TransferEventHandler {
       type: NOTIFICATION_TYPES.TRANSFER_CANCELLED,
       priority: 'high',
       title: 'Transfer Cancelled',
-      message: `Transfer for ${transfer.patient.firstName} ${transfer.patient.lastName} has been cancelled${metadata?.reason ? `: ${metadata.reason}` : ''}`,
+      message: `Transfer for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} has been cancelled${metadata?.reason ? `: ${metadata.reason}` : ''}`,
       transferId: transfer.transferId,
       transfer: {
         id: transfer._id,
         transferId: transfer.transferId,
-        patient: transfer.patient,
+        patientInfo: transfer.patientInfo,
         fromHospital: transfer.fromHospital,
         toHospital: transfer.toHospital,
         priority: transfer.priority,
@@ -350,12 +351,12 @@ class TransferNotificationHandler implements TransferEventHandler {
       type: NOTIFICATION_TYPES.TRANSFER_STATUS_CHANGE,
       priority: 'medium',
       title: 'Transfer Status Updated',
-      message: `Transfer for ${transfer.patient.firstName} ${transfer.patient.lastName} status changed from ${oldStatus} to ${newStatus}`,
+      message: `Transfer for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} status changed from ${oldStatus} to ${newStatus}`,
       transferId: transfer.transferId,
       transfer: {
         id: transfer._id,
         transferId: transfer.transferId,
-        patient: transfer.patient,
+        patientInfo: transfer.patientInfo,
         fromHospital: transfer.fromHospital,
         toHospital: transfer.toHospital,
         priority: transfer.priority,
@@ -383,12 +384,12 @@ class TransferNotificationHandler implements TransferEventHandler {
       type: NOTIFICATION_TYPES.URGENT_TRANSFER,
       priority: 'urgent',
       title: '🚨 URGENT TRANSFER ALERT',
-      message: `URGENT: ${transfer.patient.firstName} ${transfer.patient.lastName} requires immediate transfer from ${transfer.fromHospital} to ${transfer.toHospital}`,
+      message: `URGENT: ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} requires immediate transfer from ${transfer.fromHospital} to ${transfer.toHospital}`,
       transferId: transfer.transferId,
       transfer: {
         id: transfer._id,
         transferId: transfer.transferId,
-        patient: transfer.patient,
+        patientInfo: transfer.patientInfo,
         fromHospital: transfer.fromHospital,
         toHospital: transfer.toHospital,
         priority: transfer.priority,
@@ -471,7 +472,7 @@ class TransferNotificationHandler implements TransferEventHandler {
     targetUsers?: string[]
   ): Promise<void> {
     try {
-      await connectDB();
+      await connectDB;
 
       const notification = new Notification({
         id: notificationData.id,
@@ -505,10 +506,10 @@ class TransferNotificationHandler implements TransferEventHandler {
 class TransferAuditHandler implements TransferEventHandler {
   eventType = TransferEventType.TRANSFER_CREATED;
 
-  async handle(eventData: TransferEventData): Promise<void> {
+  async handle(eventType: TransferEventType, eventData: TransferEventData): Promise<void> {
     // Log transfer events for audit purposes
     console.log('📋 Transfer Audit Log:', {
-      eventType: eventData.transferId,
+      eventType: eventType,
       transferId: eventData.transferId,
       status: eventData.newStatus || eventData.transfer.status,
       changedBy: eventData.changedBy,
@@ -527,7 +528,7 @@ class TransferAuditHandler implements TransferEventHandler {
 class TransferReminderHandler implements TransferEventHandler {
   eventType = TransferEventType.TRANSFER_CREATED;
 
-  async handle(eventData: TransferEventData): Promise<void> {
+  async handle(eventType: TransferEventType, eventData: TransferEventData): Promise<void> {
     const { transfer } = eventData;
     
     // Schedule reminders for pending transfers
@@ -598,7 +599,7 @@ export class TransferEventFactory {
       timestamp: new Date().toISOString(),
       metadata: {
         reason,
-        urgencyLevel: newStatus === TransferStatus.URGENT ? 'critical' : 'medium'
+        urgencyLevel: transfer.priority === TransferPriority.URGENT ? 'critical' : 'medium'
       }
     };
   }
@@ -631,12 +632,3 @@ export function initializeTransferEvents(): void {
   TransferEventManager.initialize();
 }
 
-/**
- * Export all event-related utilities
- */
-export {
-  TransferEventType,
-  TransferEventData,
-  TransferEventManager,
-  TransferEventFactory
-};
