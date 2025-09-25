@@ -1,7 +1,9 @@
 import { MongoClient } from 'mongodb';
 
 if (!process.env.MONGODB_URI) {
-  throw new Error('Please add your MongoDB URI to .env.local');
+  console.error('❌ MONGODB_URI environment variable is missing');
+  console.error('Available environment variables:', Object.keys(process.env).filter(key => key.includes('MONGO')));
+  throw new Error('MONGODB_URI environment variable is required. Please add it to your environment variables.');
 }
 
 const uri = process.env.MONGODB_URI;

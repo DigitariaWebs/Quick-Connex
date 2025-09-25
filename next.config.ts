@@ -7,6 +7,10 @@ console.log('='.repeat(60));
 console.log(`📅 Config loaded at: ${new Date().toLocaleString()}`);
 console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 console.log(`🔗 MongoDB URI: ${process.env.MONGODB_URI ? '✅ Configured' : '❌ Missing'}`);
+if (!process.env.MONGODB_URI) {
+  console.log('🔍 Available environment variables with "MONGO":', Object.keys(process.env).filter(key => key.includes('MONGO')));
+  console.log('🔍 All environment variables:', Object.keys(process.env).sort());
+}
 console.log(`⚡ Bundler: Turbopack (Next.js 15+)`);
 console.log('='.repeat(60) + '\n');
 

@@ -25,8 +25,10 @@ declare global {
 async function dbConnect(): Promise<typeof mongoose> {
   if (!process.env.MONGODB_URI) {
     console.error('❌ MongoDB connection failed: MONGODB_URI environment variable is not defined');
+    console.error('Available environment variables:', Object.keys(process.env).filter(key => key.includes('MONGO')));
+    console.error('NODE_ENV:', process.env.NODE_ENV);
     throw new Error(
-      'Please define the MONGODB_URI environment variable inside .env.local'
+      'MONGODB_URI environment variable is required. Please add it to your environment variables.'
     );
   }
 
