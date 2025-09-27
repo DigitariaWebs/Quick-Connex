@@ -38,6 +38,7 @@ async function dbConnect(): Promise<typeof mongoose> {
     
     // For build time, return a mock connection
     console.warn('⚠️ MongoDB: Using mock connection for build time');
+    console.warn('⚠️ This is expected during build, but ensure MONGODB_URI is set in production');
     return mongoose;
   }
 
