@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { logApplicationStartup } from "@/lib/startup-logger";
+// Remove startup logging from layout - not compatible with Vercel
+// import { logApplicationStartup } from "@/lib/startup-logger";
 
-// Log application startup
-if (typeof window === 'undefined') {
-  logApplicationStartup();
+// Log application startup only in development
+if (typeof window === "undefined" && process.env.NODE_ENV === "development") {
+  // Only log in development, not in Vercel build
+  console.log("🏥 PATIENTS MANAGEMENT SYSTEM - Development Mode");
 }
 
 const geistSans = Geist({
@@ -20,7 +22,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Patients Management System",
-  description: "A modern web application for managing patients and healthcare staff",
+  description:
+    "A modern web application for managing patients and healthcare staff",
 };
 
 export default function RootLayout({

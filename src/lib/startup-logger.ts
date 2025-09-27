@@ -21,27 +21,32 @@ export function logApplicationStartup() {
   console.log('\n📋 ENVIRONMENT FILE STATUS:');
   console.log('─'.repeat(40));
   
-  // Check for environment files that Vercel/Next.js might try to access
-  const fs = require('fs');
-  const path = require('path');
-  
-  const envFiles = [
-    '.env',
-    '.env.local', 
-    '.env.development',
-    '.env.production',
-    '.env.test',
-    '.env.vercel'
-  ];
-  
-  const workingDir = process.cwd();
-  console.log(`🔍 Working directory: ${workingDir}`);
-  
-  envFiles.forEach(file => {
-    const fullPath = path.join(workingDir, file);
-    const exists = fs.existsSync(fullPath);
-    console.log(`${exists ? '✅' : '❌'} ${file}`);
-  });
+  // Skip filesystem checks in Vercel environment
+  if (process.env.VERCEL) {
+    console.log('🌐 Vercel Environment - Skipping filesystem checks');
+  } else {
+    // Check for environment files that Vercel/Next.js might try to access
+    const fs = require('fs');
+    const path = require('path');
+    
+    const envFiles = [
+      '.env',
+      '.env.local', 
+      '.env.development',
+      '.env.production',
+      '.env.test',
+      '.env.vercel'
+    ];
+    
+    const workingDir = process.cwd();
+    console.log(`🔍 Working directory: ${workingDir}`);
+    
+    envFiles.forEach(file => {
+      const fullPath = path.join(workingDir, file);
+      const exists = fs.existsSync(fullPath);
+      console.log(`${exists ? '✅' : '❌'} ${file}`);
+    });
+  }
   
   // Log critical environment variables status
   console.log('\n🔑 CRITICAL ENVIRONMENT VARIABLES:');

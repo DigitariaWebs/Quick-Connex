@@ -101,9 +101,21 @@ export default function RealtimeNotifications({
     }
   }, []);
 
-  // Initialize Socket.IO connection
+  // Initialize Socket.IO connection (with Vercel compatibility)
   useEffect(() => {
     if (!token || !userId) return;
+
+    // Check if we're in Vercel environment
+    const isVercel = process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.VERCEL;
+
+    if (isVercel) {
+      console.log(
+        "🌐 Vercel Environment - Using polling fallback for notifications"
+      );
+      setConnected(false);
+      setError("Real-time notifications not available in Vercel environment");
+      return;
+    }
 
     const newSocket = io(
       process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000",

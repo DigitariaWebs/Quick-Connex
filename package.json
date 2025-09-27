@@ -4,7 +4,8 @@
   "private": true,
   "packageManager": "npm@10.0.0",
   "scripts": {
-    "dev": "node server.js",
+    "dev": "next dev --turbopack",
+    "dev:server": "node server.js",
     "dev:next": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
