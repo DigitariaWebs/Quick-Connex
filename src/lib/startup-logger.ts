@@ -2,6 +2,8 @@
  * Startup logging utility for the Patients Management System
  */
 
+import { logBuildTimeEnvVars } from './build-time-env';
+
 export function logApplicationStartup() {
   const startTime = Date.now();
   
@@ -82,6 +84,9 @@ export function logApplicationStartup() {
   });
   
   console.log('='.repeat(60));
+  
+  // Log build-time environment variables
+  logBuildTimeEnvVars();
   
   // Log when compilation is complete
   setTimeout(() => {
