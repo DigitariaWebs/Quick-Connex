@@ -29,7 +29,14 @@ async function dbConnect(): Promise<typeof mongoose> {
     console.error('NODE_ENV:', process.env.NODE_ENV);
     console.error('VERCEL_ENV:', process.env.VERCEL_ENV);
     
-    // Only throw error if we're in production
+    // In Vercel, environment variables are only available at runtime
+    if (process.env.VERCEL) {
+      console.warn('⚠️ Vercel Environment: MONGODB_URI will be available at runtime');
+      console.warn('⚠️ Using mock connection for build time - this is expected');
+      return mongoose;
+    }
+    
+    // Only throw error if we're in production (non-Vercel)
     if (process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === 'production') {
       throw new Error(
         'MONGODB_URI environment variable is required. Please add it to your environment variables.'

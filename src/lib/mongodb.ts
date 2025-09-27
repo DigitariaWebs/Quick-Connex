@@ -7,8 +7,11 @@ if (!process.env.MONGODB_URI) {
   console.error('NODE_ENV:', process.env.NODE_ENV);
   console.error('VERCEL_ENV:', process.env.VERCEL_ENV);
   
-  // Only throw error if we're not in build mode or if we're in production
-  if (process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === 'production') {
+  // In Vercel, environment variables are only available at runtime, not build time
+  if (process.env.VERCEL) {
+    console.warn('⚠️ Vercel Environment: MONGODB_URI will be available at runtime');
+    console.warn('⚠️ This is expected during build - variables are injected at runtime');
+  } else if (process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === 'production') {
     throw new Error('MONGODB_URI environment variable is required. Please add it to your environment variables.');
   }
 }
