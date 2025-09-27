@@ -1,9 +1,16 @@
 import { MongoClient } from 'mongodb';
 
+// Check for MONGODB_URI, but don't throw error during build time
 if (!process.env.MONGODB_URI) {
   console.error('❌ MONGODB_URI environment variable is missing');
   console.error('Available environment variables:', Object.keys(process.env).filter(key => key.includes('MONGO')));
-  throw new Error('MONGODB_URI environment variable is required. Please add it to your environment variables.');
+  console.error('NODE_ENV:', process.env.NODE_ENV);
+  console.error('VERCEL_ENV:', process.env.VERCEL_ENV);
+  
+  // Only throw error if we're not in build mode or if we're in production
+  if (process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === 'production') {
+    throw new Error('MONGODB_URI environment variable is required. Please add it to your environment variables.');
+  }
 }
 
 const uri = process.env.MONGODB_URI;

@@ -46,3 +46,4 @@ things.txt
 secrets.txt
 /test
 test_users_credentials.txt
+env.local.backup

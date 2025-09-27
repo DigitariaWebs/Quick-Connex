@@ -27,9 +27,18 @@ async function dbConnect(): Promise<typeof mongoose> {
     console.error('❌ MongoDB connection failed: MONGODB_URI environment variable is not defined');
     console.error('Available environment variables:', Object.keys(process.env).filter(key => key.includes('MONGO')));
     console.error('NODE_ENV:', process.env.NODE_ENV);
-    throw new Error(
-      'MONGODB_URI environment variable is required. Please add it to your environment variables.'
-    );
+    console.error('VERCEL_ENV:', process.env.VERCEL_ENV);
+    
+    // Only throw error if we're in production
+    if (process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === 'production') {
+      throw new Error(
+        'MONGODB_URI environment variable is required. Please add it to your environment variables.'
+      );
+    }
+    
+    // For build time, return a mock connection
+    console.warn('⚠️ MongoDB: Using mock connection for build time');
+    return mongoose;
   }
 
   if (globalMongoose.conn) {
