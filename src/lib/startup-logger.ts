@@ -44,21 +44,41 @@ export function logApplicationStartup() {
   // Log critical environment variables status
   console.log('\n🔑 CRITICAL ENVIRONMENT VARIABLES:');
   console.log('─'.repeat(40));
-  const criticalVars = [
+  
+  // Client-side variables (available at build time)
+  const clientSideVars = [
+    'NEXT_PUBLIC_SOCKET_URL',
+    'NEXT_PUBLIC_APP_URL'
+  ];
+  
+  // Server-side variables (only available at runtime)
+  const serverSideVars = [
     'MONGODB_URI',
     'JWT_SECRET_KEY', 
-    'NEXT_PUBLIC_SOCKET_URL',
-    'NEXT_PUBLIC_APP_URL',
     'BASE_URL',
     'EMAIL_FROM',
     'ADMIN_EMAIL'
   ];
   
-  criticalVars.forEach(varName => {
+  console.log('📱 CLIENT-SIDE VARIABLES (Build Time):');
+  clientSideVars.forEach(varName => {
     const value = process.env[varName];
     const status = value ? '✅' : '❌';
     const displayValue = value ? (value.length > 30 ? value.substring(0, 30) + '...' : value) : 'Missing';
-    console.log(`${status} ${varName}: ${displayValue}`);
+    console.log(`   ${status} ${varName}: ${displayValue}`);
+  });
+  
+  console.log('\n🖥️ SERVER-SIDE VARIABLES (Runtime Only):');
+  serverSideVars.forEach(varName => {
+    const value = process.env[varName];
+    const status = value ? '✅' : '❌';
+    const displayValue = value ? (value.length > 30 ? value.substring(0, 30) + '...' : value) : 'Missing';
+    console.log(`   ${status} ${varName}: ${displayValue}`);
+    
+    // Add explanation for missing server-side variables
+    if (!value) {
+      console.log(`   ℹ️  Note: ${varName} is only available at runtime, not build time`);
+    }
   });
   
   console.log('='.repeat(60));

@@ -20,6 +20,7 @@ const options = {};
 if (!process.env.MONGODB_URI) {
   console.warn('⚠️ MONGODB_URI not found in environment variables, using fallback URI');
   console.warn('⚠️ This is expected during build time, but ensure MONGODB_URI is set in production');
+  console.warn('⚠️ Server-side environment variables are only available at runtime, not build time');
 } else {
   console.log('✅ MONGODB_URI found in environment variables');
 }

@@ -32,7 +32,8 @@
     "test-sms": "node scripts/test-sms-config.js",
     "check-twilio": "node scripts/check-twilio-status.js",
     "check-sms": "node scripts/check-sms-details.js",
-    "clear-transfers": "node scripts/clear-transfers.js"
+    "clear-transfers": "node scripts/clear-transfers.js",
+    "debug-env": "node scripts/debug-env-vars.js"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
