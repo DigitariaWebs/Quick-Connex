@@ -39,8 +39,6 @@ export async function GET(request: NextRequest) {
     const transfers = await Transfer.find(query)
       .populate('requestedBy', 'firstName lastName email userType')
       .populate('assignedTo', 'firstName lastName email')
-      .populate('fromHospital', 'name address')
-      .populate('toHospital', 'name address')
       .sort({ scheduledDate: 1 });
 
     // Process transfers for calendar view
@@ -81,9 +79,7 @@ export async function GET(request: NextRequest) {
         status: { $in: ['pending', 'accepted', 'in_progress'] }
       })
       .populate('requestedBy', 'firstName lastName email userType')
-      .populate('assignedTo', 'firstName lastName email')
-      .populate('fromHospital', 'name address')
-      .populate('toHospital', 'name address');
+      .populate('assignedTo', 'firstName lastName email');
 
       for (const transfer of recurringTransfers) {
         const recurringEvents = generateRecurringEvents(transfer, start, end);
@@ -189,9 +185,7 @@ export async function POST(request: NextRequest) {
       { new: true, runValidators: true }
     )
     .populate('requestedBy', 'firstName lastName email userType')
-    .populate('assignedTo', 'firstName lastName email')
-    .populate('fromHospital', 'name address')
-    .populate('toHospital', 'name address');
+    .populate('assignedTo', 'firstName lastName email');
 
     return createSuccessResponse(updatedTransfer, 'Transfer scheduling updated successfully');
 

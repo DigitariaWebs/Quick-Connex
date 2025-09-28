@@ -65,10 +65,6 @@ export default function CalendarView({
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
-    null
-  );
-  const [showEventModal, setShowEventModal] = useState(false);
 
   // Fetch calendar events
   useEffect(() => {
@@ -235,8 +231,6 @@ export default function CalendarView({
               <div
                 key={event.id}
                 onClick={() => {
-                  setSelectedEvent(event);
-                  setShowEventModal(true);
                   onEventClick?.(event);
                 }}
                 className="text-xs p-2 rounded-lg cursor-pointer hover:opacity-80 transition-all"
@@ -309,8 +303,6 @@ export default function CalendarView({
               <div
                 key={event.id}
                 onClick={() => {
-                  setSelectedEvent(event);
-                  setShowEventModal(true);
                   onEventClick?.(event);
                 }}
                 className="p-2 rounded-lg cursor-pointer hover:opacity-80 text-xs transition-all"
@@ -380,8 +372,6 @@ export default function CalendarView({
                     <div
                       key={event.id}
                       onClick={() => {
-                        setSelectedEvent(event);
-                        setShowEventModal(true);
                         onEventClick?.(event);
                       }}
                       className="absolute left-1 right-1 rounded-lg cursor-pointer hover:opacity-80 p-1 text-xs transition-all"
@@ -496,164 +486,6 @@ export default function CalendarView({
           renderView()
         )}
       </div>
-
-      {/* Event Modal */}
-      <AnimatePresence>
-        {showEventModal && selectedEvent && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-            onClick={() => setShowEventModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold text-gray-800">Details</h3>
-                  <button
-                    onClick={() => setShowEventModal(false)}
-                    className="w-8 h-8 hover:bg-gray-100 rounded-full flex items-center justify-center transition-colors"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {/* Patient Info */}
-                  <div className="bg-blue-50 p-4 rounded-xl">
-                    <h4 className="font-semibold text-blue-800 mb-2">
-                      Patient
-                    </h4>
-                    <div className="grid grid-cols-1 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">Name:</span>
-                        <div className="ml-2">
-                          <div className="font-medium">
-                            {selectedEvent.extendedProps.patient.firstName}{" "}
-                            {selectedEvent.extendedProps.patient.lastName}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Dossier:{" "}
-                            {selectedEvent.extendedProps.patient.patientId ||
-                              "N/A"}
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Patient ID:</span>
-                        <span className="ml-2 font-medium">
-                          {selectedEvent.extendedProps.patient.patientId}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Transfer Info */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="font-semibold text-gray-800 mb-2">
-                        Route
-                      </h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center space-x-2">
-                          <MapPin size={16} className="text-gray-500" />
-                          <span className="text-gray-600">From:</span>
-                          <span className="font-medium">
-                            {typeof selectedEvent.extendedProps.fromHospital ===
-                            "string"
-                              ? selectedEvent.extendedProps.fromHospital
-                              : selectedEvent.extendedProps.fromHospital ||
-                                "Unknown Hospital"}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <MapPin size={16} className="text-gray-500" />
-                          <span className="text-gray-600">To:</span>
-                          <span className="font-medium">
-                            {typeof selectedEvent.extendedProps.toHospital ===
-                            "string"
-                              ? selectedEvent.extendedProps.toHospital
-                              : selectedEvent.extendedProps.toHospital ||
-                                "Unknown Hospital"}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Clock size={16} className="text-gray-500" />
-                          <span className="text-gray-600">Time:</span>
-                          <span className="font-medium">
-                            {new Date(selectedEvent.start).toLocaleString()} -{" "}
-                            {new Date(selectedEvent.end).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="font-semibold text-gray-800 mb-2">
-                        Status
-                      </h4>
-                      <div className="space-y-2">
-                        {getPriorityBadge(selectedEvent.extendedProps.priority)}
-                        {getStatusBadge(selectedEvent.extendedProps.status)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Scheduling Details */}
-                  {selectedEvent.extendedProps.scheduling && (
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="font-semibold text-gray-800 mb-2">
-                        Scheduling Details
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm"></div>
-                    </div>
-                  )}
-
-                  {/* Reason */}
-                  <div>
-                    <h4 className="font-semibold text-gray-800 mb-2">Reason</h4>
-                    <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-xl">
-                      {selectedEvent.extendedProps.reason}
-                    </p>
-                  </div>
-
-                  {/* Notes */}
-                  {selectedEvent.extendedProps.notes && (
-                    <div>
-                      <h4 className="font-semibold text-gray-800 mb-2">
-                        Notes
-                      </h4>
-                      <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                        {selectedEvent.extendedProps.notes}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
-                    <button
-                      onClick={() => setShowEventModal(false)}
-                      className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-                    >
-                      Close
-                    </button>
-                    <button className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
-                      <Edit size={16} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
