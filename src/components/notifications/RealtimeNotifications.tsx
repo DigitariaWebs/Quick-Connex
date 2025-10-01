@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { io, Socket } from "socket.io-client";
+import { useNotificationSSE } from "@/hooks/useNotificationSSE";
 import {
   Bell,
   AlertTriangle,
@@ -80,15 +80,15 @@ export default function RealtimeNotifications({
   const [notifications, setNotifications] = useState<RealtimeNotification[]>(
     []
   );
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [connected, setConnected] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [filter, setFilter] = useState<"all" | "high" | "medium" | "low">(
     "all"
   );
   const [showRead, setShowRead] = useState(false);
+
+  // Use SSE for real-time notifications
+  const { connected, error, lastMessage } = useNotificationSSE();
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hideTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
@@ -101,96 +101,28 @@ export default function RealtimeNotifications({
     }
   }, []);
 
-  // Initialize Socket.IO connection (with Vercel compatibility)
+  // Handle SSE messages
   useEffect(() => {
-    if (!token || !userId) return;
+    if (!lastMessage) return;
 
-    // Check if we're in Vercel environment
-    const isVercel = process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.VERCEL;
-
-    if (isVercel) {
-      console.log(
-        "🌐 Vercel Environment - Using polling fallback for notifications"
-      );
-      setConnected(false);
-      setError("Real-time notifications not available in Vercel environment");
-      return;
+    // Handle different notification types
+    if (
+      lastMessage.type === "transfer_status_change" ||
+      lastMessage.type === "new_transfer" ||
+      lastMessage.type === "urgent_transfer" ||
+      lastMessage.type === "transfer_reminder"
+    ) {
+      addNotification(lastMessage as RealtimeNotification);
     }
+  }, [lastMessage]);
 
-    const newSocket = io(
-      process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000",
-      {
-        auth: {
-          token: token,
-        },
-        transports: ["websocket", "polling"],
-      }
-    );
-
-    newSocket.on("connect", () => {
-      console.log("Connected to real-time notifications");
-      setConnected(true);
-      setError(null);
-    });
-
-    newSocket.on("disconnect", (reason) => {
-      console.log("Disconnected from real-time notifications:", reason);
-      setConnected(false);
-    });
-
-    newSocket.on("connect_error", (error) => {
-      console.error("Connection error:", error);
-      setError("Failed to connect to real-time notifications");
-      setConnected(false);
-    });
-
-    newSocket.on("connected", (data) => {
-      console.log("Socket connection confirmed:", data);
-    });
-
-    // Listen for transfer status changes
-    newSocket.on(
-      "transfer_status_change",
-      (notification: RealtimeNotification) => {
-        console.log(
-          "Received transfer status change notification:",
-          notification
-        );
-        addNotification(notification);
-      }
-    );
-
-    // Listen for new transfer notifications
-    newSocket.on("new_transfer", (notification: RealtimeNotification) => {
-      console.log("Received new transfer notification:", notification);
-      addNotification(notification);
-    });
-
-    // Listen for urgent transfer notifications
-    newSocket.on("urgent_transfer", (notification: RealtimeNotification) => {
-      console.log("Received urgent transfer notification:", notification);
-      addNotification(notification);
-      // Play sound for urgent notifications
-      if (soundEnabled && audioRef.current) {
-        audioRef.current.play().catch(console.error);
-      }
-    });
-
-    // Listen for transfer reminders
-    newSocket.on("transfer_reminder", (notification: RealtimeNotification) => {
-      console.log("Received transfer reminder:", notification);
-      addNotification(notification);
-    });
-
-    setSocket(newSocket);
-
+  // Cleanup timeouts on unmount
+  useEffect(() => {
     return () => {
-      newSocket.close();
-      // Clear all hide timeouts
       hideTimeouts.current.forEach((timeout) => clearTimeout(timeout));
       hideTimeouts.current.clear();
     };
-  }, [token, userId, soundEnabled]);
+  }, []);
 
   const addNotification = (notification: RealtimeNotification) => {
     setNotifications((prev) => {
@@ -200,6 +132,16 @@ export default function RealtimeNotifications({
       );
       return newNotifications;
     });
+
+    // Play sound for urgent notifications
+    if (
+      soundEnabled &&
+      audioRef.current &&
+      (notification.priority === "high" ||
+        notification.type === "urgent_transfer")
+    ) {
+      audioRef.current.play().catch(console.error);
+    }
 
     // Auto-hide notification after delay
     if (autoHide) {

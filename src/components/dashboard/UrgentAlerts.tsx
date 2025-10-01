@@ -20,12 +20,16 @@ interface UrgentAlertsProps {
   urgentTransfers: UrgentTransfer[];
   onDismiss?: (id: string) => void;
   onViewTransfer?: (id: string) => void;
+  loading?: boolean;
+  error?: string | null;
 }
 
 export default function UrgentAlerts({
   urgentTransfers,
   onDismiss,
   onViewTransfer,
+  loading = false,
+  error = null,
 }: UrgentAlertsProps) {
   const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([]);
 
@@ -37,6 +41,37 @@ export default function UrgentAlerts({
   const visibleAlerts = urgentTransfers.filter(
     (alert) => !dismissedAlerts.includes(alert.id)
   );
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        <div className="bg-gray-50 rounded-xl p-4 animate-pulse">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
+            <div className="flex-1">
+              <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+        <div className="flex items-center space-x-2">
+          <AlertTriangle size={20} className="text-red-600" />
+          <span className="text-red-800 text-sm">
+            Failed to load urgent alerts: {error}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   if (visibleAlerts.length === 0) {
     return null;

@@ -114,7 +114,7 @@ const HospitalSchema = new Schema<IHospital>({
 });
 
 // Create indexes for better performance
-HospitalSchema.index({ name: 1 });
+// Note: name index is already created by unique: true constraint
 HospitalSchema.index({ 'organization.type': 1, 'organization.region': 1 });
 HospitalSchema.index({ isActive: 1 });
 

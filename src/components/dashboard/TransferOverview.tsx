@@ -24,6 +24,8 @@ interface TransferStats {
 interface TransferOverviewProps {
   stats: TransferStats;
   userType: "employee" | "manager";
+  loading?: boolean;
+  error?: string | null;
 }
 
 const StatCard = ({
@@ -87,6 +89,8 @@ const StatCard = ({
 export default function TransferOverview({
   stats,
   userType,
+  loading = false,
+  error = null,
 }: TransferOverviewProps) {
   const employeeStats = [
     {
@@ -183,11 +187,41 @@ export default function TransferOverview({
         </span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statsToShow.map((stat, index) => (
-          <StatCard key={stat.title} {...stat} />
-        ))}
-      </div>
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, index) => (
+            <div
+              key={index}
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 animate-pulse"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
+                <div className="w-4 h-4 bg-gray-200 rounded"></div>
+              </div>
+              <div className="space-y-2">
+                <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+          <div className="flex items-center space-x-2">
+            <AlertTriangle size={20} className="text-red-600" />
+            <span className="text-red-800">
+              Failed to load statistics: {error}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {statsToShow.map((stat, index) => (
+            <StatCard key={stat.title} {...stat} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

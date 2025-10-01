@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useNotificationSSE } from "@/hooks/useNotificationSSE";
 import NotificationManager from "@/components/notifications/NotificationManager";
 import { Bell, Settings } from "lucide-react";
 
@@ -20,7 +21,10 @@ export default function NotificationIntegration({
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Fetch unread notification count
+  // Use SSE for real-time notifications
+  const { connected, error: sseError, lastMessage } = useNotificationSSE();
+
+  // Fetch initial unread count
   useEffect(() => {
     if (!user) return;
 
@@ -44,12 +48,23 @@ export default function NotificationIntegration({
     };
 
     fetchUnreadCount();
-
-    // Refresh count every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000);
-
-    return () => clearInterval(interval);
   }, [user]);
+
+  // Handle SSE messages for real-time updates
+  useEffect(() => {
+    if (lastMessage) {
+      if (lastMessage.type === "notification_count_update") {
+        setUnreadCount(lastMessage.data?.unreadCount || 0);
+      } else if (
+        lastMessage.type === "transfer_status_change" ||
+        lastMessage.type === "new_transfer" ||
+        lastMessage.type === "urgent_transfer"
+      ) {
+        // Increment unread count for new notifications
+        setUnreadCount((prev) => prev + 1);
+      }
+    }
+  }, [lastMessage]);
 
   if (!user) {
     return null;

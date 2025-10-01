@@ -9,13 +9,13 @@ import {
   CheckCircle2,
   X,
   RefreshCw,
-  Eye,
-  EyeOff,
   Calendar,
   Car,
   User,
   MapPin,
+  Eye,
 } from "lucide-react";
+import { useNotificationSSE } from "@/hooks/useNotificationSSE";
 
 interface Notification {
   id: string;
@@ -50,15 +50,11 @@ interface NotificationSummary {
 interface SchedulingNotificationsProps {
   limit?: number;
   showSummary?: boolean;
-  autoRefresh?: boolean;
-  refreshInterval?: number;
 }
 
 export default function SchedulingNotifications({
   limit = 10,
   showSummary = true,
-  autoRefresh = true,
-  refreshInterval = 30000, // 30 seconds
 }: SchedulingNotificationsProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [summary, setSummary] = useState<NotificationSummary>({
@@ -73,16 +69,38 @@ export default function SchedulingNotifications({
   const [filter, setFilter] = useState<"all" | "high" | "medium" | "low">(
     "all"
   );
-  const [showRead, setShowRead] = useState(false);
+
+  // Use SSE for real-time notifications
+  const { connected, error: sseError, lastMessage } = useNotificationSSE();
 
   useEffect(() => {
     fetchNotifications();
+  }, []);
 
-    if (autoRefresh) {
-      const interval = setInterval(fetchNotifications, refreshInterval);
-      return () => clearInterval(interval);
+  // Handle SSE messages
+  useEffect(() => {
+    if (lastMessage) {
+      if (lastMessage.type === "notification_count_update") {
+        // Update summary with new count
+        setSummary((prev) => ({
+          ...prev,
+          unread: lastMessage.data?.unreadCount || prev.unread,
+        }));
+      } else if (lastMessage.type === "scheduling_notification") {
+        // Add new scheduling notification
+        setNotifications((prev) =>
+          [lastMessage as any, ...prev].slice(0, limit)
+        );
+        setSummary((prev) => ({
+          ...prev,
+          total: prev.total + 1,
+          unread: prev.unread + 1,
+          [lastMessage.priority]:
+            prev[lastMessage.priority as keyof NotificationSummary] + 1,
+        }));
+      }
     }
-  }, [autoRefresh, refreshInterval]);
+  }, [lastMessage, limit]);
 
   const fetchNotifications = async () => {
     setLoading(true);
@@ -209,9 +227,6 @@ export default function SchedulingNotifications({
     if (filter !== "all" && notification.priority !== filter) {
       return false;
     }
-    if (!showRead && notification.read) {
-      return false;
-    }
     return true;
   });
 
@@ -263,25 +278,6 @@ export default function SchedulingNotifications({
                 {summary.unread}
               </span>
             )}
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setShowRead(!showRead)}
-              className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              {showRead ? <EyeOff size={16} /> : <Eye size={16} />}
-              <span>{showRead ? "Hide Read" : "Show Read"}</span>
-            </button>
-
-            <button
-              onClick={fetchNotifications}
-              disabled={loading}
-              className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-              <span>Refresh</span>
-            </button>
           </div>
         </div>
 
@@ -341,7 +337,7 @@ export default function SchedulingNotifications({
       </div>
 
       {/* Notifications List */}
-      <div className="p-6">
+      <div className="p-6 min-h-[400px]">
         {error ? (
           <div className="text-center py-8">
             <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />

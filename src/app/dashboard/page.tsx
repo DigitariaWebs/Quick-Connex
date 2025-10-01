@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import { motion } from "framer-motion";
 import Sidebar from "@/components/dashboard/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
@@ -11,13 +12,9 @@ import UrgentAlerts from "@/components/dashboard/UrgentAlerts";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import QuickActions from "@/components/dashboard/QuickActions";
 import SchedulingNotifications from "@/components/notifications/SchedulingNotifications";
-
-interface DashboardStats {
-  totalPending: number;
-  totalAccepted: number;
-  totalInProgress: number;
-  totalCompleted: number;
-}
+import NotificationPopupManager from "@/components/notifications/NotificationPopupManager";
+import SSEDebugger from "@/components/notifications/SSEDebugger";
+import TransferFormModal from "@/components/modals/TransferFormModal";
 
 interface User {
   _id: string;
@@ -33,13 +30,15 @@ interface User {
 export default function EmployeeDashboard() {
   const router = useRouter();
   const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
-  const [stats, setStats] = useState<DashboardStats>({
-    totalPending: 0,
-    totalAccepted: 0,
-    totalInProgress: 0,
-    totalCompleted: 0,
-  });
+  const {
+    stats,
+    urgentTransfers,
+    recentActivity,
+    loading: dataLoading,
+    error: dataError,
+  } = useDashboardData();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -48,13 +47,17 @@ export default function EmployeeDashboard() {
     }
   }, [authLoading, isAuthenticated, router]);
 
-  // Show loading spinner while checking authentication
-  if (authLoading) {
+  // Show loading spinner only for authentication or initial data load
+  if (authLoading || (dataLoading && !user)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Verifying authentication...</p>
+          <p className="mt-4 text-gray-600">
+            {authLoading
+              ? "Verifying authentication..."
+              : "Loading dashboard data..."}
+          </p>
         </div>
       </div>
     );
@@ -65,8 +68,41 @@ export default function EmployeeDashboard() {
     return null;
   }
 
+  // Show error state if data loading failed
+  if (dataError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-red-600 text-6xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">
+            Failed to load dashboard
+          </h2>
+          <p className="text-gray-600 mb-4">{dataError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Notification Popup Manager */}
+      <NotificationPopupManager
+        maxNotifications={5}
+        autoHide={true}
+        hideDelay={5000}
+        position="top-right"
+        enableSound={true}
+      />
+
+      {/* SSE Debugger - Remove this after testing */}
+      <SSEDebugger />
+
       {/* Sidebar */}
       {user && (
         <Sidebar user={user} onLogout={logout} onToggle={setSidebarCollapsed} />
@@ -87,24 +123,30 @@ export default function EmployeeDashboard() {
           />
         )}
 
+        {/* Background refresh indicator */}
+        {dataLoading && user && (
+          <div className="fixed top-4 right-4 z-50">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <span className="text-blue-700 text-sm">Updating data...</span>
+            </div>
+          </div>
+        )}
+
         <div className="p-4 lg:p-6">
           {/* Urgent Alerts */}
-          {user && (
+          {user && urgentTransfers.length > 0 && (
             <div className="mb-6">
               <UrgentAlerts
-                urgentTransfers={[
-                  {
-                    id: "1",
-                    transferId: "TRF-STAT-001",
-                    patientName: "John Doe",
-                    fromHospital: "Toronto General Hospital",
-                    toHospital: "Sick Kids Hospital",
-                    priority: "stat",
-                    requestedTime: "2024-01-15 14:30",
-                    reason: "Cardiac emergency - immediate transfer required",
-                    timeElapsed: "15 min",
-                  },
-                ]}
+                urgentTransfers={urgentTransfers}
+                onDismiss={(id) => {
+                  // Handle alert dismissal
+                  console.log("Dismissed alert:", id);
+                }}
+                onViewTransfer={(id) => {
+                  // Navigate to transfer details
+                  router.push(`/transfers/${id}`);
+                }}
               />
             </div>
           )}
@@ -121,9 +163,9 @@ export default function EmployeeDashboard() {
                     stats.totalInProgress,
                   completedToday: stats.totalCompleted,
                   pendingAcceptance: stats.totalPending,
-                  urgent: 3,
-                  averageProcessingTime: "2.5h",
-                  successRate: 94,
+                  urgent: stats.totalUrgent,
+                  averageProcessingTime: stats.averageProcessingTime,
+                  successRate: stats.successRate,
                 }}
               />
             </div>
@@ -131,12 +173,7 @@ export default function EmployeeDashboard() {
 
           {/* Scheduling Notifications */}
           <div className="mb-8">
-            <SchedulingNotifications
-              limit={5}
-              showSummary={true}
-              autoRefresh={true}
-              refreshInterval={30000}
-            />
+            <SchedulingNotifications limit={5} showSummary={true} />
           </div>
 
           {/* Main Content Grid */}
@@ -146,45 +183,36 @@ export default function EmployeeDashboard() {
               <QuickActions
                 userType={user.userType}
                 pendingCount={stats.totalPending}
-                urgentCount={3}
-                scheduledToday={5}
+                urgentCount={stats.totalUrgent}
+                scheduledToday={stats.scheduledToday}
+                onNewTransfer={() => setIsTransferModalOpen(true)}
+                onViewPending={() => router.push("/transfers?status=pending")}
+                onViewUrgent={() => router.push("/transfers?priority=urgent")}
+                onViewSchedule={() => router.push("/calendar")}
+                onSearchTransfers={() => router.push("/transfers")}
+                onGenerateReport={() => router.push("/reports")}
               />
             )}
 
             {/* Recent Activity */}
             <RecentActivity
               userType={user?.userType || "employee"}
-              activities={[
-                {
-                  id: "1",
-                  type: "transfer_accepted",
-                  transferId: "TRF-001",
-                  patientName: "Jane Smith",
-                  description:
-                    "Transfer accepted and assigned to transport team",
-                  timestamp: "2 hours ago",
-                  priority: "high",
-                  fromHospital: "Mount Sinai Hospital",
-                  toHospital: "Princess Margaret Hospital",
-                  user: "Dr. Wilson",
-                },
-                {
-                  id: "2",
-                  type: "transfer_completed",
-                  transferId: "TRF-002",
-                  patientName: "Robert Johnson",
-                  description: "Transfer completed successfully",
-                  timestamp: "4 hours ago",
-                  priority: "medium",
-                  fromHospital: "St. Michael's Hospital",
-                  toHospital: "Toronto Western Hospital",
-                  user: "Nurse Kelly",
-                },
-              ]}
+              activities={recentActivity}
             />
           </div>
         </div>
       </div>
+
+      {/* Transfer Form Modal */}
+      <TransferFormModal
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        onSuccess={() => {
+          // Refresh dashboard data when a new transfer is created
+          window.location.reload();
+          setIsTransferModalOpen(false);
+        }}
+      />
     </div>
   );
 }

@@ -35,6 +35,8 @@ interface RecentActivityProps {
   activities: ActivityItem[];
   userType: "employee" | "manager";
   maxItems?: number;
+  loading?: boolean;
+  error?: string | null;
 }
 
 const ActivityIcon = ({ type }: { type: ActivityItem["type"] }) => {
@@ -75,6 +77,8 @@ export default function RecentActivity({
   activities,
   userType,
   maxItems = 5,
+  loading = false,
+  error = null,
 }: RecentActivityProps) {
   const displayActivities = activities.slice(0, maxItems);
 
@@ -87,7 +91,31 @@ export default function RecentActivity({
         </span>
       </div>
 
-      {displayActivities.length === 0 ? (
+      {loading ? (
+        <div className="space-y-4">
+          {[...Array(3)].map((_, index) => (
+            <div
+              key={index}
+              className="flex items-start space-x-3 p-3 rounded-lg animate-pulse"
+            >
+              <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+              <div className="flex-1">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2 mb-1"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div className="text-center py-8">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <AlertTriangle size={24} className="text-red-600" />
+          </div>
+          <p className="text-red-600 text-sm mb-2">Failed to load activity</p>
+          <p className="text-gray-500 text-xs">{error}</p>
+        </div>
+      ) : displayActivities.length === 0 ? (
         <div className="text-center py-8">
           <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
             <Activity size={24} className="text-gray-400" />

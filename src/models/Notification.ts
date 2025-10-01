@@ -126,8 +126,7 @@ const NotificationSchema = new Schema<INotification>({
   // Transfer-related data
   transferId: {
     type: String,
-    trim: true,
-    index: true
+    trim: true
   },
   transfer: {
     type: Schema.Types.ObjectId,

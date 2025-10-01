@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useSocket } from "@/hooks/useSocket";
+import { useNotificationSSE } from "@/hooks/useNotificationSSE";
 import RealtimeNotifications from "./RealtimeNotifications";
 import NotificationToast from "./NotificationToast";
 
@@ -95,12 +95,7 @@ export default function NotificationManager({
     (audioRef as any) = audio;
   };
 
-  const { socket, connected, error, on, off } = useSocket({
-    token,
-    userId,
-    userType,
-    autoConnect: true,
-  });
+  const { connected, error, lastMessage } = useNotificationSSE();
 
   // Play notification sound
   const playSound = useCallback(() => {
@@ -137,66 +132,36 @@ export default function NotificationManager({
     setReadNotifications((prev) => new Set([...prev, notificationId]));
   }, []);
 
-  // Set up socket event listeners
+  // Handle SSE messages
   useEffect(() => {
-    if (!socket || !connected) return;
+    if (!lastMessage) return;
 
-    const handleTransferStatusChange = (notification: RealtimeNotification) => {
-      console.log(
-        "Received transfer status change notification:",
-        notification
-      );
+    const handleNotification = (notification: RealtimeNotification) => {
+      console.log("Received notification via SSE:", notification);
+
       if (showToasts) {
         addToastNotification(notification);
       }
-    };
 
-    const handleNewTransfer = (notification: RealtimeNotification) => {
-      console.log("Received new transfer notification:", notification);
-      if (showToasts) {
-        addToastNotification(notification);
+      // Play sound for high priority notifications
+      if (
+        notification.priority === "high" ||
+        notification.type === "urgent_transfer"
+      ) {
+        playSound();
       }
     };
 
-    const handleUrgentTransfer = (notification: RealtimeNotification) => {
-      console.log("Received urgent transfer notification:", notification);
-      if (showToasts) {
-        addToastNotification(notification);
-      }
-      // Always play sound for urgent transfers
-      playSound();
-    };
-
-    const handleTransferReminder = (notification: RealtimeNotification) => {
-      console.log("Received transfer reminder:", notification);
-      if (showToasts) {
-        addToastNotification(notification);
-      }
-    };
-
-    // Register event listeners
-    on("transfer_status_change", handleTransferStatusChange);
-    on("new_transfer", handleNewTransfer);
-    on("urgent_transfer", handleUrgentTransfer);
-    on("transfer_reminder", handleTransferReminder);
-
-    // Cleanup event listeners
-    return () => {
-      off("transfer_status_change", handleTransferStatusChange);
-      off("new_transfer", handleNewTransfer);
-      off("urgent_transfer", handleUrgentTransfer);
-      off("transfer_reminder", handleTransferReminder);
-    };
-  }, [socket, connected, showToasts, addToastNotification, playSound, on, off]);
-
-  // Join transfer rooms when socket connects
-  useEffect(() => {
-    if (socket && connected) {
-      // You can add logic here to join specific transfer rooms
-      // based on user's current context or active transfers
-      console.log("Socket connected, ready to receive notifications");
+    // Handle different notification types
+    if (
+      lastMessage.type === "transfer_status_change" ||
+      lastMessage.type === "new_transfer" ||
+      lastMessage.type === "urgent_transfer" ||
+      lastMessage.type === "transfer_reminder"
+    ) {
+      handleNotification(lastMessage as RealtimeNotification);
     }
-  }, [socket, connected]);
+  }, [lastMessage, showToasts, addToastNotification, playSound]);
 
   // Clear old toast notifications periodically
   useEffect(() => {

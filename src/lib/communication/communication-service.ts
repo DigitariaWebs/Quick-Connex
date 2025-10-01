@@ -1,5 +1,6 @@
 /**
  * Main Communication Service
+
  * 
  * This file provides the main communication service that integrates email and SMS
  * with the existing notification system, handling delivery methods and user preferences.

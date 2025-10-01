@@ -283,7 +283,7 @@ const TransferSchema = new Schema<ITransfer>({
 });
 
 // Add indexes for faster queries
-TransferSchema.index({ transferId: 1 });
+// Note: transferId index is already created by unique: true constraint
 TransferSchema.index({ 'patientInfo.firstName': 1, 'patientInfo.lastName': 1 });
 TransferSchema.index({ 'patientInfo.dossierNumber': 1 });
 TransferSchema.index({ status: 1 });
