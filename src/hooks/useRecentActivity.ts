@@ -56,14 +56,32 @@ export function useRecentActivity(maxItems: number = 5) {
           type = 'transfer_cancelled';
         }
 
+        // Use structured data from API if available, otherwise fallback to title parsing
+        const patientName = activity.patientName || (() => {
+          if (activity.title) {
+            const titleParts = activity.title.split(': ');
+            if (titleParts.length > 1) {
+              return titleParts[1].trim();
+            } else if (activity.title.includes('Transfer')) {
+              const nameMatch = activity.title.match(/(?:Transfer Request|Assigned Transfer)\s+(.+)/);
+              if (nameMatch && nameMatch[1]) {
+                return nameMatch[1].trim();
+              }
+            }
+          }
+          return 'Unknown Patient';
+        })();
+
         return {
           id: activity.id,
           type,
-          transferId: activity.id,
-          patientName: activity.title.split(': ')[1] || 'Unknown Patient',
+          transferId: activity.transferId || activity.id,
+          patientName,
           description: activity.description,
           timestamp: formatTimestamp(activity.date),
           priority: activity.status === 'success' ? 'low' : activity.status === 'warning' ? 'high' : 'medium',
+          fromHospital: activity.fromHospital,
+          toHospital: activity.toHospital,
           user: user.userType === 'manager' ? 'You' : 'System',
         };
       });

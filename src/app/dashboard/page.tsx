@@ -91,14 +91,14 @@ export default function EmployeeDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Notification Popup Manager */}
-      <NotificationPopupManager
+      {/* Notification Popup Manager - DISABLED */}
+      {/* <NotificationPopupManager
         maxNotifications={5}
         autoHide={true}
         hideDelay={5000}
         position="top-right"
         enableSound={true}
-      />
+      /> */}
 
       {/* SSE Debugger - Remove this after testing */}
       <SSEDebugger />
@@ -134,8 +134,8 @@ export default function EmployeeDashboard() {
         )}
 
         <div className="p-4 lg:p-6">
-          {/* Urgent Alerts */}
-          {user && urgentTransfers.length > 0 && (
+          {/* Urgent Alerts - DISABLED */}
+          {/* {user && urgentTransfers.length > 0 && (
             <div className="mb-6">
               <UrgentAlerts
                 urgentTransfers={urgentTransfers}
@@ -149,52 +149,56 @@ export default function EmployeeDashboard() {
                 }}
               />
             </div>
-          )}
+          )} */}
 
-          {/* Transfer Overview Stats */}
-          {user && (
-            <div className="mb-8">
-              <TransferOverview
-                userType={user.userType}
-                stats={{
-                  totalActive:
-                    stats.totalPending +
-                    stats.totalAccepted +
-                    stats.totalInProgress,
-                  completedToday: stats.totalCompleted,
-                  pendingAcceptance: stats.totalPending,
-                  urgent: stats.totalUrgent,
-                  averageProcessingTime: stats.averageProcessingTime,
-                  successRate: stats.successRate,
-                }}
-              />
-            </div>
-          )}
+          {/* Top Section: Transfer Overview and Quick Actions */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Transfer Overview Stats */}
+            {user && (
+              <div>
+                <TransferOverview
+                  userType={user.userType}
+                  stats={{
+                    totalActive:
+                      stats.totalPending +
+                      stats.totalAccepted +
+                      stats.totalInProgress,
+                    completedToday: stats.totalCompleted,
+                    pendingAcceptance: stats.totalPending,
+                    urgent: stats.totalUrgent,
+                    averageProcessingTime: stats.averageProcessingTime,
+                    successRate: stats.successRate,
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Quick Actions */}
+            {user && (
+              <div>
+                <QuickActions
+                  userType={user.userType}
+                  pendingCount={stats.totalPending}
+                  urgentCount={stats.totalUrgent}
+                  scheduledToday={stats.scheduledToday}
+                  onNewTransfer={() => setIsTransferModalOpen(true)}
+                  onViewPending={() => router.push("/transfers?status=pending")}
+                  onViewUrgent={() => router.push("/transfers?priority=urgent")}
+                  onViewSchedule={() => router.push("/calendar")}
+                  onSearchTransfers={() => router.push("/transfers")}
+                  onGenerateReport={() => router.push("/reports")}
+                />
+              </div>
+            )}
+          </div>
 
           {/* Scheduling Notifications */}
           <div className="mb-8">
             <SchedulingNotifications limit={5} showSummary={true} />
           </div>
 
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Quick Actions */}
-            {user && (
-              <QuickActions
-                userType={user.userType}
-                pendingCount={stats.totalPending}
-                urgentCount={stats.totalUrgent}
-                scheduledToday={stats.scheduledToday}
-                onNewTransfer={() => setIsTransferModalOpen(true)}
-                onViewPending={() => router.push("/transfers?status=pending")}
-                onViewUrgent={() => router.push("/transfers?priority=urgent")}
-                onViewSchedule={() => router.push("/calendar")}
-                onSearchTransfers={() => router.push("/transfers")}
-                onGenerateReport={() => router.push("/reports")}
-              />
-            )}
-
-            {/* Recent Activity */}
+          {/* Recent Activity */}
+          <div className="mb-8">
             <RecentActivity
               userType={user?.userType || "employee"}
               activities={recentActivity}

@@ -59,7 +59,7 @@ export function useUrgentAlerts() {
           return {
             id: transfer._id,
             transferId: transfer.transferId,
-            patientName: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`,
+            patientName: transfer.patientInfo ? `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}` : 'Unknown Patient',
             fromHospital: transfer.fromHospitalName,
             toHospital: transfer.toHospitalName,
             priority: transfer.priority === 'stat' ? 'stat' : 'urgent',

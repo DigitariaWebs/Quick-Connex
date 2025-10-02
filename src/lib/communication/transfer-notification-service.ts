@@ -408,7 +408,7 @@ export class TransferNotificationService {
 
       const transferData = {
         transferId: transfer.transferId,
-        patientName: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`,
+        patientName: transfer.patientInfo ? `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}` : 'Unknown Patient',
         fromHospital: transfer.fromHospitalName,
         toHospital: transfer.toHospitalName,
         priority: transfer.priority.toUpperCase(),

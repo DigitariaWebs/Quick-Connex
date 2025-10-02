@@ -268,7 +268,7 @@ function generateRecurringEvents(transfer: any, startDate: Date, endDate: Date) 
         events.push({
           id: `${transfer._id}_${currentDate.toISOString().split('T')[0]}`,
           transferId: transfer.transferId,
-          title: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} (Recurring)`,
+          title: transfer.patientInfo ? `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} (Recurring)` : 'Unknown Patient (Recurring)',
           start: startDateTime.toISOString(),
           end: endDateTime.toISOString(),
           allDay: false,

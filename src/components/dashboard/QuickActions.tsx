@@ -140,12 +140,9 @@ export default function QuickActions({
   const actions = userType === "manager" ? managerActions : employeeActions;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <div>
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-800">Quick Actions</h3>
-        <span className="text-sm text-gray-500">
-          {userType === "manager" ? "Management tools" : "Your tasks"}
-        </span>
       </div>
 
       {loading ? (

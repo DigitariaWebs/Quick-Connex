@@ -109,21 +109,29 @@ async function getRecentActivity(userId: string, userType: string) {
     const recentTransfers = await Transfer.find(transferQuery)
       .sort({ createdAt: -1 })
       .limit(5)
-      .populate('patient', 'firstName lastName patientId')
       .populate('requestedBy', 'firstName lastName userType')
-      .populate('assignedTo', 'firstName lastName userType');
+      .populate({
+        path: 'assignedTo',
+        select: 'firstName lastName userType',
+        options: { strictPopulate: false }
+      });
 
     // Convert transfers to activity format
     recentTransfers.forEach(transfer => {
       let title = '';
       let description = '';
       let status: 'success' | 'pending' | 'warning' = 'pending';
+      
+      // Get patient name safely
+      const patientName = transfer.patientInfo?.firstName && transfer.patientInfo?.lastName 
+        ? `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`
+        : 'Unknown Patient';
 
       if (userType === 'manager') {
-        title = `Transfer Request: ${transfer.patientInfo?.firstName} ${transfer.patientInfo?.lastName}`;
+        title = `Transfer Request: ${patientName}`;
         description = `From ${transfer.fromHospital} to ${transfer.toHospital}`;
       } else {
-        title = `Assigned Transfer: ${transfer.patientInfo?.firstName} ${transfer.patientInfo?.lastName}`;
+        title = `Assigned Transfer: ${patientName}`;
         description = `From ${transfer.fromHospital} to ${transfer.toHospital}`;
       }
 
@@ -144,7 +152,12 @@ async function getRecentActivity(userId: string, userType: string) {
         title,
         description,
         date: transfer.createdAt,
-        status
+        status,
+        // Add structured data for better frontend parsing
+        patientName,
+        fromHospital: transfer.fromHospital,
+        toHospital: transfer.toHospital,
+        transferId: (transfer._id as any).toString()
       });
     });
 

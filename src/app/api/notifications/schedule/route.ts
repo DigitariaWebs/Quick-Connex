@@ -32,7 +32,6 @@ export async function GET(request: NextRequest) {
         },
         status: { $in: ['pending', 'accepted', 'in_progress'] }
       })
-      .populate('patient', 'firstName lastName patientId')
       .populate('requestedBy', 'firstName lastName email')
       .populate('assignedTo', 'firstName lastName email')
       .sort({ scheduledDate: 1 })
@@ -87,7 +86,6 @@ export async function GET(request: NextRequest) {
         'scheduling.conflicts': { $exists: true, $ne: [] },
         status: { $in: ['pending', 'accepted', 'in_progress'] }
       })
-      .populate('patient', 'firstName lastName patientId')
       .populate('requestedBy', 'firstName lastName email')
       .sort({ scheduledDate: 1 })
       .limit(10);
@@ -135,7 +133,6 @@ export async function GET(request: NextRequest) {
         scheduledDate: { $lt: now },
         status: { $in: ['pending', 'accepted'] }
       })
-      .populate('patient', 'firstName lastName patientId')
       .populate('requestedBy', 'firstName lastName email')
       .sort({ scheduledDate: 1 })
       .limit(10);

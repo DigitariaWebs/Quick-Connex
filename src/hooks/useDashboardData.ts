@@ -126,7 +126,7 @@ export function useDashboardData() {
           return {
             id: transfer._id,
             transferId: transfer.transferId,
-            patientName: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`,
+            patientName: transfer.patientInfo ? `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}` : 'Unknown Patient',
             fromHospital: transfer.fromHospitalName,
             toHospital: transfer.toHospitalName,
             priority: transfer.priority === 'stat' ? 'stat' : 'urgent',
@@ -137,16 +137,36 @@ export function useDashboardData() {
         });
 
       // Get recent activity from profile data
-      const recentActivity: ActivityItem[] = (profileData.recentActivity || []).map((activity: any) => ({
-        id: activity.id,
-        type: activity.type === 'transfer_request' ? 'transfer_requested' : 'transfer_completed',
-        transferId: activity.id,
-        patientName: activity.title.split(': ')[1] || 'Unknown Patient',
-        description: activity.description,
-        timestamp: activity.date,
-        priority: activity.status === 'success' ? 'low' : activity.status === 'warning' ? 'high' : 'medium',
-        user: user.userType === 'manager' ? 'You' : 'System',
-      }));
+      const recentActivity: ActivityItem[] = (profileData.recentActivity || []).map((activity: any) => {
+        // Use structured data from API if available, otherwise fallback to title parsing
+        const patientName = activity.patientName || (() => {
+          if (activity.title) {
+            const titleParts = activity.title.split(': ');
+            if (titleParts.length > 1) {
+              return titleParts[1].trim();
+            } else if (activity.title.includes('Transfer')) {
+              const nameMatch = activity.title.match(/(?:Transfer Request|Assigned Transfer)\s+(.+)/);
+              if (nameMatch && nameMatch[1]) {
+                return nameMatch[1].trim();
+              }
+            }
+          }
+          return 'Unknown Patient';
+        })();
+
+        return {
+          id: activity.id,
+          type: activity.type === 'transfer_request' ? 'transfer_requested' : 'transfer_completed',
+          transferId: activity.transferId || activity.id,
+          patientName,
+          description: activity.description,
+          timestamp: activity.date,
+          priority: activity.status === 'success' ? 'low' : activity.status === 'warning' ? 'high' : 'medium',
+          fromHospital: activity.fromHospital,
+          toHospital: activity.toHospital,
+          user: user.userType === 'manager' ? 'You' : 'System',
+        };
+      });
 
       setData({
         stats,

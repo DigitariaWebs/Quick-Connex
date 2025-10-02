@@ -48,7 +48,7 @@ const StatCard = ({
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
+    className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
   >
     <div className="flex items-center justify-between">
       <div>
@@ -175,33 +175,24 @@ export default function TransferOverview({
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-800">
-          {userType === "manager"
-            ? "Transfer Management Overview"
-            : "Your Transfer Queue"}
-        </h2>
-        <span className="text-sm text-gray-500">
-          {userType === "manager"
-            ? "System-wide metrics"
-            : "Your assigned transfers"}
-        </span>
+        <h2 className="text-xl font-semibold text-gray-800">Overview</h2>
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 gap-4">
           {[...Array(4)].map((_, index) => (
             <div
               key={index}
-              className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 animate-pulse"
+              className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 animate-pulse"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
-                <div className="w-4 h-4 bg-gray-200 rounded"></div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-6 h-6 bg-gray-200 rounded-lg"></div>
+                <div className="w-3 h-3 bg-gray-200 rounded"></div>
               </div>
               <div className="space-y-2">
-                <div className="h-6 bg-gray-200 rounded w-1/2"></div>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-2 bg-gray-200 rounded w-1/3"></div>
               </div>
             </div>
           ))}
@@ -216,7 +207,7 @@ export default function TransferOverview({
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 gap-4">
           {statsToShow.map((stat, index) => (
             <StatCard key={stat.title} {...stat} />
           ))}

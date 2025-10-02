@@ -141,9 +141,6 @@ export default function RecentActivity({
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {activity.patientName}
                   </p>
-                  <span className="text-xs text-gray-500">
-                    {activity.transferId}
-                  </span>
                   <PriorityBadge priority={activity.priority} />
                 </div>
 

@@ -454,9 +454,9 @@ export class TransferFilterUtils {
         
         const searchableText = [
           transfer.transferId,
-          transfer.patientInfo.firstName,
-          transfer.patientInfo.lastName,
-          transfer.patientInfo.dossierNumber,
+          transfer.patientInfo?.firstName || '',
+          transfer.patientInfo?.lastName || '',
+          transfer.patientInfo?.dossierNumber || '',
           getHospitalName(transfer.fromHospital),
           getHospitalName(transfer.toHospital),
           transfer.reason
@@ -554,13 +554,13 @@ export class TransferCalendarUtils {
     
     return {
       id: transfer._id,
-      title: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`,
+      title: transfer.patientInfo ? `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}` : 'Unknown Patient',
       start: startDate,
       end: endDate,
       transferId: transfer.transferId,
       patientInfo: {
-        name: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`,
-        age: transfer.patientInfo.age
+        name: transfer.patientInfo ? `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}` : 'Unknown Patient',
+        age: transfer.patientInfo?.age || 0
       },
       fromHospital: transfer.fromHospital,
       toHospital: transfer.toHospital,
