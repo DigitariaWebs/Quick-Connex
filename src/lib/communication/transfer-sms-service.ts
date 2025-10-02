@@ -87,8 +87,8 @@ export class TransferSMSService {
       const smsData = {
         patientName: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`,
         patientAge: transfer.patientInfo.age,
-        fromHospital: transfer.fromHospital,
-        toHospital: transfer.toHospital,
+        fromHospital: transfer.fromHospitalName,
+        toHospital: transfer.toHospitalName,
         priority: transfer.priority,
         requestedBy: `${requestedBy.firstName} ${requestedBy.lastName}`,
         transferId: transfer.transferId
@@ -129,8 +129,8 @@ export class TransferSMSService {
       const smsData = {
         patientName: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`,
         patientAge: transfer.patientInfo.age,
-        fromHospital: transfer.fromHospital,
-        toHospital: transfer.toHospital,
+        fromHospital: transfer.fromHospitalName,
+        toHospital: transfer.toHospitalName,
         priority: transfer.priority,
         requestedBy: `${requestedBy.firstName} ${requestedBy.lastName}`,
         transferId: transfer.transferId
@@ -167,8 +167,8 @@ export class TransferSMSService {
       const smsData = {
         transferTitle: transferDisplayInfo.title,
         transferCategory: transferDisplayInfo.category,
-        fromHospital: transfer.fromHospital,
-        toHospital: transfer.toHospital,
+        fromHospital: transfer.fromHospitalName,
+        toHospital: transfer.toHospitalName,
         transferId: transfer.transferId,
         // Legacy fields for backward compatibility
         patientName: transferDisplayInfo.title
@@ -214,8 +214,8 @@ export class TransferSMSService {
       // Prepare SMS data
       const smsData = {
         patientName: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`,
-        fromHospital: transfer.fromHospital,
-        toHospital: transfer.toHospital,
+        fromHospital: transfer.fromHospitalName,
+        toHospital: transfer.toHospitalName,
         acceptedBy: `${acceptedBy.firstName} ${acceptedBy.lastName}`,
         transferId: transfer.transferId
       };
@@ -250,8 +250,8 @@ export class TransferSMSService {
       // Prepare SMS data
       const smsData = {
         patientName: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`,
-        fromHospital: transfer.fromHospital,
-        toHospital: transfer.toHospital,
+        fromHospital: transfer.fromHospitalName,
+        toHospital: transfer.toHospitalName,
         completedBy: `${completedBy.firstName} ${completedBy.lastName}`,
         duration: duration,
         transferId: transfer.transferId

@@ -908,6 +908,232 @@ Please log into the system to view full details and take appropriate action.
     </html>
     `;
   }
+
+  /**
+   * Send notification when transfer is accepted by employee
+   */
+  async sendTransferAcceptedNotification(transfer: any, acceptedBy: any): Promise<void> {
+    try {
+      console.log('📧 Sending transfer accepted notifications...');
+
+      await dbConnect();
+
+      // Get the manager who requested the transfer
+      const manager = await User.findById(transfer.requestedBy);
+      if (!manager) {
+        console.error('Manager not found for transfer acceptance notification');
+        return;
+      }
+
+      const transferData = {
+        transferId: transfer.transferId,
+        patientName: transfer.patientInfo ? `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}` : 'Unknown Patient',
+        fromHospital: transfer.fromHospitalName,
+        toHospital: transfer.toHospitalName,
+        priority: transfer.priority.toUpperCase(),
+        acceptedBy: `${acceptedBy.firstName} ${acceptedBy.lastName}`,
+        acceptedAt: new Date().toLocaleString()
+      };
+
+      // Send notification to manager
+      await this.sendTransferAcceptedToManager(manager, transferData);
+
+      console.log(`✅ Transfer accepted notifications sent to manager`);
+    } catch (error) {
+      console.error('❌ Error sending transfer accepted notifications:', error);
+    }
+  }
+
+  /**
+   * Send transfer accepted notification to manager
+   */
+  private async sendTransferAcceptedToManager(manager: any, transferData: any): Promise<void> {
+    try {
+      // Send email
+      const emailMessage: EmailMessage = {
+        id: `transfer_accepted_manager_email_${Date.now()}`,
+        channel: 'email',
+        priority: 'medium',
+        status: 'pending',
+        recipient: {
+          email: manager.email,
+          name: `${manager.firstName} ${manager.lastName}`
+        },
+        content: {
+          subject: `✅ Transfer Accepted - ${transferData.transferId}`,
+          text: this.generateTransferAcceptedEmailText(transferData, 'manager'),
+          html: this.generateTransferAcceptedEmailHTML(transferData, 'manager')
+        },
+        metadata: {
+          source: 'transfer_workflow',
+          category: 'transfer_accepted',
+          transferId: transferData.transferId,
+        },
+        tracking: {},
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      await this.communicationService.sendEmail(emailMessage);
+
+      // Send SMS if phone number available
+      if (manager.phone) {
+        const smsMessage: SMSMessage = {
+          id: `transfer_accepted_manager_sms_${Date.now()}`,
+          channel: 'sms',
+          priority: 'medium',
+          status: 'pending',
+          recipient: {
+            phone: manager.phone,
+            name: `${manager.firstName} ${manager.lastName}`,
+            countryCode: '1'
+          },
+          content: {
+            text: `✅ Transfer ${transferData.transferId} accepted by ${transferData.acceptedBy}! Patient: ${transferData.patientName}, From: ${transferData.fromHospital} to ${transferData.toHospital}`
+          },
+          metadata: {
+            source: 'transfer_workflow',
+            category: 'transfer_accepted',
+            transferId: transferData.transferId,
+          },
+          tracking: {},
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        await this.communicationService.sendSMS(smsMessage);
+      }
+
+      console.log(`✅ Transfer accepted notification sent to manager: ${manager.email}`);
+    } catch (error) {
+      console.error('❌ Error sending transfer accepted notification to manager:', error);
+    }
+  }
+
+  /**
+   * Generate transfer accepted email text for manager
+   */
+  private generateTransferAcceptedEmailText(transferData: any, recipient: string): string {
+    return `
+Transfer Accepted - ${transferData.transferId}
+
+Dear ${recipient === 'manager' ? 'Manager' : 'Employee'},
+
+Great news! The transfer request has been accepted by an employee and is now in progress.
+
+Transfer Details:
+- Transfer ID: ${transferData.transferId}
+- Patient: ${transferData.patientName}
+- From: ${transferData.fromHospital}
+- To: ${transferData.toHospital}
+- Priority: ${transferData.priority}
+- Accepted By: ${transferData.acceptedBy}
+- Accepted At: ${transferData.acceptedAt}
+
+The transfer is now being handled by the assigned employee. You will receive updates as the transfer progresses.
+
+Thank you for using the Patient Management System.
+
+Best regards,
+Patient Management System
+    `.trim();
+  }
+
+  /**
+   * Generate transfer accepted email HTML for manager
+   */
+  private generateTransferAcceptedEmailHTML(transferData: any, recipient: string): string {
+    return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Transfer Accepted - ${transferData.transferId}</title>
+        <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #374151; margin: 0; padding: 0; background-color: #f9fafb; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+            .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; }
+            .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
+            .content { padding: 30px; }
+            .status-badge { display: inline-block; background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; margin-bottom: 20px; }
+            .transfer-details { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
+            .detail-row { display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0; }
+            .detail-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+            .detail-label { font-weight: 600; color: #4b5563; }
+            .detail-value { color: #1f2937; font-weight: 500; }
+            .priority-urgent { color: #dc2626; font-weight: 600; }
+            .priority-high { color: #ea580c; font-weight: 600; }
+            .priority-medium { color: #d97706; font-weight: 600; }
+            .priority-low { color: #059669; font-weight: 600; }
+            .footer { background: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb; }
+            .button { display: inline-block; background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 10px 0; }
+            .button:hover { background: #059669; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>✅ Transfer Accepted</h1>
+                <p style="margin: 10px 0 0 0; opacity: 0.9;">Transfer request has been accepted and is now in progress</p>
+            </div>
+            
+            <div class="content">
+                <div class="status-badge">ACCEPTED</div>
+                
+                <p>Great news! The transfer request has been accepted by an employee and is now in progress.</p>
+                
+                <div class="transfer-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Transfer ID:</span>
+                        <span class="detail-value">${transferData.transferId}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Patient:</span>
+                        <span class="detail-value">${transferData.patientName}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">From Hospital:</span>
+                        <span class="detail-value">${transferData.fromHospital}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">To Hospital:</span>
+                        <span class="detail-value">${transferData.toHospital}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Priority:</span>
+                        <span class="detail-value priority-${transferData.priority.toLowerCase()}">${transferData.priority}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Accepted By:</span>
+                        <span class="detail-value">${transferData.acceptedBy}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Accepted At:</span>
+                        <span class="detail-value">${transferData.acceptedAt}</span>
+                    </div>
+                </div>
+                
+                <p>The transfer is now being handled by the assigned employee. You will receive updates as the transfer progresses.</p>
+                
+                <p style="margin-top: 30px; padding: 20px; background: #f0f9ff; border-left: 4px solid #0ea5e9; border-radius: 4px;">
+                    <strong>Next Steps:</strong> The assigned employee will now handle the transfer process. You can track the progress through the system dashboard.
+                </p>
+            </div>
+            
+            <div class="footer">
+                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+                
+                <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
+                    This is an automated notification from the <strong>Patient Management System</strong>.<br>
+                    If you have any questions, please contact the system administrator.
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+  }
 }
 
 // Export singleton instance

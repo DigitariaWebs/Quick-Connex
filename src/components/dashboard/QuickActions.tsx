@@ -32,9 +32,11 @@ interface QuickActionsProps {
   onViewSchedule?: () => void;
   onGenerateReport?: () => void;
   onViewUrgent?: () => void;
+  onViewAccepted?: () => void;
   onSearchTransfers?: () => void;
   pendingCount?: number;
   urgentCount?: number;
+  acceptedCount?: number;
   scheduledToday?: number;
   loading?: boolean;
   error?: string | null;
@@ -47,9 +49,11 @@ export default function QuickActions({
   onViewSchedule,
   onGenerateReport,
   onViewUrgent,
+  onViewAccepted,
   onSearchTransfers,
   pendingCount = 0,
   urgentCount = 0,
+  acceptedCount = 0,
   scheduledToday = 0,
   loading = false,
   error = null,
@@ -66,14 +70,14 @@ export default function QuickActions({
       badge: pendingCount,
     },
     {
-      id: "view-urgent",
-      title: "Urgent Transfers",
-      description: "Handle high-priority and STAT transfers",
-      icon: <AlertTriangle size={20} className="text-red-600" />,
-      color: "text-red-600",
-      bgColor: "bg-red-50 hover:bg-red-100",
-      onClick: onViewUrgent || (() => {}),
-      badge: urgentCount,
+      id: "view-accepted",
+      title: "My Accepted Transfers",
+      description: "View transfers you have accepted and are working on",
+      icon: <CheckCircle size={20} className="text-blue-600" />,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50 hover:bg-blue-100",
+      onClick: onViewAccepted || (() => {}),
+      badge: acceptedCount,
     },
     {
       id: "view-schedule",

@@ -67,6 +67,7 @@ export interface ITransfer extends Document {
   status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
   requestedDate: Date;
   scheduledDate?: Date;
+  acceptedAt?: Date; // Track when transfer was accepted by employee
   completedDate?: Date;
   notes?: string;
   medicalDocuments?: string[]; // Array of file paths
@@ -321,6 +322,9 @@ const TransferSchema = new Schema<ITransfer>({
     default: Date.now
   },
   scheduledDate: { 
+    type: Date
+  },
+  acceptedAt: { 
     type: Date
   },
   completedDate: { 

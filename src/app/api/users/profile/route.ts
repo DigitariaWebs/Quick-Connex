@@ -129,10 +129,10 @@ async function getRecentActivity(userId: string, userType: string) {
 
       if (userType === 'manager') {
         title = `Transfer Request: ${patientName}`;
-        description = `From ${transfer.fromHospital} to ${transfer.toHospital}`;
+        description = `New transfer request created`;
       } else {
         title = `Assigned Transfer: ${patientName}`;
-        description = `From ${transfer.fromHospital} to ${transfer.toHospital}`;
+        description = `Transfer assigned to you`;
       }
 
       switch (transfer.status) {
@@ -155,8 +155,8 @@ async function getRecentActivity(userId: string, userType: string) {
         status,
         // Add structured data for better frontend parsing
         patientName,
-        fromHospital: transfer.fromHospital,
-        toHospital: transfer.toHospital,
+        fromHospital: transfer.fromHospitalName,
+        toHospital: transfer.toHospitalName,
         transferId: (transfer._id as any).toString()
       });
     });

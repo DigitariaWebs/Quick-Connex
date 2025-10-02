@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import LogoutConfirmationModal from "../modals/LogoutConfirmationModal";
 
 interface User {
   _id: string;
@@ -65,6 +66,7 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(true); // Start collapsed by default
   const [isHovered, setIsHovered] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const pathname = usePathname();
 
   // Auto-expand on hover, collapse when not hovered
@@ -80,6 +82,14 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
     if (onToggle) {
       onToggle(true);
     }
+  };
+
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    onLogout();
   };
 
   return (
@@ -181,32 +191,11 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
           {/* Bottom Actions */}
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
             <div className="space-y-1">
-              {/* Profile Button */}
-              <Link href="/profile">
-                <motion.div
-                  whileHover={{ x: isHovered ? 4 : 0 }}
-                  whileTap={{ scale: 0.98 }}
-                  title={!isHovered ? "Profile" : undefined}
-                  className={`sidebar-nav-item flex items-center space-x-3 ${
-                    isHovered ? "px-4" : "px-2"
-                  } py-3 rounded-2xl text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-all duration-200 w-full`}
-                >
-                  <div className="text-gray-500">
-                    <User size={20} />
-                  </div>
-                  {isHovered && (
-                    <span className="font-medium text-sm whitespace-nowrap truncate">
-                      Profile
-                    </span>
-                  )}
-                </motion.div>
-              </Link>
-
               {/* Logout */}
               <motion.button
                 whileHover={{ x: isHovered ? 4 : 0 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={onLogout}
+                onClick={handleLogoutClick}
                 title={!isHovered ? "Sign Out" : undefined}
                 className={`sidebar-nav-item-red flex items-center space-x-3 ${
                   isHovered ? "px-4" : "px-2"
@@ -288,21 +277,8 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
         {/* Mobile Bottom Actions */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
           <div className="space-y-1">
-            <Link
-              href="/profile"
-              onClick={() => setIsMobileOpen(false)}
-              className="flex items-center space-x-3 px-4 py-3 rounded-2xl text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-all duration-200 w-full"
-            >
-              <div className="text-gray-500">
-                <User size={20} />
-              </div>
-              <span className="font-medium text-sm whitespace-nowrap truncate">
-                Profile
-              </span>
-            </Link>
-
             <button
-              onClick={onLogout}
+              onClick={handleLogoutClick}
               className="flex items-center space-x-3 px-4 py-3 rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200 w-full"
             >
               <div className="text-red-500">
@@ -315,6 +291,13 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
           </div>
         </div>
       </motion.div>
+
+      {/* Logout Confirmation Modal */}
+      <LogoutConfirmationModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogoutConfirm}
+      />
     </>
   );
 }

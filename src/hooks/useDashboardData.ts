@@ -46,6 +46,24 @@ interface DashboardData {
   error: string | null;
 }
 
+const formatTimestamp = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+  
+  if (diffInMinutes < 1) {
+    return 'Just now';
+  } else if (diffInMinutes < 60) {
+    return `${diffInMinutes} min ago`;
+  } else if (diffInMinutes < 1440) {
+    const hours = Math.floor(diffInMinutes / 60);
+    return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  } else {
+    const days = Math.floor(diffInMinutes / 1440);
+    return `${days} day${days > 1 ? 's' : ''} ago`;
+  }
+};
+
 export function useDashboardData() {
   const { user, isAuthenticated } = useAuth();
   const { lastMessage } = useNotificationSSE();
@@ -99,7 +117,9 @@ export function useDashboardData() {
       // Calculate stats
       const stats: DashboardStats = {
         totalPending: transfers.filter((t: any) => t.status === 'pending').length,
-        totalAccepted: transfers.filter((t: any) => t.status === 'accepted').length,
+        totalAccepted: user.userType === 'employee' 
+          ? transfers.filter((t: any) => t.status === 'in_progress' && t.assignedTo?._id === user._id).length
+          : transfers.filter((t: any) => t.status === 'accepted').length,
         totalInProgress: transfers.filter((t: any) => t.status === 'in_progress').length,
         totalCompleted: transfers.filter((t: any) => t.status === 'completed').length,
         totalUrgent: transfers.filter((t: any) => t.priority === 'urgent' || t.priority === 'stat').length,
@@ -160,7 +180,7 @@ export function useDashboardData() {
           transferId: activity.transferId || activity.id,
           patientName,
           description: activity.description,
-          timestamp: activity.date,
+          timestamp: formatTimestamp(activity.date),
           priority: activity.status === 'success' ? 'low' : activity.status === 'warning' ? 'high' : 'medium',
           fromHospital: activity.fromHospital,
           toHospital: activity.toHospital,

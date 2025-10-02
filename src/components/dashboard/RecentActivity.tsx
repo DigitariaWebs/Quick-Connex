@@ -144,10 +144,6 @@ export default function RecentActivity({
                   <PriorityBadge priority={activity.priority} />
                 </div>
 
-                <p className="text-sm text-gray-600 mb-1">
-                  {activity.description}
-                </p>
-
                 {activity.fromHospital && activity.toHospital && (
                   <div className="flex items-center space-x-1 text-xs text-gray-500 mb-1">
                     <Hospital size={12} />

@@ -10,7 +10,6 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
-  Plus,
   Menu,
   Clock,
   CheckCircle2,
@@ -18,12 +17,15 @@ import {
   Users,
   MapPin,
   X,
+  ArrowRight,
+  User,
+  Calendar,
+  FileText,
 } from "lucide-react";
 import TransferRequestCard from "@/components/dashboard/TransferRequestCard";
 import Sidebar from "@/components/dashboard/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import LoadingSpinner from "@/components/dashboard/LoadingSpinner";
-import TransferFormModal from "@/components/modals/TransferFormModal";
 import TransferTimeline from "@/components/transfers/TransferTimeline";
 
 interface TransferRequest {
@@ -67,15 +69,22 @@ interface TransferRequest {
     email: string;
     userType: string;
   };
+  assignedTo?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    userType: string;
+  };
   reason: string;
   priority: "low" | "medium" | "high" | "urgent";
   status: "pending" | "accepted" | "in_progress" | "completed" | "cancelled";
   requestedDate: string;
   scheduledDate?: string;
+  completedDate?: string;
   notes?: string;
 }
 
-export default function TransfersPage() {
+export default function MyTransfersPage() {
   const router = useRouter();
   const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
   const [transfers, setTransfers] = useState<TransferRequest[]>([]);
@@ -85,12 +94,11 @@ export default function TransfersPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [filter, setFilter] = useState<
-    "all" | "pending" | "accepted" | "in_progress" | "completed" | "cancelled"
+    "all" | "in_progress" | "completed" | "cancelled"
   >("all");
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"date" | "priority">("date");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTransfer, setSelectedTransfer] =
     useState<TransferRequest | null>(null);
 
@@ -101,8 +109,8 @@ export default function TransfersPage() {
     }
   }, [authLoading, isAuthenticated, router]);
 
-  // Fetch transfers from API
-  const fetchTransfers = async (statusFilter?: string) => {
+  // Fetch accepted transfers from API
+  const fetchMyTransfers = async (statusFilter?: string) => {
     if (!isAuthenticated) return; // Don't fetch if not authenticated
 
     setLoading(true);
@@ -110,7 +118,7 @@ export default function TransfersPage() {
 
     try {
       // Build URL with status filter
-      const url = new URL("/api/transfers", window.location.origin);
+      const url = new URL("/api/transfers/my-accepted", window.location.origin);
       if (statusFilter && statusFilter !== "all") {
         url.searchParams.set("status", statusFilter);
       }
@@ -132,12 +140,12 @@ export default function TransfersPage() {
       if (data.success) {
         setTransfers(data.data.transfers || []);
       } else {
-        throw new Error(data.error || "Failed to fetch transfers");
+        throw new Error(data.error || "Failed to fetch my transfers");
       }
     } catch (error) {
-      console.error("Error fetching transfers:", error);
+      console.error("Error fetching my transfers:", error);
       setError(
-        error instanceof Error ? error.message : "Failed to fetch transfers"
+        error instanceof Error ? error.message : "Failed to fetch my transfers"
       );
     } finally {
       setLoading(false);
@@ -147,25 +155,14 @@ export default function TransfersPage() {
   // Initial fetch when authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      fetchTransfers();
+      fetchMyTransfers();
     }
   }, [isAuthenticated]);
-
-  // Reset filter for employees if they have pending selected
-  useEffect(() => {
-    if (
-      isAuthenticated &&
-      user?.userType === "employee" &&
-      filter === "pending"
-    ) {
-      setFilter("all");
-    }
-  }, [isAuthenticated, user, filter]);
 
   // Refetch when filter changes
   useEffect(() => {
     if (isAuthenticated) {
-      fetchTransfers(filter);
+      fetchMyTransfers(filter);
     }
   }, [filter, isAuthenticated]);
 
@@ -223,27 +220,19 @@ export default function TransfersPage() {
   // Statistics
   const stats = useMemo(() => {
     const total = transfers.length;
-    const pending = transfers.filter((t) => t.status === "pending").length;
-    const urgent = transfers.filter((t) => t.priority === "urgent").length;
+    const inProgress = transfers.filter(
+      (t) => t.status === "in_progress"
+    ).length;
     const completed = transfers.filter((t) => t.status === "completed").length;
+    const urgent = transfers.filter((t) => t.priority === "urgent").length;
 
-    return { total, pending, urgent, completed };
+    return { total, inProgress, completed, urgent };
   }, [transfers]);
-
-  const handleAcceptTransfer = (transferId: string) => {
-    // Refresh the transfers list to get updated data from server
-    fetchTransfers(filter);
-  };
-
-  const handleTransferUpdate = (transferId: string) => {
-    // Refresh the transfers list to get updated data from server
-    fetchTransfers(filter);
-  };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await fetchTransfers(filter);
+      await fetchMyTransfers(filter);
     } catch (error) {
       console.error("Error refreshing transfers:", error);
       // Don't show error to user during refresh, just log it
@@ -259,6 +248,11 @@ export default function TransfersPage() {
     } else {
       setSelectedTransfer(transfer);
     }
+  };
+
+  const handleTransferUpdate = (transferId: string) => {
+    // Refresh the transfers list to get updated data from server
+    fetchMyTransfers(filter);
   };
 
   const handleCloseTimeline = () => {
@@ -316,7 +310,7 @@ export default function TransfersPage() {
           <DashboardHeader
             user={user}
             onLogout={logout}
-            pageTitle="Transfers"
+            pageTitle="My Accepted Transfers"
             showSearchButton={true}
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
@@ -333,7 +327,7 @@ export default function TransfersPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">
-                    Total Transfers
+                    Total Accepted
                   </p>
                   <p className="text-2xl font-bold text-gray-900">
                     {stats.total}
@@ -342,21 +336,21 @@ export default function TransfersPage() {
               </div>
             </div>
 
-            {user?.userType === "manager" && (
-              <div className="bg-white rounded-3xl p-6 sidebar-shadow border border-gray-100">
-                <div className="flex items-center">
-                  <div className="p-2 bg-amber-100 rounded-2xl">
-                    <Clock className="w-6 h-6 text-amber-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Pending</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {stats.pending}
-                    </p>
-                  </div>
+            <div className="bg-white rounded-3xl p-6 sidebar-shadow border border-gray-100">
+              <div className="flex items-center">
+                <div className="p-2 bg-blue-100 rounded-2xl">
+                  <Clock className="w-6 h-6 text-blue-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">
+                    In Progress
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stats.inProgress}
+                  </p>
                 </div>
               </div>
-            )}
+            </div>
 
             <div className="bg-white rounded-3xl p-6 sidebar-shadow border border-gray-100">
               <div className="flex items-center">
@@ -432,8 +426,6 @@ export default function TransfersPage() {
                             setFilter(
                               e.target.value as
                                 | "all"
-                                | "pending"
-                                | "accepted"
                                 | "in_progress"
                                 | "completed"
                                 | "cancelled"
@@ -442,10 +434,6 @@ export default function TransfersPage() {
                           className="w-full appearance-none bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-700 font-medium shadow-sm hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:shadow-lg transition-all duration-200 cursor-pointer"
                         >
                           <option value="all">All Statuses</option>
-                          {user?.userType === "manager" && (
-                            <option value="pending">Pending</option>
-                          )}
-                          <option value="accepted">Accepted</option>
                           <option value="in_progress">In Progress</option>
                           <option value="completed">Completed</option>
                           <option value="cancelled">Cancelled</option>
@@ -563,26 +551,26 @@ export default function TransfersPage() {
                   className="col-span-full text-center py-12 bg-gray-50 rounded-3xl sidebar-shadow"
                 >
                   <div className="flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 bg-green-50 rounded-3xl flex items-center justify-center mb-4">
-                      <MapPin size={24} className="text-green-400" />
+                    <div className="w-16 h-16 bg-blue-50 rounded-3xl flex items-center justify-center mb-4">
+                      <User size={24} className="text-blue-400" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                      No transfer requests found
+                      No accepted transfers found
                     </h3>
                     <p className="text-gray-500 max-w-sm text-sm">
                       {searchTerm
                         ? `No results for "${searchTerm}". Try a different search term.`
                         : filter === "all"
-                        ? "There are no transfer requests at the moment."
-                        : `There are no ${filter.replace(
+                        ? "You haven't accepted any transfers yet."
+                        : `You don't have any ${filter.replace(
                             "_",
                             " "
-                          )} transfer requests.`}
+                          )} transfers.`}
                     </p>
                     {searchTerm && (
                       <button
                         onClick={() => setSearchTerm("")}
-                        className="mt-4 px-4 py-2 bg-green-100 text-green-700 rounded-2xl text-sm font-medium hover:bg-green-200 transition-colors"
+                        className="mt-4 px-4 py-2 bg-blue-100 text-blue-700 rounded-2xl text-sm font-medium hover:bg-blue-200 transition-colors"
                       >
                         Clear Search
                       </button>
@@ -620,7 +608,7 @@ export default function TransfersPage() {
                   >
                     <TransferRequestCard
                       transfer={transfer}
-                      onAccept={handleAcceptTransfer}
+                      onAccept={() => {}} // No accept action needed for accepted transfers
                       onCancel={handleTransferUpdate}
                       onSelect={handleSelectTransfer}
                       currentUserId={user?._id || ""}
@@ -653,31 +641,6 @@ export default function TransfersPage() {
           isVisible={!!selectedTransfer}
         />
       )}
-
-      {/* Floating Action Button - Only show for managers */}
-      {user?.userType === "manager" && (
-        <motion.button
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setIsModalOpen(true)}
-          className="fixed bottom-6 right-6 w-16 h-16 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-40"
-        >
-          <Plus size={24} className="text-white" />
-        </motion.button>
-      )}
-
-      {/* Transfer Form Modal */}
-      <TransferFormModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSuccess={() => {
-          // Refresh the transfers list when a new transfer is created
-          handleRefresh();
-          setIsModalOpen(false);
-        }}
-      />
     </div>
   );
 }

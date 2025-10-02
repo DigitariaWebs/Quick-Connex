@@ -1,0 +1,215 @@
+/**
+ * Transfer Cancellation API
+ * 
+ * This endpoint handles transfer cancellation by employees within the 4-hour window.
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import dbConnect from '@/lib/mongoose';
+import Transfer from '@/models/Transfer';
+import User from '@/models/User';
+import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware';
+import TimelineService from '@/lib/timeline-service';
+import TransferNotificationService from '@/lib/communication/transfer-notification-service';
+import { canCancelTransfer } from '@/lib/transfer-cancellation-utils';
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ transferId: string }> }
+) {
+  try {
+    const { transferId } = await params;
+    const body = await request.json();
+    const { reason } = body;
+
+    if (!transferId) {
+      return createErrorResponse('Transfer ID is required', 'VALIDATION_ERROR', 400);
+    }
+
+    // Authenticate user
+    const authResult = await requireEmployeeOrManager(request);
+    if (!authResult.success) {
+      return authResult.response;
+    }
+
+    const user = authResult.user;
+
+    await dbConnect();
+
+    // Find the transfer
+    const transfer = await Transfer.findById(transferId)
+      .populate('requestedBy', 'firstName lastName email phone userType')
+      .populate('assignedTo', 'firstName lastName email phone userType');
+
+    if (!transfer) {
+      return createErrorResponse('Transfer not found', 'NOT_FOUND', 404);
+    }
+
+    // Check if transfer can be cancelled
+    if (!canCancelTransfer(transfer)) {
+      return createErrorResponse(
+        'Transfer cannot be cancelled. Either the 4-hour window has expired or the transfer is not in a cancellable state.',
+        'CANCELLATION_NOT_ALLOWED',
+        400
+      );
+    }
+
+    // Only the assigned employee or a manager/admin can cancel
+    if (user.userType === 'employee') {
+      // Debug logging to help identify the issue
+      console.log('Debug - User ID:', user._id);
+      console.log('Debug - User ID type:', typeof user._id);
+      console.log('Debug - Assigned To:', transfer.assignedTo);
+      console.log('Debug - Assigned To type:', typeof transfer.assignedTo);
+      
+      // Since assignedTo is populated, we need to compare with the _id field
+      const assignedToId = transfer.assignedTo?._id?.toString();
+      const userId = user._id.toString();
+      
+      console.log('Debug - Assigned To ID:', assignedToId);
+      console.log('Debug - User ID:', userId);
+      console.log('Debug - IDs match:', assignedToId === userId);
+      
+      // Also try comparing without toString() in case of type issues
+      const assignedToIdRaw = transfer.assignedTo?._id;
+      const userIdRaw = user._id;
+      console.log('Debug - Raw comparison:', assignedToIdRaw?.equals?.(userIdRaw) || (assignedToIdRaw && userIdRaw && assignedToIdRaw.toString() === userIdRaw.toString()));
+      
+      // Try multiple comparison methods
+      const isAuthorized = assignedToId === userId || 
+                          assignedToIdRaw?.equals?.(userIdRaw) || 
+                          (assignedToIdRaw && userIdRaw && assignedToIdRaw.toString() === userIdRaw.toString());
+      
+      if (!isAuthorized) {
+        return createErrorResponse(
+          `Only the assigned employee can cancel this transfer. Assigned to: ${assignedToId}, Current user: ${userId}`,
+          'UNAUTHORIZED',
+          403
+        );
+      }
+    }
+
+    // Create timeline events for cancellation
+    const cancellationEvent = TimelineService.createCancellationEvent({
+      id: user._id as any,
+      name: `${user.firstName} ${user.lastName}`,
+      email: user.email,
+      userType: user.userType
+    }, reason || 'Transfer cancelled by employee within 4-hour window');
+
+    const statusChangeEvent = TimelineService.createStatusChangeEvent(
+      {
+        id: user._id as any,
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        userType: user.userType
+      },
+      'in_progress',
+      'cancelled',
+      reason || 'Transfer cancelled by employee within 4-hour window'
+    );
+
+    // Update transfer
+    transfer.status = 'cancelled';
+    transfer.lastModifiedBy = user._id as any;
+    
+    // Add to status history
+    transfer.statusHistory.push({
+      status: 'cancelled',
+      changedBy: user._id as any,
+      changedAt: new Date(),
+      reason: reason || 'Transfer cancelled by employee within 4-hour window'
+    });
+
+    // Add timeline events
+    if (!transfer.timeline) {
+      transfer.timeline = [];
+    }
+    transfer.timeline.push(cancellationEvent, statusChangeEvent);
+
+    await transfer.save();
+
+    // Send notifications
+    try {
+      // TODO: Implement sendTransferCancelledNotification method
+      console.log('Transfer cancelled - notification would be sent here');
+    } catch (notificationError) {
+      console.error('Error sending cancellation notifications:', notificationError);
+      // Don't fail the cancellation if notifications fail
+    }
+
+    return createSuccessResponse({
+      success: true,
+      message: 'Transfer cancelled successfully',
+      transfer: {
+        id: transfer._id,
+        transferId: transfer.transferId,
+        status: transfer.status,
+        cancelledAt: new Date(),
+        cancelledBy: {
+          id: user._id,
+          name: `${user.firstName} ${user.lastName}`,
+          email: user.email
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error cancelling transfer:', error);
+    return createErrorResponse('Internal server error', 'INTERNAL_ERROR', 500);
+  }
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ transferId: string }> }
+) {
+  try {
+    const { transferId } = await params;
+
+    if (!transferId) {
+      return createErrorResponse('Transfer ID is required', 'VALIDATION_ERROR', 400);
+    }
+
+    // Authenticate user
+    const authResult = await requireEmployeeOrManager(request);
+    if (!authResult.success) {
+      return authResult.response;
+    }
+
+    await dbConnect();
+
+    // Find the transfer
+    const transfer = await Transfer.findById(transferId)
+      .populate('requestedBy', 'firstName lastName email phone userType')
+      .populate('assignedTo', 'firstName lastName email phone userType') as any;
+
+    if (!transfer) {
+      return createErrorResponse('Transfer not found', 'NOT_FOUND', 404);
+    }
+
+    const user = authResult.user;
+    const canCancel = canCancelTransfer(transfer);
+
+    return createSuccessResponse({
+      transfer: {
+        id: transfer._id,
+        transferId: transfer.transferId,
+        status: transfer.status,
+        acceptedAt: transfer.acceptedAt,
+        canCancel: canCancel,
+        assignedTo: transfer.assignedTo ? {
+          id: transfer.assignedTo._id,
+          name: transfer.assignedTo.firstName && transfer.assignedTo.lastName 
+            ? `${transfer.assignedTo.firstName} ${transfer.assignedTo.lastName}`
+            : 'Unknown User',
+          email: transfer.assignedTo.email || 'Unknown Email'
+        } : null
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching transfer cancellation info:', error);
+    return createErrorResponse('Internal server error', 'INTERNAL_ERROR', 500);
+  }
+}

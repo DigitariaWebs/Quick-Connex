@@ -394,8 +394,8 @@ export class CommunicationService implements ICommunicationService {
           <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
             <h3>Transfer Details</h3>
             <p><strong>Patient:</strong> ${notification.data.transfer.patient?.firstName} ${notification.data.transfer.patient?.lastName}</p>
-            <p><strong>From:</strong> ${notification.data.transfer.fromHospital}</p>
-            <p><strong>To:</strong> ${notification.data.transfer.toHospital}</p>
+            <p><strong>From:</strong> ${notification.data.transfer.fromHospitalName || notification.data.transfer.fromHospital}</p>
+            <p><strong>To:</strong> ${notification.data.transfer.toHospitalName || notification.data.transfer.toHospital}</p>
             <p><strong>Status:</strong> ${notification.data.transfer.status}</p>
             <p><strong>Priority:</strong> ${notification.data.transfer.priority}</p>
           </div>
@@ -415,7 +415,7 @@ export class CommunicationService implements ICommunicationService {
     if (notification.data?.transfer) {
       const transfer = notification.data.transfer;
       text += ` Patient: ${transfer.patient?.firstName} ${transfer.patient?.lastName}`;
-      text += ` From: ${transfer.fromHospital} To: ${transfer.toHospital}`;
+      text += ` From: ${transfer.fromHospitalName || transfer.fromHospital} To: ${transfer.toHospitalName || transfer.toHospital}`;
     }
 
     // Truncate if too long

@@ -15,6 +15,10 @@ import SchedulingNotifications from "@/components/notifications/SchedulingNotifi
 import NotificationPopupManager from "@/components/notifications/NotificationPopupManager";
 import SSEDebugger from "@/components/notifications/SSEDebugger";
 import TransferFormModal from "@/components/modals/TransferFormModal";
+import MyAcceptedTransfersModal from "@/components/modals/MyAcceptedTransfersModal";
+import SearchTransfersModal from "@/components/modals/SearchTransfersModal";
+import PendingTransfersModal from "@/components/modals/PendingTransfersModal";
+import TodayScheduleModal from "@/components/modals/TodayScheduleModal";
 
 interface User {
   _id: string;
@@ -39,6 +43,10 @@ export default function EmployeeDashboard() {
   } = useDashboardData();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [isMyTransfersModalOpen, setIsMyTransfersModalOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -180,12 +188,14 @@ export default function EmployeeDashboard() {
                   userType={user.userType}
                   pendingCount={stats.totalPending}
                   urgentCount={stats.totalUrgent}
+                  acceptedCount={stats.totalAccepted}
                   scheduledToday={stats.scheduledToday}
                   onNewTransfer={() => setIsTransferModalOpen(true)}
-                  onViewPending={() => router.push("/transfers?status=pending")}
+                  onViewPending={() => setIsPendingModalOpen(true)}
                   onViewUrgent={() => router.push("/transfers?priority=urgent")}
-                  onViewSchedule={() => router.push("/calendar")}
-                  onSearchTransfers={() => router.push("/transfers")}
+                  onViewAccepted={() => setIsMyTransfersModalOpen(true)}
+                  onViewSchedule={() => setIsScheduleModalOpen(true)}
+                  onSearchTransfers={() => setIsSearchModalOpen(true)}
                   onGenerateReport={() => router.push("/reports")}
                 />
               </div>
@@ -217,6 +227,52 @@ export default function EmployeeDashboard() {
           setIsTransferModalOpen(false);
         }}
       />
+
+      {/* My Accepted Transfers Modal */}
+      {user && (
+        <MyAcceptedTransfersModal
+          isOpen={isMyTransfersModalOpen}
+          onClose={() => setIsMyTransfersModalOpen(false)}
+          currentUserId={user._id}
+          currentUserType={user.userType}
+        />
+      )}
+
+      {/* Search Transfers Modal */}
+      <SearchTransfersModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        onSelectTransfer={(transfer) => {
+          // Navigate to transfer details or handle selection
+          router.push(`/transfers?selected=${transfer._id}`);
+        }}
+      />
+
+      {/* Pending Transfers Modal */}
+      {user && (
+        <PendingTransfersModal
+          isOpen={isPendingModalOpen}
+          onClose={() => setIsPendingModalOpen(false)}
+          onSelectTransfer={(transfer) => {
+            router.push(`/transfers?selected=${transfer._id}`);
+          }}
+          currentUserId={user._id}
+          currentUserType={user.userType}
+        />
+      )}
+
+      {/* Today's Schedule Modal */}
+      {user && (
+        <TodayScheduleModal
+          isOpen={isScheduleModalOpen}
+          onClose={() => setIsScheduleModalOpen(false)}
+          onSelectTransfer={(transfer) => {
+            router.push(`/transfers?selected=${transfer._id}`);
+          }}
+          currentUserId={user._id}
+          currentUserType={user.userType}
+        />
+      )}
     </div>
   );
 }

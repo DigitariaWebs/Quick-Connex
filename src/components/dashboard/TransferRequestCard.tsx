@@ -14,8 +14,13 @@ import {
   CheckCircle2,
   Package,
   Stethoscope,
+  X,
 } from "lucide-react";
 import { TransferCategory } from "@/constants/transfer-constants";
+import {
+  canCancelTransfer,
+  getRemainingCancellationTimeString,
+} from "@/lib/transfer-cancellation-utils";
 
 interface TransferRequest {
   _id: string;
@@ -110,6 +115,7 @@ interface TransferRequest {
 interface TransferRequestCardProps {
   transfer: TransferRequest;
   onAccept: (transferId: string) => void;
+  onCancel?: (transferId: string) => void;
   onSelect: (transfer: TransferRequest) => void;
   currentUserId: string;
   currentUserType: "manager" | "employee";
@@ -191,12 +197,14 @@ function getTransferDisplayInfo(transfer: TransferRequest) {
 export default function TransferRequestCard({
   transfer,
   onAccept,
+  onCancel,
   onSelect,
   currentUserId,
   currentUserType,
   isSelected = false,
 }: TransferRequestCardProps) {
   const [isAccepting, setIsAccepting] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Get display information based on transfer type
   const displayInfo = getTransferDisplayInfo(transfer);
@@ -296,6 +304,7 @@ export default function TransferRequestCard({
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Include cookies for authentication
         body: JSON.stringify({
           assignedTo: currentUserId,
           notes: "Transfer accepted by employee",
@@ -306,6 +315,8 @@ export default function TransferRequestCard({
 
       if (data.success) {
         onAccept(transfer._id);
+        // Show success message
+        alert("Transfer accepted successfully!");
       } else {
         alert(data.error || "Failed to accept transfer");
       }
@@ -314,6 +325,42 @@ export default function TransferRequestCard({
       alert("Network error occurred");
     } finally {
       setIsAccepting(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    const reason = prompt(
+      "Please provide a reason for cancelling this transfer:"
+    );
+    if (!reason) return;
+
+    setIsCancelling(true);
+    try {
+      const response = await fetch(`/api/transfers/${transfer._id}/cancel`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Include cookies for authentication
+        body: JSON.stringify({
+          reason: reason,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        onCancel?.(transfer._id);
+        // Show success message
+        alert("Transfer cancelled successfully!");
+      } else {
+        alert(data.error || "Failed to cancel transfer");
+      }
+    } catch (error) {
+      console.error("Error cancelling transfer:", error);
+      alert("Network error occurred");
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -390,11 +437,6 @@ export default function TransferRequestCard({
               className={`px-2.5 py-1 rounded-2xl text-xs font-semibold ${priorityColors.bg} ${priorityColors.text} border ${priorityColors.border} uppercase`}
             >
               {transfer.priority}
-            </div>
-            <div
-              className={`px-2 py-1 rounded-lg text-xs font-medium ${displayInfo.bgColor} ${displayInfo.iconColor} border border-current/20`}
-            >
-              {displayInfo.category}
             </div>
           </div>
         </div>
@@ -506,7 +548,7 @@ export default function TransferRequestCard({
         </div>
 
         {/* Actions */}
-        {transfer.status === "pending" && currentUserType === "employee" ? (
+        {transfer.status === "accepted" && currentUserType === "employee" ? (
           <div className="mt-4 flex space-x-3">
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -515,7 +557,7 @@ export default function TransferRequestCard({
                 handleAccept();
               }}
               disabled={isAccepting}
-              className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-2xl font-medium hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-2xl font-medium hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               {isAccepting ? "Accepting..." : "Accept Transfer"}
             </motion.button>
@@ -534,6 +576,15 @@ export default function TransferRequestCard({
               />
             </motion.div>
           </div>
+        ) : transfer.status === "accepted" && currentUserType === "employee" ? (
+          <div className="mt-4 flex justify-end">
+            <div className="px-4 py-2 bg-green-100 text-green-800 rounded-2xl font-medium text-sm border border-green-200">
+              <div className="flex items-center">
+                <CheckCircle2 size={16} className="mr-2" />
+                Available for Assignment
+              </div>
+            </div>
+          </div>
         ) : transfer.status === "pending" && currentUserType === "manager" ? (
           <div className="mt-4 flex justify-end">
             <div className="px-4 py-2 bg-amber-100 text-amber-800 rounded-2xl font-medium text-sm border border-amber-200">
@@ -542,6 +593,36 @@ export default function TransferRequestCard({
                 Waiting for Admin Approval
               </div>
             </div>
+          </div>
+        ) : transfer.status === "in_progress" &&
+          currentUserType === "employee" ? (
+          <div className="mt-4 flex space-x-3">
+            {canCancelTransfer(transfer) ? (
+              <>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent card click
+                    handleCancel();
+                  }}
+                  disabled={isCancelling}
+                  className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-2xl font-medium hover:from-red-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                >
+                  {isCancelling ? "Cancelling..." : "Cancel Transfer"}
+                </motion.button>
+                <div className="px-3 py-2 bg-blue-100 text-blue-800 rounded-2xl font-medium text-sm border border-blue-200 flex items-center">
+                  <Clock size={16} className="mr-2" />
+                  {getRemainingCancellationTimeString(transfer)}
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 px-4 py-2 bg-blue-100 text-blue-800 rounded-2xl font-medium text-sm border border-blue-200">
+                <div className="flex items-center">
+                  <ArrowRight size={16} className="mr-2" />
+                  In Progress
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="mt-4 flex justify-end">
