@@ -29,7 +29,7 @@ import TransferTimeline from "@/components/transfers/TransferTimeline";
 interface TransferRequest {
   _id: string;
   transferId: string;
-  patientInfo: {
+  patientInfo?: {
     firstName: string;
     lastName: string;
     age: number;
@@ -183,13 +183,13 @@ export default function TransfersPage() {
 
     const matchesSearch =
       !searchTerm ||
-      transfer.patientInfo.firstName
-        .toLowerCase()
+      transfer.patientInfo?.firstName
+        ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      transfer.patientInfo.lastName
-        .toLowerCase()
+      transfer.patientInfo?.lastName
+        ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      transfer.patientInfo.dossierNumber
+      transfer.patientInfo?.dossierNumber
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
       transfer.transferId.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -3,11 +3,58 @@ import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 // Define the interface for Transfer document
 export interface ITransfer extends Document {
   transferId: string;
-  patientInfo: {
+  transferCategory: 'patient' | 'envelope' | 'patient_file' | 'medical_equipment';
+  
+  // Patient-specific data (for backward compatibility and patient transfers)
+  patientInfo?: {
     firstName: string;
     lastName: string;
     age: number;
     dossierNumber?: string;
+  };
+  
+  // Generic transfer data (for all transfer types)
+  transferData: {
+    // For patient transfers
+    patientInfo?: {
+      firstName: string;
+      lastName: string;
+      age: number;
+      dossierNumber?: string;
+    };
+    
+    // For envelope/box transfers
+    envelopeInfo?: {
+      envelopeNumber?: string;
+      senderName: string;
+      recipientName: string;
+      contents: string;
+      weight?: number;
+      dimensions?: {
+        length: number;
+        width: number;
+        height: number;
+      };
+    };
+    
+    // For patient file transfers
+    fileInfo?: {
+      patientName: string;
+      dossierNumber: string;
+      fileType: string;
+      fileCount: number;
+      urgency: 'low' | 'medium' | 'high' | 'urgent';
+    };
+    
+    // For medical equipment transfers
+    equipmentInfo?: {
+      equipmentName: string;
+      serialNumber?: string;
+      model: string;
+      condition: 'excellent' | 'good' | 'fair' | 'poor';
+      maintenanceRequired: boolean;
+      specialInstructions?: string;
+    };
   };
   fromHospital: Types.ObjectId; // Reference to Hospital
   toHospital: Types.ObjectId; // Reference to Hospital
@@ -78,27 +125,147 @@ const TransferSchema = new Schema<ITransfer>({
     unique: true,
     trim: true
   },
+  transferCategory: {
+    type: String,
+    required: true,
+    enum: ['patient', 'envelope', 'patient_file', 'medical_equipment'],
+    default: 'patient'
+  },
+  
+  // Legacy patientInfo for backward compatibility
   patientInfo: {
     firstName: {
       type: String,
-      required: true,
       trim: true
     },
     lastName: {
       type: String,
-      required: true,
       trim: true
     },
     age: {
       type: Number,
-      required: true,
       min: 0,
       max: 120
     },
     dossierNumber: {
       type: String,
-      required: true,
       trim: true
+    }
+  },
+  
+  // New polymorphic transfer data
+  transferData: {
+    // Patient transfer data
+    patientInfo: {
+      firstName: {
+        type: String,
+        trim: true
+      },
+      lastName: {
+        type: String,
+        trim: true
+      },
+      age: {
+        type: Number,
+        min: 0,
+        max: 120
+      },
+      dossierNumber: {
+        type: String,
+        trim: true
+      }
+    },
+    
+    // Envelope/box transfer data
+    envelopeInfo: {
+      envelopeNumber: {
+        type: String,
+        trim: true
+      },
+      senderName: {
+        type: String,
+        trim: true
+      },
+      recipientName: {
+        type: String,
+        trim: true
+      },
+      contents: {
+        type: String,
+        trim: true
+      },
+      weight: {
+        type: Number,
+        min: 0
+      },
+      dimensions: {
+        length: {
+          type: Number,
+          min: 0
+        },
+        width: {
+          type: Number,
+          min: 0
+        },
+        height: {
+          type: Number,
+          min: 0
+        }
+      }
+    },
+    
+    // Patient file transfer data
+    fileInfo: {
+      patientName: {
+        type: String,
+        trim: true
+      },
+      dossierNumber: {
+        type: String,
+        trim: true
+      },
+      fileType: {
+        type: String,
+        trim: true
+      },
+      fileCount: {
+        type: Number,
+        min: 1
+      },
+      urgency: {
+        type: String,
+        enum: ['low', 'medium', 'high', 'urgent'],
+        default: 'medium'
+      }
+    },
+    
+    // Medical equipment transfer data
+    equipmentInfo: {
+      equipmentName: {
+        type: String,
+        trim: true
+      },
+      serialNumber: {
+        type: String,
+        trim: true
+      },
+      model: {
+        type: String,
+        trim: true
+      },
+      condition: {
+        type: String,
+        enum: ['excellent', 'good', 'fair', 'poor'],
+        default: 'good'
+      },
+      maintenanceRequired: {
+        type: Boolean,
+        default: false
+      },
+      specialInstructions: {
+        type: String,
+        trim: true
+      }
     }
   },
   fromHospital: { 

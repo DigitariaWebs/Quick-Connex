@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
       return {
         id: transfer._id,
         transferId: transfer.transferId,
-        title: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`,
+        title: transfer.patientInfo ? `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}` : 'Unknown Patient',
         start: startDateTime.toISOString(),
         end: endDateTime.toISOString(),
         allDay: false,

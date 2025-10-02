@@ -28,6 +28,14 @@ export enum TransferType {
   SCHEDULED = 'scheduled'
 }
 
+// Transfer Category Enum (new)
+export enum TransferCategory {
+  PATIENT = 'patient',
+  ENVELOPE = 'envelope',
+  PATIENT_FILE = 'patient_file',
+  MEDICAL_EQUIPMENT = 'medical_equipment'
+}
+
 // Note: Transport Type and Recurrence Pattern enums removed as they are not needed
 
 // Note: Conflict types removed as hospitals handle their own logistics
@@ -45,7 +53,10 @@ export const TRANSFER_CONFIG = {
   ID_PREFIXES: {
     TRANSFER: 'TRF',
     PATIENT: 'PAT',
-    NOTIFICATION: 'NOT'
+    NOTIFICATION: 'NOT',
+    ENVELOPE: 'ENV',
+    FILE: 'FIL',
+    EQUIPMENT: 'EQP'
   },
   
   // Validation Rules
@@ -193,6 +204,50 @@ export const PRIORITY_DISPLAY_INFO = {
     textColor: 'text-red-800',
     borderColor: 'border-red-200',
     gradient: 'from-red-500 to-pink-500'
+  }
+} as const;
+
+// Transfer Category Display Information
+export const TRANSFER_CATEGORY_DISPLAY_INFO = {
+  [TransferCategory.PATIENT]: {
+    label: 'Patient Transfer',
+    color: 'blue',
+    icon: 'user',
+    description: 'Patient transfer between hospitals',
+    bgColor: 'bg-blue-100',
+    textColor: 'text-blue-800',
+    borderColor: 'border-blue-200',
+    gradient: 'from-blue-500 to-cyan-500'
+  },
+  [TransferCategory.ENVELOPE]: {
+    label: 'Envelope/Box Transfer',
+    color: 'orange',
+    icon: 'package',
+    description: 'Transfer of envelopes or boxes',
+    bgColor: 'bg-orange-100',
+    textColor: 'text-orange-800',
+    borderColor: 'border-orange-200',
+    gradient: 'from-orange-500 to-amber-500'
+  },
+  [TransferCategory.PATIENT_FILE]: {
+    label: 'Patient File Transfer',
+    color: 'purple',
+    icon: 'file-text',
+    description: 'Transfer of patient medical files',
+    bgColor: 'bg-purple-100',
+    textColor: 'text-purple-800',
+    borderColor: 'border-purple-200',
+    gradient: 'from-purple-500 to-violet-500'
+  },
+  [TransferCategory.MEDICAL_EQUIPMENT]: {
+    label: 'Medical Equipment Transfer',
+    color: 'green',
+    icon: 'stethoscope',
+    description: 'Transfer of medical equipment or circuits',
+    bgColor: 'bg-green-100',
+    textColor: 'text-green-800',
+    borderColor: 'border-green-200',
+    gradient: 'from-green-500 to-emerald-500'
   }
 } as const;
 

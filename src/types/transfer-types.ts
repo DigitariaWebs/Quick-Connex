@@ -10,6 +10,7 @@ import {
   TransferStatus,
   TransferPriority,
   TransferType,
+  TransferCategory,
   UserRole
 } from '@/constants/transfer-constants';
 
@@ -28,6 +29,45 @@ export interface PatientInfo {
   lastName: string;
   age: number;
   dossierNumber: string;
+}
+
+// Transfer-specific data interfaces
+export interface EnvelopeInfo {
+  envelopeNumber?: string;
+  senderName: string;
+  recipientName: string;
+  contents: string;
+  weight?: number;
+  dimensions?: {
+    length: number;
+    width: number;
+    height: number;
+  };
+}
+
+export interface FileInfo {
+  patientName: string;
+  dossierNumber: string;
+  fileType: string;
+  fileCount: number;
+  urgency: 'low' | 'medium' | 'high' | 'urgent';
+}
+
+export interface EquipmentInfo {
+  equipmentName: string;
+  serialNumber?: string;
+  model: string;
+  condition: 'excellent' | 'good' | 'fair' | 'poor';
+  maintenanceRequired: boolean;
+  specialInstructions?: string;
+}
+
+// Polymorphic transfer data
+export interface TransferData {
+  patientInfo?: PatientInfo;
+  envelopeInfo?: EnvelopeInfo;
+  fileInfo?: FileInfo;
+  equipmentInfo?: EquipmentInfo;
 }
 
 // User Information
@@ -111,7 +151,14 @@ export interface StatusHistoryEntry {
 // Transfer Document Interface (matches MongoDB schema)
 export interface ITransfer extends BaseEntity {
   transferId: string;
-  patientInfo: PatientInfo;
+  transferCategory: TransferCategory;
+  
+  // Legacy patientInfo for backward compatibility
+  patientInfo?: PatientInfo;
+  
+  // New polymorphic transfer data
+  transferData: TransferData;
+  
   fromHospital: Types.ObjectId; // Reference to Hospital
   toHospital: Types.ObjectId; // Reference to Hospital
   fromHospitalName: string; // Keep name for backward compatibility and display
@@ -142,10 +189,41 @@ export interface ITransfer extends BaseEntity {
 
 // Transfer Request Data (for creating new transfers)
 export interface TransferRequestData {
-  patientFirstName: string;
-  patientLastName: string;
-  patientAge: number;
-  patientDossierNumber: string;
+  transferCategory: TransferCategory;
+  
+  // Patient transfer fields (legacy)
+  patientFirstName?: string;
+  patientLastName?: string;
+  patientAge?: number;
+  patientDossierNumber?: string;
+  
+  // Envelope transfer fields
+  envelopeNumber?: string;
+  senderName?: string;
+  recipientName?: string;
+  contents?: string;
+  weight?: number;
+  dimensions?: {
+    length: number;
+    width: number;
+    height: number;
+  };
+  
+  // File transfer fields
+  patientName?: string;
+  fileType?: string;
+  fileCount?: number;
+  fileUrgency?: 'low' | 'medium' | 'high' | 'urgent';
+  
+  // Equipment transfer fields
+  equipmentName?: string;
+  serialNumber?: string;
+  model?: string;
+  condition?: 'excellent' | 'good' | 'fair' | 'poor';
+  maintenanceRequired?: boolean;
+  specialInstructions?: string;
+  
+  // Common fields
   fromHospital: string; // Hospital name for backward compatibility
   toHospital: string; // Hospital name for backward compatibility
   fromHospitalId?: string; // Hospital ID for new references

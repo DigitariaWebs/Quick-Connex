@@ -12,12 +12,219 @@ import { EmailMessage, SMSMessage } from '@/types/communication-types';
 import AdminService from '@/lib/admin-service';
 import User from '@/models/User';
 import dbConnect from '@/lib/mongoose';
+import { TransferCategory } from '@/constants/transfer-constants';
 
 export class TransferNotificationService {
   private communicationService: CommunicationService;
 
   constructor() {
     this.communicationService = new CommunicationService();
+  }
+
+  /**
+   * Extract transfer display information based on transfer category
+   */
+  private getTransferDisplayInfo(transfer: any) {
+    const category = transfer.transferCategory || TransferCategory.PATIENT;
+    
+    switch (category) {
+      case TransferCategory.PATIENT:
+        const patientInfo = transfer.patientInfo || transfer.transferData?.patientInfo;
+        return {
+          title: patientInfo ? `${patientInfo.firstName} ${patientInfo.lastName}` : 'Patient Transfer',
+          subtitle: patientInfo?.dossierNumber || 'Patient',
+          icon: '👤',
+          category: 'Patient',
+          details: {
+            name: patientInfo ? `${patientInfo.firstName} ${patientInfo.lastName}` : 'Patient',
+            age: patientInfo?.age ? `${patientInfo.age} years old` : 'Age not specified',
+            dossier: patientInfo?.dossierNumber || 'N/A'
+          }
+        };
+        
+      case TransferCategory.ENVELOPE:
+        const envelopeInfo = transfer.transferData?.envelopeInfo;
+        return {
+          title: envelopeInfo ? `Envelope: ${envelopeInfo.senderName} → ${envelopeInfo.recipientName}` : 'Envelope Transfer',
+          subtitle: envelopeInfo?.contents || 'Package/Envelope',
+          icon: '📦',
+          category: 'Envelope',
+          details: {
+            sender: envelopeInfo?.senderName || 'Unknown',
+            recipient: envelopeInfo?.recipientName || 'Unknown',
+            contents: envelopeInfo?.contents || 'Package contents',
+            weight: envelopeInfo?.weight ? `${envelopeInfo.weight}kg` : 'Weight not specified'
+          }
+        };
+        
+      case TransferCategory.PATIENT_FILE:
+        const fileInfo = transfer.transferData?.fileInfo;
+        return {
+          title: fileInfo ? `Files: ${fileInfo.patientName}` : 'File Transfer',
+          subtitle: fileInfo ? `${fileInfo.fileCount} ${fileInfo.fileType} files` : 'Patient Files',
+          icon: '📁',
+          category: 'Files',
+          details: {
+            patient: fileInfo?.patientName || 'Unknown',
+            dossier: fileInfo?.dossierNumber || 'N/A',
+            fileType: fileInfo?.fileType || 'Unknown',
+            fileCount: fileInfo?.fileCount || 0,
+            urgency: fileInfo?.urgency || 'medium'
+          }
+        };
+        
+      case TransferCategory.MEDICAL_EQUIPMENT:
+        const equipmentInfo = transfer.transferData?.equipmentInfo;
+        return {
+          title: equipmentInfo ? equipmentInfo.equipmentName : 'Equipment Transfer',
+          subtitle: equipmentInfo ? `${equipmentInfo.model} (${equipmentInfo.condition})` : 'Medical Equipment',
+          icon: '🏥',
+          category: 'Equipment',
+          details: {
+            name: equipmentInfo?.equipmentName || 'Unknown',
+            model: equipmentInfo?.model || 'Unknown',
+            condition: equipmentInfo?.condition || 'Unknown',
+            serialNumber: equipmentInfo?.serialNumber || 'N/A',
+            maintenanceRequired: equipmentInfo?.maintenanceRequired || false
+          }
+        };
+        
+      default:
+        return {
+          title: 'Transfer',
+          subtitle: 'Unknown Type',
+          icon: '❓',
+          category: 'Unknown',
+          details: {
+            name: 'Unknown Transfer',
+            type: 'Unknown'
+          }
+        };
+    }
+  }
+
+  /**
+   * Generate category-specific content for email templates
+   */
+  private generateCategorySpecificContent(transferData: any): string {
+    const category = transferData.transferCategory || TransferCategory.PATIENT;
+    
+    switch (category) {
+      case TransferCategory.PATIENT:
+        return `
+          <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #10b981;">
+            <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">👤 Patient Information</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div>
+                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Name:</strong></p>
+                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.patientName}</p>
+              </div>
+              <div>
+                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Age:</strong></p>
+                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.patientAge}</p>
+              </div>
+              <div style="grid-column: 1 / -1;">
+                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Dossier Number:</strong></p>
+                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.dossierNumber}</p>
+              </div>
+            </div>
+          </div>
+        `;
+        
+      case TransferCategory.ENVELOPE:
+        return `
+          <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #f59e0b;">
+            <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">📦 Envelope Information</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div>
+                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Sender:</strong></p>
+                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.sender || 'N/A'}</p>
+              </div>
+              <div>
+                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Recipient:</strong></p>
+                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.recipient || 'N/A'}</p>
+              </div>
+              <div>
+                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Contents:</strong></p>
+                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.contents || 'N/A'}</p>
+              </div>
+              <div>
+                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Weight:</strong></p>
+                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.weight || 'N/A'}</p>
+              </div>
+            </div>
+          </div>
+        `;
+        
+      case TransferCategory.PATIENT_FILE:
+        return `
+          <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #8b5cf6;">
+            <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">📁 File Information</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div>
+                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Patient:</strong></p>
+                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.patient || 'N/A'}</p>
+              </div>
+              <div>
+                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Dossier:</strong></p>
+                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.dossier || 'N/A'}</p>
+              </div>
+              <div>
+                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>File Type:</strong></p>
+                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.fileType || 'N/A'}</p>
+              </div>
+              <div>
+                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>File Count:</strong></p>
+                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.fileCount || 'N/A'}</p>
+              </div>
+              <div>
+                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Urgency:</strong></p>
+                <span style="background: ${transferData.urgency === 'urgent' ? '#ef4444' : '#f59e0b'}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase;">${transferData.urgency || 'medium'}</span>
+              </div>
+            </div>
+          </div>
+        `;
+        
+      case TransferCategory.MEDICAL_EQUIPMENT:
+        return `
+          <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #10b981;">
+            <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">🏥 Equipment Information</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div>
+                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Equipment:</strong></p>
+                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.name || 'N/A'}</p>
+              </div>
+              <div>
+                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Model:</strong></p>
+                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.model || 'N/A'}</p>
+              </div>
+              <div>
+                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Condition:</strong></p>
+                <span style="background: ${transferData.condition === 'excellent' ? '#10b981' : transferData.condition === 'good' ? '#3b82f6' : transferData.condition === 'fair' ? '#f59e0b' : '#ef4444'}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase;">${transferData.condition || 'unknown'}</span>
+              </div>
+              <div>
+                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Serial Number:</strong></p>
+                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.serialNumber || 'N/A'}</p>
+              </div>
+              ${transferData.maintenanceRequired ? `
+              <div style="grid-column: 1 / -1;">
+                <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 12px; border-radius: 8px; margin-top: 8px;">
+                  <p style="margin: 0; color: #92400e; font-size: 14px; font-weight: 600;">⚠️ Maintenance Required</p>
+                </div>
+              </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+        
+      default:
+        return `
+          <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #6b7280;">
+            <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">❓ Transfer Information</h3>
+            <p style="margin: 0; color: #1f2937;">Transfer details not available.</p>
+          </div>
+        `;
+    }
   }
 
   /**
@@ -35,13 +242,22 @@ export class TransferNotificationService {
         return;
       }
 
+      // Get transfer display information
+      const transferDisplayInfo = this.getTransferDisplayInfo(transfer);
+
       // Prepare transfer data for templates
       const transferData = {
         transferId: transfer.transferId,
-        patientName: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`,
-        patientAge: transfer.patientInfo.age,
-        dossierNumber: transfer.patientInfo.dossierNumber,
-        patientDossier: transfer.patientInfo.dossierNumber, // For email template compatibility
+        transferCategory: transfer.transferCategory || TransferCategory.PATIENT,
+        transferTitle: transferDisplayInfo.title,
+        transferSubtitle: transferDisplayInfo.subtitle,
+        transferIcon: transferDisplayInfo.icon,
+        transferCategoryName: transferDisplayInfo.category,
+        // Legacy fields for backward compatibility
+        patientName: transferDisplayInfo.details.name,
+        patientAge: transferDisplayInfo.details.age || 'N/A',
+        dossierNumber: transferDisplayInfo.details.dossier || 'N/A',
+        patientDossier: transferDisplayInfo.details.dossier || 'N/A', // For email template compatibility
         fromHospital: transfer.fromHospitalName,
         toHospital: transfer.toHospitalName,
         priority: transfer.priority.toUpperCase(),
@@ -54,6 +270,8 @@ export class TransferNotificationService {
         requestedByEmail: requestedBy.email, // For email template compatibility
         requestedByPhone: requestedBy.phone, // For email template compatibility
         notes: transfer.notes || 'No additional notes',
+        // Category-specific details
+        ...transferDisplayInfo.details,
         approvalUrl: `${process.env.BASE_URL || 'http://localhost:3000'}/api/transfers/${transfer._id}/approve?admin=${adminContact.email}`,
         rejectionUrl: `${process.env.BASE_URL || 'http://localhost:3000'}/api/transfers/${transfer._id}/reject?admin=${adminContact.email}`,
         // New template variables for modern design
@@ -404,23 +622,7 @@ Please review and respond to this transfer request as soon as possible.
             </div>
             ` : ''}
             
-            <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #10b981;">
-                <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">👤 Patient Information</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div>
-                        <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Name:</strong></p>
-                        <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.patientName}</p>
-                    </div>
-                    <div>
-                        <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Age:</strong></p>
-                        <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.patientAge} years</p>
-                    </div>
-                    <div style="grid-column: 1 / -1;">
-                        <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Dossier Number:</strong></p>
-                        <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.patientDossier}</p>
-                    </div>
-                </div>
-            </div>
+            ${this.generateCategorySpecificContent(transferData)}
             
             <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #3b82f6;">
                 <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">🏥 Transfer Details</h3>
@@ -546,10 +748,13 @@ Please log into the system to view full details and take appropriate action.
     const message = recipientType === 'manager' 
       ? 'Your transfer request has been approved by the administrator.'
       : 'A new transfer has been approved and is now available for assignment.';
-    const icon = recipientType === 'manager' ? '✅' : '🚑';
+    const icon = recipientType === 'manager' ? '✅' : transferData.transferIcon || '🚑';
     const actionText = recipientType === 'manager' 
       ? 'You can now track the transfer progress in your dashboard.'
       : 'Log into the system to view details and accept the transfer assignment.';
+    
+    // Generate category-specific content section
+    const categoryContent = this.generateCategorySpecificContent(transferData);
     
     return `
     <!DOCTYPE html>

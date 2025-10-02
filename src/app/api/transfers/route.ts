@@ -82,10 +82,32 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const {
+      transferCategory = 'patient', // Default to patient for backward compatibility
       patientFirstName,
       patientLastName,
       patientAge,
       patientDossierNumber,
+      // Envelope fields
+      envelopeNumber,
+      senderName,
+      recipientName,
+      contents,
+      weight,
+      dimensions,
+      // File fields
+      patientName,
+      dossierNumber,
+      fileType,
+      fileCount,
+      fileUrgency,
+      // Equipment fields
+      equipmentName,
+      serialNumber,
+      model,
+      condition,
+      maintenanceRequired,
+      specialInstructions,
+      // Common fields
       fromHospital,
       toHospital,
       fromHospitalId,
@@ -158,6 +180,46 @@ export async function POST(request: NextRequest) {
       new Date(`${transferDate}T${transferTime}`) : 
       new Date();
 
+    // Prepare transfer data based on category
+    let transferData: any = {};
+    let patientInfo: any = null;
+
+    if (transferCategory === 'patient') {
+      patientInfo = {
+        firstName: patientFirstName,
+        lastName: patientLastName,
+        age: parseInt(patientAge as string),
+        dossierNumber: patientDossierNumber
+      };
+      transferData.patientInfo = patientInfo;
+    } else if (transferCategory === 'envelope') {
+      transferData.envelopeInfo = {
+        envelopeNumber,
+        senderName,
+        recipientName,
+        contents,
+        weight: weight ? parseFloat(weight.toString()) : undefined,
+        dimensions
+      };
+    } else if (transferCategory === 'patient_file') {
+      transferData.fileInfo = {
+        patientName,
+        dossierNumber,
+        fileType,
+        fileCount: fileCount ? parseInt(fileCount.toString()) : undefined,
+        urgency: fileUrgency || 'medium'
+      };
+    } else if (transferCategory === 'medical_equipment') {
+      transferData.equipmentInfo = {
+        equipmentName,
+        serialNumber,
+        model,
+        condition: condition || 'good',
+        maintenanceRequired: maintenanceRequired || false,
+        specialInstructions
+      };
+    }
+
     // Create timeline event for transfer creation
     const creationEvent = TimelineService.createTransferCreatedEvent(
       {
@@ -168,11 +230,12 @@ export async function POST(request: NextRequest) {
       },
       {
         transferId,
-        patientInfo: {
-          firstName: patientFirstName,
-          lastName: patientLastName,
-          age: parseInt(patientAge as string),
-          dossierNumber: patientDossierNumber
+        transferCategory,
+        patientInfo: patientInfo || {
+          firstName: patientName || 'N/A',
+          lastName: '',
+          age: 0,
+          dossierNumber: dossierNumber || 'N/A'
         },
         fromHospitalName,
         toHospitalName,
@@ -181,15 +244,12 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    // Create transfer request with embedded patient info
+    // Create transfer request with polymorphic data
     const transfer = new Transfer({
       transferId,
-      patientInfo: {
-        firstName: patientFirstName,
-        lastName: patientLastName,
-        age: parseInt(patientAge as string),
-        dossierNumber: patientDossierNumber
-      },
+      transferCategory,
+      patientInfo, // Legacy field for backward compatibility
+      transferData,
       fromHospital: fromHospitalRef._id,
       toHospital: toHospitalRef._id,
       fromHospitalName,

@@ -25,10 +25,8 @@ export async function GET(
     const reason = searchParams.get('reason') || 'Approved by administrator';
 
     if (!transferId) {
-      return NextResponse.json(
-        { error: 'Transfer ID is required' },
-        { status: 400 }
-      );
+      const errorUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/approval-error?error=${encodeURIComponent('Transfer ID is required')}&type=invalid_request`;
+      return NextResponse.redirect(new URL(errorUrl, request.url));
     }
 
     await dbConnect();
@@ -38,35 +36,27 @@ export async function GET(
       .populate('requestedBy', 'firstName lastName email phone userType')
 
     if (!transfer) {
-      return NextResponse.json(
-        { error: 'Transfer not found' },
-        { status: 404 }
-      );
+      const errorUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/approval-error?error=${encodeURIComponent('Transfer not found')}&transferId=${transferId}&type=not_found`;
+      return NextResponse.redirect(new URL(errorUrl, request.url));
     }
 
     if (transfer.status !== 'pending') {
-      return NextResponse.json(
-        { error: `Transfer is already ${transfer.status}` },
-        { status: 400 }
-      );
+      const errorUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/approval-error?error=${encodeURIComponent(`Transfer is already ${transfer.status}`)}&transferId=${transferId}&type=already_processed`;
+      return NextResponse.redirect(new URL(errorUrl, request.url));
     }
 
     // Find the admin user
     const admin = await User.findOne({ email: adminEmail });
     if (!admin) {
-      return NextResponse.json(
-        { error: 'Admin user not found' },
-        { status: 404 }
-      );
+      const errorUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/approval-error?error=${encodeURIComponent('Admin user not found')}&transferId=${transferId}&type=not_found`;
+      return NextResponse.redirect(new URL(errorUrl, request.url));
     }
 
     // Check if user is admin
     const isAdmin = await AdminService.isAdmin((admin._id as any as any).toString());
     if (!isAdmin) {
-      return NextResponse.json(
-        { error: 'Unauthorized: Admin privileges required' },
-        { status: 403 }
-      );
+      const errorUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/approval-error?error=${encodeURIComponent('Unauthorized: Admin privileges required')}&transferId=${transferId}&type=unauthorized`;
+      return NextResponse.redirect(new URL(errorUrl, request.url));
     }
 
     // Create timeline events for approval
@@ -118,17 +108,15 @@ export async function GET(
       // Don't fail the approval if notifications fail
     }
 
-    // Return success response with redirect
-    const redirectUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/dashboard?message=transfer-approved&transferId=${transferId}`;
+    // Return success response with redirect to public success page
+    const redirectUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/approval-success?message=transfer-approved&transferId=${transferId}`;
     
     return NextResponse.redirect(new URL(redirectUrl, request.url));
 
   } catch (error) {
     console.error('Error approving transfer:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    const errorUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/approval-error?error=${encodeURIComponent('Internal server error')}&type=server_error`;
+    return NextResponse.redirect(new URL(errorUrl, request.url));
   }
 }
 

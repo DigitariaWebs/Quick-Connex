@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 
       return {
         transferId: transfer.transferId,
-        patientName: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`,
+        patientName: transfer.patientInfo ? `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}` : 'Unknown Patient',
         conflictType: resourceType || 'time',
         severity: getConflictSeverity(conflictDuration, transfer.priority),
         conflictStart: conflictStart.toISOString(),

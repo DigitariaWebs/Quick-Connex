@@ -91,7 +91,7 @@ export async function GET(
     }
 
     // Return success response with redirect
-    const redirectUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/dashboard?message=transfer-rejected&transferId=${transferId}`;
+    const redirectUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/approval-success?message=transfer-rejected&transferId=${transferId}`;
     
     return NextResponse.redirect(new URL(redirectUrl, request.url));
 

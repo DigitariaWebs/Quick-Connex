@@ -48,13 +48,13 @@ export async function GET(request: NextRequest) {
 
         if (hoursUntil < 1) {
           priority = 'high';
-          message = `URGENT: Transfer for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} is scheduled in ${minutesUntil} minutes`;
+          message = `URGENT: Transfer for ${transfer.patientInfo ? `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}` : 'Unknown Patient'} is scheduled in ${minutesUntil} minutes`;
         } else if (hoursUntil < 4) {
           priority = 'medium';
-          message = `Transfer for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} is scheduled in ${hoursUntil} hours`;
+          message = `Transfer for ${transfer.patientInfo ? `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}` : 'Unknown Patient'} is scheduled in ${hoursUntil} hours`;
         } else {
           priority = 'low';
-          message = `Transfer for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} is scheduled in ${hoursUntil} hours`;
+          message = `Transfer for ${transfer.patientInfo ? `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}` : 'Unknown Patient'} is scheduled in ${hoursUntil} hours`;
         }
 
         notifications.push({
@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
           type: 'overdue',
           priority: 'high',
           title: 'Overdue Transfer',
-          message: `Transfer for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} is ${overdueMinutes} minutes overdue`,
+          message: `Transfer for ${transfer.patientInfo ? `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}` : 'Unknown Patient'} is ${overdueMinutes} minutes overdue`,
           transferId: transfer.transferId,
           scheduledDate: transfer.scheduledDate,
           patient: transfer.patientInfo,

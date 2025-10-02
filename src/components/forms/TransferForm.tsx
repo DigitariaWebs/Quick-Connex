@@ -15,6 +15,12 @@ import { SelectInput } from "./SelectInput";
 import { DatePickerInput } from "./DatePickerInput";
 import { TimePickerInput } from "./TimePickerInput";
 import HospitalAutocomplete from "./HospitalAutocomplete";
+import TransferCategorySelector from "./TransferCategorySelector";
+import PatientTransferForm from "./PatientTransferForm";
+import EnvelopeTransferForm from "./EnvelopeTransferForm";
+import FileTransferForm from "./FileTransferForm";
+import EquipmentTransferForm from "./EquipmentTransferForm";
+import { TransferCategory } from "@/constants/transfer-constants";
 
 // Validation helpers
 const validateRequired = (value: FormDataEntryValue | null): boolean => {
@@ -51,6 +57,8 @@ export default function TransferForm({
   const [user, setUser] = useState<any>(null);
   const [selectedFromHospital, setSelectedFromHospital] = useState<any>(null);
   const [selectedToHospital, setSelectedToHospital] = useState<any>(null);
+  const [selectedTransferCategory, setSelectedTransferCategory] =
+    useState<TransferCategory | null>(null);
 
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
@@ -103,10 +111,7 @@ export default function TransferForm({
     }
 
     const formData = new FormData(e.currentTarget);
-    const patientFirstName = formData.get("patientFirstName");
-    const patientLastName = formData.get("patientLastName");
-    const patientAge = formData.get("patientAge");
-    const patientDossierNumber = formData.get("patientDossierNumber");
+    const transferCategory = selectedTransferCategory;
     const transferDate = formData.get("transferDate");
     const transferTime = formData.get("transferTime");
     const transferType = formData.get("transferType");
@@ -114,23 +119,95 @@ export default function TransferForm({
     const priority = formData.get("priority");
     const reason = formData.get("reason");
 
+    // Category-specific fields
+    const patientFirstName = formData.get("patientFirstName");
+    const patientLastName = formData.get("patientLastName");
+    const patientAge = formData.get("patientAge");
+    const patientDossierNumber = formData.get("patientDossierNumber");
+
+    const envelopeNumber = formData.get("envelopeNumber");
+    const senderName = formData.get("senderName");
+    const recipientName = formData.get("recipientName");
+    const contents = formData.get("contents");
+    const weight = formData.get("weight");
+    const dimensionsLength = formData.get("dimensionsLength");
+    const dimensionsWidth = formData.get("dimensionsWidth");
+    const dimensionsHeight = formData.get("dimensionsHeight");
+
+    const patientName = formData.get("patientName");
+    const dossierNumber = formData.get("dossierNumber");
+    const fileType = formData.get("fileType");
+    const fileCount = formData.get("fileCount");
+    const fileUrgency = formData.get("fileUrgency");
+
+    const equipmentName = formData.get("equipmentName");
+    const serialNumber = formData.get("serialNumber");
+    const model = formData.get("model");
+    const condition = formData.get("condition");
+    const maintenanceRequired = formData.get("maintenanceRequired") === "on";
+    const specialInstructions = formData.get("specialInstructions");
+
     // Validate form inputs
     let errors: Record<string, string> = {};
 
-    if (!validateRequired(patientFirstName)) {
-      errors.patientFirstName = "Patient first name is required";
+    // Validate transfer category
+    if (!transferCategory) {
+      errors.transferCategory = "Please select a transfer type";
     }
 
-    if (!validateRequired(patientLastName)) {
-      errors.patientLastName = "Patient last name is required";
-    }
+    // Category-specific validation
+    if (transferCategory === TransferCategory.PATIENT) {
+      if (!validateRequired(patientFirstName)) {
+        errors.patientFirstName = "Patient first name is required";
+      }
 
-    if (!validateAge(patientAge)) {
-      errors.patientAge = "Valid age is required (1-120)";
-    }
+      if (!validateRequired(patientLastName)) {
+        errors.patientLastName = "Patient last name is required";
+      }
 
-    if (!validateRequired(patientDossierNumber)) {
-      errors.patientDossierNumber = "Dossier number is required";
+      if (!validateAge(patientAge)) {
+        errors.patientAge = "Valid age is required (1-120)";
+      }
+
+      if (!validateRequired(patientDossierNumber)) {
+        errors.patientDossierNumber = "Dossier number is required";
+      }
+    } else if (transferCategory === TransferCategory.ENVELOPE) {
+      if (!validateRequired(senderName)) {
+        errors.senderName = "Sender name is required";
+      }
+
+      if (!validateRequired(recipientName)) {
+        errors.recipientName = "Recipient name is required";
+      }
+
+      if (!validateRequired(contents)) {
+        errors.contents = "Contents description is required";
+      }
+    } else if (transferCategory === TransferCategory.PATIENT_FILE) {
+      if (!validateRequired(patientName)) {
+        errors.patientName = "Patient name is required";
+      }
+
+      if (!validateRequired(dossierNumber)) {
+        errors.dossierNumber = "Dossier number is required";
+      }
+
+      if (!validateRequired(fileType)) {
+        errors.fileType = "File type is required";
+      }
+
+      if (!validateRequired(fileCount)) {
+        errors.fileCount = "File count is required";
+      }
+    } else if (transferCategory === TransferCategory.MEDICAL_EQUIPMENT) {
+      if (!validateRequired(equipmentName)) {
+        errors.equipmentName = "Equipment name is required";
+      }
+
+      if (!validateRequired(model)) {
+        errors.model = "Equipment model is required";
+      }
     }
 
     // Validate hospital selection
@@ -219,10 +296,7 @@ export default function TransferForm({
 
     // Prepare data for submission
     const transferData = {
-      patientFirstName,
-      patientLastName,
-      patientAge,
-      patientDossierNumber,
+      transferCategory,
       fromHospital: selectedFromHospital?.name || "",
       toHospital: selectedToHospital?.name || "",
       fromHospitalId: selectedFromHospital?._id || "",
@@ -237,6 +311,47 @@ export default function TransferForm({
       scheduling: {
         transferTime: formattedTime,
       },
+
+      // Category-specific data
+      ...(transferCategory === TransferCategory.PATIENT && {
+        patientFirstName,
+        patientLastName,
+        patientAge,
+        patientDossierNumber,
+      }),
+
+      ...(transferCategory === TransferCategory.ENVELOPE && {
+        envelopeNumber,
+        senderName,
+        recipientName,
+        contents,
+        weight: weight ? parseFloat(weight.toString()) : undefined,
+        dimensions:
+          dimensionsLength && dimensionsWidth && dimensionsHeight
+            ? {
+                length: parseFloat(dimensionsLength.toString()),
+                width: parseFloat(dimensionsWidth.toString()),
+                height: parseFloat(dimensionsHeight.toString()),
+              }
+            : undefined,
+      }),
+
+      ...(transferCategory === TransferCategory.PATIENT_FILE && {
+        patientName,
+        dossierNumber,
+        fileType,
+        fileCount: fileCount ? parseInt(fileCount.toString()) : undefined,
+        fileUrgency,
+      }),
+
+      ...(transferCategory === TransferCategory.MEDICAL_EQUIPMENT && {
+        equipmentName,
+        serialNumber,
+        model,
+        condition,
+        maintenanceRequired,
+        specialInstructions,
+      }),
     };
 
     try {
@@ -402,74 +517,33 @@ export default function TransferForm({
 
               <form onSubmit={handleSubmit}>
                 <div className="space-y-6">
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                    <h3 className="text-md font-semibold text-blue-800 mb-3 flex items-center">
-                      <User size={18} className="mr-2" />
-                      Patient Information
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div>
-                        <FormInput
-                          id="patientFirstName"
-                          name="patientFirstName"
-                          label="First Name"
-                          required
-                          placeholder="Patient's first name"
-                        />
-                        {validationErrors.patientFirstName && (
-                          <p className="text-red-600 text-xs mt-1">
-                            {validationErrors.patientFirstName}
-                          </p>
-                        )}
-                      </div>
+                  {/* Transfer Category Selection */}
+                  <TransferCategorySelector
+                    selectedCategory={selectedTransferCategory}
+                    onCategoryChange={setSelectedTransferCategory}
+                    error={validationErrors.transferCategory}
+                  />
 
-                      <div>
-                        <FormInput
-                          id="patientLastName"
-                          name="patientLastName"
-                          label="Last Name"
-                          required
-                          placeholder="Patient's last name"
-                        />
-                        {validationErrors.patientLastName && (
-                          <p className="text-red-600 text-xs mt-1">
-                            {validationErrors.patientLastName}
-                          </p>
-                        )}
-                      </div>
+                  {/* Category-specific forms */}
+                  {selectedTransferCategory === TransferCategory.PATIENT && (
+                    <PatientTransferForm validationErrors={validationErrors} />
+                  )}
 
-                      <div>
-                        <FormInput
-                          id="patientAge"
-                          name="patientAge"
-                          label="Age"
-                          type="number"
-                          required
-                          placeholder="Patient's age"
-                        />
-                        {validationErrors.patientAge && (
-                          <p className="text-red-600 text-xs mt-1">
-                            {validationErrors.patientAge}
-                          </p>
-                        )}
-                      </div>
+                  {selectedTransferCategory === TransferCategory.ENVELOPE && (
+                    <EnvelopeTransferForm validationErrors={validationErrors} />
+                  )}
 
-                      <div>
-                        <FormInput
-                          id="patientDossierNumber"
-                          name="patientDossierNumber"
-                          label="Dossier Number"
-                          required
-                          placeholder="Patient's dossier number"
-                        />
-                        {validationErrors.patientDossierNumber && (
-                          <p className="text-red-600 text-xs mt-1">
-                            {validationErrors.patientDossierNumber}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  {selectedTransferCategory ===
+                    TransferCategory.PATIENT_FILE && (
+                    <FileTransferForm validationErrors={validationErrors} />
+                  )}
+
+                  {selectedTransferCategory ===
+                    TransferCategory.MEDICAL_EQUIPMENT && (
+                    <EquipmentTransferForm
+                      validationErrors={validationErrors}
+                    />
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>

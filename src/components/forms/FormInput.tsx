@@ -8,6 +8,8 @@ type FormInputProps = {
   required?: boolean;
   placeholder?: string;
   icon?: React.ReactNode;
+  step?: string;
+  min?: string;
 };
 
 export function FormInput({
@@ -18,6 +20,8 @@ export function FormInput({
   required = true,
   placeholder = "",
   icon,
+  step,
+  min,
 }: FormInputProps) {
   return (
     <div>
@@ -38,6 +42,8 @@ export function FormInput({
           name={name}
           type={type}
           required={required}
+          step={step}
+          min={min}
           className={`w-full ${
             icon ? "pl-10" : "px-4"
           } pr-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm dark:border-gray-600 dark:text-white shadow-sm hover:shadow-md`}

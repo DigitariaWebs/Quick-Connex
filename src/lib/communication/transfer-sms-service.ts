@@ -12,12 +12,61 @@ import SMSService from './sms-service';
 import { SMSMessage, SMSRecipient, SMSContent } from '@/types/communication-types';
 import User from '@/models/User';
 import { Types } from 'mongoose';
+import { TransferCategory } from '@/constants/transfer-constants';
 
 export class TransferSMSService {
   private smsService: SMSService;
 
   constructor() {
     this.smsService = new SMSService();
+  }
+
+  /**
+   * Get transfer display information for SMS
+   */
+  private getTransferDisplayInfo(transfer: any) {
+    const category = transfer.transferCategory || TransferCategory.PATIENT;
+    
+    switch (category) {
+      case TransferCategory.PATIENT:
+        const patientInfo = transfer.patientInfo || transfer.transferData?.patientInfo;
+        return {
+          title: patientInfo ? `${patientInfo.firstName} ${patientInfo.lastName}` : 'Patient Transfer',
+          subtitle: patientInfo?.dossierNumber || 'Patient',
+          category: 'Patient'
+        };
+        
+      case TransferCategory.ENVELOPE:
+        const envelopeInfo = transfer.transferData?.envelopeInfo;
+        return {
+          title: envelopeInfo ? `Envelope: ${envelopeInfo.senderName} → ${envelopeInfo.recipientName}` : 'Envelope Transfer',
+          subtitle: envelopeInfo?.contents || 'Package/Envelope',
+          category: 'Envelope'
+        };
+        
+      case TransferCategory.PATIENT_FILE:
+        const fileInfo = transfer.transferData?.fileInfo;
+        return {
+          title: fileInfo ? `Files: ${fileInfo.patientName}` : 'File Transfer',
+          subtitle: fileInfo ? `${fileInfo.fileCount} ${fileInfo.fileType} files` : 'Patient Files',
+          category: 'Files'
+        };
+        
+      case TransferCategory.MEDICAL_EQUIPMENT:
+        const equipmentInfo = transfer.transferData?.equipmentInfo;
+        return {
+          title: equipmentInfo ? equipmentInfo.equipmentName : 'Equipment Transfer',
+          subtitle: equipmentInfo ? `${equipmentInfo.model} (${equipmentInfo.condition})` : 'Medical Equipment',
+          category: 'Equipment'
+        };
+        
+      default:
+        return {
+          title: 'Transfer',
+          subtitle: 'Unknown Type',
+          category: 'Unknown'
+        };
+    }
   }
 
   /**
@@ -111,12 +160,18 @@ export class TransferSMSService {
    */
   async sendTransferApprovedSMS(transfer: any, approvedBy: any): Promise<void> {
     try {
+      // Get transfer display information
+      const transferDisplayInfo = this.getTransferDisplayInfo(transfer);
+      
       // Prepare SMS data
       const smsData = {
-        patientName: `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}`,
+        transferTitle: transferDisplayInfo.title,
+        transferCategory: transferDisplayInfo.category,
         fromHospital: transfer.fromHospital,
         toHospital: transfer.toHospital,
-        transferId: transfer.transferId
+        transferId: transfer.transferId,
+        // Legacy fields for backward compatibility
+        patientName: transferDisplayInfo.title
       };
 
       // Send SMS to the manager who requested the transfer

@@ -53,30 +53,80 @@ export function validateTransferData(data: any): TransferValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  // Required fields
-  const requiredFields = [
-    'patientFirstName',
-    'patientLastName',
-    'patientDossierNumber',
+  // Validate transfer category
+  const validCategories = ['patient', 'envelope', 'patient_file', 'medical_equipment'];
+  if (!data.transferCategory || !validCategories.includes(data.transferCategory)) {
+    errors.push('Transfer category is required and must be one of: patient, envelope, patient_file, medical_equipment');
+  }
+
+  // Common required fields
+  const commonRequiredFields = [
     'fromHospital',
     'toHospital',
     'transferDate',
     'reason'
   ];
 
-  for (const field of requiredFields) {
+  for (const field of commonRequiredFields) {
     if (!data[field] || (typeof data[field] === 'string' && data[field].trim().length === 0)) {
-      // Provide more user-friendly field names
       const fieldNames: Record<string, string> = {
-        'patientFirstName': 'Patient first name',
-        'patientLastName': 'Patient last name',
-        'patientDossierNumber': 'Dossier number',
         'fromHospital': 'Source hospital',
         'toHospital': 'Destination hospital',
         'transferDate': 'Transfer date',
         'reason': 'Reason for transfer'
       };
       errors.push(`${fieldNames[field] || field} is required`);
+    }
+  }
+
+  // Category-specific validation
+  if (data.transferCategory === 'patient') {
+    const patientFields = ['patientFirstName', 'patientLastName', 'patientDossierNumber'];
+    for (const field of patientFields) {
+      if (!data[field] || (typeof data[field] === 'string' && data[field].trim().length === 0)) {
+        const fieldNames: Record<string, string> = {
+          'patientFirstName': 'Patient first name',
+          'patientLastName': 'Patient last name',
+          'patientDossierNumber': 'Dossier number'
+        };
+        errors.push(`${fieldNames[field]} is required for patient transfers`);
+      }
+    }
+  } else if (data.transferCategory === 'envelope') {
+    const envelopeFields = ['senderName', 'recipientName', 'contents'];
+    for (const field of envelopeFields) {
+      if (!data[field] || (typeof data[field] === 'string' && data[field].trim().length === 0)) {
+        const fieldNames: Record<string, string> = {
+          'senderName': 'Sender name',
+          'recipientName': 'Recipient name',
+          'contents': 'Contents description'
+        };
+        errors.push(`${fieldNames[field]} is required for envelope transfers`);
+      }
+    }
+  } else if (data.transferCategory === 'patient_file') {
+    const fileFields = ['patientName', 'dossierNumber', 'fileType', 'fileCount'];
+    for (const field of fileFields) {
+      if (!data[field] || (typeof data[field] === 'string' && data[field].trim().length === 0)) {
+        const fieldNames: Record<string, string> = {
+          'patientName': 'Patient name',
+          'dossierNumber': 'Dossier number',
+          'fileType': 'File type',
+          'fileCount': 'File count'
+        };
+        errors.push(`${fieldNames[field]} is required for file transfers`);
+      }
+    }
+  } else if (data.transferCategory === 'medical_equipment') {
+    const equipmentFields = ['equipmentName', 'model'];
+    for (const field of equipmentFields) {
+      if (!data[field] || (typeof data[field] === 'string' && data[field].trim().length === 0)) {
+        const fieldNames: Record<string, string> = {
+          'equipmentName': 'Equipment name',
+          'model': 'Equipment model'
+        };
+        errors.push(`${fieldNames[field]} is required for equipment transfers`);
+      }
     }
   }
 

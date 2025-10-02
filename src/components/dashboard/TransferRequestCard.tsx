@@ -12,17 +12,61 @@ import {
   FileText,
   AlertTriangle,
   CheckCircle2,
+  Package,
+  Stethoscope,
 } from "lucide-react";
+import { TransferCategory } from "@/constants/transfer-constants";
 
 interface TransferRequest {
   _id: string;
   transferId: string;
-  patientInfo: {
+  transferCategory?: TransferCategory;
+
+  // Legacy patientInfo for backward compatibility
+  patientInfo?: {
     firstName: string;
     lastName: string;
     age: number;
     dossierNumber?: string;
   };
+
+  // New polymorphic transfer data
+  transferData?: {
+    patientInfo?: {
+      firstName: string;
+      lastName: string;
+      age: number;
+      dossierNumber?: string;
+    };
+    envelopeInfo?: {
+      envelopeNumber?: string;
+      senderName: string;
+      recipientName: string;
+      contents: string;
+      weight?: number;
+      dimensions?: {
+        length: number;
+        width: number;
+        height: number;
+      };
+    };
+    fileInfo?: {
+      patientName: string;
+      dossierNumber: string;
+      fileType: string;
+      fileCount: number;
+      urgency: "low" | "medium" | "high" | "urgent";
+    };
+    equipmentInfo?: {
+      equipmentName: string;
+      serialNumber?: string;
+      model: string;
+      condition: "excellent" | "good" | "fair" | "poor";
+      maintenanceRequired: boolean;
+      specialInstructions?: string;
+    };
+  };
+
   fromHospital:
     | string
     | {
@@ -72,6 +116,78 @@ interface TransferRequestCardProps {
   isSelected?: boolean;
 }
 
+// Helper function to get transfer display information
+function getTransferDisplayInfo(transfer: TransferRequest) {
+  const category = transfer.transferCategory || TransferCategory.PATIENT;
+
+  switch (category) {
+    case TransferCategory.PATIENT:
+      const patientInfo =
+        transfer.patientInfo || transfer.transferData?.patientInfo;
+      return {
+        title: patientInfo
+          ? `${patientInfo.firstName} ${patientInfo.lastName}`
+          : "Patient Transfer",
+        subtitle: patientInfo?.dossierNumber || "Patient",
+        icon: User,
+        iconColor: "text-blue-600",
+        bgColor: "bg-blue-100",
+        category: "Patient",
+      };
+
+    case TransferCategory.ENVELOPE:
+      const envelopeInfo = transfer.transferData?.envelopeInfo;
+      return {
+        title: envelopeInfo
+          ? `Envelope: ${envelopeInfo.senderName} → ${envelopeInfo.recipientName}`
+          : "Envelope Transfer",
+        subtitle: envelopeInfo?.contents || "Package/Envelope",
+        icon: Package,
+        iconColor: "text-orange-600",
+        bgColor: "bg-orange-100",
+        category: "Envelope",
+      };
+
+    case TransferCategory.PATIENT_FILE:
+      const fileInfo = transfer.transferData?.fileInfo;
+      return {
+        title: fileInfo ? `Files: ${fileInfo.patientName}` : "File Transfer",
+        subtitle: fileInfo
+          ? `${fileInfo.fileCount} ${fileInfo.fileType} files`
+          : "Patient Files",
+        icon: FileText,
+        iconColor: "text-purple-600",
+        bgColor: "bg-purple-100",
+        category: "Files",
+      };
+
+    case TransferCategory.MEDICAL_EQUIPMENT:
+      const equipmentInfo = transfer.transferData?.equipmentInfo;
+      return {
+        title: equipmentInfo
+          ? equipmentInfo.equipmentName
+          : "Equipment Transfer",
+        subtitle: equipmentInfo
+          ? `${equipmentInfo.model} (${equipmentInfo.condition})`
+          : "Medical Equipment",
+        icon: Stethoscope,
+        iconColor: "text-green-600",
+        bgColor: "bg-green-100",
+        category: "Equipment",
+      };
+
+    default:
+      return {
+        title: "Transfer",
+        subtitle: "Unknown Type",
+        icon: User,
+        iconColor: "text-gray-600",
+        bgColor: "bg-gray-100",
+        category: "Unknown",
+      };
+  }
+}
+
 export default function TransferRequestCard({
   transfer,
   onAccept,
@@ -81,6 +197,10 @@ export default function TransferRequestCard({
   isSelected = false,
 }: TransferRequestCardProps) {
   const [isAccepting, setIsAccepting] = useState(false);
+
+  // Get display information based on transfer type
+  const displayInfo = getTransferDisplayInfo(transfer);
+  const IconComponent = displayInfo.icon;
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -244,17 +364,17 @@ export default function TransferRequestCard({
       <div className="p-5">
         <div className="flex justify-between items-start mb-3">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center">
-              <User size={20} className="text-blue-600" />
+            <div
+              className={`w-10 h-10 rounded-2xl ${displayInfo.bgColor} flex items-center justify-center`}
+            >
+              <IconComponent size={20} className={displayInfo.iconColor} />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-800">
-                {transfer.patientInfo.firstName} {transfer.patientInfo.lastName}
+                {displayInfo.title}
               </h3>
               <div className="flex items-center text-xs text-gray-500">
-                <span className="mr-2">
-                  {transfer.patientInfo.dossierNumber}
-                </span>
+                <span className="mr-2">{displayInfo.subtitle}</span>
                 <span className="flex items-center">
                   {statusColors.icon}
                   <span className={`capitalize ${statusColors.text}`}>
@@ -265,21 +385,69 @@ export default function TransferRequestCard({
             </div>
           </div>
 
-          <div
-            className={`px-2.5 py-1 rounded-2xl text-xs font-semibold ${priorityColors.bg} ${priorityColors.text} border ${priorityColors.border} uppercase`}
-          >
-            {transfer.priority}
+          <div className="flex flex-col items-end space-y-1">
+            <div
+              className={`px-2.5 py-1 rounded-2xl text-xs font-semibold ${priorityColors.bg} ${priorityColors.text} border ${priorityColors.border} uppercase`}
+            >
+              {transfer.priority}
+            </div>
+            <div
+              className={`px-2 py-1 rounded-lg text-xs font-medium ${displayInfo.bgColor} ${displayInfo.iconColor} border border-current/20`}
+            >
+              {displayInfo.category}
+            </div>
           </div>
         </div>
 
-        {/* Patient Info */}
+        {/* Transfer-specific Info */}
         <div className="grid grid-cols-1 gap-y-2 gap-x-4 mt-4">
-          <div className="flex items-center text-sm">
-            <User size={14} className="mr-2 text-gray-400" />
-            <span className="text-gray-700">
-              {transfer.patientInfo.age} years old
-            </span>
-          </div>
+          {transfer.transferCategory === TransferCategory.PATIENT &&
+            (transfer.patientInfo || transfer.transferData?.patientInfo) && (
+              <div className="flex items-center text-sm">
+                <User size={14} className="mr-2 text-gray-400" />
+                <span className="text-gray-700">
+                  {
+                    (transfer.patientInfo || transfer.transferData?.patientInfo)
+                      ?.age
+                  }{" "}
+                  years old
+                </span>
+              </div>
+            )}
+
+          {transfer.transferCategory === TransferCategory.ENVELOPE &&
+            transfer.transferData?.envelopeInfo && (
+              <div className="flex items-center text-sm">
+                <Package size={14} className="mr-2 text-gray-400" />
+                <span className="text-gray-700">
+                  {transfer.transferData.envelopeInfo.weight
+                    ? `${transfer.transferData.envelopeInfo.weight}kg`
+                    : "Package"}
+                </span>
+              </div>
+            )}
+
+          {transfer.transferCategory === TransferCategory.PATIENT_FILE &&
+            transfer.transferData?.fileInfo && (
+              <div className="flex items-center text-sm">
+                <FileText size={14} className="mr-2 text-gray-400" />
+                <span className="text-gray-700">
+                  {transfer.transferData.fileInfo.urgency} priority
+                </span>
+              </div>
+            )}
+
+          {transfer.transferCategory === TransferCategory.MEDICAL_EQUIPMENT &&
+            transfer.transferData?.equipmentInfo && (
+              <div className="flex items-center text-sm">
+                <Stethoscope size={14} className="mr-2 text-gray-400" />
+                <span className="text-gray-700">
+                  {transfer.transferData.equipmentInfo.condition} condition
+                  {transfer.transferData.equipmentInfo.maintenanceRequired &&
+                    " • Maintenance required"}
+                </span>
+              </div>
+            )}
         </div>
       </div>
 

@@ -19,16 +19,58 @@ import {
   Ambulance,
   Shield,
   MessageSquare,
+  Package,
 } from "lucide-react";
+import { TransferCategory } from "@/constants/transfer-constants";
 
 interface TransferRequest {
   _id: string;
   transferId: string;
-  patientInfo: {
+  transferCategory?: TransferCategory;
+
+  // Legacy patientInfo for backward compatibility
+  patientInfo?: {
     firstName: string;
     lastName: string;
     age: number;
     dossierNumber?: string;
+  };
+
+  // New polymorphic transfer data
+  transferData?: {
+    patientInfo?: {
+      firstName: string;
+      lastName: string;
+      age: number;
+      dossierNumber?: string;
+    };
+    envelopeInfo?: {
+      envelopeNumber?: string;
+      senderName: string;
+      recipientName: string;
+      contents: string;
+      weight?: number;
+      dimensions?: {
+        length: number;
+        width: number;
+        height: number;
+      };
+    };
+    fileInfo?: {
+      patientName: string;
+      dossierNumber: string;
+      fileType: string;
+      fileCount: number;
+      urgency: "low" | "medium" | "high" | "urgent";
+    };
+    equipmentInfo?: {
+      equipmentName: string;
+      serialNumber?: string;
+      model: string;
+      condition: "excellent" | "good" | "fair" | "poor";
+      maintenanceRequired: boolean;
+      specialInstructions?: string;
+    };
   };
   fromHospital:
     | string
@@ -99,11 +141,85 @@ interface TransferTimelineProps {
   isVisible: boolean;
 }
 
+// Helper function to get transfer display information
+function getTransferDisplayInfo(transfer: TransferRequest) {
+  const category = transfer.transferCategory || TransferCategory.PATIENT;
+
+  switch (category) {
+    case TransferCategory.PATIENT:
+      const patientInfo =
+        transfer.patientInfo || transfer.transferData?.patientInfo;
+      return {
+        title: patientInfo
+          ? `${patientInfo.firstName} ${patientInfo.lastName}`
+          : "Patient Transfer",
+        subtitle: patientInfo?.dossierNumber || "Patient",
+        icon: User,
+        iconColor: "text-blue-600",
+        bgColor: "bg-blue-100",
+        category: "Patient",
+      };
+
+    case TransferCategory.ENVELOPE:
+      const envelopeInfo = transfer.transferData?.envelopeInfo;
+      return {
+        title: envelopeInfo
+          ? `Envelope: ${envelopeInfo.senderName} → ${envelopeInfo.recipientName}`
+          : "Envelope Transfer",
+        subtitle: envelopeInfo?.contents || "Package/Envelope",
+        icon: Package,
+        iconColor: "text-orange-600",
+        bgColor: "bg-orange-100",
+        category: "Envelope",
+      };
+
+    case TransferCategory.PATIENT_FILE:
+      const fileInfo = transfer.transferData?.fileInfo;
+      return {
+        title: fileInfo ? `Files: ${fileInfo.patientName}` : "File Transfer",
+        subtitle: fileInfo
+          ? `${fileInfo.fileCount} ${fileInfo.fileType} files`
+          : "Patient Files",
+        icon: FileText,
+        iconColor: "text-purple-600",
+        bgColor: "bg-purple-100",
+        category: "Files",
+      };
+
+    case TransferCategory.MEDICAL_EQUIPMENT:
+      const equipmentInfo = transfer.transferData?.equipmentInfo;
+      return {
+        title: equipmentInfo
+          ? equipmentInfo.equipmentName
+          : "Equipment Transfer",
+        subtitle: equipmentInfo
+          ? `${equipmentInfo.model} (${equipmentInfo.condition})`
+          : "Medical Equipment",
+        icon: Stethoscope,
+        iconColor: "text-green-600",
+        bgColor: "bg-green-100",
+        category: "Equipment",
+      };
+
+    default:
+      return {
+        title: "Transfer",
+        subtitle: "Unknown Type",
+        icon: User,
+        iconColor: "text-gray-600",
+        bgColor: "bg-gray-100",
+        category: "Unknown",
+      };
+  }
+}
+
 export default function TransferTimeline({
   transfer,
   onClose,
   isVisible,
 }: TransferTimelineProps) {
+  // Get display information based on transfer type
+  const displayInfo = getTransferDisplayInfo(transfer);
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -483,8 +599,7 @@ export default function TransferTimeline({
                       Transfer Timeline
                     </h2>
                     <p className="text-sm text-gray-600">
-                      {transfer.patientInfo.firstName}{" "}
-                      {transfer.patientInfo.lastName} • {transfer.transferId}
+                      {displayInfo.title} • {transfer.transferId}
                     </p>
                   </div>
                 </div>
