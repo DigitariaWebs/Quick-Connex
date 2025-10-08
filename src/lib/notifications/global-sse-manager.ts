@@ -43,6 +43,13 @@ class GlobalSSEManager {
     console.log('🌐 Global SSE Manager: User set', { userId: user?._id, userType: user?.userType });
   }
 
+  public clearUser() {
+    console.log('🌐 Global SSE Manager: User cleared');
+    this.user = null;
+    // Disconnect when user is cleared
+    this.disconnect();
+  }
+
   public subscribe(subscriberId: string, callback: (message: SSEMessage) => void): () => void {
     console.log('🌐 Global SSE Manager: Subscribing', { subscriberId, totalSubscribers: this.subscribers.size + 1 });
     
@@ -143,7 +150,7 @@ class GlobalSSEManager {
     }
   }
 
-  private disconnect() {
+  public disconnect() {
     console.log('🌐 Global SSE Manager: Disconnecting');
     this.isConnected = false;
     this.isConnecting = false;

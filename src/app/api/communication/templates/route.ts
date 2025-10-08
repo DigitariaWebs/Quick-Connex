@@ -6,8 +6,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
-import CommunicationService from '@/lib/communication/communication-service';
-import { CommunicationChannel } from '@/types/communication-types';
+import CommunicationService from '@/lib/communication/core/communication-service';
+import { CommunicationChannel } from '@/types/communication';
 
 // GET /api/communication/templates - Get communication templates
 export async function GET(request: NextRequest) {

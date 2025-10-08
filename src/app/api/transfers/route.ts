@@ -287,7 +287,7 @@ export async function POST(request: NextRequest) {
 
     // Send comprehensive notifications to admins (email + SMS)
     try {
-      const TransferNotificationService = (await import('@/lib/communication/transfer-notification-service')).default;
+      const TransferNotificationService = (await import('@/lib/communication/integrations/transfer-notification-service')).default;
       await TransferNotificationService.sendNewTransferRequestNotification(populatedTransfer, requestingUser);
     } catch (notificationError) {
       console.error('Error sending transfer request notifications:', notificationError);

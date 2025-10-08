@@ -16,7 +16,7 @@ import {
   TRANSFER_CONFIG,
   TRANSFER_ERRORS,
   TRANSFER_SUCCESS
-} from '@/constants/transfer-constants';
+} from '@/constants/transfer';
 import {
   ITransfer,
   TransferRequestData,
@@ -28,7 +28,7 @@ import {
   TransferQueryOptions,
   TransferListResponse,
   SchedulingConfig
-} from '@/types/transfer-types';
+} from '@/types/transfer';
 
 export class TransferService {
   /**

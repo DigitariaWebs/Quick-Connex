@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import User from '@/models/User';
-import { EmailService } from '@/lib/communication/email-service';
-import { EmailMessage, EmailRecipient, EmailContent } from '@/types/communication-types';
-import { getUserDocumentsAsAttachments, getDocumentSummary } from '@/lib/communication/user-document-attachments';
+import { EmailService } from '@/lib/communication/channels/email/email-service';
+import { EmailMessage, EmailRecipient, EmailContent } from '@/types/communication';
+import { getUserDocumentsAsAttachments, getDocumentSummary } from '@/lib/communication/utils/user-document-attachments';
 
 /**
  * Send signup approval email to admin

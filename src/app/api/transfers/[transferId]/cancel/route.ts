@@ -10,7 +10,7 @@ import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
 import TimelineService from '@/lib/services/timeline-service';
-import TransferNotificationService from '@/lib/communication/transfer-notification-service';
+import TransferNotificationService from '@/lib/communication/integrations/transfer-notification-service';
 import { canCancelTransfer } from '@/lib/transfers/transfer-cancellation-utils';
 
 export async function PUT(

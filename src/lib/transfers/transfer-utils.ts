@@ -12,7 +12,7 @@ import {
   STATUS_DISPLAY_INFO,
   PRIORITY_DISPLAY_INFO,
   TRANSFER_CONFIG
-} from '@/constants/transfer-constants';
+} from '@/constants/transfer';
 import {
   TransferResponse,
   TransferStats,
@@ -20,7 +20,7 @@ import {
   SchedulingConfig,
   TransferFilterOptions,
   TransferQueryOptions
-} from '@/types/transfer-types';
+} from '@/types/transfer';
 
 /**
  * Date and Time Utilities

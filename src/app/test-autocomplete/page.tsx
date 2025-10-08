@@ -1,6 +1,6 @@
 "use client";
 
-import HospitalAutocomplete from "@/components/forms/HospitalAutocomplete";
+import HospitalAutocomplete from '@/components/ui/forms/HospitalAutocomplete';
 import { useState } from "react";
 
 export default function TestAutocompletePage() {

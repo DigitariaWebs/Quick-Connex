@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
-import NotificationIntegrationService from '@/lib/communication/notification-integration';
+import NotificationIntegrationService from '@/lib/communication/integrations/notification-integration';
 
 // POST /api/webhooks/sendgrid - Handle SendGrid webhook events
 export async function POST(request: NextRequest) {

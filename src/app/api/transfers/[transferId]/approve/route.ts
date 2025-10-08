@@ -11,7 +11,7 @@ import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import Hospital from '@/models/Hospital';
 import AdminService from '@/lib/services/admin-service';
-import TransferNotificationService from '@/lib/communication/transfer-notification-service';
+import TransferNotificationService from '@/lib/communication/integrations/transfer-notification-service';
 import TimelineService from '@/lib/services/timeline-service';
 
 export async function GET(

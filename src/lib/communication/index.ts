@@ -1,15 +1,17 @@
 /**
  * Communication Module
  * 
- * This module exports all communication services including email, SMS,
- * and notification services.
+ * This module exports all communication services organized by functionality.
  */
 
-export * from './communication-config';
-export * from './communication-service';
-export * from './email-service';
-export * from './sms-service';
-export * from './notification-integration';
-export * from './transfer-notification-service';
-export * from './transfer-sms-service';
-export * from './user-document-attachments';
+// Core services
+export * from './core';
+
+// Communication channels
+export * from './channels';
+
+// System integrations
+export * from './integrations';
+
+// Utilities
+export * from './utils';

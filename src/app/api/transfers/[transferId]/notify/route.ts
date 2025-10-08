@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
-import { TransferNotificationService } from '@/lib/communication/transfer-notification-service';
+import { TransferNotificationService } from '@/lib/communication/integrations/transfer-notification-service';
 
 // POST /api/transfers/[transferId]/notify - Trigger notifications for a transfer
 // This endpoint is designed for script usage and doesn't require authentication

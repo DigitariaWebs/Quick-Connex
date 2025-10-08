@@ -1,8 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { globalSSEManager } from '@/lib/notifications/global-sse-manager';
+import { useAuth } from "@/hooks/auth/useAuth";
+import { globalSSEManager } from "@/lib/notifications/global-sse-manager";
 
 interface SSEMessage {
   type: string;
@@ -41,12 +41,23 @@ export function SSEProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (user && isAuthenticated) {
       globalSSEManager.setUser(user);
+    } else {
+      // Clear user and disconnect when not authenticated
+      globalSSEManager.clearUser();
     }
   }, [user, isAuthenticated]);
 
   // Subscribe to global SSE manager (only once for the entire app)
   useEffect(() => {
     if (!isAuthenticated || !user) {
+      // If user is not authenticated, ensure SSE is disconnected
+      console.log("🔗 SSE Context: User not authenticated, disconnecting SSE");
+      globalSSEManager.disconnect();
+      setConnected(false);
+      setConnecting(false);
+      setConnectionQuality("disconnected");
+      setError("Disconnected");
+      setLastMessage(null);
       return;
     }
 

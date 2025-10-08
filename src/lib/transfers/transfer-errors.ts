@@ -6,7 +6,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { TRANSFER_ERRORS } from '@/constants/transfer-constants';
+import { TRANSFER_ERRORS } from '@/constants/transfer';
 
 /**
  * Transfer Error Codes

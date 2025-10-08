@@ -6,7 +6,7 @@
  */
 
 import { Types } from 'mongoose';
-import { TimelineEvent, TimelineEventType } from '@/types/transfer-types';
+import { TimelineEvent, TimelineEventType } from '@/types/transfer';
 
 export interface TimelineEventData {
   type: TimelineEventType;

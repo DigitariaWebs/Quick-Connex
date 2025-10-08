@@ -7,4 +7,3 @@
 export * from './mongodb';
 export * from './mongoose';
 export * from './gridfs';
-export * from './db-test';

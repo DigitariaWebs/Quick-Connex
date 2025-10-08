@@ -6,10 +6,10 @@
  */
 
 // Constants and Configuration
-export * from '@/constants/transfer-constants';
+export * from '@/constants/transfer';
 
 // Types and Interfaces
-export * from '@/types/transfer-types';
+export * from '@/types/transfer';
 
 // Core Services
 // TransferService is exported below in the re-export section
@@ -32,7 +32,7 @@ export {
   TRANSFER_CONFIG,
   TRANSFER_ERRORS,
   TRANSFER_SUCCESS
-} from '@/constants/transfer-constants';
+} from '@/constants/transfer';
 
 export {
   DateUtils,

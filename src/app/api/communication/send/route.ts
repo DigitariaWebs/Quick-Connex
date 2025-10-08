@@ -6,12 +6,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
-import CommunicationService from '@/lib/communication/communication-service';
+import CommunicationService from '@/lib/communication/core/communication-service';
 import {
   EmailMessage,
   SMSMessage,
   CommunicationChannel,
-} from '@/types/communication-types';
+} from '@/types/communication';
 
 // POST /api/communication/send - Send communication message
 export async function POST(request: NextRequest) {

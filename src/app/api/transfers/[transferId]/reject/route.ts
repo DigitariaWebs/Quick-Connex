@@ -11,8 +11,8 @@ import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import Hospital from '@/models/Hospital';
 import AdminService from '@/lib/services/admin-service';
-import { CommunicationService } from '@/lib/communication/communication-service';
-import { EmailMessage } from '@/types/communication-types';
+import { CommunicationService } from '@/lib/communication/core/communication-service';
+import { EmailMessage } from '@/types/communication';
 
 export async function GET(
   request: NextRequest,

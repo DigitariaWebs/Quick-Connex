@@ -14,14 +14,14 @@ import {
   TransferPriority,
   NOTIFICATION_TYPES,
   TRANSFER_CONFIG
-} from '@/constants/transfer-constants';
+} from '@/constants/transfer';
 import {
   ITransfer,
   TransferResponse,
   TransferNotificationData,
   UserInfo,
   PatientInfo
-} from '@/types/transfer-types';
+} from '@/types/transfer';
 
 /**
  * Transfer Event Types
