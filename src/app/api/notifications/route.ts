@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongoose';
+import dbConnect from '@/lib/database/mongoose';
 import Notification from '@/models/Notification';
-import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware';
+import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
 
 // GET /api/notifications - Get notifications for the authenticated user
 export async function GET(request: NextRequest) {

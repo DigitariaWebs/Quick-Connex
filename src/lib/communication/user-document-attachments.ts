@@ -2,7 +2,7 @@
  * Utility functions for converting user documents to email attachments
  */
 
-import { downloadFileFromGridFS } from '@/lib/gridfs';
+import { downloadFileFromGridFS } from '@/lib/database/gridfs';
 import { CommunicationAttachment } from '@/types/communication-types';
 import { IUser, IDocumentReference } from '@/models/User';
 

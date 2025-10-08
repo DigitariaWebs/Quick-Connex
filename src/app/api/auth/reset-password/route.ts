@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import dbConnect from '@/lib/mongoose';
+import dbConnect from '@/lib/database/mongoose';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
-import { rateLimit } from '@/lib/security';
+import { rateLimit } from '@/lib/services/security';
 
 export async function POST(request: NextRequest) {
   try {

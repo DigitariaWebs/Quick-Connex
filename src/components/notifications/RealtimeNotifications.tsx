@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNotificationSSE } from "@/hooks/useNotificationSSE";
+import { useSSE } from "@/contexts/SSEContext";
 import {
   Bell,
   AlertTriangle,
@@ -88,7 +88,7 @@ export default function RealtimeNotifications({
   const [showRead, setShowRead] = useState(false);
 
   // Use SSE for real-time notifications
-  const { connected, error, lastMessage } = useNotificationSSE();
+  const { connected, error, lastMessage } = useSSE();
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hideTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());

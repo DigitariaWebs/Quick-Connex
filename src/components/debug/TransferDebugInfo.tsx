@@ -8,7 +8,7 @@
 import {
   canCancelTransfer,
   getRemainingCancellationTimeString,
-} from "@/lib/transfer-cancellation-utils";
+} from '@/lib/transfers/transfer-cancellation-utils';
 
 interface TransferDebugInfoProps {
   transfer: any;

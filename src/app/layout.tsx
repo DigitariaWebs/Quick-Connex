@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { SSEProvider } from "@/contexts/SSEContext";
+import ServerConnectionLogger from "@/components/notifications/ServerConnectionLogger";
+import SSEDebugger from "@/components/notifications/SSEDebugger";
 // Remove startup logging from layout - not compatible with Vercel
-// import { logApplicationStartup } from "@/lib/startup-logger";
+// import { logApplicationStartup } from "@/lib/utils/startup-logger";
 
 // Log application startup only in development
 if (typeof window === "undefined" && process.env.NODE_ENV === "development") {
@@ -36,7 +39,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <SSEProvider>
+          <ServerConnectionLogger />
+          <SSEDebugger />
+          {children}
+        </SSEProvider>
       </body>
     </html>
   );

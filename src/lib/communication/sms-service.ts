@@ -16,7 +16,7 @@ import {
   CommunicationTemplate,
   CommunicationContent,
 } from '@/types/communication-types';
-import { getCommunicationConfig } from '@/lib/communication-config';
+import { getCommunicationConfig } from '@/lib/communication/communication-config';
 import TwilioProviderClass from './providers/twilio-provider';
 
 /**

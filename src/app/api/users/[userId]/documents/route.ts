@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { listUserFiles } from '@/lib/gridfs';
-import dbConnect from '@/lib/mongoose';
+import { listUserFiles } from '@/lib/database/gridfs';
+import dbConnect from '@/lib/database/mongoose';
 import User from '@/models/User';
 import { ObjectId } from 'mongodb';
 

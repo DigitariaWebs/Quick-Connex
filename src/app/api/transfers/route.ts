@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongoose';
+import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import Hospital from '@/models/Hospital';
-import { requireManager, requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware';
-import { validateTransferData } from '@/lib/transfer-validation';
-import { getNotificationService } from '@/lib/socket-server';
-import TimelineService from '@/lib/timeline-service';
+import { requireManager, requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
+import { validateTransferData } from '@/lib/transfers/transfer-validation';
+import TimelineService from '@/lib/services/timeline-service';
 
 // GET /api/transfers - Get transfer requests for employees
 export async function GET(request: NextRequest) {
@@ -283,21 +282,8 @@ export async function POST(request: NextRequest) {
       .populate('fromHospital', 'name address organization')
       .populate('toHospital', 'name address organization');
 
-    // Send real-time notification for new transfer
-    try {
-      const { getNotificationService } = await import('@/lib/socket-server');
-      const notificationService = getNotificationService();
-      if (notificationService) {
-        await notificationService.sendTransferStatusChange(
-          populatedTransfer,
-          'created',
-          'pending',
-          requestingUser
-        );
-      }
-    } catch (notificationError) {
-      console.error('Error sending real-time notification:', notificationError);
-    }
+    // Note: Real-time notifications are now handled by the global SSE system
+    console.log('✅ Transfer created successfully - notifications handled by global SSE system');
 
     // Send comprehensive notifications to admins (email + SMS)
     try {

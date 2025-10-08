@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useNotificationSSE } from "@/hooks/useNotificationSSE";
+import { useSSE } from "@/contexts/SSEContext";
 import NotificationManager from "@/components/notifications/NotificationManager";
 import { Bell, Settings } from "lucide-react";
 
@@ -21,8 +21,8 @@ export default function NotificationIntegration({
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Use SSE for real-time notifications
-  const { connected, error: sseError, lastMessage } = useNotificationSSE();
+  // Use global SSE connection for real-time notifications
+  const { connected, error: sseError, lastMessage } = useSSE();
 
   // Fetch initial unread count
   useEffect(() => {

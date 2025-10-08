@@ -51,14 +51,8 @@ app.prepare().then(() => {
         }
     });
 
-    // Initialize Socket.IO server
-    try {
-        const { initializeSocketServer } = require('./src/lib/socket-server.js');
-        const io = initializeSocketServer(httpServer);
-        console.log('🔌 Socket.IO server initialized successfully');
-    } catch (error) {
-        console.error('❌ Failed to initialize Socket.IO server:', error);
-    }
+    // SSE notifications are handled by Next.js API routes
+    console.log('🔌 SSE notification system ready');
 
     httpServer.listen(port, (err) => {
         if (err) {
@@ -68,7 +62,7 @@ app.prepare().then(() => {
             throw err;
         }
         console.log(`🎉 Server ready on http://${hostname}:${port}`);
-        console.log('🔌 WebSocket server ready for real-time notifications');
+        console.log('🔌 SSE notification system ready for real-time notifications');
 
         // Display network access information
         const networkIP = getLocalNetworkIP();

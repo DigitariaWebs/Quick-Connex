@@ -6,11 +6,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongoose';
+import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
-import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware';
-import TimelineService from '@/lib/timeline-service';
+import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
+import TimelineService from '@/lib/services/timeline-service';
 import TransferNotificationService from '@/lib/communication/transfer-notification-service';
 
 export async function PUT(
@@ -137,7 +137,12 @@ export async function PUT(
 
     // Send notifications
     try {
+      // Send email/SMS notifications
       await TransferNotificationService.sendTransferAcceptedNotification(transfer, user);
+      
+      // Note: Real-time notifications are now handled by the global SSE system
+      console.log('✅ Transfer accepted - real-time notifications handled by global SSE system');
+      
     } catch (notificationError) {
       console.error('Error sending acceptance notifications:', notificationError);
       // Don't fail the acceptance if notifications fail

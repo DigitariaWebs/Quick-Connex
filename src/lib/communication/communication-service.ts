@@ -24,7 +24,7 @@ import {
 } from '@/types/communication-types';
 import EmailService from './email-service';
 import SMSService from './sms-service';
-import { getCommunicationConfig, isEmailEnabled, isSMSEnabled } from '@/lib/communication-config';
+import { getCommunicationConfig, isEmailEnabled, isSMSEnabled } from '@/lib/communication/communication-config';
 import Notification from '@/models/Notification';
 import { Types } from 'mongoose';
 
@@ -217,12 +217,15 @@ export class CommunicationService implements ICommunicationService {
 
   /**
    * Get templates for a specific channel
+   * Note: Email templates are now generated dynamically by business logic services
    */
   async getTemplates(channel?: CommunicationChannel): Promise<CommunicationTemplate[]> {
     const templates: CommunicationTemplate[] = [];
 
     if (!channel || channel === 'email') {
-      templates.push(...this.emailService.getTemplates());
+      // Email templates are now generated dynamically by TransferNotificationService
+      // and other business logic services, so we return an empty array
+      templates.push(...[]);
     }
 
     if (!channel || channel === 'sms') {

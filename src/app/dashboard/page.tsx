@@ -13,7 +13,6 @@ import RecentActivity from "@/components/dashboard/RecentActivity";
 import QuickActions from "@/components/dashboard/QuickActions";
 import SchedulingNotifications from "@/components/notifications/SchedulingNotifications";
 import NotificationPopupManager from "@/components/notifications/NotificationPopupManager";
-import SSEDebugger from "@/components/notifications/SSEDebugger";
 import TransferFormModal from "@/components/modals/TransferFormModal";
 import MyAcceptedTransfersModal from "@/components/modals/MyAcceptedTransfersModal";
 import SearchTransfersModal from "@/components/modals/SearchTransfersModal";
@@ -107,9 +106,6 @@ export default function EmployeeDashboard() {
         position="top-right"
         enableSound={true}
       /> */}
-
-      {/* SSE Debugger - Remove this after testing */}
-      <SSEDebugger />
 
       {/* Sidebar */}
       {user && (

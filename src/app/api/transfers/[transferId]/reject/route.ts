@@ -6,11 +6,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongoose';
+import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import Hospital from '@/models/Hospital';
-import AdminService from '@/lib/admin-service';
+import AdminService from '@/lib/services/admin-service';
 import { CommunicationService } from '@/lib/communication/communication-service';
 import { EmailMessage } from '@/types/communication-types';
 

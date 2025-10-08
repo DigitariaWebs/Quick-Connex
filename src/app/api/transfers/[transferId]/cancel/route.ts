@@ -5,13 +5,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongoose';
+import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
-import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth-middleware';
-import TimelineService from '@/lib/timeline-service';
+import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
+import TimelineService from '@/lib/services/timeline-service';
 import TransferNotificationService from '@/lib/communication/transfer-notification-service';
-import { canCancelTransfer } from '@/lib/transfer-cancellation-utils';
+import { canCancelTransfer } from '@/lib/transfers/transfer-cancellation-utils';
 
 export async function PUT(
   request: NextRequest,
@@ -131,8 +131,11 @@ export async function PUT(
 
     // Send notifications
     try {
-      // TODO: Implement sendTransferCancelledNotification method
-      console.log('Transfer cancelled - notification would be sent here');
+      // Note: Real-time notifications are now handled by the global SSE system
+      console.log('✅ Transfer cancelled - real-time notifications handled by global SSE system');
+      
+      // TODO: Implement email/SMS sendTransferCancelledNotification method
+      console.log('Transfer cancelled - SSE notification sent, email/SMS notification would be sent here');
     } catch (notificationError) {
       console.error('Error sending cancellation notifications:', notificationError);
       // Don't fail the cancellation if notifications fail

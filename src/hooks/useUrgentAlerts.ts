@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
-import { useNotificationSSE } from './useNotificationSSE';
+import { useSSE } from '@/contexts/SSEContext';
 
 interface UrgentTransfer {
   id: string;
@@ -22,7 +22,7 @@ interface UrgentAlertsData {
 
 export function useUrgentAlerts() {
   const { user, isAuthenticated } = useAuth();
-  const { connected, error: sseError, lastMessage } = useNotificationSSE();
+  const { connected, error: sseError, lastMessage } = useSSE();
   const [data, setData] = useState<UrgentAlertsData>({
     urgentTransfers: [],
     loading: true,
@@ -106,8 +106,8 @@ export function useUrgentAlerts() {
       } else if (lastMessage.type === 'urgent_transfer') {
         // Add new urgent transfer
         const newUrgentTransfer: UrgentTransfer = {
-          id: lastMessage.data?.transfer?.id || lastMessage.id,
-          transferId: lastMessage.transferId || '',
+          id: lastMessage.data?.transfer?.id || lastMessage.data?.id || `urgent_${Date.now()}`,
+          transferId: lastMessage.data?.transferId || '',
           patientName: lastMessage.data?.transfer?.patient ? 
             `${lastMessage.data.transfer.patient.firstName} ${lastMessage.data.transfer.patient.lastName}` : 
             'Unknown Patient',

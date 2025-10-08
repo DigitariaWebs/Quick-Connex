@@ -6,13 +6,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongoose';
+import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import Hospital from '@/models/Hospital';
-import AdminService from '@/lib/admin-service';
+import AdminService from '@/lib/services/admin-service';
 import TransferNotificationService from '@/lib/communication/transfer-notification-service';
-import TimelineService from '@/lib/timeline-service';
+import TimelineService from '@/lib/services/timeline-service';
 
 export async function GET(
   request: NextRequest,
@@ -102,7 +102,12 @@ export async function GET(
 
     // Send notifications to manager and employees
     try {
+      // Send email/SMS notifications
       await TransferNotificationService.sendTransferApprovedNotification(transfer, admin);
+      
+      // Note: Real-time notifications are now handled by the global SSE system
+      console.log('✅ Transfer approved - real-time notifications handled by global SSE system');
+      
     } catch (notificationError) {
       console.error('Error sending approval notifications:', notificationError);
       // Don't fail the approval if notifications fail
@@ -224,7 +229,12 @@ export async function POST(
 
     // Send notifications to manager and employees
     try {
+      // Send email/SMS notifications
       await TransferNotificationService.sendTransferApprovedNotification(transfer, admin);
+      
+      // Note: Real-time notifications are now handled by the global SSE system
+      console.log('✅ Transfer approved - real-time notifications handled by global SSE system');
+      
     } catch (notificationError) {
       console.error('Error sending approval notifications:', notificationError);
       // Don't fail the approval if notifications fail

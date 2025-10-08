@@ -9,16 +9,19 @@
 
 import { CommunicationService } from './communication-service';
 import { EmailMessage, SMSMessage } from '@/types/communication-types';
-import AdminService from '@/lib/admin-service';
+import AdminService from '@/lib/services/admin-service';
 import User from '@/models/User';
-import dbConnect from '@/lib/mongoose';
+import dbConnect from '@/lib/database/mongoose';
 import { TransferCategory } from '@/constants/transfer-constants';
+import TemplateLoader from '@/lib/templates/template-loader';
 
 export class TransferNotificationService {
   private communicationService: CommunicationService;
+  private templateLoader: TemplateLoader;
 
   constructor() {
     this.communicationService = new CommunicationService();
+    this.templateLoader = TemplateLoader.getInstance();
   }
 
   /**
@@ -599,105 +602,21 @@ Please review and respond to this transfer request as soon as possible.
     
     const priorityIcon = transferData.priority === 'URGENT' ? '🚨' : '🚑';
     const priorityText = transferData.priority === 'URGENT' ? 'URGENT TRANSFER REQUEST' : 'TRANSFER REQUEST';
-    
-    return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${priorityText} - ${transferData.transferId}</title>
-    </head>
-    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc;">
-        <div style="background: ${priorityGradient}; padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 30px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);">
-            <h1 style="color: #1f2937; margin: 0; font-size: 28px; font-weight: 700;">${priorityIcon} ${priorityText}</h1>
-            <p style="color: #1f2937; margin: 8px 0 0 0; font-size: 16px; opacity: 0.9;">Transfer ID: <strong>${transferData.transferId}</strong></p>
-        </div>
-        
-        <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-            ${transferData.priority === 'URGENT' ? `
-            <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b; padding: 20px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #f59e0b;">
-                <h3 style="margin: 0 0 8px 0; color: #92400e; font-size: 18px; font-weight: 600;">⚠️ URGENT ACTION REQUIRED</h3>
-                <p style="margin: 0; color: #92400e;">This is an urgent transfer request that requires immediate attention and approval.</p>
-            </div>
-            ` : ''}
-            
-            ${this.generateCategorySpecificContent(transferData)}
-            
-            <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #3b82f6;">
-                <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">🏥 Transfer Details</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div>
-                        <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>From Hospital:</strong></p>
-                        <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.fromHospital}</p>
-                    </div>
-                    <div>
-                        <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>To Hospital:</strong></p>
-                        <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.toHospital}</p>
-                    </div>
-                    <div>
-                        <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Priority:</strong></p>
-                        <span style="background: ${transferData.priority === 'URGENT' ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase;">${transferData.priority}</span>
-                    </div>
-                    <div>
-                        <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Scheduled:</strong></p>
-                        <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.scheduledDate} at ${transferData.scheduledTime}</p>
-                    </div>
-                    <div style="grid-column: 1 / -1;">
-                        <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Reason:</strong></p>
-                        <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.reason}</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #8b5cf6;">
-                <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">👤 Requested By</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div>
-                        <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Name:</strong></p>
-                        <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.requestedBy}</p>
-                    </div>
-                    <div>
-                        <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Phone:</strong></p>
-                        <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.requestedByPhone}</p>
-                    </div>
-                    <div style="grid-column: 1 / -1;">
-                        <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Email:</strong></p>
-                        <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.requestedByEmail}</p>
-                    </div>
-                </div>
-            </div>
-            
-            ${transferData.notes ? `
-            <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #f59e0b;">
-                <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">📝 Additional Notes</h3>
-                <p style="margin: 0; color: #1f2937; line-height: 1.6;">${transferData.notes}</p>
-            </div>
-            ` : ''}
-            
-            <div style="text-align: center; margin: 40px 0;">
-                <a href="${transferData.approvalUrl}" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3); margin: 0 8px; transition: all 0.3s ease;">
-                    ✅ Approve Transfer
-                </a>
-                <a href="${transferData.rejectionUrl}" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3); margin: 0 8px; transition: all 0.3s ease;">
-                    ❌ Reject Transfer
-                </a>
-            </div>
-            
-            <div style="background: #f1f5f9; padding: 20px; border-radius: 12px; margin: 30px 0 0 0; border-left: 4px solid #64748b;">
-                <p style="margin: 0; color: #475569; font-size: 14px; line-height: 1.5;"><strong>Note:</strong> Please review the transfer details carefully before making a decision. Once approved, the transfer will be published to all employees for assignment.</p>
-            </div>
-            
-            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-            
-            <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
-                This is an automated notification from the <strong>Patient Management System</strong>.<br>
-                If you have any questions, please contact the system administrator.
-            </p>
-        </div>
-    </body>
-    </html>
-    `;
+    const priorityBadgeGradient = transferData.priority === 'URGENT' 
+      ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' 
+      : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+
+    const templateData = {
+      ...transferData,
+      priorityGradient,
+      priorityIcon,
+      priorityText,
+      priorityBadgeGradient,
+      isUrgent: transferData.priority === 'URGENT',
+      categorySpecificContent: this.generateCategorySpecificContent(transferData)
+    };
+
+    return this.templateLoader.renderTemplate('email/transfer/request.html', templateData);
   }
 
   /**
@@ -753,79 +672,16 @@ Please log into the system to view full details and take appropriate action.
       ? 'You can now track the transfer progress in your dashboard.'
       : 'Log into the system to view details and accept the transfer assignment.';
     
-    // Generate category-specific content section
-    const categoryContent = this.generateCategorySpecificContent(transferData);
-    
-    return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${title} - ${transferData.transferId}</title>
-    </head>
-    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc;">
-        <div style="background: linear-gradient(135deg, #dbeafe 0%, #88f5c3 25%, #a7f3d0 50%, #bfdbfe 75%, #d4fce8 100%); padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 30px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);">
-            <h1 style="color: #1f2937; margin: 0; font-size: 28px; font-weight: 700;">${icon} ${title}</h1>
-            <p style="color: #1f2937; margin: 8px 0 0 0; font-size: 16px; opacity: 0.9;">Transfer ID: <strong>${transferData.transferId}</strong></p>
-        </div>
-        
-        <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-            <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #22c55e; padding: 20px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #22c55e;">
-                <h3 style="margin: 0 0 8px 0; color: #166534; font-size: 18px; font-weight: 600;">🎉 Great News!</h3>
-                <p style="margin: 0; color: #166534;">${message}</p>
-            </div>
-            
-            <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #10b981;">
-                <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">📋 Transfer Details</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div>
-                        <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Patient:</strong></p>
-                        <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.patientName}</p>
-                    </div>
-                    <div>
-                        <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Priority:</strong></p>
-                        <span style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase;">${transferData.priority}</span>
-                    </div>
-                    <div>
-                        <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>From Hospital:</strong></p>
-                        <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.fromHospital}</p>
-                    </div>
-                    <div>
-                        <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>To Hospital:</strong></p>
-                        <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.toHospital}</p>
-                    </div>
-                    <div>
-                        <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Approved by:</strong></p>
-                        <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.approvedBy}</p>
-                    </div>
-                    <div>
-                        <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Approved at:</strong></p>
-                        <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.approvedAt}</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div style="text-align: center; margin: 40px 0;">
-                <a href="${process.env.BASE_URL || 'http://localhost:3000'}/dashboard" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3); transition: all 0.3s ease;">
-                    🏠 Go to Dashboard
-                </a>
-            </div>
-            
-            <div style="background: #f1f5f9; padding: 20px; border-radius: 12px; margin: 30px 0 0 0; border-left: 4px solid #64748b;">
-                <p style="margin: 0; color: #475569; font-size: 14px; line-height: 1.5;"><strong>Next Steps:</strong> ${actionText}</p>
-            </div>
-            
-            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-            
-            <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
-                This is an automated notification from the <strong>Patient Management System</strong>.<br>
-                If you have any questions, please contact the system administrator.
-            </p>
-        </div>
-    </body>
-    </html>
-    `;
+    const templateData = {
+      ...transferData,
+      title,
+      message,
+      icon,
+      actionText,
+      dashboardUrl: `${process.env.BASE_URL || 'http://localhost:3000'}/dashboard`
+    };
+
+    return this.templateLoader.renderTemplate('email/transfer/approved.html', templateData);
   }
 
   /**
@@ -1043,96 +899,12 @@ Patient Management System
    * Generate transfer accepted email HTML for manager
    */
   private generateTransferAcceptedEmailHTML(transferData: any, recipient: string): string {
-    return `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Transfer Accepted - ${transferData.transferId}</title>
-        <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #374151; margin: 0; padding: 0; background-color: #f9fafb; }
-            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-            .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; }
-            .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
-            .content { padding: 30px; }
-            .status-badge { display: inline-block; background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; margin-bottom: 20px; }
-            .transfer-details { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
-            .detail-row { display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0; }
-            .detail-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-            .detail-label { font-weight: 600; color: #4b5563; }
-            .detail-value { color: #1f2937; font-weight: 500; }
-            .priority-urgent { color: #dc2626; font-weight: 600; }
-            .priority-high { color: #ea580c; font-weight: 600; }
-            .priority-medium { color: #d97706; font-weight: 600; }
-            .priority-low { color: #059669; font-weight: 600; }
-            .footer { background: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb; }
-            .button { display: inline-block; background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 10px 0; }
-            .button:hover { background: #059669; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>✅ Transfer Accepted</h1>
-                <p style="margin: 10px 0 0 0; opacity: 0.9;">Transfer request has been accepted and is now in progress</p>
-            </div>
-            
-            <div class="content">
-                <div class="status-badge">ACCEPTED</div>
-                
-                <p>Great news! The transfer request has been accepted by an employee and is now in progress.</p>
-                
-                <div class="transfer-details">
-                    <div class="detail-row">
-                        <span class="detail-label">Transfer ID:</span>
-                        <span class="detail-value">${transferData.transferId}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Patient:</span>
-                        <span class="detail-value">${transferData.patientName}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">From Hospital:</span>
-                        <span class="detail-value">${transferData.fromHospital}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">To Hospital:</span>
-                        <span class="detail-value">${transferData.toHospital}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Priority:</span>
-                        <span class="detail-value priority-${transferData.priority.toLowerCase()}">${transferData.priority}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Accepted By:</span>
-                        <span class="detail-value">${transferData.acceptedBy}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Accepted At:</span>
-                        <span class="detail-value">${transferData.acceptedAt}</span>
-                    </div>
-                </div>
-                
-                <p>The transfer is now being handled by the assigned employee. You will receive updates as the transfer progresses.</p>
-                
-                <p style="margin-top: 30px; padding: 20px; background: #f0f9ff; border-left: 4px solid #0ea5e9; border-radius: 4px;">
-                    <strong>Next Steps:</strong> The assigned employee will now handle the transfer process. You can track the progress through the system dashboard.
-                </p>
-            </div>
-            
-            <div class="footer">
-                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-                
-                <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
-                    This is an automated notification from the <strong>Patient Management System</strong>.<br>
-                    If you have any questions, please contact the system administrator.
-                </p>
-            </div>
-        </div>
-    </body>
-    </html>
-    `;
+    const templateData = {
+      ...transferData,
+      priorityLower: transferData.priority.toLowerCase()
+    };
+
+    return this.templateLoader.renderTemplate('email/transfer/accepted.html', templateData);
   }
 }
 

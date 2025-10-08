@@ -16,7 +16,7 @@ import {
   CommunicationTemplate,
   CommunicationContent,
 } from '@/types/communication-types';
-import { getCommunicationConfig } from '@/lib/communication-config';
+import { getCommunicationConfig } from '@/lib/communication/communication-config';
 import SendGridProvider from './providers/sendgrid-provider';
 import GmailAPIProvider from './providers/gmail-api-provider';
 import GmailSMTPProvider from './providers/gmail-smtp-provider';
@@ -32,7 +32,8 @@ export class EmailService {
   constructor() {
     this.config = getCommunicationConfig();
     this.initializeProviders();
-    this.loadTemplates();
+    // Note: Templates are now generated dynamically by business logic services
+    // No need to load static templates
   }
 
   /**
@@ -69,17 +70,11 @@ export class EmailService {
 
   /**
    * Load email templates
+   * Note: This method is kept for compatibility but templates are now generated dynamically
    */
   private async loadTemplates(): Promise<void> {
-    try {
-      // Load default templates
-      const defaultTemplates = await this.getDefaultTemplates();
-      defaultTemplates.forEach(template => {
-        this.templates.set(template.id, template);
-      });
-    } catch (error) {
-      console.error('Error loading email templates:', error);
-    }
+    // Templates are now generated dynamically by business logic services
+    // This method is kept for compatibility but does nothing
   }
 
   /**
@@ -161,31 +156,22 @@ export class EmailService {
 
   /**
    * Render email template
+   * Note: This method is kept for compatibility but templates are now generated dynamically
    */
   async renderTemplate(templateId: string, data: Record<string, any>): Promise<CommunicationContent> {
-    const template = this.templates.get(templateId);
-    if (!template) {
-      throw new Error(`Template ${templateId} not found`);
-    }
-
-    if (template.channel !== 'email') {
-      throw new Error(`Template ${templateId} is not an email template`);
-    }
-
-    return {
-      subject: this.renderString(template.subject || '', data),
-      text: this.renderString(template.text, data),
-      html: template.html ? this.renderString(template.html, data) : undefined,
-      template: templateId,
-      templateData: data,
-    };
+    // Templates are now generated dynamically by business logic services
+    // This method is kept for compatibility but will throw an error
+    throw new Error(`Template ${templateId} not found. Templates are now generated dynamically by business logic services.`);
   }
 
   /**
    * Get available templates
+   * Note: Templates are now generated dynamically by business logic services
    */
   getTemplates(): CommunicationTemplate[] {
-    return Array.from(this.templates.values()).filter(t => t.channel === 'email');
+    // Templates are now generated dynamically by business logic services
+    // Return empty array for compatibility
+    return [];
   }
 
   /**
@@ -233,253 +219,12 @@ export class EmailService {
 
   /**
    * Get default email templates
+   * Note: Templates are now generated dynamically by TransferNotificationService
    */
   private async getDefaultTemplates(): Promise<CommunicationTemplate[]> {
-    return [
-      {
-        id: 'new_transfer_request_email',
-        name: 'New Transfer Request',
-        channel: 'email',
-        category: 'transfer',
-        subject: '🚑 {{priority}} Transfer Request - {{transferId}}',
-        text: '{{priority}} Transfer Request\n\nTransfer ID: {{transferId}}\nPatient: {{patientName}} ({{patientAge}} years)\nFrom: {{fromHospital}}\nTo: {{toHospital}}\nRequested by: {{requestedBy}}\n\nApprove: {{approvalLink}}\nReject: {{rejectionLink}}',
-        html: `
-          <!DOCTYPE html>
-          <html>
-          <head>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>{{priority}} Transfer Request - {{transferId}}</title>
-          </head>
-          <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc;">
-              <div style="background: {{priorityGradient}}; padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 30px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);">
-                  <h1 style="color: #1f2937; margin: 0; font-size: 28px; font-weight: 700;">{{priorityIcon}} {{priority}} TRANSFER REQUEST</h1>
-                  <p style="color: #1f2937; margin: 8px 0 0 0; font-size: 16px; opacity: 0.9;">Transfer ID: <strong>{{transferId}}</strong></p>
-              </div>
-              
-              <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                  {{urgentAlert}}
-                  
-                  <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #10b981;">
-                      <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">👤 Patient Information</h3>
-                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                          <div>
-                              <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Name:</strong></p>
-                              <p style="margin: 0; color: #1f2937; font-weight: 600;">{{patientName}}</p>
-                          </div>
-                          <div>
-                              <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Age:</strong></p>
-                              <p style="margin: 0; color: #1f2937; font-weight: 600;">{{patientAge}} years</p>
-                          </div>
-                          <div style="grid-column: 1 / -1;">
-                              <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Dossier Number:</strong></p>
-                              <p style="margin: 0; color: #1f2937; font-weight: 600;">{{dossierNumber}}</p>
-                          </div>
-                      </div>
-                  </div>
-                  
-                  <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #3b82f6;">
-                      <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">🏥 Transfer Details</h3>
-                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                          <div>
-                              <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>From Hospital:</strong></p>
-                              <p style="margin: 0; color: #1f2937; font-weight: 600;">{{fromHospital}}</p>
-                          </div>
-                          <div>
-                              <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>To Hospital:</strong></p>
-                              <p style="margin: 0; color: #1f2937; font-weight: 600;">{{toHospital}}</p>
-                          </div>
-                          <div>
-                              <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Priority:</strong></p>
-                              <span style="background: {{priorityBadgeGradient}}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase;">{{priority}}</span>
-                          </div>
-                          <div>
-                              <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Scheduled:</strong></p>
-                              <p style="margin: 0; color: #1f2937; font-weight: 600;">{{scheduledDate}} at {{scheduledTime}}</p>
-                          </div>
-                          <div style="grid-column: 1 / -1;">
-                              <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Reason:</strong></p>
-                              <p style="margin: 0; color: #1f2937; font-weight: 600;">{{reason}}</p>
-                          </div>
-                      </div>
-                  </div>
-                  
-                  <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #8b5cf6;">
-                      <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">👤 Requested By</h3>
-                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                          <div>
-                              <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Name:</strong></p>
-                              <p style="margin: 0; color: #1f2937; font-weight: 600;">{{requestedBy}}</p>
-                          </div>
-                          <div>
-                              <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Phone:</strong></p>
-                              <p style="margin: 0; color: #1f2937; font-weight: 600;">{{requestorPhone}}</p>
-                          </div>
-                          <div style="grid-column: 1 / -1;">
-                              <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Email:</strong></p>
-                              <p style="margin: 0; color: #1f2937; font-weight: 600;">{{requestorEmail}}</p>
-                          </div>
-                      </div>
-                  </div>
-                  
-                  {{notesSection}}
-                  
-                  <div style="text-align: center; margin: 40px 0;">
-                      <a href="{{approvalLink}}" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3); margin: 0 8px; transition: all 0.3s ease;">
-                          ✅ Approve Transfer
-                      </a>
-                      <a href="{{rejectionLink}}" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3); margin: 0 8px; transition: all 0.3s ease;">
-                          ❌ Reject Transfer
-                      </a>
-                  </div>
-                  
-                  <div style="background: #f1f5f9; padding: 20px; border-radius: 12px; margin: 30px 0 0 0; border-left: 4px solid #64748b;">
-                      <p style="margin: 0; color: #475569; font-size: 14px; line-height: 1.5;"><strong>Note:</strong> Please review the transfer details carefully before making a decision. Once approved, the transfer will be published to all employees for assignment.</p>
-                  </div>
-                  
-                  <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-                  
-                  <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
-                      This is an automated notification from the <strong>Patient Management System</strong>.<br>
-                      If you have any questions, please contact the system administrator.
-                  </p>
-              </div>
-          </body>
-          </html>
-        `,
-        variables: ['transferId', 'patientName', 'patientAge', 'dossierNumber', 'fromHospital', 'toHospital', 'priority', 'reason', 'scheduledDate', 'scheduledTime', 'requestedBy', 'requestorEmail', 'requestorPhone', 'notes', 'approvalLink', 'rejectionLink', 'priorityGradient', 'priorityIcon', 'urgentAlert', 'priorityBadgeGradient', 'notesSection'],
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 'transfer_notification',
-        name: 'Transfer Notification',
-        channel: 'email',
-        category: 'transfer',
-        subject: 'Transfer Update: {{patientName}}',
-        text: 'Transfer update for {{patientName}} from {{fromHospital}} to {{toHospital}}. Status: {{status}}',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2>Transfer Update</h2>
-            <p><strong>Patient:</strong> {{patientName}}</p>
-            <p><strong>From:</strong> {{fromHospital}}</p>
-            <p><strong>To:</strong> {{toHospital}}</p>
-            <p><strong>Status:</strong> {{status}}</p>
-            <p><strong>Priority:</strong> {{priority}}</p>
-            {{#if scheduledDate}}
-            <p><strong>Scheduled Date:</strong> {{scheduledDate}}</p>
-            {{/if}}
-            <hr>
-            <p><small>This is an automated message from the Patient Management System.</small></p>
-          </div>
-        `,
-        variables: ['patientName', 'fromHospital', 'toHospital', 'status', 'priority', 'scheduledDate'],
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 'urgent_alert',
-        name: 'Urgent Transfer Alert',
-        channel: 'email',
-        category: 'urgent',
-        subject: '🚨 URGENT: {{patientName}} Transfer Required',
-        text: 'URGENT: {{patientName}} requires immediate transfer from {{fromHospital}} to {{toHospital}}',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #ff0000; padding: 20px;">
-            <h2 style="color: #ff0000;">🚨 URGENT TRANSFER ALERT</h2>
-            <p><strong>Patient:</strong> {{patientName}}</p>
-            <p><strong>From:</strong> {{fromHospital}}</p>
-            <p><strong>To:</strong> {{toHospital}}</p>
-            <p><strong>Priority:</strong> <span style="color: #ff0000; font-weight: bold;">{{priority}}</span></p>
-            <p><strong>Reason:</strong> {{reason}}</p>
-            <hr>
-            <p style="color: #ff0000; font-weight: bold;">IMMEDIATE ACTION REQUIRED</p>
-            <p><small>This is an automated urgent alert from the Patient Management System.</small></p>
-          </div>
-        `,
-        variables: ['patientName', 'fromHospital', 'toHospital', 'priority', 'reason'],
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 'system_notification',
-        name: 'System Notification',
-        channel: 'email',
-        category: 'system',
-        subject: 'System Notification: {{title}}',
-        text: '{{message}}',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2>{{title}}</h2>
-            <p>{{message}}</p>
-            {{#if actionUrl}}
-            <p><a href="{{actionUrl}}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Take Action</a></p>
-            {{/if}}
-            <hr>
-            <p><small>This is an automated message from the Patient Management System.</small></p>
-          </div>
-        `,
-        variables: ['title', 'message', 'actionUrl'],
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 'password_reset',
-        name: 'Password Reset',
-        channel: 'email',
-        category: 'authentication',
-        subject: 'Reset Your Password - Patient Management System',
-        text: 'Hello {{firstName}}, you requested a password reset. Click the link to reset your password: {{resetUrl}}. This link expires in {{expiresIn}}.',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #dbeafe 0%, #88f5c3 25%, #a7f3d0 50%, #bfdbfe 75%, #d4fce8 100%); padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 30px;">
-              <h1 style="color: #1f2937; margin: 0; font-size: 28px;">Password Reset Request</h1>
-            </div>
-            
-            <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-              <h2 style="color: #1f2937; margin-bottom: 20px;">Hello {{firstName}} {{lastName}},</h2>
-              
-              <p style="color: #4b5563; line-height: 1.6; margin-bottom: 20px;">
-                We received a request to reset your password for your Patient Management System account.
-              </p>
-              
-              <p style="color: #4b5563; line-height: 1.6; margin-bottom: 30px;">
-                Click the button below to reset your password:
-              </p>
-              
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="{{resetUrl}}" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);">
-                  Reset Password
-                </a>
-              </div>
-              
-              <p style="color: #6b7280; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
-                <strong>Important:</strong> This link will expire in {{expiresIn}}. If you don't reset your password within this time, you'll need to request a new reset link.
-              </p>
-              
-              <p style="color: #6b7280; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
-                If you didn't request this password reset, please ignore this email. Your password will remain unchanged.
-              </p>
-              
-              <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-              
-              <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
-                This is an automated message from the Patient Management System.<br>
-                If you have any questions, please contact your system administrator.
-              </p>
-            </div>
-          </div>
-        `,
-        variables: ['firstName', 'lastName', 'resetUrl', 'expiresIn'],
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ];
+    // Return empty array since templates are generated dynamically
+    // by TransferNotificationService and other business logic services
+    return [];
   }
 }
 

@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireEmployeeOrManager } from '@/lib/auth-middleware';
-import { NotificationSSEService } from '@/lib/notification-sse-service';
+import { requireEmployeeOrManager } from '@/lib/auth/auth-middleware';
 
 // GET /api/notifications/sse - Server-Sent Events endpoint for real-time notifications
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔗 SSE Endpoint: Request received');
+    console.log('🔗 SSE Endpoint: Cookies:', request.cookies.getAll());
+    
     // Authenticate user
     const authResult = await requireEmployeeOrManager(request);
     if (!authResult.success) {
+      console.log('🔗 SSE Endpoint: Authentication failed');
       return authResult.response;
     }
+    
+    console.log('🔗 SSE Endpoint: Authentication successful for user:', authResult.user._id);
 
     const userId = authResult.user._id;
     const userType = authResult.user.userType;
@@ -28,9 +33,8 @@ export async function GET(request: NextRequest) {
         })}\n\n`;
         controller.enqueue(encoder.encode(initialMessage));
 
-        // Register this connection with the SSE service
-        const sseService = NotificationSSEService.getInstance();
-        sseService.addConnection(userId, controller, encoder);
+        // Log connection for debugging
+        console.log(`🔗 SSE Endpoint: User ${userId} (${userType}) connected to SSE stream`);
 
         // Send heartbeat every 30 seconds to keep connection alive
         const heartbeatInterval = setInterval(() => {
@@ -43,7 +47,6 @@ export async function GET(request: NextRequest) {
           } catch (error) {
             console.error('Error sending heartbeat:', error);
             clearInterval(heartbeatInterval);
-            sseService.removeConnection(userId);
           }
         }, 30000);
 
@@ -51,7 +54,6 @@ export async function GET(request: NextRequest) {
         request.signal.addEventListener('abort', () => {
           console.log(`SSE connection closed for user ${userId}`);
           clearInterval(heartbeatInterval);
-          sseService.removeConnection(userId);
         });
       }
     });

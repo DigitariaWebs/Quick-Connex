@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useNotificationSSE } from "@/hooks/useNotificationSSE";
+import { useSSE } from "@/contexts/SSEContext";
 import NotificationPopup from "./NotificationPopup";
 
 interface NotificationData {
@@ -34,7 +34,7 @@ export default function NotificationPopupManager({
 }: NotificationPopupManagerProps) {
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
-  const { connected, lastMessage } = useNotificationSSE();
+  const { connected, lastMessage } = useSSE();
 
   // Initialize audio
   useEffect(() => {
@@ -70,14 +70,18 @@ export default function NotificationPopupManager({
 
     if (shouldShowPopup) {
       const notification: NotificationData = {
-        id: lastMessage.id,
+        id: lastMessage.data?.id || `notification_${Date.now()}`,
         type: lastMessage.type,
-        priority: lastMessage.priority as "high" | "medium" | "low",
-        title: lastMessage.title,
-        message: lastMessage.message,
-        transferId: lastMessage.transferId,
+        priority:
+          (lastMessage.data?.priority as "high" | "medium" | "low") || "medium",
+        title: lastMessage.data?.title || "Notification",
+        message:
+          lastMessage.message ||
+          lastMessage.data?.message ||
+          "New notification",
+        transferId: lastMessage.data?.transferId,
         data: lastMessage.data,
-        timestamp: lastMessage.timestamp,
+        timestamp: lastMessage.timestamp || new Date().toISOString(),
       };
 
       // Add notification to list
@@ -92,7 +96,7 @@ export default function NotificationPopupManager({
       // Play sound for high priority notifications
       if (
         audio &&
-        (lastMessage.priority === "high" ||
+        (lastMessage.data?.priority === "high" ||
           lastMessage.type === "urgent_transfer")
       ) {
         audio.play().catch(console.error);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { downloadFileFromGridFS } from '@/lib/gridfs';
+import { downloadFileFromGridFS } from '@/lib/database/gridfs';
 import { ObjectId } from 'mongodb';
 
 /**

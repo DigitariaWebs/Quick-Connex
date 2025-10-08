@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{priorityText}} - {{transferId}}</title>
+  </head>
+  <body
+    style="
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f8fafc;
+    "
+  >
+    <div
+      style="background: {{priorityGradient}}; padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 30px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);"
+    >
+      <h1 style="color: #1f2937; margin: 0; font-size: 28px; font-weight: 700">
+        {{priorityIcon}} {{priorityText}}
+      </h1>
+      <p
+        style="color: #1f2937; margin: 8px 0 0 0; font-size: 16px; opacity: 0.9"
+      >
+        Transfer ID: <strong>{{transferId}}</strong>
+      </p>
+    </div>
+
+    <div
+      style="
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      "
+    >
+      {{#if isUrgent}}
+      <div
+        style="
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          border: 1px solid #f59e0b;
+          padding: 20px;
+          border-radius: 12px;
+          margin-bottom: 30px;
+          border-left: 4px solid #f59e0b;
+        "
+      >
+        <h3
+          style="
+            margin: 0 0 8px 0;
+            color: #92400e;
+            font-size: 18px;
+            font-weight: 600;
+          "
+        >
+          ⚠️ URGENT ACTION REQUIRED
+        </h3>
+        <p style="margin: 0; color: #92400e">
+          This is an urgent transfer request that requires immediate attention
+          and approval.
+        </p>
+      </div>
+      {{/if}} {{categorySpecificContent}}
+
+      <div
+        style="
+          background: #f8fafc;
+          padding: 24px;
+          border-radius: 12px;
+          margin-bottom: 30px;
+          border-left: 4px solid #3b82f6;
+        "
+      >
+        <h3
+          style="
+            margin: 0 0 16px 0;
+            color: #1f2937;
+            font-size: 20px;
+            font-weight: 600;
+          "
+        >
+          🏥 Transfer Details
+        </h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
+          <div>
+            <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px">
+              <strong>From Hospital:</strong>
+            </p>
+            <p style="margin: 0; color: #1f2937; font-weight: 600">
+              {{fromHospital}}
+            </p>
+          </div>
+          <div>
+            <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px">
+              <strong>To Hospital:</strong>
+            </p>
+            <p style="margin: 0; color: #1f2937; font-weight: 600">
+              {{toHospital}}
+            </p>
+          </div>
+          <div>
+            <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px">
+              <strong>Priority:</strong>
+            </p>
+            <span
+              style="background: {{priorityBadgeGradient}}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase;"
+              >{{priority}}</span
+            >
+          </div>
+          <div>
+            <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px">
+              <strong>Scheduled:</strong>
+            </p>
+            <p style="margin: 0; color: #1f2937; font-weight: 600">
+              {{scheduledDate}} at {{scheduledTime}}
+            </p>
+          </div>
+          <div style="grid-column: 1 / -1">
+            <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px">
+              <strong>Reason:</strong>
+            </p>
+            <p style="margin: 0; color: #1f2937; font-weight: 600">
+              {{reason}}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style="
+          background: #f8fafc;
+          padding: 24px;
+          border-radius: 12px;
+          margin-bottom: 30px;
+          border-left: 4px solid #8b5cf6;
+        "
+      >
+        <h3
+          style="
+            margin: 0 0 16px 0;
+            color: #1f2937;
+            font-size: 20px;
+            font-weight: 600;
+          "
+        >
+          👤 Requested By
+        </h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
+          <div>
+            <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px">
+              <strong>Name:</strong>
+            </p>
+            <p style="margin: 0; color: #1f2937; font-weight: 600">
+              {{requestedBy}}
+            </p>
+          </div>
+          <div>
+            <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px">
+              <strong>Phone:</strong>
+            </p>
+            <p style="margin: 0; color: #1f2937; font-weight: 600">
+              {{requestedByPhone}}
+            </p>
+          </div>
+          <div style="grid-column: 1 / -1">
+            <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px">
+              <strong>Email:</strong>
+            </p>
+            <p style="margin: 0; color: #1f2937; font-weight: 600">
+              {{requestedByEmail}}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {{#if notes}}
+      <div
+        style="
+          background: #f8fafc;
+          padding: 24px;
+          border-radius: 12px;
+          margin-bottom: 30px;
+          border-left: 4px solid #f59e0b;
+        "
+      >
+        <h3
+          style="
+            margin: 0 0 16px 0;
+            color: #1f2937;
+            font-size: 20px;
+            font-weight: 600;
+          "
+        >
+          📝 Additional Notes
+        </h3>
+        <p style="margin: 0; color: #1f2937; line-height: 1.6">{{notes}}</p>
+      </div>
+      {{/if}}
+
+      <div style="text-align: center; margin: 40px 0">
+        <a
+          href="{{approvalUrl}}"
+          style="
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            display: inline-block;
+            box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+            margin: 0 8px;
+            transition: all 0.3s ease;
+          "
+        >
+          ✅ Approve Transfer
+        </a>
+        <a
+          href="{{rejectionUrl}}"
+          style="
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            display: inline-block;
+            box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+            margin: 0 8px;
+            transition: all 0.3s ease;
+          "
+        >
+          ❌ Reject Transfer
+        </a>
+      </div>
+
+      <div
+        style="
+          background: #f1f5f9;
+          padding: 20px;
+          border-radius: 12px;
+          margin: 30px 0 0 0;
+          border-left: 4px solid #64748b;
+        "
+      >
+        <p style="margin: 0; color: #475569; font-size: 14px; line-height: 1.5">
+          <strong>Note:</strong> Please review the transfer details carefully
+          before making a decision. Once approved, the transfer will be
+          published to all employees for assignment.
+        </p>
+      </div>
+
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0" />
+
+      <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0">
+        This is an automated notification from the
+        <strong>Patient Management System</strong>.<br />
+        If you have any questions, please contact the system administrator.
+      </p>
+    </div>
+  </body>
+</html>

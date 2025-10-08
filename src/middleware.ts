@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifyToken } from '@/lib/jwt';
+import { verifyToken } from '@/lib/auth/jwt';
 
 // Log when middleware is loaded
 console.log('🔧 Middleware: Turbopack middleware loaded');
@@ -14,11 +14,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/', '/approval-success', '/approval-error'];
+  const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/', '/approval-success', '/approval-error', '/template-manager'];
   const isPublicRoute = publicRoutes.includes(pathname);
 
   // API routes that don't require authentication
-  const publicApiRoutes = ['/api/auth/login', '/api/auth/signup', '/api/auth/gmail', '/api/auth/approve-user', '/api/auth/signup-approval', '/api/auth/forgot-password', '/api/auth/reset-password', '/api/files', '/api/hospitals'];
+  const publicApiRoutes = ['/api/auth/login', '/api/auth/signup', '/api/auth/gmail', '/api/auth/approve-user', '/api/auth/signup-approval', '/api/auth/forgot-password', '/api/auth/reset-password', '/api/files', '/api/hospitals', '/api/templates'];
   
   // Check for specific transfer approval/rejection endpoints
   const isTransferApprovalRoute = pathname.match(/^\/api\/transfers\/[^\/]+\/(approve|reject)$/);

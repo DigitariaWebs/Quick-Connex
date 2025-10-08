@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongoose';
+import dbConnect from '@/lib/database/mongoose';
 import User from '@/models/User';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
@@ -8,7 +8,7 @@ import {
   validateFile, 
   calculateFileChecksum,
   type FileMetadata 
-} from '@/lib/gridfs';
+} from '@/lib/database/gridfs';
 
 // Validation utilities
 const validateEmail = (email: string): boolean => {
@@ -387,7 +387,7 @@ export async function POST(request: Request) {
       // Update file metadata with actual user ID for employees
       if (userType === 'employee' && savedUser.documents && savedUser.documents.length > 0) {
         console.log('🔄 API: Updating file metadata with actual user ID...');
-        const { updateFileMetadata } = await import('@/lib/gridfs');
+        const { updateFileMetadata } = await import('@/lib/database/gridfs');
         
         for (const doc of savedUser.documents) {
           try {

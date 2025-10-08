@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireEmployeeOrManager } from '@/lib/auth-middleware';
-import { NotificationSSEService } from '@/lib/notification-sse-service';
+import { requireEmployeeOrManager } from '@/lib/auth/auth-middleware';
+// Note: Real-time notifications are now handled by the global SSE system
 
 // POST /api/test-notifications - Trigger test notifications for SSE testing
 export async function POST(request: NextRequest) {
@@ -16,21 +16,12 @@ export async function POST(request: NextRequest) {
     const userId = authResult.user._id;
     const userName = `${authResult.user.firstName} ${authResult.user.lastName}`;
 
-    // Get the SSE service
-    const sseService = NotificationSSEService.getInstance();
-
-    if (!sseService) {
-      return NextResponse.json(
-        { error: 'SSE service not available' },
-        { status: 503 }
-      );
-    }
-
-    // Create test notifications based on type
+    // Create test notification data based on type
+    let notificationData;
+    
     switch (notificationType) {
       case 'test':
-        // Send a simple test notification
-        sseService.sendToUser(userId, {
+        notificationData = {
           id: `test_${Date.now()}`,
           type: 'test_notification',
           priority: 'medium',
@@ -43,12 +34,11 @@ export async function POST(request: NextRequest) {
             triggeredBy: userName,
             timestamp: new Date().toISOString()
           }
-        });
+        };
         break;
 
       case 'transfer_status':
-        // Simulate a transfer status change
-        sseService.sendToUser(userId, {
+        notificationData = {
           id: `transfer_test_${Date.now()}`,
           type: 'transfer_status_change',
           priority: 'high',
@@ -73,12 +63,11 @@ export async function POST(request: NextRequest) {
               userType: authResult.user.userType
             }
           }
-        });
+        };
         break;
 
       case 'urgent':
-        // Simulate an urgent notification
-        sseService.sendToUser(userId, {
+        notificationData = {
           id: `urgent_test_${Date.now()}`,
           type: 'urgent_transfer',
           priority: 'high',
@@ -97,12 +86,22 @@ export async function POST(request: NextRequest) {
               priority: 'urgent'
             }
           }
-        });
+        };
         break;
 
       case 'count_update':
-        // Send notification count update
-        await sseService.sendNotificationCountUpdate(userId);
+        notificationData = {
+          id: `count_update_${Date.now()}`,
+          type: 'notification_count_update',
+          priority: 'low',
+          title: 'Notification Count Updated',
+          message: 'Your notification count has been updated',
+          timestamp: new Date().toISOString(),
+          read: false,
+          data: {
+            count: Math.floor(Math.random() * 10) + 1
+          }
+        };
         break;
 
       default:
@@ -114,8 +113,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Test notification sent successfully`,
+      message: `Test notification data created successfully`,
       notificationType,
+      notificationData,
       timestamp: new Date().toISOString()
     });
 

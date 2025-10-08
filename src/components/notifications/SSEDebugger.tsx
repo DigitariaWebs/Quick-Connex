@@ -1,10 +1,17 @@
 "use client";
 
-import { useNotificationSSE } from "@/hooks/useNotificationSSE";
+import { useSSE } from "@/contexts/SSEContext";
 
 export default function SSEDebugger() {
-  const { connected, error, lastMessage, reconnect, disconnect } =
-    useNotificationSSE();
+  const {
+    connected,
+    connecting,
+    error,
+    lastMessage,
+    connectionQuality,
+    retryCount,
+    subscribers,
+  } = useSSE();
 
   return (
     <div className="fixed bottom-4 right-4 bg-black bg-opacity-75 text-white p-4 rounded-lg text-xs max-w-sm z-50">
@@ -15,6 +22,24 @@ export default function SSEDebugger() {
           <span className={connected ? "text-green-400" : "text-red-400"}>
             {connected ? "Yes" : "No"}
           </span>
+        </div>
+        <div>
+          <span className="font-semibold">Connecting:</span>{" "}
+          <span className={connecting ? "text-yellow-400" : "text-gray-400"}>
+            {connecting ? "Yes" : "No"}
+          </span>
+        </div>
+        <div>
+          <span className="font-semibold">Quality:</span>{" "}
+          <span className="text-blue-400">{connectionQuality}</span>
+        </div>
+        <div>
+          <span className="font-semibold">Subscribers:</span>{" "}
+          <span className="text-blue-400">{subscribers}</span>
+        </div>
+        <div>
+          <span className="font-semibold">Retry Count:</span>{" "}
+          <span className="text-blue-400">{retryCount}</span>
         </div>
         {error && (
           <div>
@@ -27,25 +52,12 @@ export default function SSEDebugger() {
             <span className="font-semibold">Last Message:</span>
             <div className="mt-1 p-2 bg-gray-800 rounded text-xs">
               <div>Type: {lastMessage.type}</div>
-              <div>Title: {lastMessage.title}</div>
-              <div>Priority: {lastMessage.priority}</div>
+              {lastMessage.data && (
+                <div>Data: {JSON.stringify(lastMessage.data)}</div>
+              )}
             </div>
           </div>
         )}
-        <div className="mt-3 flex space-x-2">
-          <button
-            onClick={reconnect}
-            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs"
-          >
-            Reconnect
-          </button>
-          <button
-            onClick={disconnect}
-            className="px-2 py-1 bg-red-600 hover:bg-red-700 rounded text-xs"
-          >
-            Disconnect
-          </button>
-        </div>
       </div>
     </div>
   );

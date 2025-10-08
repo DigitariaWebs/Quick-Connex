@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useNotificationSSE } from "@/hooks/useNotificationSSE";
+import { useSSE } from "@/contexts/SSEContext";
 import RealtimeNotifications from "./RealtimeNotifications";
 import NotificationToast from "./NotificationToast";
 
@@ -95,7 +95,7 @@ export default function NotificationManager({
     (audioRef as any) = audio;
   };
 
-  const { connected, error, lastMessage } = useNotificationSSE();
+  const { connected, error, lastMessage } = useSSE();
 
   // Play notification sound
   const playSound = useCallback(() => {

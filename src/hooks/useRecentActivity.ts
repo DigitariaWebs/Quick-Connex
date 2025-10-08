@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
-import { useNotificationSSE } from './useNotificationSSE';
+import { useSSE } from '@/contexts/SSEContext';
 
 interface ActivityItem {
   id: string;
@@ -23,7 +23,7 @@ interface RecentActivityData {
 
 export function useRecentActivity(maxItems: number = 5) {
   const { user, isAuthenticated } = useAuth();
-  const { lastMessage } = useNotificationSSE();
+  const { lastMessage } = useSSE();
   const [data, setData] = useState<RecentActivityData>({
     activities: [],
     loading: true,
@@ -133,12 +133,12 @@ export function useRecentActivity(maxItems: number = 5) {
                  lastMessage.type === 'new_transfer') {
         // Add new activity item for transfer events
         const newActivity: ActivityItem = {
-          id: lastMessage.id,
+          id: lastMessage.data?.id || `activity_${Date.now()}`,
           type: lastMessage.type === 'new_transfer' ? 'transfer_requested' : 'transfer_accepted',
-          transferId: lastMessage.transferId || '',
+          transferId: lastMessage.data?.transferId || '',
           patientName: lastMessage.data?.transfer?.patient?.name || lastMessage.data?.patientName || 'Unknown Patient',
-          description: lastMessage.message,
-          timestamp: lastMessage.timestamp,
+          description: lastMessage.message || lastMessage.data?.message || 'Activity update',
+          timestamp: lastMessage.timestamp || new Date().toISOString(),
           user: lastMessage.data?.changedBy?.name || 'System',
           // transfer: lastMessage.data?.transfer // Removed - not in ActivityItem interface
         };

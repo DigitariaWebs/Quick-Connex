@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import dbConnect from '@/lib/mongoose';
+import dbConnect from '@/lib/database/mongoose';
 import User from '@/models/User';
 import crypto from 'crypto';
-import { rateLimit } from '@/lib/security';
+import { rateLimit } from '@/lib/services/security';
 import { EmailService } from '@/lib/communication/email-service';
 import { EmailMessage } from '@/types/communication-types';
 
