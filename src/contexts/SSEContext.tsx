@@ -40,9 +40,13 @@ export function SSEProvider({ children }: { children: React.ReactNode }) {
   // Set user in global manager when user changes
   useEffect(() => {
     if (user && isAuthenticated) {
+      console.log("🔗 SSE Context: Setting user in global manager", {
+        userId: user._id,
+      });
       globalSSEManager.setUser(user);
     } else {
       // Clear user and disconnect when not authenticated
+      console.log("🔗 SSE Context: Clearing user from global manager");
       globalSSEManager.clearUser();
     }
   }, [user, isAuthenticated]);
@@ -74,6 +78,17 @@ export function SSEProvider({ children }: { children: React.ReactNode }) {
         setLastMessage(message);
       }
     );
+
+    // Force connection if user is already set but connection hasn't been established
+    setTimeout(() => {
+      const status = globalSSEManager.getConnectionStatus();
+      if (user && !status.isConnected && !status.isConnecting) {
+        console.log(
+          "🔗 SSE Context: User exists but no connection, forcing connection"
+        );
+        globalSSEManager.forceConnect();
+      }
+    }, 100);
 
     // Update connection status periodically
     const statusInterval = setInterval(() => {

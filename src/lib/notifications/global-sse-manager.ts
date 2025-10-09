@@ -41,10 +41,16 @@ class GlobalSSEManager {
   public setUser(user: any) {
     this.user = user;
     console.log('🌐 Global SSE Manager: User set', { userId: user?._id, userType: user?.userType });
+    
+    // If there are already subscribers, immediately attempt to connect
+    if (this.subscribers.size > 0) {
+      console.log('🌐 Global SSE Manager: User set with existing subscribers, attempting immediate connection');
+      this.connect();
+    }
   }
 
   public clearUser() {
-    console.log('🌐 Global SSE Manager: User cleared');
+    console.log('🌐 Global SSE Manager: User cleared - disconnecting SSE connection');
     this.user = null;
     // Disconnect when user is cleared
     this.disconnect();
@@ -151,7 +157,12 @@ class GlobalSSEManager {
   }
 
   public disconnect() {
-    console.log('🌐 Global SSE Manager: Disconnecting');
+    console.log('🌐 Global SSE Manager: Disconnecting SSE connection', {
+      wasConnected: this.isConnected,
+      wasConnecting: this.isConnecting,
+      hasEventSource: !!this.eventSource,
+      subscribers: this.subscribers.size
+    });
     this.isConnected = false;
     this.isConnecting = false;
     this.stopHeartbeat();
@@ -159,6 +170,19 @@ class GlobalSSEManager {
     if (this.eventSource) {
       this.eventSource.close();
       this.eventSource = null;
+      console.log('✅ Global SSE Manager: SSE connection closed');
+    }
+  }
+
+  public forceConnect() {
+    console.log('🌐 Global SSE Manager: Force connecting SSE');
+    if (this.user && this.subscribers.size > 0) {
+      this.connect();
+    } else {
+      console.log('⚠️ Global SSE Manager: Cannot force connect - missing user or subscribers', {
+        hasUser: !!this.user,
+        subscribers: this.subscribers.size
+      });
     }
   }
 

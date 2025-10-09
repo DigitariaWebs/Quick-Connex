@@ -31,6 +31,26 @@ export function useLoginForm() {
         // No need to store sensitive data in localStorage
         setMessage({ type: 'success', text: 'Login successful! Redirecting...' });
         
+        // Trigger immediate authentication check to establish SSE connection
+        console.log('🔐 Login: Triggering immediate auth check for SSE connection');
+        try {
+          const authResponse = await fetch('/api/auth/verify', {
+            method: 'GET',
+            credentials: 'include',
+          });
+          
+          if (authResponse.ok) {
+            const authData = await authResponse.json();
+            console.log('✅ Login: Auth verification successful, SSE should connect now');
+            
+            // Import and set user in SSE manager immediately
+            const { globalSSEManager } = await import('@/lib/notifications/global-sse-manager');
+            globalSSEManager.setUser(authData.user);
+          }
+        } catch (authError) {
+          console.error('⚠️ Login: Auth verification failed, SSE will connect on page load:', authError);
+        }
+        
         // Use Next.js router for better navigation
         setTimeout(() => {
           router.push('/dashboard');

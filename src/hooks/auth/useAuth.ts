@@ -45,13 +45,24 @@ export function useAuth() {
 
   const logout = async () => {
     try {
+      console.log('🚪 Logout: Starting logout process');
+      
+      // Import and disconnect SSE connection immediately
+      const { globalSSEManager } = await import('@/lib/notifications/global-sse-manager');
+      console.log('🔌 Logout: Disconnecting SSE connection');
+      globalSSEManager.clearUser(); // This will disconnect the SSE connection
+      
+      console.log('🌐 Logout: Calling logout API');
       await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
       });
+      
+      console.log('✅ Logout: Logout successful');
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error('❌ Logout failed:', error);
     } finally {
+      console.log('🧹 Logout: Clearing user state and redirecting');
       setUser(null);
       setIsAuthenticated(false);
       router.push('/login');
