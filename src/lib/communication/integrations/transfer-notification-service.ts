@@ -9,7 +9,7 @@
 
 import { CommunicationService } from '../core/communication-service';
 import { EmailMessage, SMSMessage } from '@/types/communication';
-import AdminService from '@/lib/services/admin-service';
+// Removed AdminService - using simple manager role check instead
 import User from '@/models/User';
 import dbConnect from '@/lib/database/mongoose';
 import { TransferCategory } from '@/constants/transfer';
@@ -60,37 +60,6 @@ export class TransferNotificationService {
           }
         };
         
-      case TransferCategory.PATIENT_FILE:
-        const fileInfo = transfer.transferData?.fileInfo;
-        return {
-          title: fileInfo ? `Files: ${fileInfo.patientName}` : 'File Transfer',
-          subtitle: fileInfo ? `${fileInfo.fileCount} ${fileInfo.fileType} files` : 'Patient Files',
-          icon: '📁',
-          category: 'Files',
-          details: {
-            patient: fileInfo?.patientName || 'Unknown',
-            dossier: fileInfo?.dossierNumber || 'N/A',
-            fileType: fileInfo?.fileType || 'Unknown',
-            fileCount: fileInfo?.fileCount || 0,
-            urgency: fileInfo?.urgency || 'medium'
-          }
-        };
-        
-      case TransferCategory.MEDICAL_EQUIPMENT:
-        const equipmentInfo = transfer.transferData?.equipmentInfo;
-        return {
-          title: equipmentInfo ? equipmentInfo.equipmentName : 'Equipment Transfer',
-          subtitle: equipmentInfo ? `${equipmentInfo.model} (${equipmentInfo.condition})` : 'Medical Equipment',
-          icon: '🏥',
-          category: 'Equipment',
-          details: {
-            name: equipmentInfo?.equipmentName || 'Unknown',
-            model: equipmentInfo?.model || 'Unknown',
-            condition: equipmentInfo?.condition || 'Unknown',
-            serialNumber: equipmentInfo?.serialNumber || 'N/A',
-            maintenanceRequired: equipmentInfo?.maintenanceRequired || false
-          }
-        };
         
       default:
         return {
@@ -159,66 +128,6 @@ export class TransferNotificationService {
           </div>
         `;
         
-      case TransferCategory.PATIENT_FILE:
-        return `
-          <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #8b5cf6;">
-            <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">📁 File Information</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-              <div>
-                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Patient:</strong></p>
-                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.patient || 'N/A'}</p>
-              </div>
-              <div>
-                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Dossier:</strong></p>
-                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.dossier || 'N/A'}</p>
-              </div>
-              <div>
-                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>File Type:</strong></p>
-                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.fileType || 'N/A'}</p>
-              </div>
-              <div>
-                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>File Count:</strong></p>
-                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.fileCount || 'N/A'}</p>
-              </div>
-              <div>
-                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Urgency:</strong></p>
-                <span style="background: ${transferData.urgency === 'urgent' ? '#ef4444' : '#f59e0b'}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase;">${transferData.urgency || 'medium'}</span>
-              </div>
-            </div>
-          </div>
-        `;
-        
-      case TransferCategory.MEDICAL_EQUIPMENT:
-        return `
-          <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #10b981;">
-            <h3 style="margin: 0 0 16px 0; color: #1f2937; font-size: 20px; font-weight: 600;">🏥 Equipment Information</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-              <div>
-                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Equipment:</strong></p>
-                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.name || 'N/A'}</p>
-              </div>
-              <div>
-                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Model:</strong></p>
-                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.model || 'N/A'}</p>
-              </div>
-              <div>
-                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Condition:</strong></p>
-                <span style="background: ${transferData.condition === 'excellent' ? '#10b981' : transferData.condition === 'good' ? '#3b82f6' : transferData.condition === 'fair' ? '#f59e0b' : '#ef4444'}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase;">${transferData.condition || 'unknown'}</span>
-              </div>
-              <div>
-                <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;"><strong>Serial Number:</strong></p>
-                <p style="margin: 0; color: #1f2937; font-weight: 600;">${transferData.serialNumber || 'N/A'}</p>
-              </div>
-              ${transferData.maintenanceRequired ? `
-              <div style="grid-column: 1 / -1;">
-                <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 12px; border-radius: 8px; margin-top: 8px;">
-                  <p style="margin: 0; color: #92400e; font-size: 14px; font-weight: 600;">⚠️ Maintenance Required</p>
-                </div>
-              </div>
-              ` : ''}
-            </div>
-          </div>
-        `;
         
       default:
         return `
@@ -238,12 +147,21 @@ export class TransferNotificationService {
     try {
       console.log('📧 Sending new transfer request notifications...');
 
-      // Get admin contact information
-      const adminContact = await AdminService.getAdminContactInfo();
-      if (!adminContact) {
-        console.error('No admin contact information found');
+      // Get admin contact information from environment variables
+      const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM;
+      const adminName = process.env.ADMIN_NAME || process.env.EMAIL_FROM_NAME || 'System Administrator';
+      const adminPhone = process.env.ADMIN_PHONE || '+15140000000';
+      
+      if (!adminEmail) {
+        console.error('No admin email configured in environment variables');
         return;
       }
+      
+      const adminContact = {
+        email: adminEmail,
+        phone: adminPhone,
+        name: adminName
+      };
 
       // Get transfer display information
       const transferDisplayInfo = this.getTransferDisplayInfo(transfer);

@@ -10,7 +10,7 @@ import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import Hospital from '@/models/Hospital';
-import AdminService from '@/lib/services/admin-service';
+// Removed AdminService - using simple manager role check instead
 import { CommunicationService } from '@/lib/communication/core/communication-service';
 import { EmailMessage } from '@/types/communication';
 
@@ -61,11 +61,10 @@ export async function GET(
       );
     }
 
-    // Check if user is admin
-    const isAdmin = await AdminService.isAdmin((admin._id as any).toString());
-    if (!isAdmin) {
+    // Check if user is a manager (admin role)
+    if (admin.userType !== 'manager') {
       return NextResponse.json(
-        { error: 'Unauthorized: Admin privileges required' },
+        { error: 'Unauthorized: Manager privileges required' },
         { status: 403 }
       );
     }
@@ -156,11 +155,10 @@ export async function POST(
       );
     }
 
-    // Check if user is admin
-    const isAdmin = await AdminService.isAdmin((admin._id as any).toString());
-    if (!isAdmin) {
+    // Check if user is a manager (admin role)
+    if (admin.userType !== 'manager') {
       return NextResponse.json(
-        { error: 'Unauthorized: Admin privileges required' },
+        { error: 'Unauthorized: Manager privileges required' },
         { status: 403 }
       );
     }

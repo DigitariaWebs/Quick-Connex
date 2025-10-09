@@ -2,14 +2,8 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import {
-  User,
-  Package,
-  FileText,
-  Stethoscope,
-  CheckCircle,
-} from "lucide-react";
-import { TransferCategory } from '@/constants/transfer';
+import { User, Package, CheckCircle } from "lucide-react";
+import { TransferCategory } from "@/constants/transfer";
 
 interface TransferCategorySelectorProps {
   selectedCategory: TransferCategory | null;
@@ -32,35 +26,13 @@ const categoryOptions = [
   {
     value: TransferCategory.ENVELOPE,
     label: "Envelope/Box Transfer",
-    description: "Transfer of envelopes or packages",
+    description: "Transfer of envelopes, boxes, files, or equipment",
     icon: Package,
     color: "orange",
     bgColor: "bg-orange-50",
     borderColor: "border-orange-200",
     textColor: "text-orange-800",
     iconColor: "text-orange-600",
-  },
-  {
-    value: TransferCategory.PATIENT_FILE,
-    label: "Patient File Transfer",
-    description: "Transfer of patient medical files",
-    icon: FileText,
-    color: "purple",
-    bgColor: "bg-purple-50",
-    borderColor: "border-purple-200",
-    textColor: "text-purple-800",
-    iconColor: "text-purple-600",
-  },
-  {
-    value: TransferCategory.MEDICAL_EQUIPMENT,
-    label: "Medical Equipment Transfer",
-    description: "Transfer of medical equipment or circuits",
-    icon: Stethoscope,
-    color: "green",
-    bgColor: "bg-green-50",
-    borderColor: "border-green-200",
-    textColor: "text-green-800",
-    iconColor: "text-green-600",
   },
 ];
 

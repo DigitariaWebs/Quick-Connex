@@ -23,7 +23,7 @@ The Patient Management System implements a comprehensive transfer workflow for m
 - **Multi-channel Notifications**: Email and SMS notifications for all stakeholders
 - **Real-time Updates**: WebSocket-based real-time notifications
 - **Comprehensive Tracking**: Full audit trail with status history
-- **Priority Management**: Four priority levels (low, medium, high, urgent)
+- **Priority Management**: Two priority levels (low, urgent)
 - **Hospital Integration**: Support for hospital references and autocomplete
 
 ---
@@ -242,20 +242,8 @@ cancelled → [terminal state]
 - **Description**: Non-urgent transfer
 - **SMS Priority**: Medium
 
-#### MEDIUM
-- **Weight**: 2
-- **Color**: Yellow/Amber
-- **Description**: Standard priority transfer
-- **SMS Priority**: Medium
-
-#### HIGH
-- **Weight**: 3
-- **Color**: Orange
-- **Description**: High priority transfer
-- **SMS Priority**: High
-
 #### URGENT
-- **Weight**: 4
+- **Weight**: 2
 - **Color**: Red
 - **Description**: Urgent transfer - immediate attention required
 - **SMS Priority**: Urgent

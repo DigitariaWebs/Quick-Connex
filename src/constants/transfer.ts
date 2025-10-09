@@ -17,8 +17,6 @@ export enum TransferStatus {
 // Transfer Priority Enum
 export enum TransferPriority {
   LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high',
   URGENT = 'urgent'
 }
 
@@ -31,9 +29,7 @@ export enum TransferType {
 // Transfer Category Enum (new)
 export enum TransferCategory {
   PATIENT = 'patient',
-  ENVELOPE = 'envelope',
-  PATIENT_FILE = 'patient_file',
-  MEDICAL_EQUIPMENT = 'medical_equipment'
+  ENVELOPE = 'envelope'
 }
 
 // Note: Transport Type and Recurrence Pattern enums removed as they are not needed
@@ -54,9 +50,7 @@ export const TRANSFER_CONFIG = {
     TRANSFER: 'TRF',
     PATIENT: 'PAT',
     NOTIFICATION: 'NOT',
-    ENVELOPE: 'ENV',
-    FILE: 'FIL',
-    EQUIPMENT: 'EQP'
+    ENVELOPE: 'ENV'
   },
   
   // Validation Rules
@@ -81,14 +75,12 @@ export const TRANSFER_CONFIG = {
   // Priority Weights (for sorting and calculations)
   PRIORITY_WEIGHTS: {
     [TransferPriority.LOW]: 1,
-    [TransferPriority.MEDIUM]: 2,
-    [TransferPriority.HIGH]: 3,
-    [TransferPriority.URGENT]: 4
+    [TransferPriority.URGENT]: 2
   },
   
   // Default Values
   DEFAULTS: {
-    PRIORITY: TransferPriority.MEDIUM,
+    PRIORITY: TransferPriority.LOW,
     STATUS: TransferStatus.PENDING,
     DURATION_MINUTES: 60
   },
@@ -175,26 +167,6 @@ export const PRIORITY_DISPLAY_INFO = {
     borderColor: 'border-green-200',
     gradient: 'from-green-500 to-emerald-500'
   },
-  [TransferPriority.MEDIUM]: {
-    label: 'Medium',
-    color: 'yellow',
-    icon: 'minus',
-    description: 'Standard priority transfer',
-    bgColor: 'bg-amber-100',
-    textColor: 'text-amber-800',
-    borderColor: 'border-amber-200',
-    gradient: 'from-amber-500 to-yellow-500'
-  },
-  [TransferPriority.HIGH]: {
-    label: 'High',
-    color: 'orange',
-    icon: 'arrow-up',
-    description: 'High priority transfer',
-    bgColor: 'bg-orange-100',
-    textColor: 'text-orange-800',
-    borderColor: 'border-orange-200',
-    gradient: 'from-orange-500 to-amber-500'
-  },
   [TransferPriority.URGENT]: {
     label: 'Urgent',
     color: 'red',
@@ -223,31 +195,11 @@ export const TRANSFER_CATEGORY_DISPLAY_INFO = {
     label: 'Envelope/Box Transfer',
     color: 'orange',
     icon: 'package',
-    description: 'Transfer of envelopes or boxes',
+    description: 'Transfer of envelopes, boxes, files, or equipment',
     bgColor: 'bg-orange-100',
     textColor: 'text-orange-800',
     borderColor: 'border-orange-200',
     gradient: 'from-orange-500 to-amber-500'
-  },
-  [TransferCategory.PATIENT_FILE]: {
-    label: 'Patient File Transfer',
-    color: 'purple',
-    icon: 'file-text',
-    description: 'Transfer of patient medical files',
-    bgColor: 'bg-purple-100',
-    textColor: 'text-purple-800',
-    borderColor: 'border-purple-200',
-    gradient: 'from-purple-500 to-violet-500'
-  },
-  [TransferCategory.MEDICAL_EQUIPMENT]: {
-    label: 'Medical Equipment Transfer',
-    color: 'green',
-    icon: 'stethoscope',
-    description: 'Transfer of medical equipment or circuits',
-    bgColor: 'bg-green-100',
-    textColor: 'text-green-800',
-    borderColor: 'border-green-200',
-    gradient: 'from-green-500 to-emerald-500'
   }
 } as const;
 

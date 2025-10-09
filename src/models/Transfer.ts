@@ -3,7 +3,7 @@ import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 // Define the interface for Transfer document
 export interface ITransfer extends Document {
   transferId: string;
-  transferCategory: 'patient' | 'envelope' | 'patient_file' | 'medical_equipment';
+  transferCategory: 'patient' | 'envelope';
   
   // Patient-specific data (for backward compatibility and patient transfers)
   patientInfo?: {
@@ -35,18 +35,20 @@ export interface ITransfer extends Document {
         width: number;
         height: number;
       };
+      measurementUnit?: 'cm' | 'inch';
+      weightUnit?: 'kg' | 'pound';
     };
     
-    // For patient file transfers
+    // For patient file transfers (now part of envelope transfers)
     fileInfo?: {
       patientName: string;
       dossierNumber: string;
       fileType: string;
       fileCount: number;
-      urgency: 'low' | 'medium' | 'high' | 'urgent';
+      urgency: 'low' | 'urgent';
     };
     
-    // For medical equipment transfers
+    // For medical equipment transfers (now part of envelope transfers)
     equipmentInfo?: {
       equipmentName: string;
       serialNumber?: string;
@@ -63,7 +65,7 @@ export interface ITransfer extends Document {
   requestedBy: Types.ObjectId; // Reference to User (manager)
   assignedTo?: Types.ObjectId; // Reference to User (employee)
   reason: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  priority: 'low' | 'urgent';
   status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
   requestedDate: Date;
   scheduledDate?: Date;
@@ -212,6 +214,16 @@ const TransferSchema = new Schema<ITransfer>({
           type: Number,
           min: 0
         }
+      },
+      measurementUnit: {
+        type: String,
+        enum: ['cm', 'inch'],
+        default: 'cm'
+      },
+      weightUnit: {
+        type: String,
+        enum: ['kg', 'pound'],
+        default: 'kg'
       }
     },
     
@@ -307,8 +319,8 @@ const TransferSchema = new Schema<ITransfer>({
   priority: { 
     type: String, 
     required: true,
-    enum: ['low', 'medium', 'high', 'urgent'],
-    default: 'medium'
+    enum: ['low', 'urgent'],
+    default: 'low'
   },
   status: { 
     type: String, 
@@ -380,7 +392,7 @@ const TransferSchema = new Schema<ITransfer>({
       type: String,
       required: true,
       enum: [
-        'created', 'status_changed', 'assigned', 'unassigned', 'patient_updated',
+        'created', 'transfer_created', 'status_changed', 'assigned', 'unassigned', 'patient_updated',
         'hospital_updated', 'scheduled', 'rescheduled', 'document_uploaded',
         'document_removed', 'notes_updated', 'priority_changed', 'reason_updated',
         'approved', 'rejected', 'accepted', 'started', 'completed', 'cancelled',

@@ -44,21 +44,6 @@ export class TransferSMSService {
           category: 'Envelope'
         };
         
-      case TransferCategory.PATIENT_FILE:
-        const fileInfo = transfer.transferData?.fileInfo;
-        return {
-          title: fileInfo ? `Files: ${fileInfo.patientName}` : 'File Transfer',
-          subtitle: fileInfo ? `${fileInfo.fileCount} ${fileInfo.fileType} files` : 'Patient Files',
-          category: 'Files'
-        };
-        
-      case TransferCategory.MEDICAL_EQUIPMENT:
-        const equipmentInfo = transfer.transferData?.equipmentInfo;
-        return {
-          title: equipmentInfo ? equipmentInfo.equipmentName : 'Equipment Transfer',
-          subtitle: equipmentInfo ? `${equipmentInfo.model} (${equipmentInfo.condition})` : 'Medical Equipment',
-          category: 'Equipment'
-        };
         
       default:
         return {

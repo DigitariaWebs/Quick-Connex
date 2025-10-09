@@ -3,7 +3,7 @@
  */
 
 export type TransferStatus = 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
-export type TransferPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type TransferPriority = 'low' | 'urgent';
 
 /**
  * Valid status transitions
@@ -54,9 +54,9 @@ export function validateTransferData(data: any): TransferValidationResult {
   const warnings: string[] = [];
 
   // Validate transfer category
-  const validCategories = ['patient', 'envelope', 'patient_file', 'medical_equipment'];
+  const validCategories = ['patient', 'envelope'];
   if (!data.transferCategory || !validCategories.includes(data.transferCategory)) {
-    errors.push('Transfer category is required and must be one of: patient, envelope, patient_file, medical_equipment');
+    errors.push('Transfer category is required and must be one of: patient, envelope');
   }
 
   // Common required fields
@@ -99,33 +99,9 @@ export function validateTransferData(data: any): TransferValidationResult {
         const fieldNames: Record<string, string> = {
           'senderName': 'Sender name',
           'recipientName': 'Recipient name',
-          'contents': 'Contents description'
+          'contents': 'Comment'
         };
         errors.push(`${fieldNames[field]} is required for envelope transfers`);
-      }
-    }
-  } else if (data.transferCategory === 'patient_file') {
-    const fileFields = ['patientName', 'dossierNumber', 'fileType', 'fileCount'];
-    for (const field of fileFields) {
-      if (!data[field] || (typeof data[field] === 'string' && data[field].trim().length === 0)) {
-        const fieldNames: Record<string, string> = {
-          'patientName': 'Patient name',
-          'dossierNumber': 'Dossier number',
-          'fileType': 'File type',
-          'fileCount': 'File count'
-        };
-        errors.push(`${fieldNames[field]} is required for file transfers`);
-      }
-    }
-  } else if (data.transferCategory === 'medical_equipment') {
-    const equipmentFields = ['equipmentName', 'model'];
-    for (const field of equipmentFields) {
-      if (!data[field] || (typeof data[field] === 'string' && data[field].trim().length === 0)) {
-        const fieldNames: Record<string, string> = {
-          'equipmentName': 'Equipment name',
-          'model': 'Equipment model'
-        };
-        errors.push(`${fieldNames[field]} is required for equipment transfers`);
       }
     }
   }

@@ -43,6 +43,8 @@ export interface EnvelopeInfo {
     width: number;
     height: number;
   };
+  measurementUnit?: 'cm' | 'inch';
+  weightUnit?: 'kg' | 'pound';
 }
 
 export interface FileInfo {
@@ -50,7 +52,7 @@ export interface FileInfo {
   dossierNumber: string;
   fileType: string;
   fileCount: number;
-  urgency: 'low' | 'medium' | 'high' | 'urgent';
+  urgency: 'low' | 'urgent';
 }
 
 export interface EquipmentInfo {
@@ -213,7 +215,7 @@ export interface TransferRequestData {
   patientName?: string;
   fileType?: string;
   fileCount?: number;
-  fileUrgency?: 'low' | 'medium' | 'high' | 'urgent';
+  fileUrgency?: 'low' | 'urgent';
   
   // Equipment transfer fields
   equipmentName?: string;
@@ -323,8 +325,6 @@ export interface TransferStats {
   completed: number;
   cancelled: number;
   urgent: number;
-  high: number;
-  medium: number;
   low: number;
   averageCompletionTime?: number; // in minutes
   completionRate?: number; // percentage
@@ -363,7 +363,7 @@ export interface TransferQueryOptions {
 export interface TransferNotificationData {
   id: string;
   type: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  priority: 'low' | 'urgent';
   title: string;
   message: string;
   transferId: string;

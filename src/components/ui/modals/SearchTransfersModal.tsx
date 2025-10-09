@@ -18,7 +18,7 @@ import {
   ArrowRight,
   ChevronDown,
 } from "lucide-react";
-import { TransferCategory } from '@/constants/transfer';
+import { TransferCategory } from "@/constants/transfer";
 
 interface TransferRequest {
   _id: string;
@@ -127,34 +127,6 @@ export default function SearchTransfersModal({
           iconColor: "text-orange-600",
           bgColor: "bg-orange-100",
           category: "Envelope",
-        };
-
-      case TransferCategory.PATIENT_FILE:
-        const fileInfo = transfer.transferData?.fileInfo;
-        return {
-          title: fileInfo ? `Files: ${fileInfo.patientName}` : "File Transfer",
-          subtitle: fileInfo
-            ? `${fileInfo.fileCount} ${fileInfo.fileType} files`
-            : "Patient Files",
-          icon: FileText,
-          iconColor: "text-purple-600",
-          bgColor: "bg-purple-100",
-          category: "Files",
-        };
-
-      case TransferCategory.MEDICAL_EQUIPMENT:
-        const equipmentInfo = transfer.transferData?.equipmentInfo;
-        return {
-          title: equipmentInfo
-            ? equipmentInfo.equipmentName
-            : "Equipment Transfer",
-          subtitle: equipmentInfo
-            ? `${equipmentInfo.model} (${equipmentInfo.condition})`
-            : "Medical Equipment",
-          icon: Stethoscope,
-          iconColor: "text-green-600",
-          bgColor: "bg-green-100",
-          category: "Equipment",
         };
 
       default:

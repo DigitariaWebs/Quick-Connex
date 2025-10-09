@@ -18,8 +18,8 @@ import {
   Calendar,
   FileText,
 } from "lucide-react";
-import TransferRequestCard from '@/components/features/dashboard/TransferRequestCard';
-import LoadingSpinner from '@/components/features/dashboard/LoadingSpinner';
+import TransferRequestCard from "@/components/features/dashboard/TransferRequestCard";
+import LoadingSpinner from "@/components/features/dashboard/LoadingSpinner";
 
 interface TransferRequest {
   _id: string;
@@ -194,7 +194,7 @@ export default function MyAcceptedTransfersModal({
 
   // Sort transfers
   if (sortBy === "priority") {
-    const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
+    const priorityOrder = { urgent: 2, low: 1 };
     filteredTransfers = [...filteredTransfers].sort(
       (a, b) =>
         //@ts-ignore

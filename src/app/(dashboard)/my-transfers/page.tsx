@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from '@/hooks/auth/useAuth';
+import { useAuth } from "@/hooks/auth/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -22,11 +22,11 @@ import {
   Calendar,
   FileText,
 } from "lucide-react";
-import TransferRequestCard from '@/components/features/dashboard/TransferRequestCard';
-import Sidebar from '@/components/features/dashboard/Sidebar';
-import DashboardHeader from '@/components/features/dashboard/DashboardHeader';
-import LoadingSpinner from '@/components/features/dashboard/LoadingSpinner';
-import TransferTimeline from '@/components/features/transfers/TransferTimeline';
+import TransferRequestCard from "@/components/features/dashboard/TransferRequestCard";
+import Sidebar from "@/components/features/dashboard/Sidebar";
+import DashboardHeader from "@/components/features/dashboard/DashboardHeader";
+import LoadingSpinner from "@/components/features/dashboard/LoadingSpinner";
+import TransferTimeline from "@/components/features/transfers/TransferTimeline";
 
 interface TransferRequest {
   _id: string;
@@ -203,7 +203,7 @@ export default function MyTransfersPage() {
 
   // Sort transfers
   if (sortBy === "priority") {
-    const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
+    const priorityOrder = { urgent: 2, low: 1 };
     filteredTransfers = [...filteredTransfers].sort(
       (a, b) =>
         //@ts-ignore
@@ -225,8 +225,9 @@ export default function MyTransfersPage() {
     ).length;
     const completed = transfers.filter((t) => t.status === "completed").length;
     const urgent = transfers.filter((t) => t.priority === "urgent").length;
+    const cancelled = transfers.filter((t) => t.status === "cancelled").length;
 
-    return { total, inProgress, completed, urgent };
+    return { total, inProgress, completed, urgent, cancelled };
   }, [transfers]);
 
   const handleRefresh = async () => {
@@ -319,7 +320,7 @@ export default function MyTransfersPage() {
 
         <div className="p-4 lg:p-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             <div className="bg-white rounded-3xl p-6 sidebar-shadow border border-gray-100">
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg">
@@ -375,6 +376,20 @@ export default function MyTransfersPage() {
                   <p className="text-sm font-medium text-gray-600">Completed</p>
                   <p className="text-2xl font-bold text-gray-900">
                     {stats.completed}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-3xl p-6 sidebar-shadow border border-gray-100">
+              <div className="flex items-center">
+                <div className="p-2 bg-gray-100 rounded-2xl">
+                  <X className="w-6 h-6 text-gray-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Cancelled</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stats.cancelled}
                   </p>
                 </div>
               </div>
@@ -459,8 +474,6 @@ export default function MyTransfersPage() {
                         >
                           <option value="">All Priorities</option>
                           <option value="urgent">🔴 Urgent</option>
-                          <option value="high">🟠 High</option>
-                          <option value="medium">🟡 Medium</option>
                           <option value="low">🟢 Low</option>
                         </select>
                         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">

@@ -438,8 +438,6 @@ export class TransferService {
         completed,
         cancelled,
         urgent,
-        high,
-        medium,
         low
       ] = await Promise.all([
         Transfer.countDocuments(query),
@@ -449,8 +447,6 @@ export class TransferService {
         Transfer.countDocuments({ ...query, status: TransferStatus.COMPLETED }),
         Transfer.countDocuments({ ...query, status: TransferStatus.CANCELLED }),
         Transfer.countDocuments({ ...query, priority: TransferPriority.URGENT }),
-        Transfer.countDocuments({ ...query, priority: TransferPriority.HIGH }),
-        Transfer.countDocuments({ ...query, priority: TransferPriority.MEDIUM }),
         Transfer.countDocuments({ ...query, priority: TransferPriority.LOW })
       ]);
 
@@ -476,8 +472,6 @@ export class TransferService {
         completed,
         cancelled,
         urgent,
-        high,
-        medium,
         low,
         averageCompletionTime,
         completionRate

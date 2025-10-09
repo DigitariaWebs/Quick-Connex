@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -16,11 +16,12 @@ import {
   Stethoscope,
   X,
 } from "lucide-react";
-import { TransferCategory } from '@/constants/transfer';
+import { TransferCategory } from "@/constants/transfer";
+import { useNotification } from "@/contexts/NotificationContext";
 import {
   canCancelTransfer,
   getRemainingCancellationTimeString,
-} from '@/lib/transfers/transfer-cancellation-utils';
+} from "@/lib/transfers/transfer-cancellation-utils";
 
 interface TransferRequest {
   _id: string;
@@ -109,6 +110,7 @@ interface TransferRequest {
   status: "pending" | "accepted" | "in_progress" | "completed" | "cancelled";
   requestedDate: string;
   scheduledDate?: string;
+  acceptedAt?: string;
   notes?: string;
 }
 
@@ -154,34 +156,6 @@ function getTransferDisplayInfo(transfer: TransferRequest) {
         category: "Envelope",
       };
 
-    case TransferCategory.PATIENT_FILE:
-      const fileInfo = transfer.transferData?.fileInfo;
-      return {
-        title: fileInfo ? `Files: ${fileInfo.patientName}` : "File Transfer",
-        subtitle: fileInfo
-          ? `${fileInfo.fileCount} ${fileInfo.fileType} files`
-          : "Patient Files",
-        icon: FileText,
-        iconColor: "text-purple-600",
-        bgColor: "bg-purple-100",
-        category: "Files",
-      };
-
-    case TransferCategory.MEDICAL_EQUIPMENT:
-      const equipmentInfo = transfer.transferData?.equipmentInfo;
-      return {
-        title: equipmentInfo
-          ? equipmentInfo.equipmentName
-          : "Equipment Transfer",
-        subtitle: equipmentInfo
-          ? `${equipmentInfo.model} (${equipmentInfo.condition})`
-          : "Medical Equipment",
-        icon: Stethoscope,
-        iconColor: "text-green-600",
-        bgColor: "bg-green-100",
-        category: "Equipment",
-      };
-
     default:
       return {
         title: "Transfer",
@@ -205,10 +179,44 @@ export default function TransferRequestCard({
 }: TransferRequestCardProps) {
   const [isAccepting, setIsAccepting] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isHoveringCancel, setIsHoveringCancel] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const { showSuccess } = useNotification();
 
   // Get display information based on transfer type
   const displayInfo = getTransferDisplayInfo(transfer);
   const IconComponent = displayInfo.icon;
+
+  // Update current time every minute for real-time countdown
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Calculate remaining time using current time state
+  const getRemainingTimeString = () => {
+    if (!transfer.acceptedAt) return "No time limit";
+
+    const acceptedTime = new Date(transfer.acceptedAt);
+    const now = currentTime;
+    const timeDiff = now.getTime() - acceptedTime.getTime();
+    const hoursLeft = Math.max(0, 24 - Math.floor(timeDiff / (1000 * 60 * 60)));
+    const minutesLeft = Math.max(
+      0,
+      60 - Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60))
+    );
+
+    if (hoursLeft === 0 && minutesLeft === 0) {
+      return "Time expired";
+    } else if (hoursLeft === 0) {
+      return `${minutesLeft}m left`;
+    } else {
+      return `${hoursLeft}h ${minutesLeft}m left`;
+    }
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -315,8 +323,8 @@ export default function TransferRequestCard({
 
       if (data.success) {
         onAccept(transfer._id);
-        // Show success message
-        alert("Transfer accepted successfully!");
+        // Show success notification
+        showSuccess("Transfer accepted successfully!");
       } else {
         alert(data.error || "Failed to accept transfer");
       }
@@ -352,7 +360,7 @@ export default function TransferRequestCard({
       if (data.success) {
         onCancel?.(transfer._id);
         // Show success message
-        alert("Transfer cancelled successfully!");
+        showSuccess("Transfer cancelled successfully!");
       } else {
         alert(data.error || "Failed to cancel transfer");
       }
@@ -468,28 +476,6 @@ export default function TransferRequestCard({
                 </span>
               </div>
             )}
-
-          {transfer.transferCategory === TransferCategory.PATIENT_FILE &&
-            transfer.transferData?.fileInfo && (
-              <div className="flex items-center text-sm">
-                <FileText size={14} className="mr-2 text-gray-400" />
-                <span className="text-gray-700">
-                  {transfer.transferData.fileInfo.urgency} priority
-                </span>
-              </div>
-            )}
-
-          {transfer.transferCategory === TransferCategory.MEDICAL_EQUIPMENT &&
-            transfer.transferData?.equipmentInfo && (
-              <div className="flex items-center text-sm">
-                <Stethoscope size={14} className="mr-2 text-gray-400" />
-                <span className="text-gray-700">
-                  {transfer.transferData.equipmentInfo.condition} condition
-                  {transfer.transferData.equipmentInfo.maintenanceRequired &&
-                    " • Maintenance required"}
-                </span>
-              </div>
-            )}
         </div>
       </div>
 
@@ -597,8 +583,8 @@ export default function TransferRequestCard({
         ) : transfer.status === "in_progress" &&
           currentUserType === "employee" ? (
           <div className="mt-4 flex space-x-3">
-            {canCancelTransfer(transfer) ? (
-              <>
+            {canCancelTransfer(transfer) && isSelected ? (
+              <div className="relative">
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   onClick={(e) => {
@@ -606,15 +592,44 @@ export default function TransferRequestCard({
                     handleCancel();
                   }}
                   disabled={isCancelling}
-                  className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-2xl font-medium hover:from-red-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  onMouseEnter={() => setIsHoveringCancel(true)}
+                  onMouseLeave={() => setIsHoveringCancel(false)}
+                  className="bg-red-500 text-white rounded-2xl font-medium hover:bg-red-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm overflow-hidden flex items-center justify-center"
+                  style={{
+                    width: isHoveringCancel ? "200px" : "48px",
+                    height: "48px",
+                    padding: isHoveringCancel ? "12px 16px" : "0px",
+                    transition: "all 0.3s ease-in-out",
+                  }}
                 >
-                  {isCancelling ? "Cancelling..." : "Cancel Transfer"}
+                  <div className="flex items-center justify-center">
+                    {!isHoveringCancel ? (
+                      <X size={20} />
+                    ) : (
+                      <div
+                        className="flex flex-col items-center space-y-1"
+                        style={{
+                          opacity: isHoveringCancel ? 1 : 0,
+                          transition: "opacity 0.2s ease-in-out 0.2s",
+                        }}
+                      >
+                        <div className="flex items-center">
+                          <X size={16} className="mr-2" />
+                          <span className="text-sm font-medium whitespace-nowrap">
+                            {isCancelling ? "Cancelling..." : "Cancel Transfer"}
+                          </span>
+                        </div>
+                        <div className="flex items-center text-xs opacity-90">
+                          <Clock size={12} className="mr-1" />
+                          <span className="whitespace-nowrap">
+                            {getRemainingTimeString()}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </motion.button>
-                <div className="px-3 py-2 bg-blue-100 text-blue-800 rounded-2xl font-medium text-sm border border-blue-200 flex items-center">
-                  <Clock size={16} className="mr-2" />
-                  {getRemainingCancellationTimeString(transfer)}
-                </div>
-              </>
+              </div>
             ) : (
               <div className="flex-1 px-4 py-2 bg-blue-100 text-blue-800 rounded-2xl font-medium text-sm border border-blue-200">
                 <div className="flex items-center">

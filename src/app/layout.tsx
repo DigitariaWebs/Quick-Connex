@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SSEProvider } from "@/contexts/SSEContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import ServerConnectionLogger from "@/components/features/notifications/ServerConnectionLogger";
 import SSEDebugger from "@/components/features/notifications/SSEDebugger";
 import GlobalNotificationSystem from "@/components/features/notifications/GlobalNotificationSystem";
@@ -41,10 +42,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SSEProvider>
-          <ServerConnectionLogger />
-          <SSEDebugger />
-          <GlobalNotificationSystem />
-          {children}
+          <NotificationProvider>
+            <ServerConnectionLogger />
+            <SSEDebugger />
+            <GlobalNotificationSystem />
+            {children}
+          </NotificationProvider>
         </SSEProvider>
       </body>
     </html>

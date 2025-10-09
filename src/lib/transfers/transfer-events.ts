@@ -183,7 +183,7 @@ class TransferNotificationHandler implements TransferEventHandler {
     const notificationData: TransferNotificationData = {
       id: `new_transfer_${transfer._id}_${Date.now()}`,
       type: NOTIFICATION_TYPES.NEW_TRANSFER,
-      priority: transfer.priority === TransferPriority.URGENT ? 'urgent' : 'medium',
+      priority: transfer.priority === TransferPriority.URGENT ? 'urgent' : 'low',
       title: 'New Transfer Request',
       message: `New transfer request for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} from ${transfer.fromHospital} to ${transfer.toHospital}`,
       transferId: transfer.transferId,
@@ -215,7 +215,7 @@ class TransferNotificationHandler implements TransferEventHandler {
     const notificationData: TransferNotificationData = {
       id: `transfer_accepted_${transfer._id}_${Date.now()}`,
       type: NOTIFICATION_TYPES.TRANSFER_ACCEPTED,
-      priority: 'medium',
+      priority: 'low',
       title: 'Transfer Accepted',
       message: `Transfer for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} has been accepted by ${changedBy.firstName} ${changedBy.lastName}`,
       transferId: transfer.transferId,
@@ -250,7 +250,7 @@ class TransferNotificationHandler implements TransferEventHandler {
     const notificationData: TransferNotificationData = {
       id: `transfer_started_${transfer._id}_${Date.now()}`,
       type: NOTIFICATION_TYPES.TRANSFER_STARTED,
-      priority: 'medium',
+      priority: 'low',
       title: 'Transfer Started',
       message: `Transfer for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} has been started`,
       transferId: transfer.transferId,
@@ -283,7 +283,7 @@ class TransferNotificationHandler implements TransferEventHandler {
     const notificationData: TransferNotificationData = {
       id: `transfer_completed_${transfer._id}_${Date.now()}`,
       type: NOTIFICATION_TYPES.TRANSFER_COMPLETED,
-      priority: 'medium',
+      priority: 'low',
       title: 'Transfer Completed',
       message: `Transfer for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} has been completed successfully`,
       transferId: transfer.transferId,
@@ -316,7 +316,7 @@ class TransferNotificationHandler implements TransferEventHandler {
     const notificationData: TransferNotificationData = {
       id: `transfer_cancelled_${transfer._id}_${Date.now()}`,
       type: NOTIFICATION_TYPES.TRANSFER_CANCELLED,
-      priority: 'high',
+      priority: 'urgent',
       title: 'Transfer Cancelled',
       message: `Transfer for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} has been cancelled${metadata?.reason ? `: ${metadata.reason}` : ''}`,
       transferId: transfer.transferId,
@@ -349,7 +349,7 @@ class TransferNotificationHandler implements TransferEventHandler {
     const notificationData: TransferNotificationData = {
       id: `status_changed_${transfer._id}_${Date.now()}`,
       type: NOTIFICATION_TYPES.TRANSFER_STATUS_CHANGE,
-      priority: 'medium',
+      priority: 'low',
       title: 'Transfer Status Updated',
       message: `Transfer for ${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} status changed from ${oldStatus} to ${newStatus}`,
       transferId: transfer.transferId,
@@ -541,7 +541,7 @@ class TransferReminderHandler implements TransferEventHandler {
             changedBy: transfer.requestedBy,
             timestamp: new Date().toISOString(),
             metadata: {
-              urgencyLevel: 'medium'
+              urgencyLevel: 'low'
             }
           });
         }, reminderTime.getTime() - now.getTime());
@@ -569,7 +569,7 @@ export class TransferEventFactory {
       changedBy: createdBy,
       timestamp: new Date().toISOString(),
       metadata: {
-        urgencyLevel: transfer.priority === TransferPriority.URGENT ? 'critical' : 'medium'
+        urgencyLevel: transfer.priority === TransferPriority.URGENT ? 'critical' : 'low'
       }
     };
   }
@@ -593,7 +593,7 @@ export class TransferEventFactory {
       timestamp: new Date().toISOString(),
       metadata: {
         reason,
-        urgencyLevel: transfer.priority === TransferPriority.URGENT ? 'critical' : 'medium'
+        urgencyLevel: transfer.priority === TransferPriority.URGENT ? 'critical' : 'low'
       }
     };
   }

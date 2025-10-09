@@ -16,13 +16,13 @@ class RealNotificationService {
     async initializeEmailService() {
         try {
             // Create email transporter
-            this.transporter = nodemailer.createTransporter({
+            this.transporter = nodemailer.createTransport({
                 host: process.env.SMTP_HOST || 'smtp.gmail.com',
                 port: parseInt(process.env.SMTP_PORT) || 587,
                 secure: false, // true for 465, false for other ports
                 auth: {
-                    user: process.env.SMTP_USER,
-                    pass: process.env.SMTP_PASS
+                    user: process.env.GMAIL_EMAIL,
+                    pass: process.env.GMAIL_APP_PASSWORD
                 }
             });
 
@@ -39,23 +39,26 @@ class RealNotificationService {
         try {
             console.log('📧 Sending real transfer request notifications...');
 
-            // Get admin users (managers act as admins in this system)
-            const User = require('../src/models/User');
-            const admins = await User.find({ userType: 'manager', status: 'approved' });
+            // Get admin email from environment variables
+            const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM;
+            const adminName = process.env.ADMIN_NAME || process.env.EMAIL_FROM_NAME || 'System Administrator';
 
-            if (admins.length === 0) {
-                console.warn('⚠️ No admin users found for notifications');
+            if (!adminEmail) {
+                console.warn('⚠️ No admin email configured in environment variables');
                 return;
             }
 
-            console.log(`📬 Sending notifications to ${admins.length} admin(s)`);
+            console.log(`📬 Sending notification to admin: ${adminEmail}`);
 
-            // Send emails to all admins
-            for (const admin of admins) {
-                if (admin.email) {
-                    await this.sendEmailNotification(admin, transfer, requestedBy);
-                }
-            }
+            // Create admin object for notification
+            const admin = {
+                email: adminEmail,
+                firstName: adminName.split(' ')[0] || 'Admin',
+                lastName: adminName.split(' ').slice(1).join(' ') || 'User'
+            };
+
+            // Send email to admin
+            await this.sendEmailNotification(admin, transfer, requestedBy);
 
             console.log('✅ Real notifications sent successfully!');
 

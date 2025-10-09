@@ -8,6 +8,7 @@ type SelectInputProps = {
   options: Array<{ value: string; label: string }>;
   required?: boolean;
   variant?: "default" | "priority" | "transfer-type" | "issuer" | "condition";
+  onChange?: (value: string) => void;
 };
 
 export function SelectInput({
@@ -17,6 +18,7 @@ export function SelectInput({
   options,
   required = true,
   variant = "default",
+  onChange,
 }: SelectInputProps) {
   // Custom styling based on variant
   const getSelectStyle = () => {
@@ -51,6 +53,7 @@ export function SelectInput({
           name={name}
           required={required}
           className={getSelectStyle()}
+          onChange={(e) => onChange?.(e.target.value)}
         >
           <option value="">Select {label.toLowerCase()}</option>
           {options.map((option) => (

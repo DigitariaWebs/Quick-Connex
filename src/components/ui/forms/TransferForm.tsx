@@ -18,9 +18,7 @@ import HospitalAutocomplete from "./HospitalAutocomplete";
 import TransferCategorySelector from "./TransferCategorySelector";
 import PatientTransferForm from "./PatientTransferForm";
 import EnvelopeTransferForm from "./EnvelopeTransferForm";
-import FileTransferForm from "./FileTransferForm";
-import EquipmentTransferForm from "./EquipmentTransferForm";
-import { TransferCategory } from '@/constants/transfer';
+import { TransferCategory } from "@/constants/transfer";
 
 // Validation helpers
 const validateRequired = (value: FormDataEntryValue | null): boolean => {
@@ -59,6 +57,8 @@ export default function TransferForm({
   const [selectedToHospital, setSelectedToHospital] = useState<any>(null);
   const [selectedTransferCategory, setSelectedTransferCategory] =
     useState<TransferCategory | null>(null);
+  const [selectedTransferType, setSelectedTransferType] = useState<string>("");
+  const [autoPriority, setAutoPriority] = useState<string>("low");
 
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
@@ -95,6 +95,15 @@ export default function TransferForm({
     checkUser();
   }, []);
 
+  // Automatically determine priority based on transfer type
+  useEffect(() => {
+    if (selectedTransferType === "stat") {
+      setAutoPriority("urgent");
+    } else if (selectedTransferType === "planifier") {
+      setAutoPriority("low");
+    }
+  }, [selectedTransferType]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -116,7 +125,6 @@ export default function TransferForm({
     const transferTime = formData.get("transferTime");
     const transferType = formData.get("transferType");
     const issuer = formData.get("issuer");
-    const priority = formData.get("priority");
     const reason = formData.get("reason");
 
     // Category-specific fields
@@ -133,6 +141,8 @@ export default function TransferForm({
     const dimensionsLength = formData.get("dimensionsLength");
     const dimensionsWidth = formData.get("dimensionsWidth");
     const dimensionsHeight = formData.get("dimensionsHeight");
+    const measurementUnit = formData.get("measurementUnit") as "cm" | "inch";
+    const weightUnit = formData.get("weightUnit") as "kg" | "pound";
 
     const patientName = formData.get("patientName");
     const dossierNumber = formData.get("dossierNumber");
@@ -146,6 +156,15 @@ export default function TransferForm({
     const condition = formData.get("condition");
     const maintenanceRequired = formData.get("maintenanceRequired") === "on";
     const specialInstructions = formData.get("specialInstructions");
+
+    // Conversion functions
+    const convertToCm = (value: number, unit: "cm" | "inch"): number => {
+      return unit === "inch" ? value * 2.54 : value;
+    };
+
+    const convertToKg = (value: number, unit: "kg" | "pound"): number => {
+      return unit === "pound" ? value * 0.453592 : value;
+    };
 
     // Validate form inputs
     let errors: Record<string, string> = {};
@@ -182,31 +201,7 @@ export default function TransferForm({
       }
 
       if (!validateRequired(contents)) {
-        errors.contents = "Contents description is required";
-      }
-    } else if (transferCategory === TransferCategory.PATIENT_FILE) {
-      if (!validateRequired(patientName)) {
-        errors.patientName = "Patient name is required";
-      }
-
-      if (!validateRequired(dossierNumber)) {
-        errors.dossierNumber = "Dossier number is required";
-      }
-
-      if (!validateRequired(fileType)) {
-        errors.fileType = "File type is required";
-      }
-
-      if (!validateRequired(fileCount)) {
-        errors.fileCount = "File count is required";
-      }
-    } else if (transferCategory === TransferCategory.MEDICAL_EQUIPMENT) {
-      if (!validateRequired(equipmentName)) {
-        errors.equipmentName = "Equipment name is required";
-      }
-
-      if (!validateRequired(model)) {
-        errors.model = "Equipment model is required";
+        errors.contents = "Comment is required";
       }
     }
 
@@ -245,9 +240,7 @@ export default function TransferForm({
       errors.issuer = "Issuer selection is required";
     }
 
-    if (!validateRequired(priority)) {
-      errors.priority = "Priority level is required";
-    }
+    // Priority is automatically determined based on transfer type
 
     if (!validateRequired(reason)) {
       errors.reason = "Reason for transfer is required";
@@ -305,7 +298,7 @@ export default function TransferForm({
       transferTime: formattedTime,
       transferType,
       issuer,
-      priority,
+      priority: autoPriority,
       reason,
       // Simplified scheduling data
       scheduling: {
@@ -325,32 +318,29 @@ export default function TransferForm({
         senderName,
         recipientName,
         contents,
-        weight: weight ? parseFloat(weight.toString()) : undefined,
+        weight: weight
+          ? convertToKg(parseFloat(weight.toString()), weightUnit || "kg")
+          : undefined,
         dimensions:
           dimensionsLength && dimensionsWidth && dimensionsHeight
             ? {
-                length: parseFloat(dimensionsLength.toString()),
-                width: parseFloat(dimensionsWidth.toString()),
-                height: parseFloat(dimensionsHeight.toString()),
+                length: convertToCm(
+                  parseFloat(dimensionsLength.toString()),
+                  measurementUnit || "cm"
+                ),
+                width: convertToCm(
+                  parseFloat(dimensionsWidth.toString()),
+                  measurementUnit || "cm"
+                ),
+                height: convertToCm(
+                  parseFloat(dimensionsHeight.toString()),
+                  measurementUnit || "cm"
+                ),
               }
             : undefined,
-      }),
-
-      ...(transferCategory === TransferCategory.PATIENT_FILE && {
-        patientName,
-        dossierNumber,
-        fileType,
-        fileCount: fileCount ? parseInt(fileCount.toString()) : undefined,
-        fileUrgency,
-      }),
-
-      ...(transferCategory === TransferCategory.MEDICAL_EQUIPMENT && {
-        equipmentName,
-        serialNumber,
-        model,
-        condition,
-        maintenanceRequired,
-        specialInstructions,
+        // Store original units for reference
+        measurementUnit: measurementUnit || "cm",
+        weightUnit: weightUnit || "kg",
       }),
     };
 
@@ -533,18 +523,6 @@ export default function TransferForm({
                     <EnvelopeTransferForm validationErrors={validationErrors} />
                   )}
 
-                  {selectedTransferCategory ===
-                    TransferCategory.PATIENT_FILE && (
-                    <FileTransferForm validationErrors={validationErrors} />
-                  )}
-
-                  {selectedTransferCategory ===
-                    TransferCategory.MEDICAL_EQUIPMENT && (
-                    <EquipmentTransferForm
-                      validationErrors={validationErrors}
-                    />
-                  )}
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <h3 className="text-md font-semibold text-black mb-3 flex items-center">
@@ -629,7 +607,7 @@ export default function TransferForm({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <SelectInput
                         id="transferType"
@@ -644,6 +622,7 @@ export default function TransferForm({
                             label: "Planifier (Scheduled)",
                           },
                         ]}
+                        onChange={(value) => setSelectedTransferType(value)}
                       />
                       {validationErrors.transferType && (
                         <p className="text-red-600 text-xs mt-1">
@@ -668,26 +647,6 @@ export default function TransferForm({
                       {validationErrors.issuer && (
                         <p className="text-red-600 text-xs mt-1">
                           {validationErrors.issuer}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <SelectInput
-                        id="priority"
-                        name="priority"
-                        label="Priority Level"
-                        required
-                        variant="priority"
-                        options={[
-                          { value: "low", label: "Low" },
-                          { value: "medium", label: "Medium" },
-                          { value: "high", label: "High" },
-                        ]}
-                      />
-                      {validationErrors.priority && (
-                        <p className="text-red-600 text-xs mt-1">
-                          {validationErrors.priority}
                         </p>
                       )}
                     </div>

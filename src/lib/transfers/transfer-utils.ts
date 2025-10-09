@@ -254,8 +254,7 @@ export class TransferDisplayUtils {
     indicator: string;
     color: string;
   } {
-    const isUrgent = priority === TransferPriority.URGENT || 
-                    (priority === TransferPriority.HIGH && status === TransferStatus.PENDING);
+    const isUrgent = priority === TransferPriority.URGENT;
     
     return {
       isUrgent,
@@ -281,8 +280,6 @@ export class TransferCalculationUtils {
       completed: 0,
       cancelled: 0,
       urgent: 0,
-      high: 0,
-      medium: 0,
       low: 0
     };
 
@@ -317,12 +314,6 @@ export class TransferCalculationUtils {
       switch (transfer.priority) {
         case TransferPriority.URGENT:
           stats.urgent++;
-          break;
-        case TransferPriority.HIGH:
-          stats.high++;
-          break;
-        case TransferPriority.MEDIUM:
-          stats.medium++;
           break;
         case TransferPriority.LOW:
           stats.low++;
@@ -581,10 +572,6 @@ export class TransferCalendarUtils {
     switch (priority) {
       case TransferPriority.URGENT:
         return '#dc2626'; // red
-      case TransferPriority.HIGH:
-        return '#ea580c'; // orange
-      case TransferPriority.MEDIUM:
-        return '#d97706'; // amber
       case TransferPriority.LOW:
         return '#059669'; // emerald
       default:

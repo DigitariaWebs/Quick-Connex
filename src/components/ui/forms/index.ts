@@ -6,8 +6,6 @@
 
 export * from './DatePickerInput';
 export * from './EnvelopeTransferForm';
-export * from './EquipmentTransferForm';
-export * from './FileTransferForm';
 export * from './FileUpload';
 export * from './formConfig';
 export * from './FormInput';

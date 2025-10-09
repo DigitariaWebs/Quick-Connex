@@ -5,6 +5,5 @@
  * timeline, and security services.
  */
 
-export * from './admin-service';
 export * from './timeline-service';
 export * from './security';

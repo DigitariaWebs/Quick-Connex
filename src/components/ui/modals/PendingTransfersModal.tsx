@@ -20,7 +20,7 @@ import {
   Package,
   Stethoscope,
 } from "lucide-react";
-import { TransferCategory } from '@/constants/transfer';
+import { TransferCategory } from "@/constants/transfer";
 
 interface TransferRequest {
   _id: string;
@@ -72,7 +72,7 @@ interface TransferRequest {
     userType: string;
   };
   reason: string;
-  priority: "low" | "medium" | "high" | "urgent";
+  priority: "low" | "urgent";
   status: "pending" | "accepted" | "in_progress" | "completed" | "cancelled";
   requestedDate: string;
   scheduledDate?: string;
@@ -100,9 +100,7 @@ export default function PendingTransfersModal({
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [filter, setFilter] = useState<
-    "all" | "urgent" | "high" | "medium" | "low"
-  >("all");
+  const [filter, setFilter] = useState<"all" | "urgent" | "low">("all");
 
   // Fetch pending transfers
   const fetchPendingTransfers = async (priorityFilter: string = "all") => {
@@ -174,34 +172,6 @@ export default function PendingTransfersModal({
           iconColor: "text-orange-600",
           bgColor: "bg-orange-100",
           category: "Envelope",
-        };
-
-      case TransferCategory.PATIENT_FILE:
-        const fileInfo = transfer.transferData?.fileInfo;
-        return {
-          title: fileInfo ? `Files: ${fileInfo.patientName}` : "File Transfer",
-          subtitle: fileInfo
-            ? `${fileInfo.fileCount} ${fileInfo.fileType} files`
-            : "Patient Files",
-          icon: FileText,
-          iconColor: "text-purple-600",
-          bgColor: "bg-purple-100",
-          category: "Files",
-        };
-
-      case TransferCategory.MEDICAL_EQUIPMENT:
-        const equipmentInfo = transfer.transferData?.equipmentInfo;
-        return {
-          title: equipmentInfo
-            ? equipmentInfo.equipmentName
-            : "Equipment Transfer",
-          subtitle: equipmentInfo
-            ? `${equipmentInfo.model} (${equipmentInfo.condition})`
-            : "Medical Equipment",
-          icon: Stethoscope,
-          iconColor: "text-green-600",
-          bgColor: "bg-green-100",
-          category: "Equipment",
         };
 
       default:
@@ -291,7 +261,7 @@ export default function PendingTransfersModal({
 
   // Sort transfers by priority (urgent first, then by date)
   const sortedTransfers = [...filteredTransfers].sort((a, b) => {
-    const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
+    const priorityOrder = { urgent: 2, low: 1 };
     if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
       return priorityOrder[b.priority] - priorityOrder[a.priority];
     }
@@ -304,8 +274,6 @@ export default function PendingTransfersModal({
   const stats = {
     total: transfers.length,
     urgent: transfers.filter((t) => t.priority === "urgent").length,
-    high: transfers.filter((t) => t.priority === "high").length,
-    medium: transfers.filter((t) => t.priority === "medium").length,
     low: transfers.filter((t) => t.priority === "low").length,
   };
 
@@ -405,28 +373,6 @@ export default function PendingTransfersModal({
                   </div>
                 </div>
               </div>
-              <div className="bg-orange-50 rounded-2xl p-3 border border-orange-100">
-                <div className="flex items-center">
-                  <ArrowRight size={16} className="text-orange-600 mr-2" />
-                  <div>
-                    <p className="text-xs text-orange-600 font-medium">High</p>
-                    <p className="text-lg font-bold text-orange-900">
-                      {stats.high}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-amber-50 rounded-2xl p-3 border border-amber-100">
-                <div className="flex items-center">
-                  <Clock size={16} className="text-amber-600 mr-2" />
-                  <div>
-                    <p className="text-xs text-amber-600 font-medium">Medium</p>
-                    <p className="text-lg font-bold text-amber-900">
-                      {stats.medium}
-                    </p>
-                  </div>
-                </div>
-              </div>
               <div className="bg-green-50 rounded-2xl p-3 border border-green-100">
                 <div className="flex items-center">
                   <CheckCircle2 size={16} className="text-green-600 mr-2" />
@@ -490,20 +436,13 @@ export default function PendingTransfersModal({
                             value={filter}
                             onChange={(e) =>
                               setFilter(
-                                e.target.value as
-                                  | "all"
-                                  | "urgent"
-                                  | "high"
-                                  | "medium"
-                                  | "low"
+                                e.target.value as "all" | "urgent" | "low"
                               )
                             }
                             className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 transition-all duration-300 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md appearance-none focus:ring-blue-500 focus:border-transparent text-gray-900"
                           >
                             <option value="all">All Priorities</option>
                             <option value="urgent">Urgent</option>
-                            <option value="high">High</option>
-                            <option value="medium">Medium</option>
                             <option value="low">Low</option>
                           </select>
                           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">

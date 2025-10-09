@@ -10,7 +10,7 @@ import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import Hospital from '@/models/Hospital';
-import AdminService from '@/lib/services/admin-service';
+// Removed AdminService - using simple manager role check instead
 import TransferNotificationService from '@/lib/communication/integrations/transfer-notification-service';
 import TimelineService from '@/lib/services/timeline-service';
 
@@ -52,10 +52,9 @@ export async function GET(
       return NextResponse.redirect(new URL(errorUrl, request.url));
     }
 
-    // Check if user is admin
-    const isAdmin = await AdminService.isAdmin((admin._id as any as any).toString());
-    if (!isAdmin) {
-      const errorUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/approval-error?error=${encodeURIComponent('Unauthorized: Admin privileges required')}&transferId=${transferId}&type=unauthorized`;
+    // Check if user is a manager (admin role)
+    if (admin.userType !== 'manager') {
+      const errorUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/approval-error?error=${encodeURIComponent('Unauthorized: Manager privileges required')}&transferId=${transferId}&type=unauthorized`;
       return NextResponse.redirect(new URL(errorUrl, request.url));
     }
 
@@ -65,7 +64,7 @@ export async function GET(
         id: admin._id as any as any,
         name: `${admin.firstName} ${admin.lastName}`,
         email: admin.email,
-        userType: 'admin'
+        userType: 'manager'
       },
       reason
     );
@@ -75,7 +74,7 @@ export async function GET(
         id: admin._id as any as any,
         name: `${admin.firstName} ${admin.lastName}`,
         email: admin.email,
-        userType: 'admin'
+        userType: 'manager'
       },
       'pending',
       'accepted',
@@ -177,11 +176,10 @@ export async function POST(
       );
     }
 
-    // Check if user is admin
-    const isAdmin = await AdminService.isAdmin((admin._id as any as any).toString());
-    if (!isAdmin) {
+    // Check if user is a manager (admin role)
+    if (admin.userType !== 'manager') {
       return NextResponse.json(
-        { error: 'Unauthorized: Admin privileges required' },
+        { error: 'Unauthorized: Manager privileges required' },
         { status: 403 }
       );
     }
@@ -192,7 +190,7 @@ export async function POST(
         id: admin._id as any as any,
         name: `${admin.firstName} ${admin.lastName}`,
         email: admin.email,
-        userType: 'admin'
+        userType: 'manager'
       },
       reason
     );
@@ -202,7 +200,7 @@ export async function POST(
         id: admin._id as any as any,
         name: `${admin.firstName} ${admin.lastName}`,
         email: admin.email,
-        userType: 'admin'
+        userType: 'manager'
       },
       'pending',
       'accepted',
