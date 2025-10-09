@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEmployeeOrManager } from '@/lib/auth/auth-middleware';
-import { broadcastToAll } from '@/lib/notifications/notification-broadcaster-global';
+import { broadcastToAll, type NotificationData } from '@/lib/notifications/notification-broadcaster-global';
 // Note: Real-time notifications are now handled by the global SSE system
 
 // POST /api/test-notifications - Trigger test notifications for SSE testing
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const userName = `${authResult.user.firstName} ${authResult.user.lastName}`;
 
     // Create test notification data based on type
-    let notificationData;
+    let notificationData: NotificationData;
     
     switch (notificationType) {
       case 'test':

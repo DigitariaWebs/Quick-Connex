@@ -13,7 +13,7 @@ import RecentActivity from "@/components/features/dashboard/RecentActivity";
 import QuickActions from "@/components/features/dashboard/QuickActions";
 import SchedulingNotifications from "@/components/features/notifications/SchedulingNotifications";
 // import NotificationPopupManager from "@/components/features/notifications/NotificationPopupManager"; // Disabled - using GlobalNotificationSystem instead
-import ToastNotificationTester from "@/components/features/notifications/ToastNotificationTester";
+// import ToastNotificationTester from "@/components/features/notifications/ToastNotificationTester"; // Removed - no longer needed
 import TransferFormModal from "@/components/ui/modals/TransferFormModal";
 import MyAcceptedTransfersModal from "@/components/ui/modals/MyAcceptedTransfersModal";
 import SearchTransfersModal from "@/components/ui/modals/SearchTransfersModal";
@@ -204,12 +204,7 @@ export default function EmployeeDashboard() {
             <SchedulingNotifications limit={5} showSummary={true} />
           </div>
 
-          {/* Toast Notification Tester - Development Only */}
-          {process.env.NODE_ENV === "development" && (
-            <div className="mb-8">
-              <ToastNotificationTester />
-            </div>
-          )}
+          {/* Toast Notification Tester - Removed */}
 
           {/* Recent Activity */}
           <div className="mb-8">
