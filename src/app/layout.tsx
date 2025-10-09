@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SSEProvider } from "@/contexts/SSEContext";
-import ServerConnectionLogger from '@/components/features/notifications/ServerConnectionLogger';
-import SSEDebugger from '@/components/features/notifications/SSEDebugger';
+import ServerConnectionLogger from "@/components/features/notifications/ServerConnectionLogger";
+import SSEDebugger from "@/components/features/notifications/SSEDebugger";
+import GlobalNotificationSystem from "@/components/features/notifications/GlobalNotificationSystem";
 // Remove startup logging from layout - not compatible with Vercel
 // import { logApplicationStartup } from "@/lib/utils/startup-logger";
 
@@ -42,6 +43,7 @@ export default function RootLayout({
         <SSEProvider>
           <ServerConnectionLogger />
           <SSEDebugger />
+          <GlobalNotificationSystem />
           {children}
         </SSEProvider>
       </body>

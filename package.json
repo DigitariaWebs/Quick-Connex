@@ -38,6 +38,7 @@
     "@types/socket.io": "^3.0.1",
     "bcryptjs": "^3.0.2",
     "dotenv": "^17.2.2",
+    "eventsource": "^4.0.0",
     "form-data": "^4.0.4",
     "framer-motion": "^12.23.12",
     "googleapis": "^160.0.0",

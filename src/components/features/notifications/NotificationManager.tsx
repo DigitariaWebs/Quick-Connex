@@ -77,32 +77,160 @@ export default function NotificationManager({
     new Set()
   );
   const [soundEnabled, setSoundEnabled] = useState(enableSound);
+  const [audioPermissionGranted, setAudioPermissionGranted] = useState(false);
 
-  const audioRef = useState<HTMLAudioElement | null>(null)[0];
+  const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null);
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
 
-  // Initialize audio
+  // Create a beep sound using Web Audio API
+  const createBeepSound = useCallback(() => {
+    if (!audioContext) return;
+
+    try {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // 800Hz beep
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.2); // 200ms beep
+
+      console.log("🔊 Beep sound played successfully");
+    } catch (error) {
+      console.log("🔊 Error creating beep sound:", error);
+    }
+  }, [audioContext]);
+
+  // Initialize audio and request permission
   useEffect(() => {
+    console.log(
+      "🔊 Initializing audio - soundEnabled:",
+      soundEnabled,
+      "soundFile:",
+      soundFile
+    );
+
     if (typeof window !== "undefined" && soundEnabled) {
-      const audio = new Audio(soundFile);
-      audio.volume = 0.3;
-      audio.preload = "auto";
-      setAudioRef(audio);
+      // Initialize Web Audio API instead of using broken audio file
+      const initAudioContext = async () => {
+        try {
+          console.log("🔊 Initializing Web Audio API...");
+          const context = new (window.AudioContext ||
+            (window as any).webkitAudioContext)();
+          setAudioContext(context);
+
+          // Resume audio context if it's suspended
+          if (context.state === "suspended") {
+            await context.resume();
+          }
+
+          setAudioPermissionGranted(true);
+          console.log("🔊 Web Audio API initialized successfully");
+        } catch (error) {
+          console.log("🔊 Web Audio API initialization failed:", error);
+          setAudioPermissionGranted(false);
+        }
+      };
+
+      // Try to initialize audio context immediately
+      initAudioContext();
+    } else {
+      console.log(
+        "🔊 Audio initialization skipped - window:",
+        typeof window !== "undefined",
+        "soundEnabled:",
+        soundEnabled
+      );
     }
   }, [soundEnabled, soundFile]);
 
-  const setAudioRef = (audio: HTMLAudioElement) => {
-    // This is a workaround for the useState hook
-    (audioRef as any) = audio;
-  };
+  // Request audio permission on user interaction
+  const requestAudioPermission = useCallback(async () => {
+    if (!audioPermissionGranted) {
+      try {
+        console.log("🔊 Requesting audio permission after user interaction...");
+
+        if (!audioContext) {
+          const context = new (window.AudioContext ||
+            (window as any).webkitAudioContext)();
+          setAudioContext(context);
+        }
+
+        // Resume audio context if it's suspended
+        if (audioContext && audioContext.state === "suspended") {
+          await audioContext.resume();
+        }
+
+        setAudioPermissionGranted(true);
+        console.log("🔊 Audio permission granted after user interaction");
+      } catch (error) {
+        console.log("🔊 Audio permission denied:", error);
+        setSoundEnabled(false);
+      }
+    }
+  }, [audioContext, audioPermissionGranted]);
 
   const { connected, error, lastMessage } = useSSE();
 
   // Play notification sound
-  const playSound = useCallback(() => {
-    if (soundEnabled && audioRef) {
-      audioRef.play().catch(console.error);
+  const playSound = useCallback(async () => {
+    console.log(
+      "🔊 playSound called - soundEnabled:",
+      soundEnabled,
+      "audioContext:",
+      !!audioContext,
+      "audioPermissionGranted:",
+      audioPermissionGranted
+    );
+
+    if (soundEnabled) {
+      if (audioPermissionGranted && audioContext) {
+        try {
+          console.log("🔊 Attempting to play beep sound...");
+          createBeepSound();
+          console.log("🔊 Beep sound played successfully!");
+        } catch (error) {
+          console.log("🔊 Beep sound failed:", error);
+          // If playback fails, try to request permission again
+          setAudioPermissionGranted(false);
+        }
+      } else {
+        console.log(
+          "🔊 Audio permission not granted, attempting to request..."
+        );
+        await requestAudioPermission();
+        // Try to play again after requesting permission
+        if (audioPermissionGranted && audioContext) {
+          try {
+            console.log(
+              "🔊 Attempting to play beep sound after permission request..."
+            );
+            createBeepSound();
+            console.log(
+              "🔊 Beep sound played successfully after permission request!"
+            );
+          } catch (error) {
+            console.log(
+              "🔊 Beep sound still failed after permission request:",
+              error
+            );
+          }
+        }
+      }
+    } else {
+      console.log("🔊 Cannot play sound - soundEnabled:", soundEnabled);
     }
-  }, [soundEnabled, audioRef]);
+  }, [
+    soundEnabled,
+    audioContext,
+    audioPermissionGranted,
+    requestAudioPermission,
+    createBeepSound,
+  ]);
 
   // Add notification to toasts
   const addToastNotification = useCallback(
@@ -112,10 +240,14 @@ export default function NotificationManager({
         return newToasts;
       });
 
-      // Play sound for high priority notifications
-      if (notification.priority === "high") {
-        playSound();
-      }
+      // Play sound for all notifications (for testing)
+      console.log(
+        "🔊 Attempting to play sound for notification:",
+        notification.type,
+        "priority:",
+        notification.priority
+      );
+      playSound();
     },
     [maxToasts, playSound]
   );
@@ -143,13 +275,14 @@ export default function NotificationManager({
         addToastNotification(notification);
       }
 
-      // Play sound for high priority notifications
-      if (
-        notification.priority === "high" ||
-        notification.type === "urgent_transfer"
-      ) {
-        playSound();
-      }
+      // Play sound for all notifications (for testing)
+      console.log(
+        "🔊 Attempting to play sound for SSE notification:",
+        notification.type,
+        "priority:",
+        notification.priority
+      );
+      playSound();
     };
 
     // Handle different notification types
@@ -180,8 +313,41 @@ export default function NotificationManager({
     return () => clearInterval(interval);
   }, []);
 
+  // Add global click handler to request audio permission on first user interaction
+  useEffect(() => {
+    if (!audioPermissionGranted && soundEnabled) {
+      const handleFirstInteraction = () => {
+        requestAudioPermission();
+        // Remove the event listeners after first interaction
+        document.removeEventListener("click", handleFirstInteraction);
+        document.removeEventListener("keydown", handleFirstInteraction);
+        document.removeEventListener("touchstart", handleFirstInteraction);
+      };
+
+      document.addEventListener("click", handleFirstInteraction);
+      document.addEventListener("keydown", handleFirstInteraction);
+      document.addEventListener("touchstart", handleFirstInteraction);
+
+      return () => {
+        document.removeEventListener("click", handleFirstInteraction);
+        document.removeEventListener("keydown", handleFirstInteraction);
+        document.removeEventListener("touchstart", handleFirstInteraction);
+      };
+    }
+  }, [audioPermissionGranted, soundEnabled, requestAudioPermission]);
+
   return (
     <>
+      {/* Audio Permission Request */}
+      {soundEnabled && !audioPermissionGranted && (
+        <div className="fixed bottom-4 right-4 z-50 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg text-sm">
+          <div className="flex items-center gap-2">
+            <span>🔊</span>
+            <span>Click anywhere to enable notification sounds</span>
+          </div>
+        </div>
+      )}
+
       {/* Toast Notifications */}
       {showToasts && (
         <div className="fixed top-4 right-4 z-50 space-y-2">

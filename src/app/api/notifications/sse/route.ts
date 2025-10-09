@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEmployeeOrManager } from '@/lib/auth/auth-middleware';
+import { registerClient, unregisterClient } from '@/lib/notifications/notification-broadcaster-global';
 
 // GET /api/notifications/sse - Server-Sent Events endpoint for real-time notifications
 export async function GET(request: NextRequest) {
@@ -20,40 +21,18 @@ export async function GET(request: NextRequest) {
     const userType = authResult.user.userType;
 
     // Create SSE response
-    const encoder = new TextEncoder();
     const stream = new ReadableStream({
       start(controller) {
-        // Send initial connection message
-        const initialMessage = `data: ${JSON.stringify({
-          type: 'connection',
-          message: 'Connected to notification stream',
-          userId,
-          userType,
-          timestamp: new Date().toISOString()
-        })}\n\n`;
-        controller.enqueue(encoder.encode(initialMessage));
+        // Register this client with the notification broadcaster
+        registerClient(userId, userType, controller);
 
         // Log connection for debugging
         console.log(`🔗 SSE Endpoint: User ${userId} (${userType}) connected to SSE stream`);
 
-        // Send heartbeat every 30 seconds to keep connection alive
-        const heartbeatInterval = setInterval(() => {
-          try {
-            const heartbeat = `data: ${JSON.stringify({
-              type: 'heartbeat',
-              timestamp: new Date().toISOString()
-            })}\n\n`;
-            controller.enqueue(encoder.encode(heartbeat));
-          } catch (error) {
-            console.error('Error sending heartbeat:', error);
-            clearInterval(heartbeatInterval);
-          }
-        }, 30000);
-
         // Handle client disconnect
         request.signal.addEventListener('abort', () => {
           console.log(`SSE connection closed for user ${userId}`);
-          clearInterval(heartbeatInterval);
+          unregisterClient(userId);
         });
       }
     });

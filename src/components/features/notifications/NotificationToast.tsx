@@ -83,37 +83,65 @@ export default function NotificationToast({
   }, [autoHide, hideDelay, id, onDismiss]);
 
   const getNotificationIcon = (type: string, priority: string) => {
-    const iconClass =
-      priority === "high"
-        ? "text-red-600"
-        : priority === "medium"
-        ? "text-yellow-600"
-        : "text-green-600";
+    const getIconContainerClass = () => {
+      switch (priority) {
+        case "high":
+          return "bg-red-100 text-red-600 border-red-200";
+        case "medium":
+          return "bg-amber-100 text-amber-600 border-amber-200";
+        case "low":
+          return "bg-emerald-100 text-emerald-600 border-emerald-200";
+        default:
+          return "bg-slate-100 text-slate-600 border-slate-200";
+      }
+    };
+
+    const iconContainerClass = `p-2 rounded-xl border ${getIconContainerClass()}`;
 
     switch (type) {
       case "transfer_status_change":
-        return <CheckCircle2 size={20} className={iconClass} />;
+        return (
+          <div className={iconContainerClass}>
+            <CheckCircle2 size={18} />
+          </div>
+        );
       case "new_transfer":
-        return <Bell size={20} className={iconClass} />;
+        return (
+          <div className={iconContainerClass}>
+            <Bell size={18} />
+          </div>
+        );
       case "urgent_transfer":
-        return <AlertTriangle size={20} className="text-red-600" />;
+        return (
+          <div className="p-2 rounded-xl border bg-red-100 text-red-600 border-red-200">
+            <AlertTriangle size={18} />
+          </div>
+        );
       case "transfer_reminder":
-        return <Clock size={20} className={iconClass} />;
+        return (
+          <div className={iconContainerClass}>
+            <Clock size={18} />
+          </div>
+        );
       default:
-        return <Bell size={20} className={iconClass} />;
+        return (
+          <div className={iconContainerClass}>
+            <Bell size={18} />
+          </div>
+        );
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "high":
-        return "border-l-red-500 bg-red-50";
+        return "bg-gradient-to-r from-red-50 to-red-100/50 border-red-200/60 shadow-red-100/50";
       case "medium":
-        return "border-l-yellow-500 bg-yellow-50";
+        return "bg-gradient-to-r from-amber-50 to-amber-100/50 border-amber-200/60 shadow-amber-100/50";
       case "low":
-        return "border-l-green-500 bg-green-50";
+        return "bg-gradient-to-r from-emerald-50 to-emerald-100/50 border-emerald-200/60 shadow-emerald-100/50";
       default:
-        return "border-l-gray-500 bg-gray-50";
+        return "bg-gradient-to-r from-slate-50 to-slate-100/50 border-slate-200/60 shadow-slate-100/50";
     }
   };
 
@@ -153,13 +181,17 @@ export default function NotificationToast({
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          initial={{ opacity: 0, x: 300, scale: 0.95 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
-          exit={{ opacity: 0, x: 300, scale: 0.95 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className={`fixed top-4 right-4 z-50 w-96 max-w-sm border-l-4 p-4 rounded-lg shadow-lg ${getPriorityColor(
+          initial={{ opacity: 0, x: 300, scale: 0.95, y: -20 }}
+          animate={{ opacity: 1, x: 0, scale: 1, y: 0 }}
+          exit={{ opacity: 0, x: 300, scale: 0.95, y: -20 }}
+          transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          className={`fixed top-4 right-4 z-50 w-96 max-w-sm border backdrop-blur-sm p-5 rounded-2xl shadow-xl ${getPriorityColor(
             priority
-          )} ${priority === "high" ? "ring-2 ring-red-200" : ""}`}
+          )} ${
+            priority === "high"
+              ? "ring-2 ring-red-200/50 shadow-2xl shadow-red-200/20"
+              : "shadow-lg"
+          }`}
         >
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-3 flex-1">
@@ -171,12 +203,12 @@ export default function NotificationToast({
                     {title}
                   </h4>
                   <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full flex-shrink-0 ${
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-full flex-shrink-0 shadow-sm ${
                       priority === "high"
-                        ? "bg-red-200 text-red-800"
+                        ? "bg-red-100 text-red-700 border border-red-200"
                         : priority === "medium"
-                        ? "bg-yellow-200 text-yellow-800"
-                        : "bg-green-200 text-green-800"
+                        ? "bg-amber-100 text-amber-700 border border-amber-200"
+                        : "bg-emerald-100 text-emerald-700 border border-emerald-200"
                     }`}
                   >
                     {priority.toUpperCase()}
@@ -203,7 +235,7 @@ export default function NotificationToast({
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="mt-3 pt-3 border-t border-gray-200"
+                    className="mt-4 pt-4 border-t border-gray-200/60"
                   >
                     {transfer?.patient && (
                       <div className="flex items-center space-x-1 text-xs text-gray-600 mb-2">
@@ -239,22 +271,24 @@ export default function NotificationToast({
                     {type === "transfer_status_change" &&
                       transfer?.oldStatus &&
                       transfer?.status && (
-                        <div className="mt-2 p-2 bg-white rounded border">
-                          <div className="flex items-center space-x-2 text-xs">
-                            <span className="text-gray-600">Status:</span>
-                            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded">
+                        <div className="mt-3 p-3 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/60 shadow-sm">
+                          <div className="flex items-center space-x-3 text-xs">
+                            <span className="text-gray-600 font-medium">
+                              Status:
+                            </span>
+                            <span className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg font-medium">
                               {transfer.oldStatus}
                             </span>
                             <span className="text-gray-400">→</span>
                             <span
-                              className={`px-2 py-1 rounded ${
+                              className={`px-3 py-1.5 rounded-lg font-medium ${
                                 transfer.status === "completed"
-                                  ? "bg-green-100 text-green-700"
+                                  ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
                                   : transfer.status === "cancelled"
-                                  ? "bg-red-100 text-red-700"
+                                  ? "bg-red-100 text-red-700 border border-red-200"
                                   : transfer.status === "in_progress"
-                                  ? "bg-blue-100 text-blue-700"
-                                  : "bg-yellow-100 text-yellow-700"
+                                  ? "bg-blue-100 text-blue-700 border border-blue-200"
+                                  : "bg-amber-100 text-amber-700 border border-amber-200"
                               }`}
                             >
                               {transfer.status}
@@ -266,11 +300,11 @@ export default function NotificationToast({
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex items-center space-x-2 mt-3">
+                <div className="flex items-center space-x-3 mt-4">
                   {showDetails && (
                     <button
                       onClick={() => setIsExpanded(!isExpanded)}
-                      className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                      className="px-3 py-1.5 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-medium rounded-lg transition-all duration-200"
                     >
                       {isExpanded ? "Show Less" : "Show Details"}
                     </button>
@@ -279,7 +313,7 @@ export default function NotificationToast({
                   {onMarkAsRead && (
                     <button
                       onClick={handleMarkAsRead}
-                      className="text-xs text-green-600 hover:text-green-800 font-medium"
+                      className="px-3 py-1.5 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 font-medium rounded-lg transition-all duration-200"
                     >
                       Mark as Read
                     </button>
@@ -290,10 +324,13 @@ export default function NotificationToast({
 
             <button
               onClick={handleDismiss}
-              className="p-1 hover:bg-gray-200 rounded transition-colors flex-shrink-0"
+              className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-200 flex-shrink-0 group"
               title="Dismiss"
             >
-              <X size={16} className="text-gray-500" />
+              <X
+                size={16}
+                className="text-gray-400 group-hover:text-gray-600 transition-colors"
+              />
             </button>
           </div>
         </motion.div>

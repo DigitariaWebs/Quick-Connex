@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEmployeeOrManager } from '@/lib/auth/auth-middleware';
+import { broadcastToAll } from '@/lib/notifications/notification-broadcaster-global';
 // Note: Real-time notifications are now handled by the global SSE system
 
 // POST /api/test-notifications - Trigger test notifications for SSE testing
@@ -111,11 +112,17 @@ export async function POST(request: NextRequest) {
         );
     }
 
+    // Broadcast the notification to all connected users
+    const broadcastCount = broadcastToAll(notificationData);
+    
+    console.log(`📡 Test Notification: Broadcasted ${notificationType} to ${broadcastCount} connected users`);
+
     return NextResponse.json({
       success: true,
-      message: `Test notification data created successfully`,
+      message: `Test notification sent to ${broadcastCount} connected users`,
       notificationType,
       notificationData,
+      broadcastCount,
       timestamp: new Date().toISOString()
     });
 

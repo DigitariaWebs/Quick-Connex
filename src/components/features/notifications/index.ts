@@ -6,7 +6,7 @@
 
 export * from './NotificationManager';
 export * from './NotificationPopup';
-export * from './NotificationPopupManager';
+// export * from './NotificationPopupManager'; // Deleted - using GlobalNotificationSystem instead
 export * from './NotificationToast';
 export * from './RealtimeNotifications';
 export * from './SchedulingNotifications';
