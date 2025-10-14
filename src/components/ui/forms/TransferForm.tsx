@@ -18,6 +18,7 @@ import HospitalAutocomplete from "./HospitalAutocomplete";
 import TransferCategorySelector from "./TransferCategorySelector";
 import PatientTransferForm from "./PatientTransferForm";
 import EnvelopeTransferForm from "./EnvelopeTransferForm";
+import TransferTypeDropdown from "./TransferTypeDropdown";
 import { TransferCategory } from "@/constants/transfer";
 
 // Validation helpers
@@ -77,6 +78,30 @@ export default function TransferForm({
           const data = await response.json();
           setUser(data.user);
 
+          // Preselect manager hospital if available
+          if (data.user?.hospital) {
+            // If HospitalAutocomplete supports passing initial value by name only,
+            // we can leave it to the user to change; otherwise, fetch the hospital to get name
+            try {
+              const hid =
+                typeof data.user.hospital === "string"
+                  ? data.user.hospital
+                  : data.user.hospital._id;
+              const hospitalsResp = await fetch(`/api/hospitals?limit=100`);
+              const hospitalsData = await hospitalsResp.json();
+              if (hospitalsData.success) {
+                const found = hospitalsData.hospitals.find(
+                  (h: any) => h._id === hid
+                );
+                if (found) {
+                  setSelectedFromHospital(found);
+                }
+              }
+            } catch (e) {
+              console.warn("Could not preselect manager hospital:", e);
+            }
+          }
+
           // Check if user is a manager
           if (data.user.userType !== "manager") {
             setError(
@@ -124,7 +149,6 @@ export default function TransferForm({
     const transferDate = formData.get("transferDate");
     const transferTime = formData.get("transferTime");
     const transferType = formData.get("transferType");
-    const issuer = formData.get("issuer");
     const reason = formData.get("reason");
 
     // Category-specific fields
@@ -236,10 +260,6 @@ export default function TransferForm({
       errors.transferType = "Transfer type is required";
     }
 
-    if (!validateRequired(issuer)) {
-      errors.issuer = "Issuer selection is required";
-    }
-
     // Priority is automatically determined based on transfer type
 
     if (!validateRequired(reason)) {
@@ -297,7 +317,6 @@ export default function TransferForm({
       transferDate: formattedDate,
       transferTime: formattedTime,
       transferType,
-      issuer,
       priority: autoPriority,
       reason,
       // Simplified scheduling data
@@ -525,7 +544,7 @@ export default function TransferForm({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <h3 className="text-md font-semibold text-black mb-3 flex items-center">
+                      <h3 className="text-base font-medium text-gray-700 mb-3 flex items-center">
                         <Building2 size={18} className="mr-2" />
                         From
                       </h3>
@@ -549,7 +568,7 @@ export default function TransferForm({
                       />
                     </div>
                     <div>
-                      <h3 className="text-md font-semibold text-black mb-3 flex items-center">
+                      <h3 className="text-base font-medium text-gray-700 mb-3 flex items-center">
                         <ArrowRight size={18} className="mr-2" />
                         To
                       </h3>
@@ -576,7 +595,7 @@ export default function TransferForm({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <h3 className="text-md font-semibold text-black mb-3 flex items-center">
+                      <h3 className="text-base font-medium text-gray-700 mb-3 flex items-center">
                         <Calendar size={18} className="mr-2" />
                         Date
                       </h3>
@@ -591,7 +610,7 @@ export default function TransferForm({
                       />
                     </div>
                     <div>
-                      <h3 className="text-md font-semibold text-black mb-3 flex items-center">
+                      <h3 className="text-base font-medium text-gray-700 mb-3 flex items-center">
                         <Clock size={18} className="mr-2" />
                         Time
                       </h3>
@@ -609,53 +628,22 @@ export default function TransferForm({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <SelectInput
+                      <TransferTypeDropdown
                         id="transferType"
                         name="transferType"
                         label="Transfer Type"
                         required
-                        variant="transfer-type"
-                        options={[
-                          { value: "stat", label: "STAT (Immediate)" },
-                          {
-                            value: "planifier",
-                            label: "Planifier (Scheduled)",
-                          },
-                        ]}
+                        value={selectedTransferType}
                         onChange={(value) => setSelectedTransferType(value)}
+                        error={validationErrors.transferType}
                       />
-                      {validationErrors.transferType && (
-                        <p className="text-red-600 text-xs mt-1">
-                          {validationErrors.transferType}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <SelectInput
-                        id="issuer"
-                        name="issuer"
-                        label="Issuer"
-                        required
-                        variant="issuer"
-                        options={[
-                          { value: "gestionnaire", label: "Gestionnaire" },
-                          { value: "assistant_chef", label: "Assistant Chef" },
-                          { value: "coordonateur", label: "Coordonateur" },
-                        ]}
-                      />
-                      {validationErrors.issuer && (
-                        <p className="text-red-600 text-xs mt-1">
-                          {validationErrors.issuer}
-                        </p>
-                      )}
                     </div>
                   </div>
 
                   <div>
                     <label
                       htmlFor="reason"
-                      className="block text-sm font-semibold text-black dark:text-black mb-1"
+                      className="block text-base font-medium text-gray-700 mb-3"
                     >
                       Reason for Transfer
                     </label>
@@ -664,11 +652,11 @@ export default function TransferForm({
                       name="reason"
                       rows={3}
                       required
-                      className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 bg-white shadow-sm hover:shadow-md placeholder:text-gray-500 text-gray-900"
+                      className="w-full px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black border-gray-200"
                       placeholder="Provide details about the reason for the transfer"
                     ></textarea>
                     {validationErrors.reason && (
-                      <p className="text-red-600 text-xs mt-1">
+                      <p className="text-sm text-red-600 mt-2">
                         {validationErrors.reason}
                       </p>
                     )}

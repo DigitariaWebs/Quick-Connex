@@ -27,13 +27,13 @@ export function FormInput({
     <div>
       <label
         htmlFor={id}
-        className="block text-sm font-semibold text-black dark:text-black mb-1"
+        className="block text-base font-medium text-gray-700 mb-3"
       >
         {label}
       </label>
       <div className="relative">
         {icon && (
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
             {icon}
           </div>
         )}
@@ -45,8 +45,8 @@ export function FormInput({
           step={step}
           min={min}
           className={`w-full ${
-            icon ? "pl-10" : "px-4"
-          } pr-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm dark:border-gray-600 dark:text-white shadow-sm hover:shadow-md`}
+            icon ? "pl-12" : "px-5"
+          } py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${"border-gray-200"}`}
           placeholder={placeholder}
         />
       </div>

@@ -5,6 +5,97 @@ import DatePicker from "react-datepicker";
 import { Calendar } from "lucide-react";
 import "react-datepicker/dist/react-datepicker.css";
 
+// Custom styles for modern calendar
+const customStyles = `
+  .react-datepicker {
+    font-family: inherit;
+    border: none !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  }
+  
+  .react-datepicker__header {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important;
+    border-bottom: 1px solid #e5e7eb !important;
+    border-radius: 12px 12px 0 0 !important;
+    padding: 16px !important;
+  }
+  
+  .react-datepicker__current-month,
+  .react-datepicker__current-year {
+    color: #1f2937 !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+  }
+  
+  .react-datepicker__day-names {
+    margin-bottom: 8px !important;
+  }
+  
+  .react-datepicker__day-name {
+    color: #6b7280 !important;
+    font-weight: 500 !important;
+    font-size: 12px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+  }
+  
+  .react-datepicker__day {
+    border-radius: 8px !important;
+    margin: 2px !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  .react-datepicker__day:hover {
+    background-color: #dcfce7 !important;
+    color: #166534 !important;
+    transform: scale(1.05) !important;
+  }
+  
+  .react-datepicker__day--selected {
+    background-color: #10b981 !important;
+    color: white !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+  }
+  
+  .react-datepicker__day--today {
+    background-color: #dcfce7 !important;
+    color: #166534 !important;
+    font-weight: 600 !important;
+  }
+  
+  .react-datepicker__day--disabled {
+    color: #d1d5db !important;
+    background-color: transparent !important;
+  }
+  
+  .react-datepicker__navigation {
+    top: 16px !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+    background-color: white !important;
+    border: 1px solid #e5e7eb !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  .react-datepicker__navigation:hover {
+    background-color: #f9fafb !important;
+    border-color: #10b981 !important;
+    transform: scale(1.05) !important;
+  }
+  
+  .react-datepicker__navigation-icon::before {
+    border-color: #6b7280 !important;
+    border-width: 2px 2px 0 0 !important;
+  }
+  
+  .react-datepicker__navigation:hover .react-datepicker__navigation-icon::before {
+    border-color: #10b981 !important;
+  }
+`;
+
 type DatePickerInputProps = {
   id: string;
   name: string;
@@ -33,12 +124,12 @@ export function DatePickerInput({
       type="button"
       onClick={onClick}
       ref={ref}
-      className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm dark:border-gray-600 dark:text-white shadow-sm hover:shadow-md text-left flex items-center justify-between"
+      className="w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black border-gray-200 text-left flex items-center justify-between"
     >
-      <span className={`${!value ? "text-gray-400" : "text-gray-800"}`}>
+      <span className={`${!value ? "text-gray-500" : "text-black"}`}>
         {value || "Select date"}
       </span>
-      <Calendar size={18} className="text-blue-500" />
+      <Calendar size={18} className="text-gray-400" />
     </button>
   ));
 
@@ -47,9 +138,10 @@ export function DatePickerInput({
 
   return (
     <div>
+      <style dangerouslySetInnerHTML={{ __html: customStyles }} />
       <label
         htmlFor={id}
-        className="block text-sm font-semibold text-black dark:text-black mb-1"
+        className="block text-base font-medium text-gray-700 mb-3"
       >
         {label} {required && <span className="text-red-500">*</span>}
       </label>
@@ -65,7 +157,7 @@ export function DatePickerInput({
           showPopperArrow={false}
           wrapperClassName="w-full"
           className="w-full"
-          calendarClassName="shadow-lg border border-gray-100 rounded-lg"
+          calendarClassName="modern-datepicker"
           required={required}
         />
         <input
@@ -74,7 +166,7 @@ export function DatePickerInput({
           value={selectedDate?.toISOString() || ""}
         />
       </div>
-      {error && <p className="text-red-600 text-xs mt-1">{error}</p>}
+      {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
     </div>
   );
 }

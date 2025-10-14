@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useSignUpForm } from "@/hooks/auth/useSignUpForm";
 import { FormInput } from "@/components/ui/forms/FormInput";
@@ -11,7 +11,7 @@ import { UserTypeButton } from "@/components/ui/forms/UserTypeButton";
 import { RoleSpecificFields } from "@/components/ui/forms/RoleSpecificFields";
 import { SubmitButton } from "@/components/ui/forms/SubmitButton";
 import { Icon } from "@/components/ui/icons/Icon";
-import { CIUSSS_OPTIONS } from "@/components/ui/forms/formConfig";
+// Remove CIUSSS_OPTIONS import as we'll fetch from API
 import { TermsModal } from "@/components/ui/modals/TermsModal";
 
 export default function SignUpPage() {
@@ -26,6 +26,113 @@ export default function SignUpPage() {
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showRepeatPassword, setShowRepeatPassword] = useState(false);
+  const [managerHospitalId, setManagerHospitalId] = useState<string>("");
+  const [hospitals, setHospitals] = useState<
+    Array<{ _id: string; name: string }>
+  >([]);
+  const [hospitalSearchTerm, setHospitalSearchTerm] = useState<string>("");
+  const [filteredHospitals, setFilteredHospitals] = useState<
+    Array<{ _id: string; name: string }>
+  >([]);
+  const [isHospitalOpen, setIsHospitalOpen] = useState<boolean>(false);
+  const [isHospitalLoading, setIsHospitalLoading] = useState<boolean>(false);
+  const hospitalInputRef = useRef<HTMLInputElement>(null);
+  const hospitalDropdownRef = useRef<HTMLDivElement>(null);
+  const [ciusssSearchTerm, setCiusssSearchTerm] = useState<string>("");
+  const [selectedCiusssId, setSelectedCiusssId] = useState<string>("");
+  const [ciusssOptions, setCiusssOptions] = useState<
+    Array<{ _id: string; code: string; name: string }>
+  >([]);
+  const [filteredCiusss, setFilteredCiusss] = useState<
+    Array<{ _id: string; code: string; name: string }>
+  >([]);
+  const [isCiusssOpen, setIsCiusssOpen] = useState<boolean>(false);
+  const [isCiusssLoading, setIsCiusssLoading] = useState<boolean>(false);
+  const ciusssInputRef = useRef<HTMLInputElement>(null);
+  const ciusssDropdownRef = useRef<HTMLDivElement>(null);
+  const [postSearchTerm, setPostSearchTerm] = useState<string>("");
+  const [filteredPosts, setFilteredPosts] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
+  const [isPostOpen, setIsPostOpen] = useState<boolean>(false);
+  const postInputRef = useRef<HTMLInputElement>(null);
+  const postDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const loadHospitals = async () => {
+      try {
+        setIsHospitalLoading(true);
+        const response = await fetch("/api/hospitals?limit=100");
+        const data = await response.json();
+        if (data.success && Array.isArray(data.hospitals)) {
+          setHospitals(data.hospitals);
+          setFilteredHospitals(data.hospitals);
+        }
+      } catch (e) {
+        console.error("Failed to load hospitals", e);
+      } finally {
+        setIsHospitalLoading(false);
+      }
+    };
+
+    loadHospitals();
+
+    // Load CIUSSS options from API
+    const loadCiusss = async () => {
+      try {
+        setIsCiusssLoading(true);
+        const response = await fetch("/api/ciusss?isActive=true");
+        const data = await response.json();
+        if (data.success && Array.isArray(data.ciusss)) {
+          setCiusssOptions(data.ciusss);
+          setFilteredCiusss(data.ciusss);
+        }
+      } catch (e) {
+        console.error("Failed to load CIUSSS", e);
+      } finally {
+        setIsCiusssLoading(false);
+      }
+    };
+
+    loadCiusss();
+
+    // Initialize Post options
+    const postOptions = [
+      { value: "coordinateur", label: "Coordinateur" },
+      { value: "assistant-chef", label: "Assistant-chef" },
+      { value: "gestionnaire", label: "Gestionnaire" },
+    ];
+    setFilteredPosts(postOptions);
+
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        hospitalDropdownRef.current &&
+        !hospitalDropdownRef.current.contains(event.target as Node) &&
+        hospitalInputRef.current &&
+        !hospitalInputRef.current.contains(event.target as Node)
+      ) {
+        setIsHospitalOpen(false);
+      }
+      if (
+        ciusssDropdownRef.current &&
+        !ciusssDropdownRef.current.contains(event.target as Node) &&
+        ciusssInputRef.current &&
+        !ciusssInputRef.current.contains(event.target as Node)
+      ) {
+        setIsCiusssOpen(false);
+      }
+      if (
+        postDropdownRef.current &&
+        !postDropdownRef.current.contains(event.target as Node) &&
+        postInputRef.current &&
+        !postInputRef.current.contains(event.target as Node)
+      ) {
+        setIsPostOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Helper function to get field errors
   const getFieldErrors = (fieldName: string) => {
@@ -501,23 +608,175 @@ export default function SignUpPage() {
                 <>
                   <div>
                     <label
+                      htmlFor="managerHospital"
+                      className="block text-base font-medium text-gray-700 mb-3"
+                    >
+                      Hospital
+                    </label>
+                    <div className="relative">
+                      <input
+                        ref={hospitalInputRef}
+                        type="text"
+                        id="managerHospital"
+                        name="managerHospital"
+                        value={hospitalSearchTerm}
+                        onChange={(e) => {
+                          setHospitalSearchTerm(e.target.value);
+                          const term = e.target.value.toLowerCase();
+                          setFilteredHospitals(
+                            !term
+                              ? hospitals
+                              : hospitals.filter((h) =>
+                                  h.name.toLowerCase().includes(term)
+                                )
+                          );
+                          setIsHospitalOpen(true);
+                        }}
+                        onFocus={() => setIsHospitalOpen(true)}
+                        placeholder="Select hospital"
+                        className={`w-full px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
+                          hasFieldError("managerHospitalId")
+                            ? "border-red-300 bg-red-50"
+                            : "border-gray-200"
+                        }`}
+                        autoComplete="off"
+                      />
+                      {isHospitalOpen && (
+                        <div
+                          ref={hospitalDropdownRef}
+                          className="absolute z-50 w-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg max-h-60 overflow-y-auto"
+                        >
+                          {isHospitalLoading ? (
+                            <div className="p-3 text-center text-gray-500">
+                              Loading hospitals...
+                            </div>
+                          ) : filteredHospitals.length === 0 ? (
+                            <div className="p-3 text-center text-gray-500">
+                              No hospitals found
+                            </div>
+                          ) : (
+                            <div className="py-1">
+                              {filteredHospitals.map((h) => (
+                                <button
+                                  key={h._id}
+                                  type="button"
+                                  onClick={() => {
+                                    setManagerHospitalId(h._id);
+                                    setHospitalSearchTerm(h.name);
+                                    setIsHospitalOpen(false);
+                                  }}
+                                  className="w-full px-3 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
+                                >
+                                  <div className="flex items-start space-x-3">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-gray-900 truncate">
+                                        {h.name}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="hidden"
+                      name="managerHospitalId"
+                      value={managerHospitalId}
+                    />
+                    {hasFieldError("managerHospitalId") && (
+                      <div className="mt-2">
+                        {getFieldErrors("managerHospitalId").map(
+                          (error, index) => (
+                            <p key={index} className="text-sm text-red-600">
+                              {error}
+                            </p>
+                          )
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label
                       htmlFor="post"
                       className="block text-base font-medium text-gray-700 mb-3"
                     >
                       Post
                     </label>
-                    <input
-                      id="post"
-                      name="post"
-                      type="text"
-                      required
-                      className={`w-full px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
-                        hasFieldError("post")
-                          ? "border-red-300 bg-red-50"
-                          : "border-gray-200"
-                      }`}
-                      placeholder="Head of Service"
-                    />
+                    <div className="relative">
+                      <input
+                        ref={postInputRef}
+                        type="text"
+                        id="post"
+                        name="post"
+                        value={postSearchTerm}
+                        onChange={(e) => {
+                          setPostSearchTerm(e.target.value);
+                          const term = e.target.value.toLowerCase();
+                          const postOptions = [
+                            { value: "coordinateur", label: "Coordinateur" },
+                            {
+                              value: "assistant-chef",
+                              label: "Assistant-chef",
+                            },
+                            { value: "gestionnaire", label: "Gestionnaire" },
+                          ];
+                          setFilteredPosts(
+                            !term
+                              ? postOptions
+                              : postOptions.filter((opt) =>
+                                  opt.label.toLowerCase().includes(term)
+                                )
+                          );
+                          setIsPostOpen(true);
+                        }}
+                        onFocus={() => setIsPostOpen(true)}
+                        placeholder="Select post"
+                        className={`w-full px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
+                          hasFieldError("post")
+                            ? "border-red-300 bg-red-50"
+                            : "border-gray-200"
+                        }`}
+                        autoComplete="off"
+                      />
+                      {isPostOpen && (
+                        <div
+                          ref={postDropdownRef}
+                          className="absolute z-50 w-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg max-h-60 overflow-y-auto"
+                        >
+                          {filteredPosts.length === 0 ? (
+                            <div className="p-3 text-center text-gray-500">
+                              No post found
+                            </div>
+                          ) : (
+                            <div className="py-1">
+                              {filteredPosts.map((opt) => (
+                                <button
+                                  key={opt.value}
+                                  type="button"
+                                  onClick={() => {
+                                    setPostSearchTerm(opt.label);
+                                    setIsPostOpen(false);
+                                  }}
+                                  className="w-full px-3 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
+                                >
+                                  <div className="flex items-start space-x-3">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-gray-900 truncate">
+                                        {opt.label}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <input type="hidden" name="post" value={postSearchTerm} />
                     {hasFieldError("post") && (
                       <div className="mt-2">
                         {getFieldErrors("post").map((error, index) => (
@@ -537,39 +796,83 @@ export default function SignUpPage() {
                       CIUSSS
                     </label>
                     <div className="relative">
-                      <select
+                      <input
+                        ref={ciusssInputRef}
+                        type="text"
                         id="ciusss"
-                        name="ciusss"
-                        required
-                        className={`w-full px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 appearance-none bg-white pr-12 text-black ${
+                        name="ciusssDisplay"
+                        value={ciusssSearchTerm}
+                        onChange={(e) => {
+                          setCiusssSearchTerm(e.target.value);
+                          // Clear selected ID if user is typing (not selecting from dropdown)
+                          if (
+                            e.target.value !==
+                            ciusssOptions.find(
+                              (opt) => opt._id === selectedCiusssId
+                            )?.name
+                          ) {
+                            setSelectedCiusssId("");
+                          }
+                          const term = e.target.value.toLowerCase();
+                          setFilteredCiusss(
+                            !term
+                              ? ciusssOptions
+                              : ciusssOptions.filter((opt) =>
+                                  opt.name.toLowerCase().includes(term)
+                                )
+                          );
+                          setIsCiusssOpen(true);
+                        }}
+                        onFocus={() => setIsCiusssOpen(true)}
+                        placeholder="Select CIUSSS"
+                        className={`w-full px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
                           hasFieldError("ciusss")
                             ? "border-red-300 bg-red-50"
                             : "border-gray-200"
                         }`}
-                      >
-                        <option value="">Select CIUSSS</option>
-                        {CIUSSS_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                        <svg
-                          className="h-6 w-6 text-gray-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                        autoComplete="off"
+                      />
+                      {isCiusssOpen && (
+                        <div
+                          ref={ciusssDropdownRef}
+                          className="absolute z-50 w-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg max-h-60 overflow-y-auto"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
-                          />
-                        </svg>
-                      </div>
+                          {filteredCiusss.length === 0 ? (
+                            <div className="p-3 text-center text-gray-500">
+                              No CIUSSS found
+                            </div>
+                          ) : (
+                            <div className="py-1">
+                              {filteredCiusss.map((opt) => (
+                                <button
+                                  key={opt._id}
+                                  type="button"
+                                  onClick={() => {
+                                    setCiusssSearchTerm(opt.name);
+                                    setSelectedCiusssId(opt._id);
+                                    setIsCiusssOpen(false);
+                                  }}
+                                  className="w-full px-3 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
+                                >
+                                  <div className="flex items-start space-x-3">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-gray-900 truncate">
+                                        {opt.name}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
+                    <input
+                      type="hidden"
+                      name="ciusss"
+                      value={selectedCiusssId}
+                    />
                     {hasFieldError("ciusss") && (
                       <div className="mt-2">
                         {getFieldErrors("ciusss").map((error, index) => (

@@ -33,12 +33,12 @@ export function TimePickerInput({
       type="button"
       onClick={onClick}
       ref={ref}
-      className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm dark:border-gray-600 dark:text-white shadow-sm hover:shadow-md text-left flex items-center justify-between"
+      className="w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black border-gray-200 text-left flex items-center justify-between"
     >
-      <span className={`${!value ? "text-gray-400" : "text-gray-800"}`}>
+      <span className={`${!value ? "text-gray-500" : "text-black"}`}>
         {value || "Select time"}
       </span>
-      <Clock size={18} className="text-indigo-500" />
+      <Clock size={18} className="text-gray-400" />
     </button>
   ));
 
@@ -46,7 +46,7 @@ export function TimePickerInput({
     <div>
       <label
         htmlFor={id}
-        className="block text-sm font-semibold text-black dark:text-black mb-1"
+        className="block text-base font-medium text-gray-700 mb-3"
       >
         {label} {required && <span className="text-red-500">*</span>}
       </label>
@@ -83,7 +83,7 @@ export function TimePickerInput({
           }
         />
       </div>
-      {error && <p className="text-red-600 text-xs mt-1">{error}</p>}
+      {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
     </div>
   );
 }

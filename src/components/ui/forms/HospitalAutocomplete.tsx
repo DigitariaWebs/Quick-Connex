@@ -25,6 +25,9 @@ interface HospitalAutocompleteProps {
   onChange?: (value: string, hospital?: Hospital) => void;
   error?: string;
   className?: string;
+  inputClassName?: string;
+  labelClassName?: string;
+  showLeftIcon?: boolean;
 }
 
 export default function HospitalAutocomplete({
@@ -37,6 +40,9 @@ export default function HospitalAutocomplete({
   onChange,
   error,
   className = "",
+  inputClassName = "",
+  labelClassName = "",
+  showLeftIcon = false,
 }: HospitalAutocompleteProps) {
   const [searchTerm, setSearchTerm] = useState(value);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
@@ -175,16 +181,20 @@ export default function HospitalAutocomplete({
     <div className={`relative ${className}`}>
       <label
         htmlFor={id}
-        className="block text-sm font-semibold text-black dark:text-black mb-1"
+        className={
+          labelClassName || "block text-base font-medium text-gray-700 mb-3"
+        }
       >
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
 
       <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search size={16} className="text-gray-400" />
-        </div>
+        {showLeftIcon && (
+          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+            <Search size={16} className="text-gray-400" />
+          </div>
+        )}
 
         <input
           ref={inputRef}
@@ -195,13 +205,17 @@ export default function HospitalAutocomplete({
           onChange={handleInputChange}
           onFocus={handleInputFocus}
           placeholder={placeholder}
-          className={`w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm dark:border-gray-600 dark:text-white shadow-sm hover:shadow-md ${
-            error ? "border-red-500" : "border-gray-200"
-          }`}
+          className={`${
+            inputClassName
+              ? `${inputClassName} ${showLeftIcon ? "pl-12" : ""} pr-12`
+              : `w-full ${
+                  showLeftIcon ? "pl-12" : ""
+                } pr-12 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black`
+          } ${error ? "border-red-300 bg-red-50" : "border-gray-200"}`}
           autoComplete="off"
         />
 
-        <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+        <div className="absolute inset-y-0 right-0 pr-5 flex items-center">
           <ChevronDown
             size={16}
             className={`text-gray-400 transition-transform ${
@@ -211,13 +225,13 @@ export default function HospitalAutocomplete({
         </div>
       </div>
 
-      {error && <p className="text-red-600 text-xs mt-1">{error}</p>}
+      {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
 
       {/* Dropdown */}
       {isOpen && (
         <div
           ref={dropdownRef}
-          className="absolute z-50 w-full mt-1 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+          className="absolute z-50 w-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg max-h-60 overflow-y-auto"
         >
           {isLoading ? (
             <div className="p-3 text-center text-gray-500">

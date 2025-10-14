@@ -209,27 +209,49 @@ export async function POST(request: Request) {
 
     // Handle manager-specific fields
     if (userType === 'manager') {
-      const post = capitalizeName(sanitizeInput(formData.get('post') as string));
+      const rawPost = sanitizeInput(formData.get('post') as string);
+      const allowedPosts = ['coordinateur', 'assistant-chef', 'gestionnaire'];
+      const post = rawPost.toLowerCase();
+      const postTitleMap: Record<string, string> = {
+        'coordinateur': 'Coordinateur',
+        'assistant-chef': 'Assistant-chef',
+        'gestionnaire': 'Gestionnaire',
+      };
       const ciusssValue = sanitizeInput(formData.get('ciusss') as string);
+      const managerHospitalId = sanitizeInput(formData.get('managerHospitalId') as string);
+      
+      // Debug CIUSSS value
+      console.log('🔍 DEBUG: CIUSSS value received:', ciusssValue);
+      console.log('🔍 DEBUG: CIUSSS value type:', typeof ciusssValue);
+      console.log('🔍 DEBUG: CIUSSS value length:', ciusssValue?.length);
       
       // Validate manager-specific fields
       if (!post) {
         validationErrors.post = ['Post is required for managers'];
-      } else if (post.length < 2) {
-        validationErrors.post = ['Post must be at least 2 characters long'];
+      } else if (!allowedPosts.includes(post)) {
+        validationErrors.post = ['Please select a valid post'];
       }
       
-      if (!ciusssValue) {
+      if (!ciusssValue || ciusssValue.trim() === '') {
         validationErrors.ciusss = ['CIUSSS is required for managers'];
+      } else if (!mongoose.Types.ObjectId.isValid(ciusssValue)) {
+        validationErrors.ciusss = ['Invalid CIUSSS ID format'];
       } else {
-        // Validate CIUSSS value against allowed options
-        const validCiusssValues = [
-          '01', '02', '03', '04', '05', '06-1', '06-2', '06-3', '06-4', '06-5',
-          '07', '08', '09', '11-1', '11-2', '12', '13', '14', '15', '16-1', '16-2', '16-3'
-        ];
-        if (!validCiusssValues.includes(ciusssValue)) {
-          validationErrors.ciusss = ['Please select a valid CIUSSS'];
+        // Validate that the CIUSSS exists and is active
+        const CIUSSS = (await import('@/models/CIUSSS')).CIUSSS;
+        const ciusssExists = await CIUSSS.findById(ciusssValue);
+        if (!ciusssExists) {
+          validationErrors.ciusss = ['Selected CIUSSS does not exist'];
+        } else if (!ciusssExists.isActive) {
+          validationErrors.ciusss = ['Selected CIUSSS is not active'];
         }
+      }
+
+      // Validate manager hospital
+      if (!managerHospitalId) {
+        validationErrors.managerHospitalId = ['Hospital is required for managers'];
+      } else if (!mongoose.Types.ObjectId.isValid(managerHospitalId)) {
+        validationErrors.managerHospitalId = ['Invalid hospital selection'];
       }
       
       // Return validation errors if any manager fields are invalid
@@ -244,8 +266,11 @@ export async function POST(request: Request) {
         );
       }
       
-      userData.post = post;
-      userData.ciusss = ciusssValue;
+      userData.post = postTitleMap[post];
+        userData.ciusss = new mongoose.Types.ObjectId(ciusssValue);
+      if (managerHospitalId) {
+        userData.hospital = new mongoose.Types.ObjectId(managerHospitalId);
+      }
     }
 
     // Handle employee-specific fields and file uploads

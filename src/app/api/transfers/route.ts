@@ -114,7 +114,6 @@ export async function POST(request: NextRequest) {
       transferDate,
       transferTime,
       transferType,
-      issuer,
       priority = 'medium',
       reason,
       notes,
@@ -133,6 +132,7 @@ export async function POST(request: NextRequest) {
 
     // Use authenticated user
     const requestingUser = authResult.user;
+    const issuerFromUser = requestingUser.post || `${requestingUser.firstName} ${requestingUser.lastName}`;
 
     // Validate and get hospital references
     let fromHospitalRef, toHospitalRef;
@@ -259,7 +259,7 @@ export async function POST(request: NextRequest) {
       status: 'pending',
       requestedDate: new Date(),
       scheduledDate: scheduledDateTime,
-      notes: `Issued by: ${issuer}${notes ? `\nAdditional notes: ${notes}` : ''}`,
+      notes: `Issued by: ${issuerFromUser}${notes ? `\nAdditional notes: ${notes}` : ''}`,
       medicalDocuments,
       scheduling: {
         transferTime: transferTime || '09:00'

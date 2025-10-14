@@ -20,7 +20,8 @@ export interface IUser extends Document {
   phone: string;
   password: string;
   post?: string;
-  ciusss?: string;
+  ciusss?: mongoose.Types.ObjectId;
+  hospital?: mongoose.Types.ObjectId;
   documents?: IDocumentReference[]; // Array of document references
   // Approval system fields
   status: 'pending' | 'approved' | 'rejected';
@@ -75,14 +76,15 @@ const UserSchema = new Schema<IUser>({
     required: function(this: IUser) { return this.userType === 'manager'; },
     trim: true
   },
-  ciusss: { 
-    type: String,
-    required: function(this: IUser) { return this.userType === 'manager'; },
-    trim: true,
-    enum: [
-      '01', '02', '03', '04', '05', '06-1', '06-2', '06-3', '06-4', '06-5',
-      '07', '08', '09', '11-1', '11-2', '12', '13', '14', '15', '16-1', '16-2', '16-3'
-    ]
+  ciusss: {
+    type: Schema.Types.ObjectId,
+    ref: 'CIUSSS',
+    required: function(this: IUser) { return this.userType === 'manager'; }
+  },
+  hospital: {
+    type: Schema.Types.ObjectId,
+    ref: 'Hospital',
+    required: function(this: IUser) { return this.userType === 'manager'; }
   },
   // Employee specific fields - documents array
   documents: [{
