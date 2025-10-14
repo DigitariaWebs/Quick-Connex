@@ -313,41 +313,8 @@ export default function NotificationManager({
     return () => clearInterval(interval);
   }, []);
 
-  // Add global click handler to request audio permission on first user interaction
-  useEffect(() => {
-    if (!audioPermissionGranted && soundEnabled) {
-      const handleFirstInteraction = () => {
-        requestAudioPermission();
-        // Remove the event listeners after first interaction
-        document.removeEventListener("click", handleFirstInteraction);
-        document.removeEventListener("keydown", handleFirstInteraction);
-        document.removeEventListener("touchstart", handleFirstInteraction);
-      };
-
-      document.addEventListener("click", handleFirstInteraction);
-      document.addEventListener("keydown", handleFirstInteraction);
-      document.addEventListener("touchstart", handleFirstInteraction);
-
-      return () => {
-        document.removeEventListener("click", handleFirstInteraction);
-        document.removeEventListener("keydown", handleFirstInteraction);
-        document.removeEventListener("touchstart", handleFirstInteraction);
-      };
-    }
-  }, [audioPermissionGranted, soundEnabled, requestAudioPermission]);
-
   return (
     <>
-      {/* Audio Permission Request */}
-      {soundEnabled && !audioPermissionGranted && (
-        <div className="fixed bottom-4 right-4 z-50 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg text-sm">
-          <div className="flex items-center gap-2">
-            <span>🔊</span>
-            <span>Click anywhere to enable notification sounds</span>
-          </div>
-        </div>
-      )}
-
       {/* Toast Notifications */}
       {showToasts && (
         <div className="fixed top-4 right-4 z-50 space-y-2">
