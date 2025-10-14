@@ -40,6 +40,7 @@ export default function EmployeeDashboard() {
     recentActivity,
     loading: dataLoading,
     error: dataError,
+    refetch,
   } = useDashboardData();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
@@ -221,8 +222,8 @@ export default function EmployeeDashboard() {
         isOpen={isTransferModalOpen}
         onClose={() => setIsTransferModalOpen(false)}
         onSuccess={() => {
-          // Refresh dashboard data when a new transfer is created
-          window.location.reload();
+          // Scoped refresh: refetch dashboard data without full reload
+          refetch();
           setIsTransferModalOpen(false);
         }}
       />

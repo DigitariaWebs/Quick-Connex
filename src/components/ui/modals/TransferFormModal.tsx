@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
-import TransferForm from '@/components/ui/forms/TransferForm';
+import TransferForm from "@/components/ui/forms/TransferForm";
 
 interface TransferFormModalProps {
   isOpen: boolean;
@@ -44,14 +44,14 @@ export default function TransferFormModal({
               className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 max-w-4xl w-full max-h-[90vh] overflow-y-auto hide-scrollbar"
             >
               {/* Modal Header */}
-              <div className="sticky top-0 bg-white/80 backdrop-blur-sm border-b border-gray-200/50 px-6 py-4 rounded-t-2xl">
+              <div className="relative px-6 py-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-gray-800">
                     Create New Transfer Request
                   </h2>
                   <button
                     onClick={onClose}
-                    className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                    className="sticky top-4 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors z-10"
                   >
                     <X size={16} className="text-gray-600" />
                   </button>

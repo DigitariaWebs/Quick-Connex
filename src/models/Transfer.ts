@@ -63,6 +63,7 @@ export interface ITransfer extends Document {
   fromHospitalName: string; // Keep name for backward compatibility and display
   toHospitalName: string; // Keep name for backward compatibility and display
   requestedBy: Types.ObjectId; // Reference to User (manager)
+  patient?: Types.ObjectId; // Reference to Patient (for patient transfers)
   assignedTo?: Types.ObjectId; // Reference to User (employee)
   reason: string;
   priority: 'low' | 'urgent';
@@ -306,6 +307,11 @@ const TransferSchema = new Schema<ITransfer>({
     ref: 'User', 
     required: true 
   },
+  patient: { 
+    type: Schema.Types.ObjectId, 
+    ref: 'Patient',
+    required: false
+  },
   assignedTo: { 
     type: Schema.Types.ObjectId, 
     ref: 'User',
@@ -500,9 +506,11 @@ TransferSchema.pre('save', function(next) {
   next();
 });
 
-// Create or get the Transfer model
-const Transfer: Model<ITransfer> = mongoose.models.Transfer as Model<ITransfer> || 
-  mongoose.model<ITransfer>('Transfer', TransferSchema);
+// Create or get the Transfer model (force refresh in dev to pick up schema changes)
+if (mongoose.models.Transfer) {
+  delete mongoose.connection.models['Transfer'];
+}
+const Transfer: Model<ITransfer> = mongoose.model<ITransfer>('Transfer', TransferSchema);
 
 // Log when Transfer model is created/accessed
 if (!mongoose.models.Transfer) {

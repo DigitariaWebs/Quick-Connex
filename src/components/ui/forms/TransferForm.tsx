@@ -20,6 +20,8 @@ import PatientTransferForm from "./PatientTransferForm";
 import EnvelopeTransferForm from "./EnvelopeTransferForm";
 import TransferTypeDropdown from "./TransferTypeDropdown";
 import { TransferCategory } from "@/constants/transfer";
+import AnimatedStatusIcon from "@/components/ui/notifications/AnimatedStatusIcon";
+import { createPortal } from "react-dom";
 
 // Validation helpers
 const validateRequired = (value: FormDataEntryValue | null): boolean => {
@@ -64,6 +66,10 @@ export default function TransferForm({
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
+  const [feedbackStatus, setFeedbackStatus] = useState<
+    "success" | "error" | null
+  >(null);
+  const [closeAfterFeedback, setCloseAfterFeedback] = useState(false);
 
   // Check user authentication and role
   useEffect(() => {
@@ -293,6 +299,7 @@ export default function TransferForm({
       setValidationErrors(errors);
       setIsSubmitting(false);
       setError("Please correct the errors in the form");
+      setFeedbackStatus("error");
       return;
     }
 
@@ -380,6 +387,7 @@ export default function TransferForm({
         setError(null);
         setValidationErrors({});
         setSuccess("Transfer request created successfully");
+        setFeedbackStatus("success");
 
         // Store form reference before async operations
         const form = e.currentTarget;
@@ -390,22 +398,8 @@ export default function TransferForm({
         setSelectedDate(null);
         setSelectedTime(null);
 
-        // Add a small delay before calling onSuccess to avoid race conditions
-        setTimeout(() => {
-          try {
-            if (onSuccess) {
-              onSuccess();
-            }
-          } catch (refreshError) {
-            console.error("Error in onSuccess callback:", refreshError);
-            // Don't show this error to the user since the transfer was created successfully
-          }
-        }, 500);
-
-        setTimeout(() => {
-          setSuccess(null);
-          setShowForm(false);
-        }, 3000);
+        // Flag the form to close after feedback animation ends
+        setCloseAfterFeedback(true);
       } else {
         // Handle validation errors from backend
         if (data.errorCode === "VALIDATION_ERROR" && data.errors) {
@@ -440,8 +434,10 @@ export default function TransferForm({
 
           setValidationErrors(backendErrors);
           setError("Please correct the validation errors below");
+          setFeedbackStatus("error");
         } else {
           setError(data.error || "Failed to create transfer request");
+          setFeedbackStatus("error");
         }
       }
     } catch (err) {
@@ -451,6 +447,7 @@ export default function TransferForm({
           err instanceof Error ? err.message : "Unknown error"
         }`
       );
+      setFeedbackStatus("error");
     } finally {
       setIsSubmitting(false);
     }
@@ -511,18 +508,50 @@ export default function TransferForm({
                 </h2>
               )}
 
-              {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-center">
-                  <AlertTriangle size={16} className="mr-2 text-red-500" />
-                  {error}
-                </div>
-              )}
-
-              {success && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg">
-                  {success}
-                </div>
-              )}
+              {/* Animated submit feedback (floating bottom-left, outside form) */}
+              {feedbackStatus &&
+                typeof window !== "undefined" &&
+                createPortal(
+                  <div className="fixed bottom-4 left-4 z-[1000]">
+                    <AnimatedStatusIcon
+                      status={feedbackStatus}
+                      message={
+                        feedbackStatus === "success"
+                          ? "Transfer created successfully"
+                          : error || "Failed to create transfer"
+                      }
+                      durationMs={1700}
+                      onHide={() => {
+                        setFeedbackStatus(null);
+                        if (
+                          feedbackStatus === "success" &&
+                          closeAfterFeedback
+                        ) {
+                          setTimeout(() => {
+                            try {
+                              if (onSuccess) {
+                                onSuccess();
+                              }
+                            } catch (refreshError) {
+                              console.error(
+                                "Error in onSuccess callback:",
+                                refreshError
+                              );
+                            }
+                            if (!isModal) {
+                              setShowForm(false);
+                            }
+                            setSuccess(null);
+                            setCloseAfterFeedback(false);
+                          }, 300);
+                        }
+                      }}
+                      size={44}
+                      showProgress
+                    />
+                  </div>,
+                  document.body
+                )}
 
               <form onSubmit={handleSubmit}>
                 <div className="space-y-6">
@@ -554,6 +583,7 @@ export default function TransferForm({
                         label="Source Hospital"
                         required
                         placeholder="Search source hospital..."
+                        value={selectedFromHospital?.name || ""}
                         onChange={(value, hospital) => {
                           setSelectedFromHospital(hospital);
                           // Clear validation error when user selects a hospital

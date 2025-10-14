@@ -3,6 +3,7 @@ import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import Hospital from '@/models/Hospital';
+import Patient from '@/models/Patient';
 import { requireManager, requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
 import { validateTransferData } from '@/lib/transfers/transfer-validation';
 import TimelineService from '@/lib/services/timeline-service';
@@ -182,6 +183,7 @@ export async function POST(request: NextRequest) {
     // Prepare transfer data based on category
     let transferData: any = {};
     let patientInfo: any = null;
+    let patientRecord: any = null;
 
     if (transferCategory === 'patient') {
       patientInfo = {
@@ -191,6 +193,42 @@ export async function POST(request: NextRequest) {
         dossierNumber: patientDossierNumber
       };
       transferData.patientInfo = patientInfo;
+
+      // Create or find existing patient in Patient collection
+      try {
+        // Check if patient already exists by dossier number
+        patientRecord = await Patient.findOne({ 
+          dossierNumber: patientDossierNumber.toUpperCase(),
+          isActive: true 
+        });
+
+        if (!patientRecord) {
+          // Create new patient record
+          patientRecord = new Patient({
+            firstName: patientFirstName,
+            lastName: patientLastName,
+            age: parseInt(patientAge as string),
+            dossierNumber: patientDossierNumber.toUpperCase(),
+            createdBy: requestingUser._id,
+            lastModifiedBy: requestingUser._id,
+            isActive: true
+          });
+          await patientRecord.save();
+          console.log('✅ New patient record created:', patientRecord._id);
+        } else {
+          // Update existing patient record with latest info
+          patientRecord.firstName = patientFirstName;
+          patientRecord.lastName = patientLastName;
+          patientRecord.age = parseInt(patientAge as string);
+          patientRecord.lastModifiedBy = requestingUser._id;
+          await patientRecord.save();
+          console.log('✅ Existing patient record updated:', patientRecord._id);
+        }
+      } catch (patientError) {
+        console.error('Error creating/updating patient record:', patientError);
+        // Continue with transfer creation even if patient record fails
+        // This ensures transfer creation isn't blocked by patient record issues
+      }
     } else if (transferCategory === 'envelope') {
       transferData.envelopeInfo = {
         envelopeNumber,
@@ -254,6 +292,7 @@ export async function POST(request: NextRequest) {
       fromHospitalName,
       toHospitalName,
       requestedBy: requestingUser._id,
+      patient: patientRecord?._id, // Link to patient record if available
       reason,
       priority,
       status: 'pending',
@@ -280,7 +319,8 @@ export async function POST(request: NextRequest) {
     const populatedTransfer = await Transfer.findById(transfer._id)
       .populate('requestedBy', 'firstName lastName email userType phone')
       .populate('fromHospital', 'name address organization')
-      .populate('toHospital', 'name address organization');
+      .populate('toHospital', 'name address organization')
+      .populate('patient', 'firstName lastName age dossierNumber');
 
     // Note: Real-time notifications are now handled by the global SSE system
     console.log('✅ Transfer created successfully - notifications handled by global SSE system');
