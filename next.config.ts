@@ -48,6 +48,14 @@ const nextConfig: NextConfig = {
       })
     );
     
+    // Ignore handlebars require.extensions warnings
+    config.ignoreWarnings = [
+      {
+        module: /node_modules\/handlebars/,
+        message: /require\.extensions is not supported by webpack/,
+      },
+    ];
+    
     return config;
   },
 };

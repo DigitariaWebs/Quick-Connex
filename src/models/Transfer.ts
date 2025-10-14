@@ -508,7 +508,7 @@ TransferSchema.pre('save', function(next) {
 
 // Create or get the Transfer model (force refresh in dev to pick up schema changes)
 if (mongoose.models.Transfer) {
-  delete mongoose.connection.models['Transfer'];
+  delete (mongoose.models as any)['Transfer'];
 }
 const Transfer: Model<ITransfer> = mongoose.model<ITransfer>('Transfer', TransferSchema);
 

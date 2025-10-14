@@ -6,7 +6,7 @@ import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } 
 // GET /api/patients/[id] - Get a specific patient
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate user
@@ -17,7 +17,8 @@ export async function GET(
 
     await dbConnect();
 
-    const patient = await Patient.findById(params.id)
+    const { id } = await params;
+    const patient = await Patient.findById(id)
       .populate('createdBy', 'firstName lastName email')
       .populate('lastModifiedBy', 'firstName lastName email');
 
@@ -36,7 +37,7 @@ export async function GET(
 // PUT /api/patients/[id] - Update a specific patient
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate user
@@ -47,6 +48,7 @@ export async function PUT(
 
     await dbConnect();
 
+    const { id } = await params;
     const body = await request.json();
     const {
       firstName,
@@ -63,7 +65,7 @@ export async function PUT(
       insuranceInfo
     } = body;
 
-    const patient = await Patient.findById(params.id);
+    const patient = await Patient.findById(id);
 
     if (!patient || !patient.isActive) {
       return createErrorResponse('Patient not found', 'NOT_FOUND', 404);
@@ -74,7 +76,7 @@ export async function PUT(
       const existingPatient = await Patient.findOne({ 
         dossierNumber: dossierNumber.toUpperCase(),
         isActive: true,
-        _id: { $ne: params.id }
+        _id: { $ne: id }
       });
 
       if (existingPatient) {
@@ -116,7 +118,7 @@ export async function PUT(
 // DELETE /api/patients/[id] - Soft delete a patient
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate user
@@ -127,7 +129,8 @@ export async function DELETE(
 
     await dbConnect();
 
-    const patient = await Patient.findById(params.id);
+    const { id } = await params;
+    const patient = await Patient.findById(id);
 
     if (!patient || !patient.isActive) {
       return createErrorResponse('Patient not found', 'NOT_FOUND', 404);
