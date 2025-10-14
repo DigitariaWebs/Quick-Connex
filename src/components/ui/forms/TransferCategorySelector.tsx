@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { User, Package, CheckCircle } from "lucide-react";
+import { User, Package, Stethoscope, CheckCircle } from "lucide-react";
 import { TransferCategory } from "@/constants/transfer";
 
 interface TransferCategorySelectorProps {
@@ -15,7 +15,6 @@ const categoryOptions = [
   {
     value: TransferCategory.PATIENT,
     label: "Patient Transfer",
-    description: "Transfer of patients between hospitals",
     icon: User,
     color: "blue",
     bgColor: "bg-blue-50",
@@ -25,14 +24,23 @@ const categoryOptions = [
   },
   {
     value: TransferCategory.ENVELOPE,
-    label: "Envelope/Box Transfer",
-    description: "Transfer of envelopes, boxes, files, or equipment",
+    label: "Envelope Transfer",
     icon: Package,
     color: "orange",
     bgColor: "bg-orange-50",
     borderColor: "border-orange-200",
     textColor: "text-orange-800",
     iconColor: "text-orange-600",
+  },
+  {
+    value: TransferCategory.MEDICAL_INSTRUMENTS,
+    label: "Medical Instruments Transfer",
+    icon: Stethoscope,
+    color: "purple",
+    bgColor: "bg-purple-50",
+    borderColor: "border-purple-200",
+    textColor: "text-purple-800",
+    iconColor: "text-purple-600",
   },
 ];
 
@@ -47,7 +55,7 @@ export default function TransferCategorySelector({
         <label className="block text-sm font-semibold text-gray-800 mb-3">
           Select Transfer Type
         </label>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {categoryOptions.map((option) => {
             const Icon = option.icon;
             const isSelected = selectedCategory === option.value;
@@ -68,7 +76,7 @@ export default function TransferCategorySelector({
                   }
                 `}
               >
-                <div className="flex items-start space-x-3">
+                <div className="flex items-center space-x-3">
                   <div
                     className={`
                     flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center
@@ -100,14 +108,6 @@ export default function TransferCategorySelector({
                         />
                       )}
                     </div>
-                    <p
-                      className={`
-                      text-xs mt-1
-                      ${isSelected ? "text-gray-600" : "text-gray-500"}
-                    `}
-                    >
-                      {option.description}
-                    </p>
                   </div>
                 </div>
               </motion.button>

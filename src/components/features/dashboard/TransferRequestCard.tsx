@@ -156,6 +156,19 @@ function getTransferDisplayInfo(transfer: TransferRequest) {
         category: "Envelope",
       };
 
+    case TransferCategory.MEDICAL_INSTRUMENTS:
+      const equipmentInfo = transfer.transferData?.equipmentInfo;
+      return {
+        title: equipmentInfo
+          ? `Medical Equipment: ${equipmentInfo.equipmentName}`
+          : "Medical Instruments Transfer",
+        subtitle: equipmentInfo?.serialNumber || "Medical Equipment",
+        icon: Stethoscope,
+        iconColor: "text-purple-600",
+        bgColor: "bg-purple-100",
+        category: "Medical Instruments",
+      };
+
     default:
       return {
         title: "Transfer",
@@ -429,7 +442,6 @@ export default function TransferRequestCard({
                 {displayInfo.title}
               </h3>
               <div className="flex items-center text-xs text-gray-500">
-                <span className="mr-2">{displayInfo.subtitle}</span>
                 <span className="flex items-center">
                   {statusColors.icon}
                   <span className={`capitalize ${statusColors.text}`}>
@@ -453,27 +465,98 @@ export default function TransferRequestCard({
         <div className="grid grid-cols-1 gap-y-2 gap-x-4 mt-4">
           {transfer.transferCategory === TransferCategory.PATIENT &&
             (transfer.patientInfo || transfer.transferData?.patientInfo) && (
-              <div className="flex items-center text-sm">
-                <User size={14} className="mr-2 text-gray-400" />
-                <span className="text-gray-700">
-                  {
-                    (transfer.patientInfo || transfer.transferData?.patientInfo)
-                      ?.age
-                  }{" "}
-                  years old
-                </span>
+              <div className="space-y-2">
+                <div className="flex items-center text-sm">
+                  <User size={14} className="mr-2 text-gray-400" />
+                  <span className="text-gray-700">
+                    Age:{" "}
+                    <span className="font-medium">
+                      {
+                        (
+                          transfer.patientInfo ||
+                          transfer.transferData?.patientInfo
+                        )?.age
+                      }{" "}
+                      years old
+                    </span>
+                  </span>
+                </div>
+                {(transfer.patientInfo || transfer.transferData?.patientInfo)
+                  ?.dossierNumber && (
+                  <div className="flex items-center text-sm">
+                    <FileText size={14} className="mr-2 text-gray-400" />
+                    <span className="text-gray-700">
+                      Dossier:{" "}
+                      <span className="font-medium">
+                        {
+                          (
+                            transfer.patientInfo ||
+                            transfer.transferData?.patientInfo
+                          )?.dossierNumber
+                        }
+                      </span>
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 
           {transfer.transferCategory === TransferCategory.ENVELOPE &&
             transfer.transferData?.envelopeInfo && (
-              <div className="flex items-center text-sm">
-                <Package size={14} className="mr-2 text-gray-400" />
-                <span className="text-gray-700">
-                  {transfer.transferData.envelopeInfo.weight
-                    ? `${transfer.transferData.envelopeInfo.weight}kg`
-                    : "Package"}
-                </span>
+              <div className="space-y-2">
+                <div className="flex items-center text-sm">
+                  <Package size={14} className="mr-2 text-gray-400" />
+                  <span className="text-gray-700">
+                    From: {transfer.transferData.envelopeInfo.senderName}
+                  </span>
+                </div>
+                <div className="flex items-center text-sm">
+                  <Package size={14} className="mr-2 text-gray-400" />
+                  <span className="text-gray-700">
+                    To: {transfer.transferData.envelopeInfo.recipientName}
+                  </span>
+                </div>
+                {transfer.transferData.envelopeInfo.envelopeNumber && (
+                  <div className="flex items-center text-sm">
+                    <FileText size={14} className="mr-2 text-gray-400" />
+                    <span className="text-gray-700">
+                      Ref: {transfer.transferData.envelopeInfo.envelopeNumber}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+          {transfer.transferCategory === TransferCategory.MEDICAL_INSTRUMENTS &&
+            transfer.transferData?.equipmentInfo && (
+              <div className="space-y-2">
+                <div className="flex items-center text-sm">
+                  <Stethoscope size={14} className="mr-2 text-gray-400" />
+                  <span className="text-gray-700">
+                    Serial: {transfer.transferData.equipmentInfo.serialNumber}
+                  </span>
+                </div>
+                <div className="flex items-center text-sm">
+                  <Stethoscope size={14} className="mr-2 text-gray-400" />
+                  <span className="text-gray-700">
+                    Condition:{" "}
+                    <span className="capitalize font-medium">
+                      {transfer.transferData.equipmentInfo.condition}
+                    </span>
+                  </span>
+                </div>
+                {transfer.transferData.equipmentInfo.specialInstructions && (
+                  <div className="flex items-start text-sm">
+                    <FileText
+                      size={14}
+                      className="mr-2 text-gray-400 mt-0.5 flex-shrink-0"
+                    />
+                    <span className="text-gray-700">
+                      Instructions:{" "}
+                      {transfer.transferData.equipmentInfo.specialInstructions}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
         </div>
@@ -583,18 +666,23 @@ export default function TransferRequestCard({
         ) : transfer.status === "in_progress" &&
           currentUserType === "employee" ? (
           <div className="mt-4 flex space-x-3">
-            {canCancelTransfer(transfer) && isSelected ? (
+            {isSelected ? (
               <div className="relative">
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   onClick={(e) => {
                     e.stopPropagation(); // Prevent card click
-                    handleCancel();
+                    const adminPhone =
+                      process.env.NEXT_PUBLIC_ADMIN_PHONE || "";
+                    if (adminPhone) {
+                      window.location.href = `tel:${adminPhone}`;
+                    } else {
+                      alert("Admin phone number not configured");
+                    }
                   }}
-                  disabled={isCancelling}
                   onMouseEnter={() => setIsHoveringCancel(true)}
                   onMouseLeave={() => setIsHoveringCancel(false)}
-                  className="bg-red-500 text-white rounded-2xl font-medium hover:bg-red-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm overflow-hidden flex items-center justify-center"
+                  className="bg-blue-500 text-white rounded-2xl font-medium hover:bg-blue-600 transition-all duration-300 shadow-sm overflow-hidden flex items-center justify-center"
                   style={{
                     width: isHoveringCancel ? "200px" : "48px",
                     height: "48px",
@@ -604,27 +692,19 @@ export default function TransferRequestCard({
                 >
                   <div className="flex items-center justify-center">
                     {!isHoveringCancel ? (
-                      <X size={20} />
+                      <Phone size={20} />
                     ) : (
                       <div
-                        className="flex flex-col items-center space-y-1"
+                        className="flex items-center"
                         style={{
                           opacity: isHoveringCancel ? 1 : 0,
                           transition: "opacity 0.2s ease-in-out 0.2s",
                         }}
                       >
-                        <div className="flex items-center">
-                          <X size={16} className="mr-2" />
-                          <span className="text-sm font-medium whitespace-nowrap">
-                            {isCancelling ? "Cancelling..." : "Cancel Transfer"}
-                          </span>
-                        </div>
-                        <div className="flex items-center text-xs opacity-90">
-                          <Clock size={12} className="mr-1" />
-                          <span className="whitespace-nowrap">
-                            {getRemainingTimeString()}
-                          </span>
-                        </div>
+                        <Phone size={16} className="mr-2" />
+                        <span className="text-sm font-medium whitespace-nowrap">
+                          Contact Admin
+                        </span>
                       </div>
                     )}
                   </div>

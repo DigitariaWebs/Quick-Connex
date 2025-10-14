@@ -3,7 +3,7 @@ import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 // Define the interface for Transfer document
 export interface ITransfer extends Document {
   transferId: string;
-  transferCategory: 'patient' | 'envelope';
+  transferCategory: 'patient' | 'envelope' | 'medical_instruments';
   
   // Patient-specific data (for backward compatibility and patient transfers)
   patientInfo?: {
@@ -132,7 +132,7 @@ const TransferSchema = new Schema<ITransfer>({
   transferCategory: {
     type: String,
     required: true,
-    enum: ['patient', 'envelope', 'patient_file', 'medical_equipment'],
+    enum: ['patient', 'envelope', 'patient_file', 'medical_equipment', 'medical_instruments'],
     default: 'patient'
   },
   

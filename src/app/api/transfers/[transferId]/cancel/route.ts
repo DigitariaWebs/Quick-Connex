@@ -89,13 +89,27 @@ export async function PUT(
       }
     }
 
-    // Create timeline events for cancellation
-    const cancellationEvent = TimelineService.createCancellationEvent({
-      id: user._id as any,
-      name: `${user.firstName} ${user.lastName}`,
-      email: user.email,
-      userType: user.userType
-    }, reason || 'Transfer cancelled by employee within 4-hour window');
+    // Store previous assignment info for timeline
+    const previousAssignee = transfer.assignedTo as any;
+    const previousAssigneeName = previousAssignee 
+      ? `${previousAssignee.firstName} ${previousAssignee.lastName}` 
+      : 'Unknown';
+
+    // Create timeline events for unassignment (returning transfer to available pool)
+    const unassignmentEvent = TimelineService.createUnassignmentEvent(
+      {
+        id: user._id as any,
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        userType: user.userType
+      },
+      {
+        id: previousAssignee?._id || user._id,
+        name: previousAssigneeName,
+        email: previousAssignee?.email || user.email
+      },
+      reason || 'Employee cancelled transfer - returned to available pool'
+    );
 
     const statusChangeEvent = TimelineService.createStatusChangeEvent(
       {
@@ -105,55 +119,58 @@ export async function PUT(
         userType: user.userType
       },
       'in_progress',
-      'cancelled',
-      reason || 'Transfer cancelled by employee within 4-hour window'
+      'accepted',
+      reason || 'Transfer returned to available pool after employee cancellation'
     );
 
-    // Update transfer
-    transfer.status = 'cancelled';
+    // Update transfer - return to accepted status and clear assignment
+    transfer.status = 'accepted';
+    transfer.assignedTo = undefined; // Clear assignment so other employees can take it
     transfer.lastModifiedBy = user._id as any;
     
     // Add to status history
     transfer.statusHistory.push({
-      status: 'cancelled',
+      status: 'accepted',
       changedBy: user._id as any,
       changedAt: new Date(),
-      reason: reason || 'Transfer cancelled by employee within 4-hour window'
+      reason: reason || 'Transfer returned to available pool after employee cancellation'
     });
 
     // Add timeline events
     if (!transfer.timeline) {
       transfer.timeline = [];
     }
-    transfer.timeline.push(cancellationEvent, statusChangeEvent);
+    transfer.timeline.push(unassignmentEvent, statusChangeEvent);
 
     await transfer.save();
 
     // Send notifications
     try {
       // Note: Real-time notifications are now handled by the global SSE system
-      console.log('✅ Transfer cancelled - real-time notifications handled by global SSE system');
+      console.log('✅ Transfer returned to available pool - real-time notifications handled by global SSE system');
       
-      // TODO: Implement email/SMS sendTransferCancelledNotification method
-      console.log('Transfer cancelled - SSE notification sent, email/SMS notification would be sent here');
+      // TODO: Implement email/SMS notification for transfer becoming available again
+      console.log('Transfer returned to available pool - SSE notification sent, email/SMS notification would be sent here');
     } catch (notificationError) {
-      console.error('Error sending cancellation notifications:', notificationError);
-      // Don't fail the cancellation if notifications fail
+      console.error('Error sending notifications:', notificationError);
+      // Don't fail the operation if notifications fail
     }
 
     return createSuccessResponse({
       success: true,
-      message: 'Transfer cancelled successfully',
+      message: 'Transfer returned to available pool. Other employees can now accept it.',
       transfer: {
         id: transfer._id,
         transferId: transfer.transferId,
         status: transfer.status,
-        cancelledAt: new Date(),
-        cancelledBy: {
+        assignedTo: null,
+        unassignedAt: new Date(),
+        unassignedBy: {
           id: user._id,
           name: `${user.firstName} ${user.lastName}`,
           email: user.email
-        }
+        },
+        availableForReassignment: true
       }
     });
 

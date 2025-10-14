@@ -217,12 +217,10 @@ export interface TransferRequestData {
   fileCount?: number;
   fileUrgency?: 'low' | 'urgent';
   
-  // Equipment transfer fields
+  // Medical instruments transfer fields
   equipmentName?: string;
   serialNumber?: string;
-  model?: string;
   condition?: 'excellent' | 'good' | 'fair' | 'poor';
-  maintenanceRequired?: boolean;
   specialInstructions?: string;
   
   // Common fields

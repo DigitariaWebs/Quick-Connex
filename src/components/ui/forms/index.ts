@@ -10,6 +10,7 @@ export * from './FileUpload';
 export * from './formConfig';
 export * from './FormInput';
 export * from './HospitalAutocomplete';
+export * from './MedicalInstrumentsTransferForm';
 export * from './PatientTransferForm';
 export * from './RoleSpecificFields';
 export * from './SelectInput';

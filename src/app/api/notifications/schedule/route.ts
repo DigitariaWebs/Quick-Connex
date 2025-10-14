@@ -65,8 +65,8 @@ export async function GET(request: NextRequest) {
           transferId: transfer.transferId,
           scheduledDate: transfer.scheduledDate,
           patient: transfer.patientInfo,
-          fromHospital: transfer.fromHospital,
-          toHospital: transfer.toHospital,
+          fromHospital: transfer.fromHospitalName,
+          toHospital: transfer.toHospitalName,
           createdAt: new Date(),
           read: false
         });
@@ -149,8 +149,8 @@ export async function GET(request: NextRequest) {
           transferId: transfer.transferId,
           scheduledDate: transfer.scheduledDate,
           patient: transfer.patientInfo,
-          fromHospital: transfer.fromHospital,
-          toHospital: transfer.toHospital,
+          fromHospital: transfer.fromHospitalName,
+          toHospital: transfer.toHospitalName,
           overdueMinutes,
           createdAt: new Date(),
           read: false

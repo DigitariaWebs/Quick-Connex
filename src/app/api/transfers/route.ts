@@ -21,10 +21,24 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
+    const scheduledDate = searchParams.get('scheduledDate');
     const user = authResult.user;
 
     // Build query based on user type
     const query: any = {};
+    
+    // Handle scheduledDate filter (for Today's Schedule modal)
+    if (scheduledDate) {
+      const startOfDay = new Date(scheduledDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(scheduledDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      query.scheduledDate = {
+        $gte: startOfDay,
+        $lte: endOfDay
+      };
+    }
     
     if (user.userType === 'employee') {
       // Employees can only see approved transfers (not pending ones)
@@ -246,13 +260,11 @@ export async function POST(request: NextRequest) {
         fileCount: fileCount ? parseInt(fileCount.toString()) : undefined,
         urgency: fileUrgency || 'medium'
       };
-    } else if (transferCategory === 'medical_equipment') {
+    } else if (transferCategory === 'medical_instruments') {
       transferData.equipmentInfo = {
         equipmentName,
         serialNumber,
-        model,
         condition: condition || 'good',
-        maintenanceRequired: maintenanceRequired || false,
         specialInstructions
       };
     }

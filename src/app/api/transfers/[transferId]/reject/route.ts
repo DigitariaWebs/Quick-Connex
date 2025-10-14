@@ -22,7 +22,7 @@ export async function GET(
     console.log('Rejection endpoint called');
     const { transferId } = await params;
     const { searchParams } = new URL(request.url);
-    const adminEmail = searchParams.get('admin') || 'system@admin.com';
+    const adminEmail = searchParams.get('admin');
     const reason = searchParams.get('reason') || 'Rejected by administrator';
 
     if (!transferId) {
@@ -52,16 +52,26 @@ export async function GET(
       );
     }
 
-    // Find the admin user
-    const admin = await User.findOne({ email: adminEmail });
+    // Find the admin user - try specific email first, then fall back to any manager
+    let admin;
+    if (adminEmail) {
+      admin = await User.findOne({ email: adminEmail, userType: 'manager' });
+    }
+    
+    // If no specific admin found or no email provided, use any available manager
+    if (!admin) {
+      admin = await User.findOne({ userType: 'manager' }).sort({ createdAt: 1 }); // Get the first manager
+      console.log(`⚠️ Admin email ${adminEmail || 'not provided'} not found, using fallback manager: ${admin?.email}`);
+    }
+
     if (!admin) {
       return NextResponse.json(
-        { error: 'Admin user not found' },
+        { error: 'No manager found in the system. Please ensure at least one manager account exists.' },
         { status: 404 }
       );
     }
 
-    // Check if user is a manager (admin role)
+    // Verify user is a manager (should be true from query above, but double-check)
     if (admin.userType !== 'manager') {
       return NextResponse.json(
         { error: 'Unauthorized: Manager privileges required' },

@@ -54,9 +54,9 @@ export function validateTransferData(data: any): TransferValidationResult {
   const warnings: string[] = [];
 
   // Validate transfer category
-  const validCategories = ['patient', 'envelope'];
+  const validCategories = ['patient', 'envelope', 'medical_instruments'];
   if (!data.transferCategory || !validCategories.includes(data.transferCategory)) {
-    errors.push('Transfer category is required and must be one of: patient, envelope');
+    errors.push('Transfer category is required and must be one of: patient, envelope, medical_instruments');
   }
 
   // Common required fields
@@ -99,9 +99,21 @@ export function validateTransferData(data: any): TransferValidationResult {
         const fieldNames: Record<string, string> = {
           'senderName': 'Sender name',
           'recipientName': 'Recipient name',
-          'contents': 'Comment'
+          'contents': 'Content'
         };
         errors.push(`${fieldNames[field]} is required for envelope transfers`);
+      }
+    }
+  } else if (data.transferCategory === 'medical_instruments') {
+    const medicalFields = ['equipmentName', 'serialNumber', 'condition'];
+    for (const field of medicalFields) {
+      if (!data[field] || (typeof data[field] === 'string' && data[field].trim().length === 0)) {
+        const fieldNames: Record<string, string> = {
+          'equipmentName': 'Equipment name',
+          'serialNumber': 'Serial number',
+          'condition': 'Equipment condition'
+        };
+        errors.push(`${fieldNames[field]} is required for medical instruments transfers`);
       }
     }
   }

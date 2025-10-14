@@ -168,6 +168,28 @@ export class TimelineService {
   }
 
   /**
+   * Create an unassignment event (when employee cancels and returns to pool)
+   */
+  static createUnassignmentEvent(
+    actor: { id: Types.ObjectId; name: string; email: string; userType: 'manager' | 'employee' | 'admin' },
+    previousAssignee: { id: Types.ObjectId; name: string; email: string },
+    reason?: string
+  ): TimelineEvent {
+    return this.createEvent({
+      type: 'unassigned',
+      title: 'Transfer Returned to Available Pool',
+      description: `Transfer unassigned from ${previousAssignee.name} and returned to available pool`,
+      actor,
+      metadata: {
+        previousAssignee: previousAssignee,
+        reason: reason || 'Transfer returned to available pool',
+        details: `Previously assigned to: ${previousAssignee.name} (${previousAssignee.email})`,
+        availableForReassignment: true
+      }
+    });
+  }
+
+  /**
    * Create an acceptance event
    */
   static createAcceptanceEvent(

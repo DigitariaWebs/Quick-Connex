@@ -18,6 +18,7 @@ import HospitalAutocomplete from "./HospitalAutocomplete";
 import TransferCategorySelector from "./TransferCategorySelector";
 import PatientTransferForm from "./PatientTransferForm";
 import EnvelopeTransferForm from "./EnvelopeTransferForm";
+import MedicalInstrumentsTransferForm from "./MedicalInstrumentsTransferForm";
 import TransferTypeDropdown from "./TransferTypeDropdown";
 import { TransferCategory } from "@/constants/transfer";
 import AnimatedStatusIcon from "@/components/ui/notifications/AnimatedStatusIcon";
@@ -126,6 +127,16 @@ export default function TransferForm({
     checkUser();
   }, []);
 
+  // Automatically set transfer type for envelope and medical instruments
+  useEffect(() => {
+    if (
+      selectedTransferCategory === TransferCategory.ENVELOPE ||
+      selectedTransferCategory === TransferCategory.MEDICAL_INSTRUMENTS
+    ) {
+      setSelectedTransferType("stat");
+    }
+  }, [selectedTransferCategory]);
+
   // Automatically determine priority based on transfer type
   useEffect(() => {
     if (selectedTransferType === "stat") {
@@ -167,34 +178,11 @@ export default function TransferForm({
     const senderName = formData.get("senderName");
     const recipientName = formData.get("recipientName");
     const contents = formData.get("contents");
-    const weight = formData.get("weight");
-    const dimensionsLength = formData.get("dimensionsLength");
-    const dimensionsWidth = formData.get("dimensionsWidth");
-    const dimensionsHeight = formData.get("dimensionsHeight");
-    const measurementUnit = formData.get("measurementUnit") as "cm" | "inch";
-    const weightUnit = formData.get("weightUnit") as "kg" | "pound";
-
-    const patientName = formData.get("patientName");
-    const dossierNumber = formData.get("dossierNumber");
-    const fileType = formData.get("fileType");
-    const fileCount = formData.get("fileCount");
-    const fileUrgency = formData.get("fileUrgency");
 
     const equipmentName = formData.get("equipmentName");
     const serialNumber = formData.get("serialNumber");
-    const model = formData.get("model");
     const condition = formData.get("condition");
-    const maintenanceRequired = formData.get("maintenanceRequired") === "on";
     const specialInstructions = formData.get("specialInstructions");
-
-    // Conversion functions
-    const convertToCm = (value: number, unit: "cm" | "inch"): number => {
-      return unit === "inch" ? value * 2.54 : value;
-    };
-
-    const convertToKg = (value: number, unit: "kg" | "pound"): number => {
-      return unit === "pound" ? value * 0.453592 : value;
-    };
 
     // Validate form inputs
     let errors: Record<string, string> = {};
@@ -231,7 +219,19 @@ export default function TransferForm({
       }
 
       if (!validateRequired(contents)) {
-        errors.contents = "Comment is required";
+        errors.contents = "Content is required";
+      }
+    } else if (transferCategory === TransferCategory.MEDICAL_INSTRUMENTS) {
+      if (!validateRequired(equipmentName)) {
+        errors.equipmentName = "Equipment name is required";
+      }
+
+      if (!validateRequired(serialNumber)) {
+        errors.serialNumber = "Serial number is required";
+      }
+
+      if (!validateRequired(condition)) {
+        errors.condition = "Equipment condition is required";
       }
     }
 
@@ -344,29 +344,13 @@ export default function TransferForm({
         senderName,
         recipientName,
         contents,
-        weight: weight
-          ? convertToKg(parseFloat(weight.toString()), weightUnit || "kg")
-          : undefined,
-        dimensions:
-          dimensionsLength && dimensionsWidth && dimensionsHeight
-            ? {
-                length: convertToCm(
-                  parseFloat(dimensionsLength.toString()),
-                  measurementUnit || "cm"
-                ),
-                width: convertToCm(
-                  parseFloat(dimensionsWidth.toString()),
-                  measurementUnit || "cm"
-                ),
-                height: convertToCm(
-                  parseFloat(dimensionsHeight.toString()),
-                  measurementUnit || "cm"
-                ),
-              }
-            : undefined,
-        // Store original units for reference
-        measurementUnit: measurementUnit || "cm",
-        weightUnit: weightUnit || "kg",
+      }),
+
+      ...(transferCategory === TransferCategory.MEDICAL_INSTRUMENTS && {
+        equipmentName,
+        serialNumber,
+        condition,
+        specialInstructions,
       }),
     };
 
@@ -571,6 +555,13 @@ export default function TransferForm({
                     <EnvelopeTransferForm validationErrors={validationErrors} />
                   )}
 
+                  {selectedTransferCategory ===
+                    TransferCategory.MEDICAL_INSTRUMENTS && (
+                    <MedicalInstrumentsTransferForm
+                      validationErrors={validationErrors}
+                    />
+                  )}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <h3 className="text-base font-medium text-gray-700 mb-3 flex items-center">
@@ -656,19 +647,29 @@ export default function TransferForm({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <TransferTypeDropdown
-                        id="transferType"
-                        name="transferType"
-                        label="Transfer Type"
-                        required
-                        value={selectedTransferType}
-                        onChange={(value) => setSelectedTransferType(value)}
-                        error={validationErrors.transferType}
-                      />
+                  {/* Only show transfer type dropdown for patient transfers */}
+                  {selectedTransferCategory === TransferCategory.PATIENT && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <TransferTypeDropdown
+                          id="transferType"
+                          name="transferType"
+                          label="Transfer Type"
+                          required
+                          value={selectedTransferType}
+                          onChange={(value) => setSelectedTransferType(value)}
+                          error={validationErrors.transferType}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Hidden input for envelope and medical instruments (always STAT) */}
+                  {(selectedTransferCategory === TransferCategory.ENVELOPE ||
+                    selectedTransferCategory ===
+                      TransferCategory.MEDICAL_INSTRUMENTS) && (
+                    <input type="hidden" name="transferType" value="stat" />
+                  )}
 
                   <div>
                     <label

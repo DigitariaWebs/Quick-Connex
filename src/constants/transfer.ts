@@ -29,7 +29,8 @@ export enum TransferType {
 // Transfer Category Enum (new)
 export enum TransferCategory {
   PATIENT = 'patient',
-  ENVELOPE = 'envelope'
+  ENVELOPE = 'envelope',
+  MEDICAL_INSTRUMENTS = 'medical_instruments'
 }
 
 // Note: Transport Type and Recurrence Pattern enums removed as they are not needed
@@ -192,14 +193,24 @@ export const TRANSFER_CATEGORY_DISPLAY_INFO = {
     gradient: 'from-blue-500 to-cyan-500'
   },
   [TransferCategory.ENVELOPE]: {
-    label: 'Envelope/Box Transfer',
+    label: 'Envelope Transfer',
     color: 'orange',
     icon: 'package',
-    description: 'Transfer of envelopes, boxes, files, or equipment',
+    description: 'Transfer of envelopes or packages',
     bgColor: 'bg-orange-100',
     textColor: 'text-orange-800',
     borderColor: 'border-orange-200',
     gradient: 'from-orange-500 to-amber-500'
+  },
+  [TransferCategory.MEDICAL_INSTRUMENTS]: {
+    label: 'Medical Instruments Transfer',
+    color: 'purple',
+    icon: 'stethoscope',
+    description: 'Transfer of medical equipment and instruments',
+    bgColor: 'bg-purple-100',
+    textColor: 'text-purple-800',
+    borderColor: 'border-purple-200',
+    gradient: 'from-purple-500 to-violet-500'
   }
 } as const;
 

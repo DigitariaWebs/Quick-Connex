@@ -46,18 +46,26 @@ export async function GET(request: NextRequest) {
       const startDateTime = new Date(transfer.scheduledDate!);
       const endDateTime = new Date(startDateTime.getTime() + 60 * 60000); // Default 60 minutes duration
 
+      // Get transfer category display info
+      const categoryInfo = getTransferCategoryInfo(transfer.transferCategory);
+      const eventTitle = getEventTitle(transfer);
+      const eventColors = getEventColors(transfer.transferCategory, transfer.priority, transfer.status);
+
       return {
         id: transfer._id,
         transferId: transfer.transferId,
-        title: transfer.patientInfo ? `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName}` : 'Unknown Patient',
+        title: eventTitle,
         start: startDateTime.toISOString(),
         end: endDateTime.toISOString(),
         allDay: false,
-        backgroundColor: getPriorityColor(transfer.priority),
-        borderColor: getStatusColor(transfer.status),
-        textColor: '#ffffff',
+        backgroundColor: eventColors.backgroundColor,
+        borderColor: eventColors.borderColor,
+        textColor: eventColors.textColor,
         extendedProps: {
-          patient: transfer.patientInfo,
+          transferCategory: transfer.transferCategory,
+          patient: transfer.patientInfo || transfer.transferData?.patientInfo,
+          envelopeInfo: transfer.transferData?.envelopeInfo,
+          equipmentInfo: transfer.transferData?.equipmentInfo,
           fromHospital: transfer.fromHospitalName || (transfer.fromHospital as any)?.name || 'Unknown Hospital',
           toHospital: transfer.toHospitalName || (transfer.toHospital as any)?.name || 'Unknown Hospital',
           priority: transfer.priority,
@@ -66,7 +74,8 @@ export async function GET(request: NextRequest) {
           requestedBy: transfer.requestedBy,
           assignedTo: transfer.assignedTo,
           scheduling: transfer.scheduling,
-          notes: transfer.notes
+          notes: transfer.notes,
+          categoryInfo: categoryInfo
         }
       };
     });
@@ -265,18 +274,36 @@ function generateRecurringEvents(transfer: any, startDate: Date, endDate: Date) 
         const endDateTime = new Date(startDateTime);
         endDateTime.setMinutes(endDateTime.getMinutes() + (scheduling.timeSlot?.duration || 60));
 
+        // Get transfer category display info for recurring events
+        const categoryInfo = getTransferCategoryInfo(transfer.transferCategory);
+        const eventTitle = getEventTitle(transfer) + ' (Recurring)';
+        const eventColors = getEventColors(transfer.transferCategory, transfer.priority, transfer.status);
+
         events.push({
           id: `${transfer._id}_${currentDate.toISOString().split('T')[0]}`,
           transferId: transfer.transferId,
-          title: transfer.patientInfo ? `${transfer.patientInfo.firstName} ${transfer.patientInfo.lastName} (Recurring)` : 'Unknown Patient (Recurring)',
+          title: eventTitle,
           start: startDateTime.toISOString(),
           end: endDateTime.toISOString(),
           allDay: false,
-          backgroundColor: getPriorityColor(transfer.priority),
-          borderColor: getStatusColor(transfer.status),
-          textColor: '#ffffff',
+          backgroundColor: eventColors.backgroundColor,
+          borderColor: eventColors.borderColor,
+          textColor: eventColors.textColor,
           extendedProps: {
-            ...transfer.toObject(),
+            transferCategory: transfer.transferCategory,
+            patient: transfer.patientInfo || transfer.transferData?.patientInfo,
+            envelopeInfo: transfer.transferData?.envelopeInfo,
+            equipmentInfo: transfer.transferData?.equipmentInfo,
+            fromHospital: transfer.fromHospitalName || (transfer.fromHospital as any)?.name || 'Unknown Hospital',
+            toHospital: transfer.toHospitalName || (transfer.toHospital as any)?.name || 'Unknown Hospital',
+            priority: transfer.priority,
+            status: transfer.status,
+            reason: transfer.reason,
+            requestedBy: transfer.requestedBy,
+            assignedTo: transfer.assignedTo,
+            scheduling: transfer.scheduling,
+            notes: transfer.notes,
+            categoryInfo: categoryInfo,
             isRecurring: true,
             originalTransferId: transfer._id
           }
@@ -335,4 +362,92 @@ async function checkSchedulingConflicts(
 
 
   return conflicts;
+}
+
+// Helper functions for transfer categories
+function getTransferCategoryInfo(transferCategory: string) {
+  switch (transferCategory) {
+    case 'patient':
+      return {
+        label: 'Patient Transfer',
+        color: 'blue',
+        icon: 'user',
+        bgColor: 'bg-blue-100',
+        textColor: 'text-blue-800',
+        borderColor: 'border-blue-200'
+      };
+    case 'envelope':
+      return {
+        label: 'Envelope Transfer',
+        color: 'orange',
+        icon: 'package',
+        bgColor: 'bg-orange-100',
+        textColor: 'text-orange-800',
+        borderColor: 'border-orange-200'
+      };
+    case 'medical_instruments':
+      return {
+        label: 'Medical Instruments Transfer',
+        color: 'purple',
+        icon: 'stethoscope',
+        bgColor: 'bg-purple-100',
+        textColor: 'text-purple-800',
+        borderColor: 'border-purple-200'
+      };
+    default:
+      return {
+        label: 'Transfer',
+        color: 'gray',
+        icon: 'truck',
+        bgColor: 'bg-gray-100',
+        textColor: 'text-gray-800',
+        borderColor: 'border-gray-200'
+      };
+  }
+}
+
+function getEventTitle(transfer: any): string {
+  switch (transfer.transferCategory) {
+    case 'patient':
+      const patientInfo = transfer.patientInfo || transfer.transferData?.patientInfo;
+      return patientInfo ? 
+        `${patientInfo.firstName} ${patientInfo.lastName}` : 
+        'Unknown Patient';
+    case 'envelope':
+      const envelopeInfo = transfer.transferData?.envelopeInfo;
+      return envelopeInfo?.senderName ? 
+        `Envelope: ${envelopeInfo.senderName}` : 
+        'Envelope Transfer';
+    case 'medical_instruments':
+      const equipmentInfo = transfer.transferData?.equipmentInfo;
+      return equipmentInfo?.equipmentName ? 
+        `Equipment: ${equipmentInfo.equipmentName}` : 
+        'Medical Equipment Transfer';
+    default:
+      return 'Transfer';
+  }
+}
+
+function getEventColors(transferCategory: string, priority: string, status: string) {
+  // Base colors for each transfer category - using distinct colors
+  const categoryColors = {
+    patient: {
+      backgroundColor: '#3b82f6', // blue-500
+      borderColor: '#1d4ed8', // blue-700
+      textColor: '#ffffff'
+    },
+    envelope: {
+      backgroundColor: '#f97316', // orange-500
+      borderColor: '#ea580c', // orange-600
+      textColor: '#ffffff'
+    },
+    medical_instruments: {
+      backgroundColor: '#8b5cf6', // violet-500
+      borderColor: '#7c3aed', // violet-600
+      textColor: '#ffffff'
+    }
+  };
+
+  // Always return category-specific colors, ignore priority
+  return categoryColors[transferCategory as keyof typeof categoryColors] || categoryColors.patient;
 }

@@ -2,12 +2,25 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from '@/hooks/auth/useAuth';
+import { useAuth } from "@/hooks/auth/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, MapPin, Clock, X } from "lucide-react";
-import CalendarView from '@/components/features/calendar/CalendarView';
-import Sidebar from '@/components/features/dashboard/Sidebar';
-import DashboardHeader from '@/components/features/dashboard/DashboardHeader';
+import {
+  Settings,
+  MapPin,
+  Clock,
+  X,
+  User,
+  Package,
+  Stethoscope,
+  Calendar,
+  Building2,
+  AlertCircle,
+  FileText,
+  ArrowRight,
+} from "lucide-react";
+import CalendarView from "@/components/features/calendar/CalendarView";
+import Sidebar from "@/components/features/dashboard/Sidebar";
+import DashboardHeader from "@/components/features/dashboard/DashboardHeader";
 
 interface CalendarEvent {
   id: string;
@@ -90,7 +103,7 @@ export default function CalendarPage() {
             user={user}
             onLogout={logout}
             pageTitle="Transfer Calendar"
-            showPlusButton={true}
+            showPlusButton={false}
             onPlusClick={() => router.push("/transfers")}
           />
         )}
@@ -105,185 +118,380 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* Event Details Modal */}
+      {/* Event Details Modal - Redesigned */}
       <AnimatePresence>
         {showEventDetails && selectedEvent && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={() => setShowEventDetails(false)}
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto hide-scrollbar"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-0">
-                {/* Modern Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-xl">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                        <Clock size={20} className="text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-white">
-                          Transfer Details
-                        </h3>
-                        <p className="text-blue-100 text-sm">
-                          {new Date(selectedEvent.start).toLocaleDateString()}
-                        </p>
-                      </div>
+              {/* Dynamic Header Based on Transfer Type */}
+              <div
+                className={`relative px-8 py-6 ${
+                  selectedEvent.extendedProps.transferCategory === "patient"
+                    ? "bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600"
+                    : selectedEvent.extendedProps.transferCategory ===
+                      "envelope"
+                    ? "bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600"
+                    : "bg-gradient-to-br from-purple-500 via-purple-600 to-violet-600"
+                }`}
+              >
+                <button
+                  onClick={() => setShowEventDetails(false)}
+                  className="absolute top-4 right-4 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-all"
+                >
+                  <X size={18} className="text-white" />
+                </button>
+
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
+                    {selectedEvent.extendedProps.transferCategory ===
+                    "patient" ? (
+                      <User size={28} className="text-white" />
+                    ) : selectedEvent.extendedProps.transferCategory ===
+                      "envelope" ? (
+                      <Package size={28} className="text-white" />
+                    ) : (
+                      <Stethoscope size={28} className="text-white" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold text-white">
+                        {selectedEvent.extendedProps.transferCategory ===
+                        "patient"
+                          ? "Patient Transfer"
+                          : selectedEvent.extendedProps.transferCategory ===
+                            "envelope"
+                          ? "Envelope Transfer"
+                          : "Medical Equipment"}
+                      </span>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          selectedEvent.extendedProps.priority === "urgent"
+                            ? "bg-red-500 text-white"
+                            : selectedEvent.extendedProps.priority === "high"
+                            ? "bg-orange-500 text-white"
+                            : selectedEvent.extendedProps.priority === "medium"
+                            ? "bg-yellow-500 text-white"
+                            : "bg-green-500 text-white"
+                        }`}
+                      >
+                        {selectedEvent.extendedProps.priority.toUpperCase()}
+                      </span>
                     </div>
+                    <h2 className="text-2xl font-bold text-white">
+                      {selectedEvent.title}
+                    </h2>
+                    <p className="text-white/80 text-sm mt-1 flex items-center">
+                      <Calendar size={14} className="mr-1" />
+                      {new Date(selectedEvent.start).toLocaleDateString(
+                        "en-US",
+                        {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        }
+                      )}
+                    </p>
                   </div>
                 </div>
+              </div>
 
-                <div className="p-6 space-y-6">
-                  {/* Patient Card */}
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-xl border border-blue-100">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
-                          <span className="text-white font-bold text-lg">
-                            {selectedEvent.extendedProps.patient.firstName[0]}
-                            {selectedEvent.extendedProps.patient.lastName[0]}
-                          </span>
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-gray-900 text-lg">
-                            {selectedEvent.extendedProps.patient.firstName}{" "}
-                            {selectedEvent.extendedProps.patient.lastName}
-                          </h4>
-                          <p className="text-gray-600 text-sm">
-                            {selectedEvent.extendedProps.patient.age} years old
+              {/* Content */}
+              <div className="overflow-y-auto max-h-[calc(90vh-200px)] p-8 space-y-6">
+                {/* Transfer-Specific Details */}
+                {selectedEvent.extendedProps.transferCategory === "patient" && (
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+                    <h3 className="text-sm font-semibold text-blue-900 mb-4 flex items-center">
+                      <User size={16} className="mr-2" />
+                      Patient Information
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500 font-medium">
+                          Full Name
+                        </p>
+                        <p className="text-base font-semibold text-gray-900">
+                          {selectedEvent.extendedProps.patient?.firstName}{" "}
+                          {selectedEvent.extendedProps.patient?.lastName}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500 font-medium">Age</p>
+                        <p className="text-base font-semibold text-gray-900">
+                          {selectedEvent.extendedProps.patient?.age} years old
+                        </p>
+                      </div>
+                      {selectedEvent.extendedProps.patient?.dossierNumber && (
+                        <div className="space-y-1 col-span-2">
+                          <p className="text-xs text-gray-500 font-medium">
+                            Dossier Number
+                          </p>
+                          <p className="text-base font-mono font-semibold text-blue-700">
+                            {selectedEvent.extendedProps.patient.dossierNumber}
                           </p>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-gray-500 mb-1">
-                          Dossier Number
-                        </p>
-                        <p className="font-mono text-sm font-semibold text-gray-700">
-                          {selectedEvent.extendedProps.patient.dossierNumber}
-                        </p>
-                      </div>
+                      )}
                     </div>
                   </div>
+                )}
 
-                  {/* Transfer Route */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-5">
-                    <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
-                      <MapPin size={18} className="text-blue-500 mr-2" />
-                      Transfer Route
-                    </h4>
-                    <div className="space-y-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                {selectedEvent.extendedProps.transferCategory ===
+                  "envelope" && (
+                  <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-100">
+                    <h3 className="text-sm font-semibold text-orange-900 mb-4 flex items-center">
+                      <Package size={16} className="mr-2" />
+                      Envelope Information
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500 font-medium">
+                          Sender
+                        </p>
+                        <p className="text-base font-semibold text-gray-900">
+                          {selectedEvent.extendedProps.envelopeInfo
+                            ?.senderName || "Unknown"}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500 font-medium">
+                          Recipient
+                        </p>
+                        <p className="text-base font-semibold text-gray-900">
+                          {selectedEvent.extendedProps.envelopeInfo
+                            ?.recipientName || "Unknown"}
+                        </p>
+                      </div>
+                      {selectedEvent.extendedProps.envelopeInfo
+                        ?.envelopeNumber && (
+                        <div className="space-y-1">
+                          <p className="text-xs text-gray-500 font-medium">
+                            Envelope Number
+                          </p>
+                          <p className="text-base font-mono font-semibold text-orange-700">
+                            {
+                              selectedEvent.extendedProps.envelopeInfo
+                                .envelopeNumber
+                            }
+                          </p>
                         </div>
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-1">FROM</p>
-                          <p className="font-medium text-gray-900">
+                      )}
+                      {selectedEvent.extendedProps.envelopeInfo?.contents && (
+                        <div className="space-y-1 col-span-2">
+                          <p className="text-xs text-gray-500 font-medium">
+                            Contents
+                          </p>
+                          <p className="text-sm text-gray-700">
+                            {selectedEvent.extendedProps.envelopeInfo.contents}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {selectedEvent.extendedProps.transferCategory ===
+                  "medical_instruments" && (
+                  <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-6 border border-purple-100">
+                    <h3 className="text-sm font-semibold text-purple-900 mb-4 flex items-center">
+                      <Stethoscope size={16} className="mr-2" />
+                      Equipment Information
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500 font-medium">
+                          Equipment Name
+                        </p>
+                        <p className="text-base font-semibold text-gray-900">
+                          {selectedEvent.extendedProps.equipmentInfo
+                            ?.equipmentName || "Unknown"}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500 font-medium">
+                          Serial Number
+                        </p>
+                        <p className="text-base font-mono font-semibold text-purple-700">
+                          {selectedEvent.extendedProps.equipmentInfo
+                            ?.serialNumber || "N/A"}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500 font-medium">
+                          Condition
+                        </p>
+                        <p className="text-base font-semibold text-gray-900 capitalize">
+                          {selectedEvent.extendedProps.equipmentInfo
+                            ?.condition || "Unknown"}
+                        </p>
+                      </div>
+                      {selectedEvent.extendedProps.equipmentInfo
+                        ?.specialInstructions && (
+                        <div className="space-y-1 col-span-2">
+                          <p className="text-xs text-gray-500 font-medium">
+                            Special Instructions
+                          </p>
+                          <p className="text-sm text-gray-700">
+                            {
+                              selectedEvent.extendedProps.equipmentInfo
+                                .specialInstructions
+                            }
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Transfer Route */}
+                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center">
+                    <MapPin size={16} className="mr-2 text-gray-400" />
+                    Transfer Route
+                  </h3>
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-1">
+                      <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-lg p-4 border border-red-100">
+                        <p className="text-xs font-semibold text-red-600 mb-1">
+                          FROM
+                        </p>
+                        <div className="flex items-center space-x-2">
+                          <Building2
+                            size={18}
+                            className="text-red-500 flex-shrink-0"
+                          />
+                          <p className="font-semibold text-gray-900 text-sm">
                             {selectedEvent.extendedProps.fromHospital}
                           </p>
                         </div>
                       </div>
-                      <div className="ml-4 border-l-2 border-dashed border-gray-300 h-6"></div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-1">TO</p>
-                          <p className="font-medium text-gray-900">
+                    </div>
+                    <div className="flex-shrink-0">
+                      <ArrowRight size={24} className="text-gray-400" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-100">
+                        <p className="text-xs font-semibold text-green-600 mb-1">
+                          TO
+                        </p>
+                        <div className="flex items-center space-x-2">
+                          <Building2
+                            size={18}
+                            className="text-green-500 flex-shrink-0"
+                          />
+                          <p className="font-semibold text-gray-900 text-sm">
                             {selectedEvent.extendedProps.toHospital}
                           </p>
                         </div>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Status & Priority */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white border border-gray-200 rounded-xl p-4">
-                      <h4 className="font-semibold text-gray-900 mb-3 text-sm">
-                        Priority
-                      </h4>
-                      <span
-                        className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
-                          selectedEvent.extendedProps.priority === "urgent"
-                            ? "bg-red-100 text-red-700"
-                            : selectedEvent.extendedProps.priority === "high"
-                            ? "bg-orange-100 text-orange-700"
-                            : selectedEvent.extendedProps.priority === "medium"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-green-100 text-green-700"
-                        }`}
-                      >
-                        {selectedEvent.extendedProps.priority.toUpperCase()}
-                      </span>
+                {/* Schedule & Status */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <Clock size={16} className="text-gray-400" />
+                      <h3 className="text-sm font-semibold text-gray-900">
+                        Schedule
+                      </h3>
                     </div>
-                    <div className="bg-white border border-gray-200 rounded-xl p-4">
-                      <h4 className="font-semibold text-gray-900 mb-3 text-sm">
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium">
+                          Start
+                        </p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {new Date(selectedEvent.start).toLocaleTimeString(
+                            [],
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium">End</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {new Date(selectedEvent.end).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <AlertCircle size={16} className="text-gray-400" />
+                      <h3 className="text-sm font-semibold text-gray-900">
                         Status
-                      </h4>
-                      <span
-                        className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
-                          selectedEvent.extendedProps.status === "pending"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : selectedEvent.extendedProps.status === "accepted"
-                            ? "bg-blue-100 text-blue-700"
-                            : selectedEvent.extendedProps.status ===
-                              "in_progress"
-                            ? "bg-purple-100 text-purple-700"
-                            : selectedEvent.extendedProps.status === "completed"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
-                      >
-                        {selectedEvent.extendedProps.status
-                          .replace("_", " ")
-                          .toUpperCase()}
-                      </span>
+                      </h3>
                     </div>
+                    <span
+                      className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold ${
+                        selectedEvent.extendedProps.status === "pending"
+                          ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                          : selectedEvent.extendedProps.status === "accepted"
+                          ? "bg-blue-100 text-blue-700 border border-blue-200"
+                          : selectedEvent.extendedProps.status === "in_progress"
+                          ? "bg-purple-100 text-purple-700 border border-purple-200"
+                          : selectedEvent.extendedProps.status === "completed"
+                          ? "bg-green-100 text-green-700 border border-green-200"
+                          : "bg-red-100 text-red-700 border border-red-200"
+                      }`}
+                    >
+                      {selectedEvent.extendedProps.status
+                        .replace("_", " ")
+                        .toUpperCase()}
+                    </span>
                   </div>
+                </div>
 
-                  {/* Schedule Time */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-5">
-                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                      <Clock size={18} className="text-blue-500 mr-2" />
-                      Schedule
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-gray-500 text-xs mb-1">Start Time</p>
-                        <p className="font-medium text-gray-900">
-                          {new Date(selectedEvent.start).toLocaleString()}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500 text-xs mb-1">End Time</p>
-                        <p className="font-medium text-gray-900">
-                          {new Date(selectedEvent.end).toLocaleString()}
-                        </p>
-                      </div>
+                {/* Transfer Reason */}
+                {selectedEvent.extendedProps.reason && (
+                  <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <FileText size={16} className="text-gray-400" />
+                      <h3 className="text-sm font-semibold text-gray-900">
+                        Transfer Reason
+                      </h3>
                     </div>
-                  </div>
-
-                  {/* Reason */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-5">
-                    <h4 className="font-semibold text-gray-900 mb-3">
-                      Transfer Reason
-                    </h4>
-                    <p className="text-gray-700 leading-relaxed">
+                    <p className="text-sm text-gray-700 leading-relaxed">
                       {selectedEvent.extendedProps.reason}
                     </p>
                   </div>
-                </div>
+                )}
+
+                {/* Notes */}
+                {selectedEvent.extendedProps.notes && (
+                  <div className="bg-amber-50 rounded-xl p-6 border border-amber-200">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <FileText size={16} className="text-amber-600" />
+                      <h3 className="text-sm font-semibold text-amber-900">
+                        Additional Notes
+                      </h3>
+                    </div>
+                    <p className="text-sm text-amber-800 leading-relaxed">
+                      {selectedEvent.extendedProps.notes}
+                    </p>
+                  </div>
+                )}
               </div>
             </motion.div>
           </motion.div>

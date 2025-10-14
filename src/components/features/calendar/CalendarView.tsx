@@ -24,10 +24,25 @@ interface CalendarEvent {
   borderColor: string;
   textColor: string;
   extendedProps: {
-    patient: {
+    transferCategory: string;
+    patient?: {
       firstName: string;
       lastName: string;
       patientId: string;
+      age: number;
+      dossierNumber: string;
+    };
+    envelopeInfo?: {
+      senderName: string;
+      recipientName: string;
+      envelopeNumber?: string;
+      contents: string;
+    };
+    equipmentInfo?: {
+      equipmentName: string;
+      serialNumber: string;
+      condition: string;
+      specialInstructions?: string;
     };
     fromHospital: string;
     toHospital: string;
@@ -46,6 +61,14 @@ interface CalendarEvent {
       transferTime: string;
     };
     notes?: string;
+    categoryInfo?: {
+      label: string;
+      color: string;
+      icon: string;
+      bgColor: string;
+      textColor: string;
+      borderColor: string;
+    };
   };
 }
 

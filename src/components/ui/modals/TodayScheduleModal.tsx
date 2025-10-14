@@ -189,6 +189,19 @@ export default function TodayScheduleModal({
           category: "Envelope",
         };
 
+      case TransferCategory.MEDICAL_INSTRUMENTS:
+        const equipmentInfo = transfer.transferData?.equipmentInfo;
+        return {
+          title: equipmentInfo
+            ? `Equipment: ${equipmentInfo.equipmentName}`
+            : "Medical Instruments Transfer",
+          subtitle: equipmentInfo?.serialNumber || "Medical Equipment",
+          icon: Stethoscope,
+          iconColor: "text-purple-600",
+          bgColor: "bg-purple-100",
+          category: "Medical Instruments",
+        };
+
       default:
         return {
           title: "Transfer",
