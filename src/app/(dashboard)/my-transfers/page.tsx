@@ -27,6 +27,7 @@ import Sidebar from "@/components/features/dashboard/Sidebar";
 import DashboardHeader from "@/components/features/dashboard/DashboardHeader";
 import LoadingSpinner from "@/components/features/dashboard/LoadingSpinner";
 import TransferTimeline from "@/components/features/transfers/TransferTimeline";
+import { BORDER_RADIUS, getTransferStatusConfig } from "@/constants";
 
 interface TransferRequest {
   _id: string;
@@ -321,10 +322,21 @@ export default function MyTransfersPage() {
         <div className="p-4 lg:p-6">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-            <div className="bg-white rounded-3xl p-6 sidebar-shadow border border-gray-100">
+            {/* Total Accepted */}
+            <div
+              className={`bg-white ${BORDER_RADIUS["3xl"]} p-6 sidebar-shadow border border-gray-100`}
+            >
               <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Users className="w-6 h-6 text-blue-600" />
+                <div
+                  className={`p-2 ${
+                    getTransferStatusConfig("accepted").bgColor
+                  } ${BORDER_RADIUS.lg}`}
+                >
+                  <Users
+                    className={`w-6 h-6 ${
+                      getTransferStatusConfig("accepted").color
+                    }`}
+                  />
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">
@@ -337,10 +349,21 @@ export default function MyTransfersPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl p-6 sidebar-shadow border border-gray-100">
+            {/* In Progress */}
+            <div
+              className={`bg-white ${BORDER_RADIUS["3xl"]} p-6 sidebar-shadow border border-gray-100`}
+            >
               <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-2xl">
-                  <Clock className="w-6 h-6 text-blue-600" />
+                <div
+                  className={`p-2 ${
+                    getTransferStatusConfig("in_progress").bgColor
+                  } ${BORDER_RADIUS.lg}`}
+                >
+                  <Clock
+                    className={`w-6 h-6 ${
+                      getTransferStatusConfig("in_progress").color
+                    }`}
+                  />
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">
@@ -353,9 +376,12 @@ export default function MyTransfersPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl p-6 sidebar-shadow border border-gray-100">
+            {/* Urgent */}
+            <div
+              className={`bg-white ${BORDER_RADIUS["3xl"]} p-6 sidebar-shadow border border-gray-100`}
+            >
               <div className="flex items-center">
-                <div className="p-2 bg-red-100 rounded-2xl">
+                <div className={`p-2 bg-red-100 ${BORDER_RADIUS.lg}`}>
                   <AlertTriangle className="w-6 h-6 text-red-600" />
                 </div>
                 <div className="ml-4">
@@ -367,10 +393,21 @@ export default function MyTransfersPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl p-6 sidebar-shadow border border-gray-100">
+            {/* Completed */}
+            <div
+              className={`bg-white ${BORDER_RADIUS["3xl"]} p-6 sidebar-shadow border border-gray-100`}
+            >
               <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-2xl">
-                  <CheckCircle2 className="w-6 h-6 text-green-600" />
+                <div
+                  className={`p-2 ${
+                    getTransferStatusConfig("completed").bgColor
+                  } ${BORDER_RADIUS.lg}`}
+                >
+                  <CheckCircle2
+                    className={`w-6 h-6 ${
+                      getTransferStatusConfig("completed").color
+                    }`}
+                  />
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Completed</p>
@@ -381,10 +418,21 @@ export default function MyTransfersPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl p-6 sidebar-shadow border border-gray-100">
+            {/* Cancelled */}
+            <div
+              className={`bg-white ${BORDER_RADIUS["3xl"]} p-6 sidebar-shadow border border-gray-100`}
+            >
               <div className="flex items-center">
-                <div className="p-2 bg-gray-100 rounded-2xl">
-                  <X className="w-6 h-6 text-gray-600" />
+                <div
+                  className={`p-2 ${
+                    getTransferStatusConfig("cancelled").bgColor
+                  } ${BORDER_RADIUS.lg}`}
+                >
+                  <X
+                    className={`w-6 h-6 ${
+                      getTransferStatusConfig("cancelled").color
+                    }`}
+                  />
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Cancelled</p>
@@ -397,7 +445,9 @@ export default function MyTransfersPage() {
           </div>
 
           {/* Filters */}
-          <div className="bg-white rounded-3xl sidebar-shadow border border-gray-100 p-6 mb-6">
+          <div
+            className={`bg-white ${BORDER_RADIUS["3xl"]} sidebar-shadow border border-gray-100 p-6 mb-6`}
+          >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800">
                 Filter & Sort
@@ -446,7 +496,7 @@ export default function MyTransfersPage() {
                                 | "cancelled"
                             )
                           }
-                          className="w-full appearance-none bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-700 font-medium shadow-sm hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:shadow-lg transition-all duration-200 cursor-pointer"
+                          className={`w-full appearance-none bg-white border border-gray-200 ${BORDER_RADIUS["2xl"]} px-4 py-3 text-sm text-gray-700 font-medium shadow-sm hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:shadow-lg transition-all duration-200 cursor-pointer`}
                         >
                           <option value="all">All Statuses</option>
                           <option value="in_progress">In Progress</option>
@@ -470,7 +520,7 @@ export default function MyTransfersPage() {
                           onChange={(e) =>
                             setPriorityFilter(e.target.value || null)
                           }
-                          className="w-full appearance-none bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-700 font-medium shadow-sm hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:shadow-lg transition-all duration-200 cursor-pointer"
+                          className={`w-full appearance-none bg-white border border-gray-200 ${BORDER_RADIUS["2xl"]} px-4 py-3 text-sm text-gray-700 font-medium shadow-sm hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:shadow-lg transition-all duration-200 cursor-pointer`}
                         >
                           <option value="">All Priorities</option>
                           <option value="urgent">🔴 Urgent</option>
@@ -490,7 +540,9 @@ export default function MyTransfersPage() {
                       <div className="flex space-x-2">
                         <button
                           onClick={() => setSortBy("date")}
-                          className={`px-3 py-1 rounded-xl text-xs font-medium ${
+                          className={`px-3 py-1 ${
+                            BORDER_RADIUS.xl
+                          } text-xs font-medium ${
                             sortBy === "date"
                               ? "bg-green-100 text-green-800"
                               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -500,7 +552,9 @@ export default function MyTransfersPage() {
                         </button>
                         <button
                           onClick={() => setSortBy("priority")}
-                          className={`px-3 py-1 rounded-xl text-xs font-medium ${
+                          className={`px-3 py-1 ${
+                            BORDER_RADIUS.xl
+                          } text-xs font-medium ${
                             sortBy === "priority"
                               ? "bg-green-100 text-green-800"
                               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -522,7 +576,7 @@ export default function MyTransfersPage() {
                           setSearchTerm("");
                           setSortBy("date");
                         }}
-                        className="w-full px-4 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-2xl font-medium hover:from-gray-200 hover:to-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all duration-200 text-sm shadow-sm"
+                        className={`w-full px-4 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 ${BORDER_RADIUS["2xl"]} font-medium hover:from-gray-200 hover:to-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all duration-200 text-sm shadow-sm`}
                       >
                         <span className="flex items-center justify-center">
                           <X className="w-4 h-4 mr-1" />
@@ -541,7 +595,7 @@ export default function MyTransfersPage() {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-6"
+              className={`bg-red-50 border border-red-200 text-red-700 px-4 py-3 ${BORDER_RADIUS["2xl"]} mb-6`}
             >
               {error}
             </motion.div>
@@ -561,10 +615,12 @@ export default function MyTransfersPage() {
               {filteredTransfers.length === 0 ? (
                 <motion.div
                   variants={itemVariants}
-                  className="col-span-full text-center py-12 bg-gray-50 rounded-3xl sidebar-shadow"
+                  className={`col-span-full text-center py-12 bg-gray-50 ${BORDER_RADIUS["3xl"]} sidebar-shadow`}
                 >
                   <div className="flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 bg-blue-50 rounded-3xl flex items-center justify-center mb-4">
+                    <div
+                      className={`w-16 h-16 bg-blue-50 ${BORDER_RADIUS["3xl"]} flex items-center justify-center mb-4`}
+                    >
                       <User size={24} className="text-blue-400" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-700 mb-2">
@@ -583,7 +639,7 @@ export default function MyTransfersPage() {
                     {searchTerm && (
                       <button
                         onClick={() => setSearchTerm("")}
-                        className="mt-4 px-4 py-2 bg-blue-100 text-blue-700 rounded-2xl text-sm font-medium hover:bg-blue-200 transition-colors"
+                        className={`mt-4 px-4 py-2 bg-blue-100 text-blue-700 ${BORDER_RADIUS["2xl"]} text-sm font-medium hover:bg-blue-200 transition-colors`}
                       >
                         Clear Search
                       </button>

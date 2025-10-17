@@ -217,43 +217,48 @@ export default function AdminDashboard() {
                 <div className="h-8 bg-gray-200 rounded w-20"></div>
               </div>
             ))
-          : stats.map((stat, index) => (
-              <motion.div
-                key={stat.name}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-                className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden"
-              >
-                {/* Live Indicator */}
-                {stat.isLive && (
-                  <div className="absolute top-3 right-3 flex items-center space-x-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-xs font-medium text-green-600">
-                      LIVE
-                    </span>
-                  </div>
-                )}
+          : stats.map((stat, index) => {
+              const StatIcon = stat.icon;
+              return (
+                <motion.div
+                  key={stat.name}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                  className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden"
+                >
+                  {/* Live Indicator */}
+                  {stat.isLive && (
+                    <div className="absolute top-3 right-3 flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs font-medium text-green-600">
+                        LIVE
+                      </span>
+                    </div>
+                  )}
 
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`p-3 rounded-xl ${stat.bgColor}`}>
-                    <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`p-3 rounded-xl ${stat.bgColor}`}>
+                      <StatIcon className={`w-6 h-6 ${stat.color}`} />
+                    </div>
+                    <div className="flex items-center space-x-1 text-sm">
+                      {getTrendIcon(stat.trend)}
+                      <span
+                        className={`font-medium ${getTrendColor(stat.trend)}`}
+                      >
+                        {stat.change}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-1 text-sm">
-                    {getTrendIcon(stat.trend)}
-                    <span
-                      className={`font-medium ${getTrendColor(stat.trend)}`}
-                    >
-                      {stat.change}
-                    </span>
-                  </div>
-                </div>
-                <h3 className="text-gray-600 text-sm font-medium mb-1">
-                  {stat.name}
-                </h3>
-                <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
-              </motion.div>
-            ))}
+                  <h3 className="text-gray-600 text-sm font-medium mb-1">
+                    {stat.name}
+                  </h3>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {stat.value}
+                  </p>
+                </motion.div>
+              );
+            })}
       </div>
 
       {/* Main Content Grid */}
