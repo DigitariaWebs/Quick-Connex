@@ -46,12 +46,23 @@ export function useLoginForm() {
             // Import and set user in SSE manager immediately
             const { globalSSEManager } = await import('@/lib/notifications/global-sse-manager');
             globalSSEManager.setUser(authData.user);
+            
+            // Redirect based on user type
+            const redirectPath = (authData.user.userType === 'admin' || authData.user.userType === 'super_admin') 
+              ? '/admin/dashboard' 
+              : '/dashboard';
+            
+            console.log(`✅ Login: Redirecting ${authData.user.userType} to ${redirectPath}`);
+            setTimeout(() => {
+              router.push(redirectPath);
+            }, 1000);
+            return;
           }
         } catch (authError) {
           console.error('⚠️ Login: Auth verification failed, SSE will connect on page load:', authError);
         }
         
-        // Use Next.js router for better navigation
+        // Fallback: Use Next.js router for better navigation
         setTimeout(() => {
           router.push('/dashboard');
         }, 1000);

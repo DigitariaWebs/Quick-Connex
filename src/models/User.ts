@@ -11,9 +11,56 @@ export interface IDocumentReference {
   uploadedAt: Date;
 }
 
+// Define user roles
+export type UserRole = 'employee' | 'manager' | 'admin' | 'super_admin';
+
+// Define permissions enum
+export enum Permission {
+  // User management
+  VIEW_ALL_USERS = 'view_all_users',
+  EDIT_USERS = 'edit_users',
+  DELETE_USERS = 'delete_users',
+  APPROVE_USERS = 'approve_users',
+  SUSPEND_USERS = 'suspend_users',
+  
+  // Transfer management
+  VIEW_ALL_TRANSFERS = 'view_all_transfers',
+  CANCEL_ANY_TRANSFER = 'cancel_any_transfer',
+  EDIT_ANY_TRANSFER = 'edit_any_transfer',
+  FORCE_COMPLETE_TRANSFER = 'force_complete_transfer',
+  REASSIGN_TRANSFERS = 'reassign_transfers',
+  
+  // System management
+  VIEW_SYSTEM_METRICS = 'view_system_metrics',
+  MANAGE_SYSTEM_SETTINGS = 'manage_system_settings',
+  ACCESS_AUDIT_LOGS = 'access_audit_logs',
+  MANAGE_NOTIFICATIONS = 'manage_notifications',
+  VIEW_ERROR_LOGS = 'view_error_logs',
+  
+  // Data management
+  EXPORT_DATA = 'export_data',
+  DELETE_DATA = 'delete_data',
+  BACKUP_DATABASE = 'backup_database',
+  
+  // Super admin only
+  MANAGE_ADMINS = 'manage_admins',
+  ACCESS_SYSTEM_LOGS = 'access_system_logs',
+  EXECUTE_QUERIES = 'execute_queries',
+}
+
+// Login history interface
+export interface ILoginHistory {
+  timestamp: Date;
+  ipAddress: string;
+  userAgent: string;
+  success: boolean;
+  location?: string;
+}
+
 // Define the interface for User document
 export interface IUser extends Document {
-  userType: 'employee' | 'manager';
+  userType: 'employee' | 'manager' | 'admin' | 'super_admin';
+  role: UserRole; // Explicit role field for better querying
   firstName: string;
   lastName: string;
   email: string;
@@ -23,16 +70,41 @@ export interface IUser extends Document {
   ciusss?: mongoose.Types.ObjectId;
   hospital?: mongoose.Types.ObjectId;
   documents?: IDocumentReference[]; // Array of document references
+  
+  // Admin-specific fields
+  permissions?: Permission[]; // Granular permissions for admins
+  isSuperAdmin?: boolean; // Flag for super admin
+  
+  // Security & Activity tracking
+  lastLogin?: Date;
+  lastLoginIp?: string;
+  loginHistory?: ILoginHistory[];
+  failedLoginAttempts?: number;
+  accountLockedUntil?: Date;
+  
   // Approval system fields
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'suspended';
   approvedBy?: string; // Admin email who approved/rejected
   approvedAt?: Date;
   rejectionReason?: string;
+  suspendedBy?: string; // Admin who suspended the account
+  suspendedAt?: Date;
+  suspensionReason?: string;
+  
   // Password reset fields
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
+  lastPasswordChange?: Date;
+  
   createdAt: Date;
   updatedAt: Date;
+  
+  // Instance methods
+  hasPermission(permission: Permission): boolean;
+  hasAnyPermission(permissions: Permission[]): boolean;
+  isAdmin(): boolean;
+  recordLogin(ipAddress: string, userAgent: string, success?: boolean): Promise<IUser>;
+  isAccountLocked(): boolean;
 }
 
 // Base user schema
@@ -40,7 +112,13 @@ const UserSchema = new Schema<IUser>({
   userType: { 
     type: String, 
     required: true,
-    enum: ['employee', 'manager'] 
+    enum: ['employee', 'manager', 'admin', 'super_admin'] 
+  },
+  role: {
+    type: String,
+    required: true,
+    enum: ['employee', 'manager', 'admin', 'super_admin'],
+    index: true // Index for faster role-based queries
   },
   firstName: { 
     type: String, 
@@ -86,6 +164,55 @@ const UserSchema = new Schema<IUser>({
     ref: 'Hospital',
     required: function(this: IUser) { return this.userType === 'manager'; }
   },
+  
+  // Admin-specific fields
+  permissions: [{
+    type: String,
+    enum: Object.values(Permission)
+  }],
+  isSuperAdmin: {
+    type: Boolean,
+    default: false
+  },
+  
+  // Security & Activity tracking
+  lastLogin: {
+    type: Date
+  },
+  lastLoginIp: {
+    type: String,
+    trim: true
+  },
+  loginHistory: [{
+    timestamp: {
+      type: Date,
+      required: true,
+      default: Date.now
+    },
+    ipAddress: {
+      type: String,
+      required: true
+    },
+    userAgent: {
+      type: String,
+      required: true
+    },
+    success: {
+      type: Boolean,
+      required: true,
+      default: true
+    },
+    location: {
+      type: String
+    }
+  }],
+  failedLoginAttempts: {
+    type: Number,
+    default: 0
+  },
+  accountLockedUntil: {
+    type: Date
+  },
   // Employee specific fields - documents array
   documents: [{
     fileId: {
@@ -121,8 +248,9 @@ const UserSchema = new Schema<IUser>({
   // Approval system fields
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
-    default: 'pending'
+    enum: ['pending', 'approved', 'rejected', 'suspended'],
+    default: 'pending',
+    index: true
   },
   approvedBy: {
     type: String,
@@ -135,6 +263,17 @@ const UserSchema = new Schema<IUser>({
     type: String,
     trim: true
   },
+  suspendedBy: {
+    type: String,
+    trim: true
+  },
+  suspendedAt: {
+    type: Date
+  },
+  suspensionReason: {
+    type: String,
+    trim: true
+  },
   // Password reset fields
   resetPasswordToken: {
     type: String,
@@ -142,15 +281,25 @@ const UserSchema = new Schema<IUser>({
   },
   resetPasswordExpires: {
     type: Date
+  },
+  lastPasswordChange: {
+    type: Date,
+    default: Date.now
   }
 }, {
   timestamps: true, // This will automatically add createdAt and updatedAt fields
   versionKey: false // This will remove the __v field
 });
 
-// Add validation to ensure employees have required documents
+// Add validation and pre-save hooks
 UserSchema.pre('save', function(next) {
-  if (this.userType === 'employee') {
+  // Sync userType and role
+  if (this.isModified('userType')) {
+    this.role = this.userType;
+  }
+  
+  // Validate employees have required documents
+  if (this.userType === 'employee' && this.status === 'approved') {
     const hasCv = this.documents?.some(doc => doc.documentType === 'cv');
     const hasOpiqPermit = this.documents?.some(doc => doc.documentType === 'opiqPermit');
     const hasRcr = this.documents?.some(doc => doc.documentType === 'rcr');
@@ -159,6 +308,18 @@ UserSchema.pre('save', function(next) {
       return next(new Error('Employee must have CV, OPIQ permit, and RCR documents'));
     }
   }
+  
+  // Auto-approve admins (they don't need approval)
+  if ((this.userType === 'admin' || this.userType === 'super_admin') && this.isNew) {
+    this.status = 'approved';
+    this.approvedAt = new Date();
+  }
+  
+  // Limit login history to last 50 entries
+  if (this.loginHistory && this.loginHistory.length > 50) {
+    this.loginHistory = this.loginHistory.slice(-50);
+  }
+  
   next();
 });
 
@@ -172,9 +333,72 @@ UserSchema.pre('validate', function(next) {
   next();
 });
 
-// Add index for faster queries
+// Add indexes for faster queries
 // Note: email index is already created by unique: true, so we don't need to add it again
 UserSchema.index({ 'documents.fileId': 1 });
+UserSchema.index({ userType: 1, status: 1 });
+UserSchema.index({ role: 1 });
+UserSchema.index({ lastLogin: -1 });
+
+// Instance methods
+UserSchema.methods.hasPermission = function(permission: Permission): boolean {
+  // Super admins have all permissions
+  if (this.isSuperAdmin) {
+    return true;
+  }
+  
+  // Check if user has the specific permission
+  return this.permissions?.includes(permission) || false;
+};
+
+UserSchema.methods.hasAnyPermission = function(permissions: Permission[]): boolean {
+  if (this.isSuperAdmin) {
+    return true;
+  }
+  
+  return permissions.some(permission => this.permissions?.includes(permission));
+};
+
+UserSchema.methods.isAdmin = function(): boolean {
+  return this.userType === 'admin' || this.userType === 'super_admin';
+};
+
+UserSchema.methods.recordLogin = function(ipAddress: string, userAgent: string, success: boolean = true) {
+  if (!this.loginHistory) {
+    this.loginHistory = [];
+  }
+  
+  this.loginHistory.push({
+    timestamp: new Date(),
+    ipAddress,
+    userAgent,
+    success
+  });
+  
+  if (success) {
+    this.lastLogin = new Date();
+    this.lastLoginIp = ipAddress;
+    this.failedLoginAttempts = 0;
+    this.accountLockedUntil = undefined;
+  } else {
+    this.failedLoginAttempts = (this.failedLoginAttempts || 0) + 1;
+    
+    // Lock account after 5 failed attempts for 15 minutes
+    if (this.failedLoginAttempts >= 5) {
+      this.accountLockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+    }
+  }
+  
+  return this.save();
+};
+
+UserSchema.methods.isAccountLocked = function(): boolean {
+  if (!this.accountLockedUntil) {
+    return false;
+  }
+  
+  return new Date() < this.accountLockedUntil;
+};
 
 // Create or get the User model
 const User: Model<IUser> = mongoose.models.User as Model<IUser> || 

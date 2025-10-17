@@ -3,6 +3,8 @@
  * 
  * This is a simpler implementation using global variables instead of a singleton class
  * to avoid issues with Next.js module loading and instance management.
+ * 
+ * Now integrated with SSE monitoring service for real-time admin monitoring.
  */
 
 interface SSEClient {
@@ -27,6 +29,19 @@ interface NotificationData {
 // Global state
 let clients: Map<string, SSEClient> = new Map();
 let heartbeatInterval: NodeJS.Timeout | null = null;
+
+// Import monitoring integration (lazy import to avoid circular dependencies)
+let monitoringIntegration: any = null;
+function getMonitoringIntegration() {
+  if (!monitoringIntegration) {
+    try {
+      monitoringIntegration = require('./sse-monitoring-integration');
+    } catch (error) {
+      console.warn('📊 SSE Monitoring: Integration not available', error);
+    }
+  }
+  return monitoringIntegration;
+}
 
 // Initialize heartbeat if not already started
 function startHeartbeat() {
@@ -58,6 +73,24 @@ function startHeartbeat() {
           type: 'heartbeat',
           timestamp: new Date().toISOString()
         });
+        
+        // Track heartbeat event in monitoring integration
+        const monitoring = getMonitoringIntegration();
+        if (monitoring) {
+          try {
+            monitoring.trackConnectionEvent(
+              'heartbeat',
+              userId,
+              `user-${userId}@example.com`,
+              client.userType,
+              'Heartbeat ping sent',
+              `conn_${userId}`
+            );
+            monitoring.incrementConnectionEvents(userId);
+          } catch (error) {
+            console.warn('📊 SSE Monitoring: Failed to track heartbeat event', error);
+          }
+        }
       } catch (error) {
         console.error(`📡 Global Notification Broadcaster: Error sending heartbeat to user ${userId}:`, error);
         clients.delete(userId);
@@ -85,6 +118,28 @@ export function registerClient(userId: string, userType: string, controller: Rea
   console.log(`📡 Global Notification Broadcaster: Current clients after registration: ${clients.size}`);
   console.log(`📡 Global Notification Broadcaster: Client keys: ${Array.from(clients.keys()).join(', ')}`);
 
+  // Track connection event in monitoring integration
+  const monitoring = getMonitoringIntegration();
+  if (monitoring) {
+    try {
+      console.log(`📊 SSE Monitoring: Tracking connection for user ${userId}`);
+      monitoring.trackConnectionEvent(
+        'connect',
+        userId,
+        `user-${userId}@example.com`, // Would need real email from user data
+        userType,
+        'User connected to SSE stream',
+        `conn_${userId}`
+      );
+      monitoring.updateConnectionStatus(userId, 'connected', `user-${userId}@example.com`, userType);
+      console.log(`📊 SSE Monitoring: Successfully tracked connection for user ${userId}`);
+    } catch (error) {
+      console.warn('📊 SSE Monitoring: Failed to track connection event', error);
+    }
+  } else {
+    console.warn('📊 SSE Monitoring: Monitoring integration not available');
+  }
+
   // Start heartbeat if not already started
   startHeartbeat();
 
@@ -103,6 +158,9 @@ export function registerClient(userId: string, userType: string, controller: Rea
   }
 
   console.log(`📡 Global Notification Broadcaster: ${clients.size} active connections`);
+  
+  // Broadcast dashboard update to admins
+  broadcastDashboardUpdate();
 }
 
 /**
@@ -110,8 +168,30 @@ export function registerClient(userId: string, userType: string, controller: Rea
  */
 export function unregisterClient(userId: string): void {
   console.log(`📡 Global Notification Broadcaster: Unregistering client for user ${userId}`);
+  
+  // Track disconnection event in monitoring integration
+  const monitoring = getMonitoringIntegration();
+  if (monitoring) {
+    try {
+      monitoring.trackConnectionEvent(
+        'disconnect',
+        userId,
+        `user-${userId}@example.com`, // Would need real email from user data
+        'Unknown', // Would need real user type
+        'User disconnected from SSE stream',
+        `conn_${userId}`
+      );
+      monitoring.updateConnectionStatus(userId, 'disconnected');
+    } catch (error) {
+      console.warn('📊 SSE Monitoring: Failed to track disconnection event', error);
+    }
+  }
+  
   clients.delete(userId);
   console.log(`📡 Global Notification Broadcaster: ${clients.size} active connections`);
+  
+  // Broadcast dashboard update to admins
+  broadcastDashboardUpdate();
 }
 
 /**
@@ -187,6 +267,37 @@ export function broadcastToUserType(userType: string, notification: Notification
 
   console.log(`📡 Global Notification Broadcaster: Sent to ${successCount} ${userType} users`);
   return successCount;
+}
+
+/**
+ * Broadcast dashboard update to admin users
+ * This is called when connection counts change
+ */
+export function broadcastDashboardUpdate(): void {
+  const adminTypes = ['admin', 'super_admin'];
+  const activeConnections = clients.size;
+  
+  const dashboardUpdate = {
+    type: 'dashboard_update',
+    data: {
+      activeUsers: activeConnections,
+      timestamp: new Date().toISOString()
+    },
+    timestamp: new Date().toISOString()
+  };
+
+  // Send to all admin users
+  for (const [userId, client] of clients.entries()) {
+    if (adminTypes.includes(client.userType)) {
+      try {
+        sendToClient(userId, dashboardUpdate);
+      } catch (error) {
+        console.error(`📡 Dashboard Update: Error sending to admin ${userId}:`, error);
+      }
+    }
+  }
+
+  console.log(`📡 Dashboard Update: Sent connection count (${activeConnections}) to admins`);
 }
 
 /**

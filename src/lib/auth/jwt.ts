@@ -7,7 +7,7 @@ const encodedKey = new TextEncoder().encode(secretKey);
 export interface JWTPayload {
   userId: string;
   email: string;
-  userType: 'employee' | 'manager';
+  userType: 'employee' | 'manager' | 'admin' | 'super_admin';
   iat?: number;
   exp?: number;
 }

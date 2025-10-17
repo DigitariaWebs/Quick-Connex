@@ -15,3 +15,6 @@ export * from './communication';
 
 // Notification Types
 export * from './notification';
+
+// Dashboard Types
+export * from './dashboard';

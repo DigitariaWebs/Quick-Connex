@@ -5,7 +5,7 @@ import User from '@/models/User';
 
 export interface AuthenticatedUser {
   _id: string;
-  userType: 'employee' | 'manager';
+  userType: 'employee' | 'manager' | 'admin' | 'super_admin';
   firstName: string;
   lastName: string;
   email: string;
@@ -19,7 +19,7 @@ export interface AuthContext {
   tokenPayload: {
     userId: string;
     email: string;
-    userType: 'employee' | 'manager';
+    userType: 'employee' | 'manager' | 'admin' | 'super_admin';
   };
 }
 
@@ -124,7 +124,7 @@ export function requireRole(allowedRoles: ('employee' | 'manager')[]) {
  */
 export const requireManager = requireRole(['manager']);
 export const requireEmployee = requireRole(['employee']);
-export const requireEmployeeOrManager = requireRole(['employee', 'manager']);
+export const requireEmployeeOrManager = requireRole(['employee', 'manager', 'admin', 'super_admin']);
 
 /**
  * Standard error response helper

@@ -10,4 +10,5 @@ export * from './PendingTransfersModal';
 export * from './SearchTransfersModal';
 export * from './TermsModal';
 export * from './TodayScheduleModal';
+export { default as TransferDetailsModal } from './TransferDetailsModal';
 export * from './TransferFormModal';

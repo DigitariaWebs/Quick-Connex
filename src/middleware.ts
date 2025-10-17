@@ -16,6 +16,9 @@ export async function middleware(request: NextRequest) {
   // Public routes that don't require authentication
   const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/', '/approval-success', '/approval-error', '/template-manager'];
   const isPublicRoute = publicRoutes.includes(pathname);
+  
+  // Admin routes that require admin role
+  const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/api/admin');
 
   // API routes that don't require authentication
   const publicApiRoutes = ['/api/auth/login', '/api/auth/signup', '/api/auth/gmail', '/api/auth/approve-user', '/api/auth/signup-approval', '/api/auth/forgot-password', '/api/auth/reset-password', '/api/files', '/api/hospitals', '/api/templates', '/api/ciusss'];
@@ -56,6 +59,32 @@ export async function middleware(request: NextRequest) {
         );
       }
       return NextResponse.redirect(new URL('/login', request.url));
+    }
+    
+    // Check admin routes - require admin or super_admin role
+    if (isAdminRoute) {
+      const isAdmin = payload.userType === 'admin' || payload.userType === 'super_admin';
+      
+      if (!isAdmin) {
+        console.log(`⛔ Admin route access denied for user ${payload.email} (role: ${payload.userType})`);
+        
+        if (pathname.startsWith('/api/')) {
+          return NextResponse.json(
+            { 
+              success: false,
+              error: 'Admin access required',
+              code: 'ADMIN_REQUIRED',
+              message: 'You must be an administrator to access this resource'
+            },
+            { status: 403 }
+          );
+        }
+        
+        // Redirect non-admin users trying to access admin pages
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+      
+      console.log(`✅ Admin route access granted for ${payload.email}`);
     }
 
     // Add user info to headers for API routes

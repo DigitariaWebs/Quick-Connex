@@ -11,6 +11,8 @@
     "start": "next start",
     "dev:verbose": "NODE_ENV=development node server.js",
     "build:analyze": "ANALYZE=true next build --turbopack",
+    "create-admin": "node scripts/essentials/create-admin.js",
+    "create-super-admin": "node scripts/essentials/create-admin.js --super",
     "approve-user": "node scripts/essentials/approve-user.js",
     "clear-db": "node scripts/essentials/clear-database.js",
     "create-transfers": "node scripts/create-test-transfers.js",

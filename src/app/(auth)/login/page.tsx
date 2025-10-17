@@ -56,7 +56,13 @@ function LoginForm() {
         });
 
         if (response.ok) {
-          router.push("/dashboard");
+          const data = await response.json();
+          const redirectPath =
+            data.user?.userType === "admin" ||
+            data.user?.userType === "super_admin"
+              ? "/admin/dashboard"
+              : "/dashboard";
+          router.push(redirectPath);
         }
       } catch (error) {
         // User is not authenticated, stay on login page
