@@ -82,7 +82,10 @@ export async function getDatabaseMetrics(): Promise<DatabaseMetrics> {
     }
     
     // Get MongoDB server status
-    const admin = mongoose.connection.db.admin();
+    const admin = mongoose.connection.db?.admin();
+    if (!admin) {
+      throw new Error('Database admin not available');
+    }
     const serverStatus = await admin.serverStatus();
     
     // Get connection pool info
@@ -97,8 +100,8 @@ export async function getDatabaseMetrics(): Promise<DatabaseMetrics> {
     const port = serverStatus.port || 27017;
     
     // Get database stats
-    const dbStats = await mongoose.connection.db.stats();
-    const databaseSize = dbStats.dataSize || 0;
+    const dbStats = await mongoose.connection.db?.stats();
+    const databaseSize = dbStats?.dataSize || 0;
     
     // Calculate query metrics (simplified - in production you'd use MongoDB profiler)
     const totalQueries = serverStatus.opcounters?.query || 0;
@@ -154,16 +157,16 @@ export async function getDatabaseStats(): Promise<DatabaseStats> {
       throw new Error('Database not connected');
     }
     
-    const dbStats = await mongoose.connection.db.stats();
+    const dbStats = await mongoose.connection.db?.stats();
     
     return {
-      collections: dbStats.collections || 0,
-      documents: dbStats.objects || 0,
-      indexes: dbStats.indexes || 0,
-      dataSize: dbStats.dataSize || 0,
-      storageSize: dbStats.storageSize || 0,
-      indexSize: dbStats.indexSize || 0,
-      avgObjSize: dbStats.avgObjSize || 0
+      collections: dbStats?.collections || 0,
+      documents: dbStats?.objects || 0,
+      indexes: dbStats?.indexes || 0,
+      dataSize: dbStats?.dataSize || 0,
+      storageSize: dbStats?.storageSize || 0,
+      indexSize: dbStats?.indexSize || 0,
+      avgObjSize: dbStats?.avgObjSize || 0
     };
     
   } catch (error) {
@@ -189,19 +192,31 @@ export async function getCollectionStats(): Promise<Array<{
       throw new Error('Database not connected');
     }
     
-    const collections = await mongoose.connection.db.listCollections().toArray();
-    const collectionStats = [];
+    const collections = await mongoose.connection.db?.listCollections().toArray();
+    const collectionStats: Array<{
+      name: string;
+      count: number;
+      size: number;
+      avgObjSize: number;
+      storageSize: number;
+      totalIndexSize: number;
+      indexSizes: Record<string, number>;
+    }> = [];
+    
+    if (!collections) {
+      return collectionStats;
+    }
     
     for (const collection of collections) {
       try {
         // Use the correct MongoDB API for collection stats
-        const collectionObj = mongoose.connection.db.collection(collection.name);
-        const count = await collectionObj.countDocuments();
+        const collectionObj = mongoose.connection.db?.collection(collection.name);
+        const count = await collectionObj?.countDocuments();
         
         // Get basic collection info
         const stats = {
           name: collection.name,
-          count: count,
+          count: count || 0,
           size: 0, // Will be calculated from documents
           avgObjSize: 0, // Will be calculated
           storageSize: 0, // Will be calculated
@@ -211,18 +226,18 @@ export async function getCollectionStats(): Promise<Array<{
         
         // Try to get more detailed stats if available
         try {
-          const collStats = await mongoose.connection.db.runCommand({
+          const collStats = await mongoose.connection.db?.command({
             collStats: collection.name
           });
           
-          stats.size = collStats.size || 0;
-          stats.avgObjSize = collStats.avgObjSize || 0;
-          stats.storageSize = collStats.storageSize || 0;
-          stats.totalIndexSize = collStats.totalIndexSize || 0;
-          stats.indexSizes = collStats.indexSizes || {};
+          stats.size = collStats?.size || 0;
+          stats.avgObjSize = collStats?.avgObjSize || 0;
+          stats.storageSize = collStats?.storageSize || 0;
+          stats.totalIndexSize = collStats?.totalIndexSize || 0;
+          stats.indexSizes = collStats?.indexSizes || {};
         } catch (statsError) {
           // If collStats fails, try to estimate size from document count
-          if (count > 0) {
+          if (count && count > 0) {
             // Estimate average document size (this is a rough approximation)
             const estimatedAvgSize = 1024; // 1KB average per document
             stats.size = count * estimatedAvgSize;
@@ -264,12 +279,18 @@ export async function getIndexPerformance(): Promise<IndexPerformance[]> {
       throw new Error('Database not connected');
     }
     
-    const collections = await mongoose.connection.db.listCollections().toArray();
+    const collections = await mongoose.connection.db?.listCollections().toArray();
     const indexPerformance: IndexPerformance[] = [];
+    
+    if (!collections) {
+      return indexPerformance;
+    }
     
     for (const collection of collections) {
       try {
-        const indexes = await mongoose.connection.db.collection(collection.name).listIndexes().toArray();
+        const indexes = await mongoose.connection.db?.collection(collection.name)?.listIndexes().toArray();
+        
+        if (!indexes) continue;
         
         for (const index of indexes) {
           // Get index stats (simplified)
@@ -357,7 +378,7 @@ export async function getConnectionInfo(): Promise<ConnectionInfo[]> {
       connectionInfo.push({
         id: `conn_${index}`,
         status,
-        connectedAt: new Date(conn.startTime || Date.now()),
+        connectedAt: new Date(Date.now()),
         lastQuery: new Date(Date.now() - Math.random() * 300000), // Random time within last 5 minutes
         queryCount: Math.floor(Math.random() * 100),
         totalTime: Math.random() * 10000,

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../auth/useAuth';
-import { useSSE } from '@/contexts/SSEContext';
+import { useUnifiedSSE } from '@/contexts/UnifiedSSEContext';
 
 interface UrgentTransfer {
   id: string;
@@ -22,7 +22,7 @@ interface UrgentAlertsData {
 
 export function useUrgentAlerts() {
   const { user, isAuthenticated } = useAuth();
-  const { connected, error: sseError, lastMessage } = useSSE();
+  const { connected, error: sseError, lastMessage } = useUnifiedSSE();
   const [data, setData] = useState<UrgentAlertsData>({
     urgentTransfers: [],
     loading: true,

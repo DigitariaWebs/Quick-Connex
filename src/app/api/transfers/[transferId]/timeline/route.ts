@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
-import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
+import { requireEmployeeOrManagerWithSessionWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
 
 export async function GET(
   request: NextRequest,
@@ -18,11 +18,11 @@ export async function GET(
     const { transferId } = await params;
 
     if (!transferId) {
-      return createErrorResponse('Transfer ID is required', 'VALIDATION_ERROR', 400);
+      return createSessionErrorResponse('Transfer ID is required', 'VALIDATION_ERROR', 400);
     }
 
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -33,13 +33,13 @@ export async function GET(
     const transfer = await Transfer.findOne({ transferId });
 
     if (!transfer) {
-      return createErrorResponse('Transfer not found', 'NOT_FOUND', 404);
+      return createSessionErrorResponse('Transfer not found', 'NOT_FOUND', 404);
     }
 
     // Check if user has permission to view this transfer
     const user = authResult.user;
     if (user.userType === 'employee' && transfer.status === 'pending') {
-      return createErrorResponse('Access denied: Cannot view pending transfers', 'ACCESS_DENIED', 403);
+      return createSessionErrorResponse('Access denied: Cannot view pending transfers', 'ACCESS_DENIED', 403);
     }
 
     // Return timeline data directly
@@ -48,7 +48,7 @@ export async function GET(
     // Sort timeline events by timestamp (newest first)
     timelineEvents.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       transfer: {
         id: transfer._id,
         transferId: transfer.transferId,
@@ -70,7 +70,7 @@ export async function GET(
 
   } catch (error) {
     console.error('Error fetching transfer timeline:', error);
-    return createErrorResponse('Failed to fetch transfer timeline', 'FETCH_ERROR', 500);
+    return createSessionErrorResponse('Failed to fetch transfer timeline', 'FETCH_ERROR', 500);
   }
 }
 
@@ -88,15 +88,15 @@ export async function POST(
     const { type, title, description, metadata } = body;
 
     if (!transferId) {
-      return createErrorResponse('Transfer ID is required', 'VALIDATION_ERROR', 400);
+      return createSessionErrorResponse('Transfer ID is required', 'VALIDATION_ERROR', 400);
     }
 
     if (!type || !title || !description) {
-      return createErrorResponse('Type, title, and description are required', 'VALIDATION_ERROR', 400);
+      return createSessionErrorResponse('Type, title, and description are required', 'VALIDATION_ERROR', 400);
     }
 
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -106,13 +106,13 @@ export async function POST(
     // Find the transfer
     const transfer = await Transfer.findOne({ transferId });
     if (!transfer) {
-      return createErrorResponse('Transfer not found', 'NOT_FOUND', 404);
+      return createSessionErrorResponse('Transfer not found', 'NOT_FOUND', 404);
     }
 
     // Check if user has permission to add events to this transfer
     const user = authResult.user;
     if (user.userType === 'employee' && transfer.status === 'pending') {
-      return createErrorResponse('Access denied: Cannot modify pending transfers', 'ACCESS_DENIED', 403);
+      return createSessionErrorResponse('Access denied: Cannot modify pending transfers', 'ACCESS_DENIED', 403);
     }
 
     // Create new timeline event
@@ -142,13 +142,13 @@ export async function POST(
 
     await transfer.save();
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       event: newEvent,
       message: 'Timeline event added successfully'
     }, 'Timeline event added successfully', 201);
 
   } catch (error) {
     console.error('Error adding timeline event:', error);
-    return createErrorResponse('Failed to add timeline event', 'CREATE_ERROR', 500);
+    return createSessionErrorResponse('Failed to add timeline event', 'CREATE_ERROR', 500);
   }
 }

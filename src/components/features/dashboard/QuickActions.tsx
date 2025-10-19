@@ -26,7 +26,7 @@ interface QuickAction {
 }
 
 interface QuickActionsProps {
-  userType: "employee" | "manager";
+  userType: "employee" | "manager" | "admin" | "super_admin";
   onNewTransfer?: () => void;
   onViewPending?: () => void;
   onViewSchedule?: () => void;

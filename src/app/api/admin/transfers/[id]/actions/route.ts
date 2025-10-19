@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/admin-middleware';
+import { requireAdminWithSession } from '@/lib/auth/session-auth-middleware';
 import { logAdminAction } from '@/lib/auth/admin-middleware';
 import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
@@ -32,7 +32,7 @@ export async function POST(
 ) {
   try {
     // Check admin permissions
-    const authResult = await requireAdmin(request);
+    const authResult = await requireAdminWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -212,6 +212,13 @@ export async function POST(
       { path: 'lastModifiedBy', select: 'firstName lastName email userType' }
     ]);
 
+    if (!updatedTransfer) {
+      return NextResponse.json(
+        { success: false, error: 'Transfer not found' },
+        { status: 404 }
+      );
+    }
+
     // Add timeline entry
     const timelineEntry = {
       id: `admin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -260,7 +267,7 @@ export async function POST(
       description: `${actionDescription} for transfer ${transfer.transferId}`,
       targetResource: {
         type: TargetResourceType.TRANSFER,
-        id: transfer._id.toString(),
+        id: (transfer._id as any).toString(),
         name: transfer.transferId
       },
       changes: {

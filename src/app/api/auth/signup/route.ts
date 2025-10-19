@@ -435,6 +435,68 @@ export async function POST(request: Request) {
         console.error('❌ API: Failed to send approval email:', error);
       });
       
+      // For approved users (like managers), create a session immediately
+      let sessionData = null;
+      if (savedUser.status === 'approved') {
+        try {
+          console.log('🔐 API: Creating session for approved user');
+          
+          // Get IP address
+          const ipAddress = 
+            request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+            request.headers.get('x-real-ip') ||
+            'unknown';
+          
+          // Use atomic session creation directly
+          const { AtomicSessionCreation } = await import('@/lib/auth/atomic-session-creation');
+          
+          const sessionResult = await AtomicSessionCreation.createSessionAtomically(
+            (savedUser._id as any).toString(),
+            {
+              userAgent: request.headers.get('user-agent') || 'unknown',
+              platform: 'web',
+              browser: 'unknown',
+              browserVersion: 'unknown',
+              os: 'unknown',
+              osVersion: 'unknown',
+              deviceType: 'desktop',
+              timezone: 'UTC',
+              language: 'en-US'
+            },
+            ipAddress,
+            undefined, // location
+            'web', // sessionType
+            request
+          );
+
+          if (sessionResult.success) {
+            
+            // Create JWT token with session ID
+            const { signToken, setAuthCookie } = await import('@/lib/auth/jwt');
+            const token = await signToken({
+              userId: (savedUser._id as any).toString(),
+              email: savedUser.email,
+              userType: savedUser.userType,
+              sessionId: sessionResult.session.sessionId
+            });
+
+            // Set secure HTTP-only cookie
+            await setAuthCookie(token);
+            
+            sessionData = {
+              sessionId: sessionResult.session.sessionId,
+              expiresAt: sessionResult.session.expiresAt
+            };
+            
+            console.log('✅ API: Session created for approved user');
+          } else {
+            console.error('⚠️ API: Failed to create session for approved user:', sessionResult.error);
+          }
+        } catch (sessionError) {
+          console.error('⚠️ API: Failed to create session for approved user:', sessionError);
+        }
+      }
+      
       // Return a success response with sanitized user data
       const userResponse = savedUser.toObject();
       // Remove sensitive fields from response but keep the user ID for testing
@@ -442,10 +504,13 @@ export async function POST(request: Request) {
       
       return NextResponse.json(
         { 
-          message: 'Account created successfully. Your registration is pending approval. You will receive an email notification once approved.',
+          message: savedUser.status === 'approved' 
+            ? 'Account created and approved successfully! You can now log in.'
+            : 'Account created successfully. Your registration is pending approval. You will receive an email notification once approved.',
           user: sanitizedUser,
           userId: (savedUser._id as any).toString(), // Include user ID for testing purposes
-          status: 'pending',
+          status: savedUser.status,
+          session: sessionData,
           processingTime: `${processingTime}ms`
         }, 
         { status: 201 }

@@ -15,7 +15,7 @@ import {
   MapPin,
   Eye,
 } from "lucide-react";
-import { useSSE } from "@/contexts/SSEContext";
+import { useUnifiedSSE } from "@/contexts/UnifiedSSEContext";
 
 interface Notification {
   id: string;
@@ -71,7 +71,7 @@ export default function SchedulingNotifications({
   );
 
   // Use SSE for real-time notifications
-  const { connected, error: sseError, lastMessage } = useSSE();
+  const { connected, error: sseError, lastMessage } = useUnifiedSSE();
 
   useEffect(() => {
     fetchNotifications();

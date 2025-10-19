@@ -209,6 +209,7 @@ interface TransferDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   transferId: string | null;
+  transferData?: any | null; // Accept any transfer data type for flexibility
   onTransferUpdate?: () => void;
 }
 
@@ -216,6 +217,7 @@ export default function TransferDetailsModal({
   isOpen,
   onClose,
   transferId,
+  transferData,
   onTransferUpdate,
 }: TransferDetailsModalProps) {
   const [transfer, setTransfer] = useState<TransferDetails | null>(null);
@@ -231,9 +233,10 @@ export default function TransferDetailsModal({
   const [showActionModal, setShowActionModal] = useState(false);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const [actionReason, setActionReason] = useState("");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Fetch transfer details
-  const fetchTransferDetails = async () => {
+  // Fetch additional transfer details (timeline, related transfers, etc.)
+  const fetchAdditionalDetails = async () => {
     if (!transferId) return;
 
     try {
@@ -255,7 +258,10 @@ export default function TransferDetailsModal({
       const data = await response.json();
 
       if (data.success) {
-        setTransfer(data.data.transfer);
+        // Update transfer data if not already set
+        if (!transfer) {
+          setTransfer(data.data.transfer);
+        }
         setRelatedTransfers(data.data.relatedTransfers || []);
         setAdminTimeline(data.data.adminTimeline || []);
         setAvailableActions(data.data.availableActions || []);
@@ -276,17 +282,64 @@ export default function TransferDetailsModal({
     }
   };
 
-  // Initial fetch
+  // Initialize transfer data (no API calls for basic data)
   useEffect(() => {
     if (transferId && isOpen) {
-      fetchTransferDetails();
+      // Use passed transfer data if available
+      if (transferData) {
+        try {
+          // Convert TransferRequest to TransferDetails format safely
+          const convertedTransfer: TransferDetails = {
+            ...transferData,
+            timeline: transferData.timeline || [], // Add empty timeline if missing
+            medicalDocuments: transferData.medicalDocuments || [], // Add empty array if missing
+          };
+          setTransfer(convertedTransfer);
+          setLoading(false);
+          setError(null);
+          // Initialize empty arrays for additional data (no API calls)
+          setRelatedTransfers([]);
+          setAdminTimeline([]);
+          setAvailableActions([]);
+          setAdminContext(null);
+        } catch (error) {
+          console.error("Error converting transfer data:", error);
+          setError("Failed to load transfer data");
+          setLoading(false);
+        }
+      } else {
+        // Fallback: fetch all data if no transfer data passed
+        setLoading(true);
+        fetchAdditionalDetails();
+      }
     }
-  }, [transferId, isOpen]);
+  }, [transferId, isOpen, transferData]);
 
-  // Handle refresh
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isMenuOpen &&
+        !(event.target as Element).closest(".floating-menu-container")
+      ) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isMenuOpen]);
+
+  // Handle refresh (only fetch additional details, not basic transfer data)
   const handleRefresh = () => {
     setIsRefreshing(true);
-    fetchTransferDetails();
+    // Only fetch additional details if we have transfer data
+    if (transfer) {
+      fetchAdditionalDetails();
+    } else {
+      // If no transfer data, fetch everything
+      fetchAdditionalDetails();
+    }
   };
 
   // Handle admin action
@@ -318,7 +371,7 @@ export default function TransferDetailsModal({
 
       if (data.success) {
         // Refresh transfer details
-        await fetchTransferDetails();
+        await fetchAdditionalDetails();
 
         // Notify parent component
         if (onTransferUpdate) {
@@ -668,44 +721,111 @@ export default function TransferDetailsModal({
                   )}
                 </motion.div>
 
-                {/* Admin Actions */}
+                {/* Floating Admin Actions Button */}
                 {adminContext && availableActions.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm"
-                  >
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                      Admin Actions
-                    </h2>
-                    <div className="flex flex-wrap gap-3">
-                      {availableActions.map((action) => {
-                        // Map string icon name to actual icon component
-                        const ActionIcon =
-                          typeof action.icon === "string"
-                            ? iconMap[action.icon]
-                            : action.icon;
-                        return (
-                          <motion.button
-                            key={action.id}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                              setSelectedAction(action.id);
-                              setShowActionModal(true);
-                            }}
-                            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${action.buttonClass}`}
-                          >
-                            {ActionIcon && (
-                              <ActionIcon size={16} className="inline mr-2" />
-                            )}
-                            {action.label}
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
+                  <div className="fixed bottom-8 right-8 z-50">
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{
+                        delay: 0.3,
+                        type: "spring",
+                        stiffness: 300,
+                      }}
+                      className="relative group floating-menu-container"
+                    >
+                      {/* Main Floating Button */}
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        className="w-14 h-14 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center text-white group-hover:from-purple-700 group-hover:to-blue-700"
+                      >
+                        <MoreHorizontal
+                          size={24}
+                          className={`transition-transform duration-300 ${
+                            isMenuOpen ? "rotate-90" : ""
+                          }`}
+                        />
+                      </motion.button>
+
+                      {/* Floating Action Options */}
+                      <div
+                        className={`absolute bottom-16 right-0 transition-all duration-300 transform ${
+                          isMenuOpen
+                            ? "opacity-100 translate-y-0 pointer-events-auto"
+                            : "opacity-0 translate-y-2 pointer-events-none"
+                        }`}
+                      >
+                        <div className="bg-white rounded-2xl shadow-2xl border-2 border-gray-200 p-4 min-w-[220px] space-y-2 backdrop-blur-sm">
+                          <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3 text-center">
+                            Admin Actions
+                          </div>
+                          {availableActions
+                            .filter(
+                              (action) =>
+                                !action.id.toLowerCase().includes("note") &&
+                                !action.label.toLowerCase().includes("note")
+                            )
+                            .map((action, index) => {
+                              const ActionIcon =
+                                typeof action.icon === "string"
+                                  ? iconMap[action.icon]
+                                  : action.icon;
+
+                              // Define different colors for each button
+                              const buttonColors = [
+                                "bg-blue-100 border-blue-300 text-blue-800 hover:bg-blue-200",
+                                "bg-green-100 border-green-300 text-green-800 hover:bg-green-200",
+                                "bg-purple-100 border-purple-300 text-purple-800 hover:bg-purple-200",
+                                "bg-orange-100 border-orange-300 text-orange-800 hover:bg-orange-200",
+                                "bg-pink-100 border-pink-300 text-pink-800 hover:bg-pink-200",
+                                "bg-indigo-100 border-indigo-300 text-indigo-800 hover:bg-indigo-200",
+                                "bg-teal-100 border-teal-300 text-teal-800 hover:bg-teal-200",
+                              ];
+
+                              // Make cancel button red
+                              const isCancelAction =
+                                action.id.toLowerCase().includes("cancel") ||
+                                action.label.toLowerCase().includes("cancel") ||
+                                action.label.toLowerCase().includes("reject");
+
+                              const colorClass = isCancelAction
+                                ? "bg-red-100 border-red-300 text-red-800 hover:bg-red-200"
+                                : buttonColors[index % buttonColors.length];
+
+                              return (
+                                <motion.button
+                                  key={action.id}
+                                  initial={{ opacity: 0, x: 20 }}
+                                  animate={{
+                                    opacity: 1,
+                                    x: 0,
+                                    transition: { delay: index * 0.05 },
+                                  }}
+                                  whileHover={{
+                                    scale: 1.02,
+                                    x: 4,
+                                    transition: { duration: 0.2 },
+                                  }}
+                                  whileTap={{ scale: 0.98 }}
+                                  onClick={() => {
+                                    setSelectedAction(action.id);
+                                    setShowActionModal(true);
+                                  }}
+                                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 border-2 hover:shadow-lg hover:scale-105 ${colorClass}`}
+                                >
+                                  {ActionIcon && <ActionIcon size={18} />}
+                                  <span className="text-sm font-semibold text-black">
+                                    {action.label}
+                                  </span>
+                                </motion.button>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
                 )}
 
                 {/* Timeline */}

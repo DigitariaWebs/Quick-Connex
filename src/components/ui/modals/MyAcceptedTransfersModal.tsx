@@ -81,7 +81,7 @@ interface MyAcceptedTransfersModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUserId: string;
-  currentUserType: "employee" | "manager";
+  currentUserType: "employee" | "manager" | "admin" | "super_admin";
 }
 
 export default function MyAcceptedTransfersModal({

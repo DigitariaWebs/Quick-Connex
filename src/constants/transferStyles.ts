@@ -19,9 +19,9 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 // Transfer Category Types
-export type TransferCategory = "patient" | "envelope" | "medical_instruments";
-export type TransferStatus = "pending" | "accepted" | "in_progress" | "completed" | "cancelled";
-export type TransferPriority = "low" | "medium" | "high" | "urgent";
+export type TransferCategoryType = "patient" | "envelope" | "medical_instruments";
+export type TransferStatusType = "pending" | "accepted" | "in_progress" | "completed" | "cancelled";
+export type TransferPriorityType = "low" | "medium" | "high" | "urgent";
 
 // Transfer Category Configuration
 export interface TransferCategoryConfig {
@@ -31,7 +31,7 @@ export interface TransferCategoryConfig {
   bgColor: string;
 }
 
-export const TRANSFER_CATEGORIES: Record<TransferCategory, TransferCategoryConfig> = {
+export const TRANSFER_CATEGORIES: Record<TransferCategoryType, TransferCategoryConfig> = {
   patient: {
     icon: User,
     label: "Patient",
@@ -62,7 +62,7 @@ export interface TransferStatusConfig {
   badgeClass: string;
 }
 
-export const TRANSFER_STATUSES: Record<TransferStatus, TransferStatusConfig> = {
+export const TRANSFER_STATUSES: Record<TransferStatusType, TransferStatusConfig> = {
   pending: {
     icon: Clock,
     label: "Pending",
@@ -115,7 +115,7 @@ export interface TransferPriorityConfig {
   badgeClass: string;
 }
 
-export const TRANSFER_PRIORITIES: Record<TransferPriority, TransferPriorityConfig> = {
+export const TRANSFER_PRIORITIES: Record<TransferPriorityType, TransferPriorityConfig> = {
   low: {
     icon: Flag,
     label: "Low",
@@ -151,15 +151,15 @@ export const TRANSFER_PRIORITIES: Record<TransferPriority, TransferPriorityConfi
 } as const;
 
 // Helper Functions
-export const getTransferCategoryConfig = (category: TransferCategory): TransferCategoryConfig => {
+export const getTransferCategoryConfig = (category: TransferCategoryType): TransferCategoryConfig => {
   return TRANSFER_CATEGORIES[category];
 };
 
-export const getTransferStatusConfig = (status: TransferStatus): TransferStatusConfig => {
+export const getTransferStatusConfig = (status: TransferStatusType): TransferStatusConfig => {
   return TRANSFER_STATUSES[status];
 };
 
-export const getTransferPriorityConfig = (priority: TransferPriority): TransferPriorityConfig => {
+export const getTransferPriorityConfig = (priority: TransferPriorityType): TransferPriorityConfig => {
   return TRANSFER_PRIORITIES[priority];
 };
 

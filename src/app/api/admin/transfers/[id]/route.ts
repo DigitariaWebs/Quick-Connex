@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/admin-middleware';
+import { requireAdminWithSession } from '@/lib/auth/session-auth-middleware';
 import { logAdminAction } from '@/lib/auth/admin-middleware';
 import dbConnect from '@/lib/database/mongoose';
-import Transfer from '@/models/Transfer';
-import User from '@/models/User';
+import { Transfer, User } from '@/lib/database/models';
 import { Permission } from '@/models/User';
 import { AuditAction, AuditCategory, TargetResourceType } from '@/models/AuditLog';
 
@@ -32,7 +31,7 @@ export async function GET(
 ) {
   try {
     // Check admin permissions
-    const authResult = await requireAdmin(request);
+    const authResult = await requireAdminWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -41,7 +40,11 @@ export async function GET(
     const { id } = await params;
 
     // Check specific permissions
-    if (!adminUser.hasPermission(Permission.VIEW_ALL_TRANSFERS)) {
+    const hasPermission = adminUser.userType === 'super_admin' || 
+                         adminUser.userType === 'admin' ||
+                         (adminUser.permissions && adminUser.permissions.includes(Permission.VIEW_ALL_TRANSFERS));
+    
+    if (!hasPermission) {
       return NextResponse.json({
         success: false,
         error: 'Insufficient permissions',
@@ -104,7 +107,7 @@ export async function GET(
       description: `Viewed transfer details for ${transfer.transferId}`,
       targetResource: {
         type: TargetResourceType.TRANSFER,
-        id: transfer._id.toString(),
+        id: (transfer._id as any).toString(),
         name: transfer.transferId
       },
       requestInfo: {
@@ -129,11 +132,11 @@ export async function GET(
         adminTimeline,
         availableActions,
         adminContext: {
-          canEdit: adminUser.hasPermission(Permission.EDIT_ANY_TRANSFER),
-          canCancel: adminUser.hasPermission(Permission.CANCEL_ANY_TRANSFER),
-          canReassign: adminUser.hasPermission(Permission.REASSIGN_TRANSFERS),
-          canForceComplete: adminUser.hasPermission(Permission.FORCE_COMPLETE_TRANSFER),
-          canDelete: adminUser.hasPermission(Permission.DELETE_DATA)
+          canEdit: adminUser.userType === 'super_admin' || adminUser.userType === 'admin' || (adminUser.permissions && adminUser.permissions.includes(Permission.EDIT_ANY_TRANSFER)),
+          canCancel: adminUser.userType === 'super_admin' || adminUser.userType === 'admin' || (adminUser.permissions && adminUser.permissions.includes(Permission.CANCEL_ANY_TRANSFER)),
+          canReassign: adminUser.userType === 'super_admin' || adminUser.userType === 'admin' || (adminUser.permissions && adminUser.permissions.includes(Permission.REASSIGN_TRANSFERS)),
+          canForceComplete: adminUser.userType === 'super_admin' || adminUser.userType === 'admin' || (adminUser.permissions && adminUser.permissions.includes(Permission.FORCE_COMPLETE_TRANSFER)),
+          canDelete: adminUser.userType === 'super_admin' || (adminUser.permissions && adminUser.permissions.includes(Permission.DELETE_DATA))
         }
       }
     });
@@ -155,7 +158,7 @@ export async function PUT(
 ) {
   try {
     // Check admin permissions
-    const authResult = await requireAdmin(request);
+    const authResult = await requireAdminWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -165,7 +168,9 @@ export async function PUT(
     const body = await request.json();
 
     // Check specific permissions
-    if (!adminUser.hasPermission(Permission.EDIT_ANY_TRANSFER)) {
+    const hasEditPermission = adminUser.userType === 'super_admin' || adminUser.userType === 'admin' || (adminUser.permissions && adminUser.permissions.includes(Permission.EDIT_ANY_TRANSFER));
+    
+    if (!hasEditPermission) {
       return NextResponse.json({
         success: false,
         error: 'Insufficient permissions',
@@ -220,6 +225,14 @@ export async function PUT(
       { path: 'lastModifiedBy', select: 'firstName lastName email userType' }
     ]);
 
+    if (!updatedTransfer) {
+      return NextResponse.json({
+        success: false,
+        error: 'Transfer not found',
+        message: 'The transfer could not be updated'
+      }, { status: 404 });
+    }
+
     // Log admin action
     await logAdminAction({
       adminId: adminUser._id.toString(),
@@ -231,7 +244,7 @@ export async function PUT(
       description: `Updated transfer ${transfer.transferId}`,
       targetResource: {
         type: TargetResourceType.TRANSFER,
-        id: transfer._id.toString(),
+        id: (transfer._id as any).toString(),
         name: transfer.transferId
       },
       changes: {
@@ -278,7 +291,7 @@ export async function DELETE(
 ) {
   try {
     // Check admin permissions
-    const authResult = await requireAdmin(request);
+    const authResult = await requireAdminWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -287,7 +300,9 @@ export async function DELETE(
     const { id } = await params;
 
     // Check specific permissions
-    if (!adminUser.hasPermission(Permission.DELETE_DATA)) {
+    const hasDeletePermission = adminUser.userType === 'super_admin' || (adminUser.permissions && adminUser.permissions.includes(Permission.DELETE_DATA));
+    
+    if (!hasDeletePermission) {
       return NextResponse.json({
         success: false,
         error: 'Insufficient permissions',

@@ -23,11 +23,14 @@ import {
   Zap,
   ArrowRight,
   RefreshCw,
-  Search,
+  User,
+  Package,
+  Stethoscope,
 } from "lucide-react";
 import { AdminLayout } from "@/components/features/admin";
 import LoadingSpinner from "@/components/features/dashboard/LoadingSpinner";
 import { TransferDetailsModal } from "@/components/ui/modals";
+import ExpandableSearchBar from "@/components/ui/expandable-search-bar";
 import {
   BORDER_RADIUS,
   CARD_STYLES,
@@ -35,6 +38,7 @@ import {
   getTransferStatusConfig,
   getTransferPriorityConfig,
   STAT_CARD_COLORS,
+  TRANSFER_CATEGORIES,
 } from "@/constants";
 
 /**
@@ -156,19 +160,29 @@ export default function AdminTransfersPage() {
 
   // State management
   const [transfers, setTransfers] = useState<TransferRequest[]>([]);
+  const [allTransfers, setAllTransfers] = useState<TransferRequest[]>([]); // Store all transfers for client-side filtering
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [stats, setStats] = useState<TransferStats | null>(null);
+  const [originalStats, setOriginalStats] = useState<TransferStats | null>(
+    null
+  );
+  const [hasLoadedInitialStats, setHasLoadedInitialStats] = useState(false);
 
   // UI state
   const [selectedTransfers, setSelectedTransfers] = useState<string[]>([]);
+  const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [activeCategoryFilter, setActiveCategoryFilter] =
+    useState<string>("all");
 
   // Modal state
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [selectedTransferId, setSelectedTransferId] = useState<string | null>(
     null
   );
+  const [selectedTransferData, setSelectedTransferData] =
+    useState<TransferRequest | null>(null);
 
   // Filtering state (kept for API compatibility, but UI removed)
   const [filters, setFilters] = useState<TransferFilters>({
@@ -252,8 +266,15 @@ export default function AdminTransfersPage() {
       const data = await response.json();
 
       if (data.success) {
-        setTransfers(data.data.transfers || []);
+        const fetchedTransfers = data.data.transfers || [];
+        setTransfers(fetchedTransfers);
+        setAllTransfers(fetchedTransfers); // Store all transfers for client-side filtering
         setStats(data.data.stats);
+        // Store original stats only on the very first load
+        if (!hasLoadedInitialStats) {
+          setOriginalStats(data.data.stats);
+          setHasLoadedInitialStats(true);
+        }
         setCurrentPage(data.data.pagination.page);
         setTotalPages(data.data.pagination.pages);
         setTotalCount(data.data.pagination.total);
@@ -276,12 +297,56 @@ export default function AdminTransfersPage() {
     fetchTransfers();
   }, []);
 
-  // Refetch when filters change
+  // Client-side filtering for simple filters
+  const applyClientSideFilters = () => {
+    let filteredTransfers = [...allTransfers];
+
+    // Apply status filter (from stats cards)
+    if (activeFilter === "pending") {
+      filteredTransfers = filteredTransfers.filter(
+        (t) => t.status === "pending"
+      );
+    } else if (activeFilter === "inProgress") {
+      filteredTransfers = filteredTransfers.filter(
+        (t) => t.status === "in_progress"
+      );
+    } else if (activeFilter === "urgent") {
+      filteredTransfers = filteredTransfers.filter(
+        (t) => t.priority === "urgent"
+      );
+    }
+
+    // Apply category filter (from category buttons)
+    if (activeCategoryFilter === "patient") {
+      filteredTransfers = filteredTransfers.filter(
+        (t) => t.transferCategory === "patient"
+      );
+    } else if (activeCategoryFilter === "envelope") {
+      filteredTransfers = filteredTransfers.filter(
+        (t) => t.transferCategory === "envelope"
+      );
+    } else if (activeCategoryFilter === "medical_instruments") {
+      filteredTransfers = filteredTransfers.filter(
+        (t) => t.transferCategory === "medical_instruments"
+      );
+    }
+
+    setTransfers(filteredTransfers);
+  };
+
+  // Apply client-side filters when they change
   useEffect(() => {
-    if (!loading) {
+    if (allTransfers.length > 0) {
+      applyClientSideFilters();
+    }
+  }, [activeFilter, activeCategoryFilter, allTransfers]);
+
+  // Refetch when complex filters change (search, date range, etc.)
+  useEffect(() => {
+    if (!loading && (filters.search || filters.dateRange)) {
       fetchTransfers(1);
     }
-  }, [filters, sortBy, sortOrder]);
+  }, [filters.search, filters.dateRange, sortBy, sortOrder]);
 
   // Handle refresh
   const handleRefresh = () => {
@@ -303,6 +368,18 @@ export default function AdminTransfersPage() {
   // Handle search
   const handleSearch = (searchTerm: string) => {
     handleFilterChange("search", searchTerm);
+  };
+
+  // Handle stats card click for filtering (client-side only)
+  const handleStatsCardClick = (filterType: string) => {
+    setActiveFilter(filterType);
+    // No need to update filters state for client-side filtering
+  };
+
+  // Handle category filter click (client-side only)
+  const handleCategoryFilterClick = (categoryType: string) => {
+    setActiveCategoryFilter(categoryType);
+    // No need to update filters state for client-side filtering
   };
 
   // Handle bulk selection
@@ -420,13 +497,16 @@ export default function AdminTransfersPage() {
 
   // Handle modal actions
   const handleViewTransfer = (transferId: string) => {
+    const transferData = transfers.find((t) => t._id === transferId);
     setSelectedTransferId(transferId);
+    setSelectedTransferData(transferData || null);
     setShowTransferModal(true);
   };
 
   const handleCloseModal = () => {
     setShowTransferModal(false);
     setSelectedTransferId(null);
+    setSelectedTransferData(null);
   };
 
   const handleTransferUpdate = () => {
@@ -449,14 +529,21 @@ export default function AdminTransfersPage() {
       {/* Main Layout Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Sidebar - Stats Cards */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className="lg:col-span-2 space-y-4">
           <div className="p-0">
-            {stats && (
-              <div className="grid grid-cols-2 gap-3">
+            {(originalStats || stats) && (
+              <div className="grid grid-cols-1 gap-3 max-w-48">
                 {/* Total - Beige */}
                 <motion.div
                   whileHover={{ scale: 1.02 }}
-                  className={`${STAT_CARD_COLORS.total.bg} ${STAT_CARD_COLORS.total.border} p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer`}
+                  onClick={() => handleStatsCardClick("all")}
+                  className={`${STAT_CARD_COLORS.total.bg} ${
+                    STAT_CARD_COLORS.total.border
+                  } p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
+                    activeFilter === "all"
+                      ? "ring-2 ring-blue-500 ring-opacity-50"
+                      : ""
+                  }`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <TrendingUp
@@ -471,14 +558,21 @@ export default function AdminTransfersPage() {
                   <p
                     className={`text-2xl font-bold ${STAT_CARD_COLORS.total.valueColor}`}
                   >
-                    {stats.total}
+                    {(originalStats || stats)?.total}
                   </p>
                 </motion.div>
 
                 {/* Pending - Light Yellow */}
                 <motion.div
                   whileHover={{ scale: 1.02 }}
-                  className={`${STAT_CARD_COLORS.pending.bg} ${STAT_CARD_COLORS.pending.border} p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer`}
+                  onClick={() => handleStatsCardClick("pending")}
+                  className={`${STAT_CARD_COLORS.pending.bg} ${
+                    STAT_CARD_COLORS.pending.border
+                  } p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
+                    activeFilter === "pending"
+                      ? "ring-2 ring-blue-500 ring-opacity-50"
+                      : ""
+                  }`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <Clock
@@ -493,14 +587,21 @@ export default function AdminTransfersPage() {
                   <p
                     className={`text-2xl font-bold ${STAT_CARD_COLORS.pending.valueColor}`}
                   >
-                    {stats.pending}
+                    {(originalStats || stats)?.pending}
                   </p>
                 </motion.div>
 
                 {/* In Progress - Light Purple */}
                 <motion.div
                   whileHover={{ scale: 1.02 }}
-                  className={`${STAT_CARD_COLORS.inProgress.bg} ${STAT_CARD_COLORS.inProgress.border} p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer`}
+                  onClick={() => handleStatsCardClick("inProgress")}
+                  className={`${STAT_CARD_COLORS.inProgress.bg} ${
+                    STAT_CARD_COLORS.inProgress.border
+                  } p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
+                    activeFilter === "inProgress"
+                      ? "ring-2 ring-blue-500 ring-opacity-50"
+                      : ""
+                  }`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <Zap
@@ -515,14 +616,21 @@ export default function AdminTransfersPage() {
                   <p
                     className={`text-2xl font-bold ${STAT_CARD_COLORS.inProgress.valueColor}`}
                   >
-                    {stats.inProgress}
+                    {(originalStats || stats)?.inProgress}
                   </p>
                 </motion.div>
 
                 {/* Urgent - Light Pink */}
                 <motion.div
                   whileHover={{ scale: 1.02 }}
-                  className={`${STAT_CARD_COLORS.urgent.bg} ${STAT_CARD_COLORS.urgent.border} p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer`}
+                  onClick={() => handleStatsCardClick("urgent")}
+                  className={`${STAT_CARD_COLORS.urgent.bg} ${
+                    STAT_CARD_COLORS.urgent.border
+                  } p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
+                    activeFilter === "urgent"
+                      ? "ring-2 ring-blue-500 ring-opacity-50"
+                      : ""
+                  }`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <AlertTriangle
@@ -537,7 +645,7 @@ export default function AdminTransfersPage() {
                   <p
                     className={`text-2xl font-bold ${STAT_CARD_COLORS.urgent.valueColor}`}
                   >
-                    {stats.urgent}
+                    {(originalStats || stats)?.urgent}
                   </p>
                 </motion.div>
               </div>
@@ -546,32 +654,86 @@ export default function AdminTransfersPage() {
         </div>
 
         {/* Main Content Area */}
-        <div className="lg:col-span-9">
+        <div className="lg:col-span-10">
           {/* Transfers List Section */}
           <div className={CARD_STYLES.rounded}>
             {/* Header */}
             <div className="px-6 py-5 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900">
-                    All Transfers
-                  </h3>
+                <div className="flex items-center space-x-4">
+                  {/* Category Filter Buttons */}
+                  <div className="flex items-center space-x-2">
+                    {/* All Categories Button */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleCategoryFilterClick("all")}
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        activeCategoryFilter === "all"
+                          ? "bg-gray-900 text-white shadow-md"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                      <span>All</span>
+                    </motion.button>
+
+                    {/* Patient Transfers Button */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleCategoryFilterClick("patient")}
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        activeCategoryFilter === "patient"
+                          ? "bg-blue-500 text-white shadow-md"
+                          : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                      }`}
+                    >
+                      <User className="w-4 h-4" />
+                      <span>Patients</span>
+                    </motion.button>
+
+                    {/* Envelope Transfers Button */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleCategoryFilterClick("envelope")}
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        activeCategoryFilter === "envelope"
+                          ? "bg-orange-500 text-white shadow-md"
+                          : "bg-orange-50 text-orange-700 hover:bg-orange-100"
+                      }`}
+                    >
+                      <Package className="w-4 h-4" />
+                      <span>Envelopes</span>
+                    </motion.button>
+
+                    {/* Medical Instruments Button */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() =>
+                        handleCategoryFilterClick("medical_instruments")
+                      }
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        activeCategoryFilter === "medical_instruments"
+                          ? "bg-purple-500 text-white shadow-md"
+                          : "bg-purple-50 text-purple-700 hover:bg-purple-100"
+                      }`}
+                    >
+                      <Stethoscope className="w-4 h-4" />
+                      <span>Instruments</span>
+                    </motion.button>
+                  </div>
                 </div>
                 {/* Search */}
-                <div className="relative">
-                  <Search
-                    size={16}
-                    className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    value={filters.search}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    className="w-72 h-12 pl-14 pr-6 bg-gray-100 border-0 rounded-full text-sm focus:ring-2 focus:ring-gray-300 focus:bg-white transition-all placeholder:text-gray-500"
-                    style={{ borderRadius: "9999px" }}
-                  />
-                </div>
+                <ExpandableSearchBar
+                  onSearch={handleSearch}
+                  placeholder="Search transfers..."
+                  expandDirection="left"
+                  width={280}
+                  className="h-12"
+                />
               </div>
             </div>
 
@@ -882,6 +1044,7 @@ export default function AdminTransfersPage() {
         isOpen={showTransferModal}
         onClose={handleCloseModal}
         transferId={selectedTransferId}
+        transferData={selectedTransferData}
         onTransferUpdate={handleTransferUpdate}
       />
     </AdminLayout>

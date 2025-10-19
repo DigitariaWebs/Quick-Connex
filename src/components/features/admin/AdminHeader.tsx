@@ -3,15 +3,10 @@
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import type { User } from "@/types/user";
 
 interface AdminHeaderProps {
-  user: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    userType: string;
-    isSuperAdmin?: boolean;
-  };
+  user: User;
   onLogout: () => void;
   pageTitle?: string;
   pageDescription?: string;

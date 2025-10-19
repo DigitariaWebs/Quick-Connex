@@ -23,7 +23,7 @@ interface TransferStats {
 
 interface TransferOverviewProps {
   stats: TransferStats;
-  userType: "employee" | "manager";
+  userType: "employee" | "manager" | "admin" | "super_admin";
   loading?: boolean;
   error?: string | null;
 }

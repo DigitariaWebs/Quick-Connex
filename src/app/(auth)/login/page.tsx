@@ -46,32 +46,8 @@ function LoginForm() {
     }
   }, [searchParams]);
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch("/api/auth/verify", {
-          method: "GET",
-          credentials: "include",
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const redirectPath =
-            data.user?.userType === "admin" ||
-            data.user?.userType === "super_admin"
-              ? "/admin/dashboard"
-              : "/dashboard";
-          router.push(redirectPath);
-        }
-      } catch (error) {
-        // User is not authenticated, stay on login page
-        console.log("User not authenticated");
-      }
-    };
-
-    checkAuth();
-  }, [router]);
+  // No authentication check needed on login page
+  // The middleware will handle redirects for authenticated users
 
   return (
     <div className="min-h-screen flex relative">

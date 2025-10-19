@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireSuperAdmin } from '@/lib/auth/admin-middleware';
+import { requireSuperAdminWithSession } from '@/lib/auth/session-auth-middleware';
 import os from 'os';
 import fs from 'fs/promises';
 
@@ -228,7 +228,7 @@ async function getServiceStatus(): Promise<ServiceStatus[]> {
 export async function GET(request: NextRequest) {
   try {
     // Check super admin permissions
-    const authResult = await requireSuperAdmin(request);
+    const authResult = await requireSuperAdminWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }

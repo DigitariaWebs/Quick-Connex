@@ -27,44 +27,24 @@ export function useLoginForm() {
       const result = await response.json();
       
       if (response.ok) {
-        // JWT token is now stored in secure HTTP-only cookie
-        // No need to store sensitive data in localStorage
-        setMessage({ type: 'success', text: 'Login successful! Redirecting...' });
+        // JWT token and session are now created by the login API
+        setMessage({ type: 'success', text: 'Login successful!' });
         
-        // Trigger immediate authentication check to establish SSE connection
-        console.log('🔐 Login: Triggering immediate auth check for SSE connection');
-        try {
-          const authResponse = await fetch('/api/auth/verify', {
-            method: 'GET',
-            credentials: 'include',
-          });
-          
-          if (authResponse.ok) {
-            const authData = await authResponse.json();
-            console.log('✅ Login: Auth verification successful, SSE should connect now');
-            
-            // Import and set user in SSE manager immediately
-            const { globalSSEManager } = await import('@/lib/notifications/global-sse-manager');
-            globalSSEManager.setUser(authData.user);
-            
-            // Redirect based on user type
-            const redirectPath = (authData.user.userType === 'admin' || authData.user.userType === 'super_admin') 
-              ? '/admin/dashboard' 
-              : '/dashboard';
-            
-            console.log(`✅ Login: Redirecting ${authData.user.userType} to ${redirectPath}`);
-            setTimeout(() => {
-              router.push(redirectPath);
-            }, 1000);
-            return;
-          }
-        } catch (authError) {
-          console.error('⚠️ Login: Auth verification failed, SSE will connect on page load:', authError);
-        }
+        console.log('✅ Login: Session created by API');
+        console.log('🔍 Session data:', result.session);
         
-        // Fallback: Use Next.js router for better navigation
+        // Import and set user in unified SSE manager immediately
+        const { unifiedSSEClient } = await import('@/lib/sse/unified-client-manager');
+        unifiedSSEClient.setUser(result.user, result.session.sessionId);
+        
+        // Redirect based on user type
+        const redirectPath = (result.user.userType === 'admin' || result.user.userType === 'super_admin') 
+          ? '/admin/dashboard' 
+          : '/dashboard';
+        
+        console.log(`✅ Login: Redirecting ${result.user.userType} to ${redirectPath}`);
         setTimeout(() => {
-          router.push('/dashboard');
+          router.replace(redirectPath); // Use replace to avoid history issues
         }, 1000);
       } else {
         // Handle different error types

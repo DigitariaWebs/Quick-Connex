@@ -1,13 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireEmployeeOrManager } from '@/lib/auth/auth-middleware';
-import { broadcastToAll, type NotificationData } from '@/lib/notifications/notification-broadcaster-global';
+import { requireEmployeeOrManagerWithSessionWithSession } from '@/lib/auth/session-auth-middleware';
+import { unifiedSSEServer } from '@/lib/sse/unified-server-manager';
+
+interface NotificationData {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  userId: string;
+  userType: string;
+  priority: 'high' | 'medium' | 'low';
+  timestamp: string;
+  read: boolean;
+  transferId?: string;
+  data?: any;
+  metadata?: any;
+}
 // Note: Real-time notifications are now handled by the global SSE system
 
 // POST /api/test-notifications - Trigger test notifications for SSE testing
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -28,6 +43,8 @@ export async function POST(request: NextRequest) {
           priority: 'medium',
           title: 'SSE Test Notification',
           message: `Hello ${userName}! This is a test notification from the SSE system.`,
+          userId: authResult.user._id,
+          userType: authResult.user.userType,
           timestamp: new Date().toISOString(),
           read: false,
           data: {
@@ -45,6 +62,8 @@ export async function POST(request: NextRequest) {
           priority: 'high',
           title: 'Transfer Status Updated',
           message: `Test transfer status changed to "in_progress" by ${userName}`,
+          userId: authResult.user._id,
+          userType: authResult.user.userType,
           transferId: 'TEST-001',
           timestamp: new Date().toISOString(),
           read: false,
@@ -74,6 +93,8 @@ export async function POST(request: NextRequest) {
           priority: 'high',
           title: 'Urgent Transfer Alert',
           message: `URGENT: Test transfer requires immediate attention!`,
+          userId: authResult.user._id,
+          userType: authResult.user.userType,
           transferId: 'URGENT-001',
           timestamp: new Date().toISOString(),
           read: false,
@@ -97,6 +118,8 @@ export async function POST(request: NextRequest) {
           priority: 'low',
           title: 'Notification Count Updated',
           message: 'Your notification count has been updated',
+          userId: authResult.user._id,
+          userType: authResult.user.userType,
           timestamp: new Date().toISOString(),
           read: false,
           data: {
@@ -112,8 +135,8 @@ export async function POST(request: NextRequest) {
         );
     }
 
-    // Broadcast the notification to all connected users
-    const broadcastCount = broadcastToAll(notificationData);
+    // Broadcast the notification to all connected users using unified SSE server
+    const broadcastCount = unifiedSSEServer.broadcastToAll(notificationData);
     
     console.log(`📡 Test Notification: Broadcasted ${notificationType} to ${broadcastCount} connected users`);
 

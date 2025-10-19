@@ -20,16 +20,21 @@ export default function AdminLayout({
   showBackButton = false,
 }: AdminLayoutProps) {
   const router = useRouter();
-  const { user, isLoading, isAuthenticated, logout } = useAuth();
+  const { user, isLoading, isAuthenticated, logout, sessionData } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   // Redirect if not admin
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+    if (!isLoading && isAuthenticated && user) {
       const isAdmin =
         user?.userType === "admin" || user?.userType === "super_admin";
       if (!isAdmin) {
+        console.log(
+          "🔒 AdminLayout: User is not admin, redirecting to dashboard"
+        );
         router.push("/dashboard");
+      } else {
+        console.log("✅ AdminLayout: User is admin, allowing access");
       }
     }
   }, [isLoading, isAuthenticated, user, router]);
@@ -37,9 +42,23 @@ export default function AdminLayout({
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
+      console.log(
+        "🔒 AdminLayout: User not authenticated, redirecting to login"
+      );
       router.push("/login");
     }
   }, [isLoading, isAuthenticated, router]);
+
+  // Debug authentication state
+  useEffect(() => {
+    console.log("🔍 AdminLayout: Auth state debug:", {
+      isLoading,
+      isAuthenticated,
+      hasUser: !!user,
+      userType: user?.userType,
+      hasSessionData: !!sessionData,
+    });
+  }, [isLoading, isAuthenticated, user, sessionData]);
 
   // Show loading spinner while checking authentication
   if (isLoading) {

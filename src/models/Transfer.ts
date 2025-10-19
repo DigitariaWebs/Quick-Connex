@@ -506,17 +506,22 @@ TransferSchema.pre('save', function(next) {
   next();
 });
 
-// Create or get the Transfer model (force refresh in dev to pick up schema changes)
-if (mongoose.models.Transfer) {
-  delete (mongoose.models as any)['Transfer'];
-}
-const Transfer: Model<ITransfer> = mongoose.model<ITransfer>('Transfer', TransferSchema);
+// Create or get the Transfer model with defensive checks
+let Transfer: Model<ITransfer>;
 
-// Log when Transfer model is created/accessed
-if (!mongoose.models.Transfer) {
-  console.log('📋 Models: Transfer model created successfully');
-} else {
-  console.log('📋 Models: Using existing Transfer model');
+try {
+  // Check if mongoose.models exists and has Transfer
+  if (mongoose.models && mongoose.models.Transfer) {
+    Transfer = mongoose.models.Transfer as Model<ITransfer>;
+    console.log('📋 Models: Using existing Transfer model');
+  } else {
+    Transfer = mongoose.model<ITransfer>('Transfer', TransferSchema);
+    console.log('📋 Models: Transfer model created successfully');
+  }
+} catch (error) {
+  // Fallback: always create new model
+  console.log('📋 Models: Fallback - creating new Transfer model');
+  Transfer = mongoose.model<ITransfer>('Transfer', TransferSchema);
 }
 
 export default Transfer;

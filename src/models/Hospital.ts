@@ -118,7 +118,22 @@ const HospitalSchema = new Schema<IHospital>({
 HospitalSchema.index({ 'organization.type': 1, 'organization.region': 1 });
 HospitalSchema.index({ isActive: 1 });
 
-// Create the model
-const Hospital = mongoose.models.Hospital || mongoose.model<IHospital>('Hospital', HospitalSchema);
+// Create or get the Hospital model with defensive checks
+let Hospital: Model<IHospital>;
+
+try {
+  // Check if mongoose.models exists and has Hospital
+  if (mongoose.models && mongoose.models.Hospital) {
+    Hospital = mongoose.models.Hospital as Model<IHospital>;
+    console.log('📋 Models: Using existing Hospital model');
+  } else {
+    Hospital = mongoose.model<IHospital>('Hospital', HospitalSchema);
+    console.log('📋 Models: Hospital model created successfully');
+  }
+} catch (error) {
+  // Fallback: always create new model
+  console.log('📋 Models: Fallback - creating new Hospital model');
+  Hospital = mongoose.model<IHospital>('Hospital', HospitalSchema);
+}
 
 export default Hospital;

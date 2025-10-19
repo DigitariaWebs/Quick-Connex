@@ -98,13 +98,5 @@ export interface UrgentTransfer {
   timestamp: string;
 }
 
-/**
- * SSE Context Type
- */
-export interface SSEContextType {
-  connected: boolean;
-  error: string | null;
-  lastMessage: SSEMessage | null;
-  subscribe: (callback: (message: SSEMessage) => void) => () => void;
-  reconnect: () => void;
-}
+// Note: SSE Context Type has been moved to the unified SSE system
+// Use useUnifiedSSE() from @/contexts/UnifiedSSEContext instead

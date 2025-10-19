@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
+import { requireEmployeeOrManagerWithSessionWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
 import CommunicationService from '@/lib/communication/core/communication-service';
 import { CommunicationChannel } from '@/types/communication';
 
@@ -13,7 +13,7 @@ import { CommunicationChannel } from '@/types/communication';
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       templates = templates.filter(template => template.category === category);
     }
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       templates: templates.map(template => ({
         id: template.id,
         name: template.name,
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error getting communication templates:', error);
-    return createErrorResponse(
+    return createSessionErrorResponse(
       'Failed to get communication templates',
       'TEMPLATES_FAILED',
       500,
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -70,20 +70,20 @@ export async function POST(request: NextRequest) {
     const { templateId, data } = body;
 
     if (!templateId || !data) {
-      return createErrorResponse('Missing required fields: templateId, data', 'MISSING_FIELDS', 400);
+      return createSessionErrorResponse('Missing required fields: templateId, data', 'MISSING_FIELDS', 400);
     }
 
     const communicationService = new CommunicationService();
     const renderedContent = await communicationService.renderTemplate(templateId, data);
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       templateId,
       content: renderedContent,
     });
 
   } catch (error) {
     console.error('Error rendering template:', error);
-    return createErrorResponse(
+    return createSessionErrorResponse(
       'Failed to render template',
       'RENDER_FAILED',
       500,

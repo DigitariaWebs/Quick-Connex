@@ -310,8 +310,22 @@ NotificationSchema.methods.markAsDismissedForUser = function(userId: string) {
   return Promise.resolve(this);
 };
 
-// Create and export the model
-const Notification = mongoose.models.Notification as Model<INotification> || 
-  mongoose.model<INotification>('Notification', NotificationSchema);
+// Create or get the Notification model with defensive checks
+let Notification: Model<INotification>;
+
+try {
+  // Check if mongoose.models exists and has Notification
+  if (mongoose.models && mongoose.models.Notification) {
+    Notification = mongoose.models.Notification as Model<INotification>;
+    console.log('📋 Models: Using existing Notification model');
+  } else {
+    Notification = mongoose.model<INotification>('Notification', NotificationSchema);
+    console.log('📋 Models: Notification model created successfully');
+  }
+} catch (error) {
+  // Fallback: always create new model
+  console.log('📋 Models: Fallback - creating new Notification model');
+  Notification = mongoose.model<INotification>('Notification', NotificationSchema);
+}
 
 export default Notification;

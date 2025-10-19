@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/admin-middleware';
 import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import Notification from '@/models/Notification';
 import AuditLog from '@/models/AuditLog';
-import { getRealTimeSSEMetrics } from '@/lib/notifications/sse-monitoring-service';
+import { unifiedSSEServer } from '@/lib/sse/unified-server-manager';
 import { getDatabaseHealth, getDatabaseMetrics } from '@/lib/monitoring/database-monitoring-service';
 import { DashboardStats } from '@/types/dashboard';
 
@@ -34,10 +33,19 @@ const CACHE_DURATION = 10000; // 10 seconds cache
 
 export async function GET(request: NextRequest) {
   try {
-    // Check admin permissions
-    const authResult = await requireAdmin(request);
-    if (!authResult.success) {
-      return authResult.response;
+    // Use unified session validator for admin access
+    const { sessionValidator } = await import('@/lib/auth/unified-session-validator');
+    const validationResult = await sessionValidator.validateForAdmin(request);
+    
+    if (!validationResult.success) {
+      return validationResult.response || NextResponse.json(
+        { 
+          success: false,
+          error: 'Admin access required',
+          code: 'ADMIN_REQUIRED'
+        },
+        { status: 403 }
+      );
     }
 
     const now = Date.now();
@@ -79,7 +87,7 @@ export async function GET(request: NextRequest) {
       dbMetrics
     ] = await Promise.all([
       // SSE Metrics
-      Promise.resolve(getRealTimeSSEMetrics()),
+      Promise.resolve(unifiedSSEServer.getStats()),
       
       // User statistics
       User.countDocuments(),
@@ -140,7 +148,7 @@ export async function GET(request: NextRequest) {
     // Calculate system health score
     const dbHealthScore = dbHealth.status === 'healthy' ? 100 :
                           dbHealth.status === 'degraded' ? 75 : 25;
-    const sseHealthScore = sseMetrics.activeConnections > 0 ? 100 : 95;
+    const sseHealthScore = sseMetrics.totalConnections > 0 ? 100 : 95;
     const systemHealthScore = (dbHealthScore + sseHealthScore) / 2;
     
     const systemHealth = {
@@ -168,13 +176,13 @@ export async function GET(request: NextRequest) {
         },
         sse: {
           name: 'SSE Connections',
-          status: sseMetrics.activeConnections > 0 ? 'operational' as const : 'degraded' as const,
+          status: sseMetrics.totalConnections > 0 ? 'operational' as const : 'degraded' as const,
           uptime: process.uptime(),
           lastCheck: new Date().toISOString(),
           metadata: {
             connections: sseMetrics.totalConnections,
-            activeConnections: sseMetrics.activeConnections,
-            quality: sseMetrics.connectionQuality
+            activeConnections: sseMetrics.totalConnections,
+            quality: 'excellent'
           }
         },
         email: {
@@ -204,7 +212,7 @@ export async function GET(request: NextRequest) {
 
     // Construct dashboard stats
     const dashboardStats: DashboardStats = {
-      activeUsers: sseMetrics.activeConnections,
+      activeUsers: sseMetrics.totalConnections,
       totalUsers: approvedUsers,
       transfersToday: transfersToday,
       transfersTotal: transfersTotal,
@@ -214,7 +222,7 @@ export async function GET(request: NextRequest) {
       recentActivity: formattedActivity,
       trends: {
         activeUsers: {
-          current: sseMetrics.activeConnections,
+          current: sseMetrics.totalConnections,
           previous: 0, // Would need historical data
           change: '0%',
           trend: 'stable'
@@ -223,13 +231,13 @@ export async function GET(request: NextRequest) {
           current: transfersToday,
           previous: transfersYesterday,
           change: transfersTrend.change,
-          trend: transfersTrend.trend
+          trend: transfersTrend.trend as 'up' | 'down' | 'stable'
         },
         notifications: {
           current: notificationsToday,
           previous: notificationsYesterday,
           change: notificationsTrend.change,
-          trend: notificationsTrend.trend
+          trend: notificationsTrend.trend as 'up' | 'down' | 'stable'
         },
         systemHealth: {
           current: systemHealthScore,

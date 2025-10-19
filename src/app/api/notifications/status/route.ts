@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireEmployeeOrManager } from '@/lib/auth/auth-middleware';
-import { getStats } from '@/lib/notifications/notification-broadcaster-global';
+import { requireEmployeeOrManagerWithSession } from '@/lib/auth/session-auth-middleware';
+import { unifiedSSEServer } from '@/lib/sse/unified-server-manager';
 
 // GET /api/notifications/status - Get SSE connection status and statistics
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
 
     console.log('📊 Status API: Getting notification broadcaster stats...');
-    const stats = getStats();
+    const stats = unifiedSSEServer.getStats();
     console.log('📊 Status API: Stats retrieved:', stats);
 
     return NextResponse.json({

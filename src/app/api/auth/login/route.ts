@@ -3,38 +3,13 @@ import type { NextRequest } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
-import { signToken, setAuthCookie } from '@/lib/auth/jwt';
-import { rateLimit } from '@/lib/services/security';
+import { SessionManager } from '@/lib/session/SessionManager';
+import { SessionSecurity } from '@/lib/session/SessionSecurity';
 
 export async function POST(request: NextRequest) {
   try {
-    // Rate limiting: 5 attempts per 15 minutes
-    const rateLimitResult = rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      maxRequests: 5,
-    })(request);
-
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { 
-          message: 'Too many login attempts. Please try again later.',
-          retryAfter: Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
-        },
-        { 
-          status: 429,
-          headers: {
-            'Retry-After': Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString(),
-          }
-        }
-      );
-    }
-
-    // Connect to MongoDB
-    console.log('🔄 API: Attempting to connect to MongoDB...');
     await dbConnect();
-    console.log('✅ API: MongoDB connection established');
 
-    // Parse the request body
     const { email, password } = await request.json();
 
     // Validate required fields
@@ -45,12 +20,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get client IP for rate limiting
+    const ipAddress = 
+      request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+      request.headers.get('x-real-ip') ||
+      'unknown';
+
+    // Check rate limiting
+    const rateLimitCheck = await SessionSecurity.checkRateLimit(email, ipAddress);
+    if (!rateLimitCheck.allowed) {
+      return NextResponse.json(
+        { 
+          message: rateLimitCheck.reason,
+          retryAfter: rateLimitCheck.retryAfter
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': rateLimitCheck.retryAfter?.toString() || '900'
+          }
+        }
+      );
+    }
+
     // Find user by email
-    console.log(`🔍 API: Looking up user with email: ${email}`);
     const user = await User.findOne({ email: email.toLowerCase() });
 
     if (!user) {
-      console.log('❌ API: User not found');
+      // Record failed attempt even for non-existent users
+      await SessionSecurity.recordFailedAttempt(email, ipAddress);
       return NextResponse.json(
         { message: 'Invalid email or password' },
         { status: 401 }
@@ -58,77 +56,74 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate password
-    if (!password || password.trim().length === 0) {
-      console.log('❌ API: Password is required');
-      return NextResponse.json(
-        { message: 'Password is required' },
-        { status: 400 }
-      );
-    }
-
-    // Compare password with hashed password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     
     if (!isPasswordValid) {
-      console.log('❌ API: Invalid password');
+      // Record failed attempt
+      await SessionSecurity.recordFailedAttempt(email, ipAddress);
       return NextResponse.json(
         { message: 'Invalid email or password' },
         { status: 401 }
       );
     }
 
-    console.log('✅ API: Password validated successfully');
-
     // Check user approval status
-    if (user.status === 'pending') {
-      console.log('⏳ API: User account is pending approval');
+    if (user.status !== 'approved') {
       return NextResponse.json(
         { 
-          message: 'Your account is pending approval. You will receive an email notification once approved.',
-          status: 'pending'
+          message: 'Your account is not approved yet',
+          status: user.status
         },
         { status: 403 }
       );
     }
 
-    if (user.status === 'rejected') {
-      console.log('❌ API: User account has been rejected');
+    // Get client information
+    const ipAddress = 
+      request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+      request.headers.get('x-real-ip') ||
+      'unknown';
+    
+    const userAgent = request.headers.get('user-agent') || 'unknown';
+    
+    // Simple device info
+    const deviceInfo = {
+      userAgent,
+      platform: 'web',
+      browser: 'unknown',
+      browserVersion: 'unknown',
+      os: 'unknown',
+      osVersion: 'unknown',
+      deviceType: 'desktop',
+      timezone: 'UTC',
+      language: 'en-US'
+    };
+
+    // Create session using SessionManager
+    const result = await SessionManager.createSession(
+      user._id.toString(),
+      deviceInfo,
+      ipAddress
+    );
+
+    if (!result.success) {
       return NextResponse.json(
-        { 
-          message: 'Your account registration has been rejected. Please contact support for more information.',
-          status: 'rejected',
-          rejectionReason: user.rejectionReason
-        },
-        { status: 403 }
+        { message: 'Session creation failed' },
+        { status: 500 }
       );
     }
 
-    // Create a session or token
-    // For now, just return the user without sensitive data
-    console.log('✅ API: Login successful');
-    
-    // Create JWT token
-    const token = await signToken({
-      userId: (user._id as any).toString(),
-      email: user.email,
-      userType: user.userType,
-    });
+    console.log(`✅ Login successful for user ${user.email}`);
 
-    // Set secure HTTP-only cookie
-    await setAuthCookie(token);
-    
-    const userResponse = user.toObject();
-    // Remove any sensitive fields
-    const { password: _, ...userWithoutPassword } = userResponse;
-    
     return NextResponse.json({
       message: 'Login successful',
-      user: userWithoutPassword,
+      user: result.user,
+      session: result.session,
       success: true
     });
     
   } catch (error) {
-    console.error('❌ API: Login failed:', error);
+    console.error('❌ Login failed:', error);
     return NextResponse.json(
       { message: 'An error occurred during login' },
       { status: 500 }

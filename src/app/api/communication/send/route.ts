@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
+import { requireEmployeeOrManagerWithSessionWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
 import CommunicationService from '@/lib/communication/core/communication-service';
 import {
   EmailMessage,
@@ -17,7 +17,7 @@ import {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -27,11 +27,11 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!channel || !recipient || !content) {
-      return createErrorResponse('Missing required fields: channel, recipient, content', 'MISSING_FIELDS', 400);
+      return createSessionErrorResponse('Missing required fields: channel, recipient, content', 'MISSING_FIELDS', 400);
     }
 
     if (!['email', 'sms'].includes(channel)) {
-      return createErrorResponse('Invalid channel. Must be "email" or "sms"', 'INVALID_CHANNEL', 400);
+      return createSessionErrorResponse('Invalid channel. Must be "email" or "sms"', 'INVALID_CHANNEL', 400);
     }
 
     const communicationService = new CommunicationService();
@@ -103,10 +103,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (!response) {
-      return createErrorResponse('Failed to create communication message', 'COMMUNICATION_FAILED', 500);
+      return createSessionErrorResponse('Failed to create communication message', 'COMMUNICATION_FAILED', 500);
     }
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       messageId: response.messageId,
       success: response.success,
       status: response.status,
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error sending communication:', error);
-    return createErrorResponse(
+    return createSessionErrorResponse(
       'Failed to send communication message',
       'SEND_FAILED',
       500,
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
     const communicationService = new CommunicationService();
     const templates = await communicationService.getTemplates(channel);
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       templates: templates.map(template => ({
         id: template.id,
         name: template.name,
@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error getting communication configuration:', error);
-    return createErrorResponse(
+    return createSessionErrorResponse(
       'Failed to get communication configuration',
       'CONFIG_FAILED',
       500,

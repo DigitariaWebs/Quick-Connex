@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
-import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
+import { requireEmployeeOrManagerWithSessionWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
 import TimelineService from '@/lib/services/timeline-service';
 import TransferNotificationService from '@/lib/communication/integrations/transfer-notification-service';
 
@@ -23,15 +23,15 @@ export async function PUT(
     const { assignedTo, notes } = body;
 
     if (!transferId) {
-      return createErrorResponse('Transfer ID is required', 'VALIDATION_ERROR', 400);
+      return createSessionErrorResponse('Transfer ID is required', 'VALIDATION_ERROR', 400);
     }
 
     if (!assignedTo) {
-      return createErrorResponse('Employee ID is required', 'VALIDATION_ERROR', 400);
+      return createSessionErrorResponse('Employee ID is required', 'VALIDATION_ERROR', 400);
     }
 
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -40,7 +40,7 @@ export async function PUT(
 
     // Only employees can accept transfers
     if (user.userType !== 'employee') {
-      return createErrorResponse('Only employees can accept transfers', 'UNAUTHORIZED', 403);
+      return createSessionErrorResponse('Only employees can accept transfers', 'UNAUTHORIZED', 403);
     }
 
     await dbConnect();
@@ -51,12 +51,12 @@ export async function PUT(
       .populate('assignedTo', 'firstName lastName email phone userType') as any;
 
     if (!transfer) {
-      return createErrorResponse('Transfer not found', 'NOT_FOUND', 404);
+      return createSessionErrorResponse('Transfer not found', 'NOT_FOUND', 404);
     }
 
     // Check if transfer is in the correct status for acceptance
     if (transfer.status !== 'accepted') {
-      return createErrorResponse(
+      return createSessionErrorResponse(
         `Transfer cannot be accepted. Current status: ${transfer.status}`,
         'INVALID_STATUS',
         400
@@ -65,7 +65,7 @@ export async function PUT(
 
     // Check if transfer is already assigned to someone else
     if (transfer.assignedTo && transfer.assignedTo.toString() !== assignedTo) {
-      return createErrorResponse(
+      return createSessionErrorResponse(
         'Transfer is already assigned to another employee',
         'ALREADY_ASSIGNED',
         400
@@ -75,7 +75,7 @@ export async function PUT(
     // Verify the employee exists
     const employee = await User.findById(assignedTo);
     if (!employee) {
-      return createErrorResponse('Employee not found', 'NOT_FOUND', 404);
+      return createSessionErrorResponse('Employee not found', 'NOT_FOUND', 404);
     }
 
     // Create timeline events for acceptance
@@ -148,7 +148,7 @@ export async function PUT(
       // Don't fail the acceptance if notifications fail
     }
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       success: true,
       message: 'Transfer accepted successfully',
       transfer: {
@@ -166,7 +166,7 @@ export async function PUT(
 
   } catch (error) {
     console.error('Error accepting transfer:', error);
-    return createErrorResponse('Internal server error', 'INTERNAL_ERROR', 500);
+    return createSessionErrorResponse('Internal server error', 'INTERNAL_ERROR', 500);
   }
 }
 
@@ -178,11 +178,11 @@ export async function GET(
     const { transferId } = await params;
 
     if (!transferId) {
-      return createErrorResponse('Transfer ID is required', 'VALIDATION_ERROR', 400);
+      return createSessionErrorResponse('Transfer ID is required', 'VALIDATION_ERROR', 400);
     }
 
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -195,16 +195,16 @@ export async function GET(
       .populate('assignedTo', 'firstName lastName email phone userType') as any;
 
     if (!transfer) {
-      return createErrorResponse('Transfer not found', 'NOT_FOUND', 404);
+      return createSessionErrorResponse('Transfer not found', 'NOT_FOUND', 404);
     }
 
     // Check if user has permission to view this transfer
     const user = authResult.user;
     if (user.userType === 'employee' && transfer.status === 'pending') {
-      return createErrorResponse('Access denied: Cannot view pending transfers', 'ACCESS_DENIED', 403);
+      return createSessionErrorResponse('Access denied: Cannot view pending transfers', 'ACCESS_DENIED', 403);
     }
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       transfer: {
         id: transfer._id,
         transferId: transfer.transferId,
@@ -222,6 +222,6 @@ export async function GET(
 
   } catch (error) {
     console.error('Error fetching transfer acceptance info:', error);
-    return createErrorResponse('Internal server error', 'INTERNAL_ERROR', 500);
+    return createSessionErrorResponse('Internal server error', 'INTERNAL_ERROR', 500);
   }
 }

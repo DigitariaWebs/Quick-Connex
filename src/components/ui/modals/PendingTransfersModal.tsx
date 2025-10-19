@@ -84,7 +84,7 @@ interface PendingTransfersModalProps {
   onClose: () => void;
   onSelectTransfer?: (transfer: TransferRequest) => void;
   currentUserId: string;
-  currentUserType: "employee" | "manager";
+  currentUserType: "employee" | "manager" | "admin" | "super_admin";
 }
 
 export default function PendingTransfersModal({

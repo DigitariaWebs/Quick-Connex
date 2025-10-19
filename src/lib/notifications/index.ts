@@ -1,8 +1,8 @@
 /**
  * Notifications Module
  * 
- * This module exports all real-time notification services and SSE managers.
+ * This module exports notification services.
+ * Note: SSE functionality has been moved to the unified SSE system.
  */
 
-export * from './global-sse-manager';
 export * from './notification-fallback-service';

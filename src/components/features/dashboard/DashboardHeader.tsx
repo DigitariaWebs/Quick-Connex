@@ -2,17 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Bell, Plus, Search } from "lucide-react";
-
-interface User {
-  _id: string;
-  userType: "employee" | "manager";
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  post?: string;
-  class?: string;
-}
+import type { User } from "@/types/user";
 
 interface DashboardHeaderProps {
   user: User;

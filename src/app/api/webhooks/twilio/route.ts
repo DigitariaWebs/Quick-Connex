@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
+import { createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
 import NotificationIntegrationService from '@/lib/communication/integrations/notification-integration';
 
 // POST /api/webhooks/twilio - Handle Twilio webhook events
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const errorMessage = body.get('ErrorMessage') as string;
 
     if (!messageSid) {
-      return createErrorResponse('Missing MessageSid', 'MISSING_MESSAGE_SID', 400);
+      return createSessionErrorResponse('Missing MessageSid', 'MISSING_MESSAGE_SID', 400);
     }
 
     console.log('Twilio webhook received:', {
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     // 2. Update the delivery status in your database
     // 3. Trigger any follow-up actions if needed
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       message: 'Webhook processed successfully',
       messageSid,
       status: communicationStatus,
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Twilio webhook error:', error);
-    return createErrorResponse(
+    return createSessionErrorResponse(
       'Failed to process Twilio webhook',
       'TWILIO_WEBHOOK_ERROR',
       500,
@@ -90,14 +90,14 @@ export async function GET(request: NextRequest) {
       return new NextResponse(challenge, { status: 200 });
     }
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       message: 'Twilio webhook endpoint is active',
       timestamp: new Date().toISOString(),
     });
 
   } catch (error) {
     console.error('Twilio webhook GET error:', error);
-    return createErrorResponse(
+    return createSessionErrorResponse(
       'Failed to process Twilio webhook GET request',
       'TWILIO_WEBHOOK_GET_ERROR',
       500,

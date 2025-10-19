@@ -8,12 +8,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
-import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
+import { requireEmployeeOrManagerWithSessionWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
 
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     // Only employees can access their accepted transfers
     if (user.userType !== 'employee') {
-      return createErrorResponse('Only employees can access their accepted transfers', 'UNAUTHORIZED', 403);
+      return createSessionErrorResponse('Only employees can access their accepted transfers', 'UNAUTHORIZED', 403);
     }
 
     await dbConnect();
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
       statusHistory: transfer.statusHistory || []
     }));
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       transfers: transformedTransfers,
       count: transformedTransfers.length,
       user: {
@@ -89,6 +89,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching my accepted transfers:', error);
-    return createErrorResponse('Internal server error', 'INTERNAL_ERROR', 500);
+    return createSessionErrorResponse('Internal server error', 'INTERNAL_ERROR', 500);
   }
 }

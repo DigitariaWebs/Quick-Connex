@@ -7,26 +7,16 @@ import {
   Calendar,
   Users,
   LogOut,
-  User,
+  User as UserIcon,
   ArrowRightLeft,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import LogoutConfirmationModal from '../../ui/modals/LogoutConfirmationModal';
-
-interface User {
-  _id: string;
-  userType: "employee" | "manager";
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  post?: string;
-  class?: string;
-}
+import LogoutConfirmationModal from "../../ui/modals/LogoutConfirmationModal";
+import type { User as UserType } from "@/types/user";
 
 interface SidebarProps {
-  user: User;
+  user: UserType;
   onLogout: () => void;
   onToggle?: (isCollapsed: boolean) => void;
 }
@@ -114,7 +104,7 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
             isHovered ? "w-72" : "w-20"
           } h-full sidebar-container rounded-3xl sidebar-shadow transition-all duration-500 ease-in-out overflow-hidden`}
         >
-          {/* Header with User Profile */}
+          {/* Header with UserIcon Profile */}
           <div className="p-6 border-b border-gray-100">
             <div className="flex items-center justify-center">
               {isHovered ? (
@@ -124,7 +114,7 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
                   className="flex items-center space-x-3"
                 >
                   <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
-                    <User className="w-6 h-6 text-white" />
+                    <UserIcon className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h2 className="text-lg font-semibold text-gray-800 whitespace-nowrap truncate">
@@ -137,7 +127,7 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
                 </motion.div>
               ) : (
                 <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
-                  <User className="w-6 h-6 text-white" />
+                  <UserIcon className="w-6 h-6 text-white" />
                 </div>
               )}
             </div>
@@ -226,7 +216,7 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
-              <User className="w-6 h-6 text-white" />
+              <UserIcon className="w-6 h-6 text-white" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-800">

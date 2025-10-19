@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
-import Transfer from '@/models/Transfer';
-import User from '@/models/User';
-import Hospital from '@/models/Hospital';
-import Patient from '@/models/Patient';
-import { requireManager, requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
+import { Transfer, User, Hospital, Patient } from '@/lib/database/models';
+import { requireManagerWithSession, requireEmployeeOrManagerWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
 import { validateTransferData } from '@/lib/transfers/transfer-validation';
 import TimelineService from '@/lib/services/timeline-service';
 
 // GET /api/transfers - Get transfer requests for employees
 export async function GET(request: NextRequest) {
   try {
-    // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    // Authenticate user with full session validation
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -46,7 +43,7 @@ export async function GET(request: NextRequest) {
       if (status && status !== 'all') {
         if (status === 'pending') {
           // Employees cannot see pending transfers
-          return createSuccessResponse({
+          return createSessionSuccessResponse({
             transfers: [],
             count: 0
           });
@@ -72,14 +69,14 @@ export async function GET(request: NextRequest) {
       .sort({ requestedDate: -1 })
       .limit(50);
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       transfers,
       count: transfers.length
     });
 
   } catch (error) {
     console.error('Error fetching transfers:', error);
-    return createErrorResponse('Failed to fetch transfers', 'FETCH_ERROR', 500);
+    return createSessionErrorResponse('Failed to fetch transfers', 'FETCH_ERROR', 500);
   }
 }
 
@@ -87,7 +84,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user - only managers can create transfers
-    const authResult = await requireManager(request);
+    const authResult = await requireManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -139,7 +136,7 @@ export async function POST(request: NextRequest) {
     // Validate transfer data
     const validation = validateTransferData(body);
     if (!validation.isValid) {
-      return createErrorResponse('Validation failed', 'VALIDATION_ERROR', 400, {
+      return createSessionErrorResponse('Validation failed', 'VALIDATION_ERROR', 400, {
         errors: validation.errors,
         warnings: validation.warnings
       });
@@ -156,34 +153,34 @@ export async function POST(request: NextRequest) {
     if (fromHospitalId) {
       fromHospitalRef = await Hospital.findById(fromHospitalId);
       if (!fromHospitalRef) {
-        return createErrorResponse('Invalid source hospital ID', 'VALIDATION_ERROR', 400);
+        return createSessionErrorResponse('Invalid source hospital ID', 'VALIDATION_ERROR', 400);
       }
       fromHospitalName = fromHospitalRef.name;
     } else {
       // Fallback: find hospital by name
       fromHospitalRef = await Hospital.findOne({ name: fromHospital, isActive: true });
       if (!fromHospitalRef) {
-        return createErrorResponse('Source hospital not found in system', 'VALIDATION_ERROR', 400);
+        return createSessionErrorResponse('Source hospital not found in system', 'VALIDATION_ERROR', 400);
       }
     }
 
     if (toHospitalId) {
       toHospitalRef = await Hospital.findById(toHospitalId);
       if (!toHospitalRef) {
-        return createErrorResponse('Invalid destination hospital ID', 'VALIDATION_ERROR', 400);
+        return createSessionErrorResponse('Invalid destination hospital ID', 'VALIDATION_ERROR', 400);
       }
       toHospitalName = toHospitalRef.name;
     } else {
       // Fallback: find hospital by name
       toHospitalRef = await Hospital.findOne({ name: toHospital, isActive: true });
       if (!toHospitalRef) {
-        return createErrorResponse('Destination hospital not found in system', 'VALIDATION_ERROR', 400);
+        return createSessionErrorResponse('Destination hospital not found in system', 'VALIDATION_ERROR', 400);
       }
     }
 
     // Validate that hospitals are different
-    if (fromHospitalRef._id.toString() === toHospitalRef._id.toString()) {
-      return createErrorResponse('Source and destination hospitals must be different', 'VALIDATION_ERROR', 400);
+    if ((fromHospitalRef._id as any).toString() === (toHospitalRef._id as any).toString()) {
+      return createSessionErrorResponse('Source and destination hospitals must be different', 'VALIDATION_ERROR', 400);
     }
 
     // Generate unique transfer ID
@@ -345,7 +342,7 @@ export async function POST(request: NextRequest) {
       console.error('Error sending transfer request notifications:', notificationError);
     }
 
-    return createSuccessResponse(populatedTransfer, 'Transfer request created successfully', 201);
+    return createSessionSuccessResponse(populatedTransfer, 'Transfer request created successfully', 201);
 
   } catch (error) {
     console.error('Error creating transfer:', error);
@@ -354,7 +351,7 @@ export async function POST(request: NextRequest) {
       stack: (error as Error).stack,
       name: (error as Error).name
     });
-    return createErrorResponse(`Failed to create transfer request: ${(error as Error).message}`, 'CREATE_ERROR', 500, {
+    return createSessionErrorResponse(`Failed to create transfer request: ${(error as Error).message}`, 'CREATE_ERROR', 500, {
       originalError: (error as Error).message,
       errorType: (error as Error).name
     });

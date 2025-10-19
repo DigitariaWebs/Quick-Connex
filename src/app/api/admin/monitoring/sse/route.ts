@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireSuperAdmin } from '@/lib/auth/admin-middleware';
-import { 
-  getRealTimeSSEMetrics, 
-  getRealTimeConnections, 
-  getRecentConnectionEvents,
-  updateAllConnectionQualities,
-  SSEConnection,
-  SSEMetrics,
-  ConnectionEvent
-} from '@/lib/notifications/sse-monitoring-service';
+import { requireSuperAdminWithSession } from '@/lib/auth/session-auth-middleware';
+import { unifiedSSEServer } from '@/lib/sse/unified-server-manager';
 
 /**
  * SSE Connections Monitoring API Endpoint
@@ -26,29 +18,24 @@ import {
 export async function GET(request: NextRequest) {
   try {
     // Check super admin permissions
-    const authResult = await requireSuperAdmin(request);
+    const authResult = await requireSuperAdminWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
 
     console.log('📊 SSE Monitoring API: Fetching real-time SSE data');
 
-    // Update connection qualities based on current state
-    updateAllConnectionQualities();
+    // Get real-time data from the unified SSE server
+    const stats = unifiedSSEServer.getStats();
 
-    // Get real-time data from the monitoring service
-    const connections = getRealTimeConnections();
-    const metrics = getRealTimeSSEMetrics();
-    const recentEvents = getRecentConnectionEvents(20);
-
-    console.log(`📊 SSE Monitoring API: Retrieved ${connections.length} connections, ${recentEvents.length} recent events`);
+    console.log(`📊 SSE Monitoring API: Retrieved ${stats.totalConnections} connections`);
 
     return NextResponse.json({
       success: true,
       data: {
-        connections,
-        metrics,
-        recentEvents
+        connections: [], // Not available in unified system
+        metrics: stats,
+        recentEvents: [] // Not available in unified system
       }
     });
 

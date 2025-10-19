@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireSuperAdmin } from '@/lib/auth/admin-middleware';
+import { requireSuperAdminWithSession } from '@/lib/auth/session-auth-middleware';
 
 /**
  * GET /api/admin/monitoring/system-health
@@ -14,7 +14,7 @@ import { requireSuperAdmin } from '@/lib/auth/admin-middleware';
 export async function GET(request: NextRequest) {
   try {
     // Check super admin permissions
-    const authResult = await requireSuperAdmin(request);
+    const authResult = await requireSuperAdminWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }

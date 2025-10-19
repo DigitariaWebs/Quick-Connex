@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/admin-middleware';
+import { requireAdminWithSession } from '@/lib/auth/session-auth-middleware';
 import { logAdminAction } from '@/lib/auth/admin-middleware';
 import dbConnect from '@/lib/database/mongoose';
-import Transfer from '@/models/Transfer';
-import User from '@/models/User';
-import Hospital from '@/models/Hospital';
+import mongoose from 'mongoose';
+// Import all models through centralized initialization
+import { Hospital, User, Patient, Transfer } from '@/lib/database/models';
 import { Permission } from '@/models/User';
 import { AuditAction, AuditCategory, TargetResourceType } from '@/models/AuditLog';
 
@@ -47,7 +47,7 @@ interface BulkOperation {
 export async function GET(request: NextRequest) {
   try {
     // Check admin permissions
-    const authResult = await requireAdmin(request);
+    const authResult = await requireAdminWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -55,7 +55,9 @@ export async function GET(request: NextRequest) {
     const adminUser = authResult.user;
     
     // Check specific permissions
-    if (!adminUser.hasPermission(Permission.VIEW_ALL_TRANSFERS)) {
+    const hasViewPermission = adminUser.userType === 'super_admin' || adminUser.userType === 'admin' || (adminUser.permissions && adminUser.permissions.includes(Permission.VIEW_ALL_TRANSFERS));
+    
+    if (!hasViewPermission) {
       return NextResponse.json({
         success: false,
         error: 'Insufficient permissions',
@@ -249,7 +251,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check admin permissions
-    const authResult = await requireAdmin(request);
+    const authResult = await requireAdminWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -263,7 +265,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Regular transfer creation (admin can create transfers)
-    if (!adminUser.hasPermission(Permission.VIEW_ALL_TRANSFERS)) {
+    const hasViewPermission = adminUser.userType === 'super_admin' || adminUser.userType === 'admin' || (adminUser.permissions && adminUser.permissions.includes(Permission.VIEW_ALL_TRANSFERS));
+    
+    if (!hasViewPermission) {
       return NextResponse.json({
         success: false,
         error: 'Insufficient permissions',
@@ -301,7 +305,7 @@ export async function POST(request: NextRequest) {
       description: `Created transfer ${transfer.transferId} (${transfer.transferCategory})`,
       targetResource: {
         type: TargetResourceType.TRANSFER,
-        id: transfer._id.toString(),
+        id: (transfer._id as any).toString(),
         name: transfer.transferId
       },
       metadata: {
@@ -347,7 +351,9 @@ async function handleBulkOperation(
     // Validate permissions for each action
     switch (action) {
       case 'cancel':
-        if (!adminUser.hasPermission(Permission.CANCEL_ANY_TRANSFER)) {
+        const hasCancelPermission = adminUser.userType === 'super_admin' || adminUser.userType === 'admin' || (adminUser.permissions && adminUser.permissions.includes(Permission.CANCEL_ANY_TRANSFER));
+        
+        if (!hasCancelPermission) {
           return NextResponse.json({
             success: false,
             error: 'Insufficient permissions',
@@ -356,7 +362,9 @@ async function handleBulkOperation(
         }
         break;
       case 'reassign':
-        if (!adminUser.hasPermission(Permission.REASSIGN_TRANSFERS)) {
+        const hasReassignPermission = adminUser.userType === 'super_admin' || adminUser.userType === 'admin' || (adminUser.permissions && adminUser.permissions.includes(Permission.REASSIGN_TRANSFERS));
+        
+        if (!hasReassignPermission) {
           return NextResponse.json({
             success: false,
             error: 'Insufficient permissions',
@@ -365,7 +373,9 @@ async function handleBulkOperation(
         }
         break;
       case 'delete':
-        if (!adminUser.hasPermission(Permission.DELETE_DATA)) {
+        const hasDeletePermission = adminUser.userType === 'super_admin' || (adminUser.permissions && adminUser.permissions.includes(Permission.DELETE_DATA));
+        
+        if (!hasDeletePermission) {
           return NextResponse.json({
             success: false,
             error: 'Insufficient permissions',
@@ -418,7 +428,7 @@ async function handleBulkOperation(
             continue;
         }
 
-        if (action !== 'delete') {
+        if (action === 'cancel' || action === 'reassign' || action === 'update_status' || action === 'update_priority') {
           await Transfer.findByIdAndUpdate(transferId, updateData);
           results.push({ transferId, action, success: true });
         }

@@ -1,0 +1,141 @@
+"use client";
+
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { useAuth } from "@/hooks/auth/useAuth";
+import {
+  unifiedSSEClient,
+  SSEMessage,
+  ConnectionState,
+} from "@/lib/sse/unified-client-manager";
+
+/**
+ * Unified SSE Context
+ *
+ * This is the new simplified SSE context that uses the unified client manager.
+ * It replaces the old SSEContext with a cleaner, more efficient implementation.
+ */
+
+interface UnifiedSSEContextType {
+  connected: boolean;
+  connecting: boolean;
+  error: string | null;
+  lastMessage: SSEMessage | null;
+  connectionQuality: ConnectionState["connectionQuality"];
+  retryCount: number;
+  subscribers: number;
+  connectionState: ConnectionState;
+}
+
+const UnifiedSSEContext = createContext<UnifiedSSEContextType | null>(null);
+
+export function UnifiedSSEProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { user, isAuthenticated } = useAuth();
+  const [connected, setConnected] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastMessage, setLastMessage] = useState<SSEMessage | null>(null);
+  const [connectionQuality, setConnectionQuality] =
+    useState<ConnectionState["connectionQuality"]>("critical");
+  const [retryCount, setRetryCount] = useState(0);
+  const [subscribers, setSubscribers] = useState(0);
+  const [connectionState, setConnectionState] = useState<ConnectionState>({
+    status: "disconnected",
+    reconnectAttempts: 0,
+    connectionQuality: "critical",
+    subscribers: 0,
+  });
+
+  // Set user in unified client manager when user changes
+  useEffect(() => {
+    if (user && isAuthenticated) {
+      // Get session ID from user or auth context
+      const sessionId =
+        (user as any).sessionId || (user as any).session?.sessionId;
+      unifiedSSEClient.setUser(user, sessionId);
+    } else {
+      unifiedSSEClient.clearUser();
+    }
+  }, [user, isAuthenticated]);
+
+  // Subscribe to unified SSE client (only once for the entire app)
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      // If user is not authenticated, ensure SSE is disconnected
+      setConnected(false);
+      setConnecting(false);
+      setConnectionQuality("critical");
+      setError("Disconnected");
+      setLastMessage(null);
+      return;
+    }
+
+    // Subscribe to unified SSE client
+    const unsubscribe = unifiedSSEClient.subscribe(
+      "unified-sse-context",
+      (message: SSEMessage) => {
+        setLastMessage(message);
+      },
+      "high" // High priority for context
+    );
+
+    // Update connection status periodically
+    const statusInterval = setInterval(() => {
+      const state = unifiedSSEClient.getConnectionState();
+
+      setConnected(state.status === "connected");
+      setConnecting(
+        state.status === "connecting" || state.status === "reconnecting"
+      );
+      setSubscribers(state.subscribers);
+      setRetryCount(state.reconnectAttempts);
+      setConnectionQuality(state.connectionQuality);
+      setConnectionState(state);
+
+      // Set error state
+      if (state.status === "error") {
+        setError("Connection error");
+      } else if (state.status === "disconnected") {
+        setError("Disconnected");
+      } else {
+        setError(null);
+      }
+    }, 2000); // Check every 2 seconds (reduced from 1 second)
+
+    return () => {
+      unsubscribe();
+      clearInterval(statusInterval);
+    };
+  }, [isAuthenticated, user]);
+
+  const contextValue: UnifiedSSEContextType = {
+    connected,
+    connecting,
+    error,
+    lastMessage,
+    connectionQuality,
+    retryCount,
+    subscribers,
+    connectionState,
+  };
+
+  return (
+    <UnifiedSSEContext.Provider value={contextValue}>
+      {children}
+    </UnifiedSSEContext.Provider>
+  );
+}
+
+export function useUnifiedSSE(): UnifiedSSEContextType {
+  const context = useContext(UnifiedSSEContext);
+  if (!context) {
+    throw new Error("useUnifiedSSE must be used within a UnifiedSSEProvider");
+  }
+  return context;
+}
+
+// Export the context for direct access if needed
+export { UnifiedSSEContext };

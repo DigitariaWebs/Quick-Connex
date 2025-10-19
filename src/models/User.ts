@@ -60,7 +60,6 @@ export interface ILoginHistory {
 // Define the interface for User document
 export interface IUser extends Document {
   userType: 'employee' | 'manager' | 'admin' | 'super_admin';
-  role: UserRole; // Explicit role field for better querying
   firstName: string;
   lastName: string;
   email: string;
@@ -112,13 +111,8 @@ const UserSchema = new Schema<IUser>({
   userType: { 
     type: String, 
     required: true,
-    enum: ['employee', 'manager', 'admin', 'super_admin'] 
-  },
-  role: {
-    type: String,
-    required: true,
     enum: ['employee', 'manager', 'admin', 'super_admin'],
-    index: true // Index for faster role-based queries
+    index: true // Index for faster userType-based queries
   },
   firstName: { 
     type: String, 
@@ -293,10 +287,7 @@ const UserSchema = new Schema<IUser>({
 
 // Add validation and pre-save hooks
 UserSchema.pre('save', function(next) {
-  // Sync userType and role
-  if (this.isModified('userType')) {
-    this.role = this.userType;
-  }
+  // No need to sync userType and role since role field is removed
   
   // Validate employees have required documents
   if (this.userType === 'employee' && this.status === 'approved') {
@@ -337,7 +328,6 @@ UserSchema.pre('validate', function(next) {
 // Note: email index is already created by unique: true, so we don't need to add it again
 UserSchema.index({ 'documents.fileId': 1 });
 UserSchema.index({ userType: 1, status: 1 });
-UserSchema.index({ role: 1 });
 UserSchema.index({ lastLogin: -1 });
 
 // Instance methods
@@ -400,15 +390,22 @@ UserSchema.methods.isAccountLocked = function(): boolean {
   return new Date() < this.accountLockedUntil;
 };
 
-// Create or get the User model
-const User: Model<IUser> = mongoose.models.User as Model<IUser> || 
-  mongoose.model<IUser>('User', UserSchema);
+// Create or get the User model with defensive checks
+let User: Model<IUser>;
 
-// Log when User model is created/accessed
-if (!mongoose.models.User) {
-  console.log('📋 Models: User model created successfully');
-} else {
-  console.log('📋 Models: Using existing User model');
+try {
+  // Check if mongoose.models exists and has User
+  if (mongoose.models && mongoose.models.User) {
+    User = mongoose.models.User as Model<IUser>;
+    console.log('📋 Models: Using existing User model');
+  } else {
+    User = mongoose.model<IUser>('User', UserSchema);
+    console.log('📋 Models: User model created successfully');
+  }
+} catch (error) {
+  // Fallback: always create new model
+  console.log('📋 Models: Fallback - creating new User model');
+  User = mongoose.model<IUser>('User', UserSchema);
 }
 
 export default User;

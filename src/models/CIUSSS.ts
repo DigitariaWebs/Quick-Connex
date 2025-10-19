@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Model } from 'mongoose';
 
 export interface ICIUSSS extends Document {
   code: string; // Short code like "05", "06-1"
@@ -39,4 +39,22 @@ const CIUSSSSchema = new Schema<ICIUSSS>({
 CIUSSSSchema.index({ code: 1 });
 CIUSSSSchema.index({ isActive: 1 });
 
-export const CIUSSS = mongoose.models.CIUSSS || mongoose.model<ICIUSSS>('CIUSSS', CIUSSSSchema);
+// Create or get the CIUSSS model with defensive checks
+let CIUSSS: Model<ICIUSSS>;
+
+try {
+  // Check if mongoose.models exists and has CIUSSS
+  if (mongoose.models && mongoose.models.CIUSSS) {
+    CIUSSS = mongoose.models.CIUSSS as Model<ICIUSSS>;
+    console.log('📋 Models: Using existing CIUSSS model');
+  } else {
+    CIUSSS = mongoose.model<ICIUSSS>('CIUSSS', CIUSSSSchema);
+    console.log('📋 Models: CIUSSS model created successfully');
+  }
+} catch (error) {
+  // Fallback: always create new model
+  console.log('📋 Models: Fallback - creating new CIUSSS model');
+  CIUSSS = mongoose.model<ICIUSSS>('CIUSSS', CIUSSSSchema);
+}
+
+export { CIUSSS };

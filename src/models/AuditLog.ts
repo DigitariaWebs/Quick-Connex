@@ -281,10 +281,10 @@ AuditLogSchema.index({ adminId: 1, timestamp: -1 });
 AuditLogSchema.index({ category: 1, timestamp: -1 });
 AuditLogSchema.index({ action: 1, outcome: 1 });
 AuditLogSchema.index({ 'targetResource.type': 1, 'targetResource.id': 1 });
-AuditLogSchema.index({ timestamp: -1 }); // For recent activity queries
 AuditLogSchema.index({ isSensitive: 1, requiresReview: 1 }); // For security review
 
 // TTL index - keep audit logs for 2 years by default
+// This index serves both TTL functionality and recent activity queries
 AuditLogSchema.index({ timestamp: 1 }, { expireAfterSeconds: 63072000 }); // 2 years
 
 // Static methods
@@ -373,15 +373,22 @@ AuditLogSchema.statics.getActivityStats = async function(startDate: Date, endDat
   ]);
 };
 
-// Create or get the AuditLog model
-const AuditLog: Model<IAuditLog> = mongoose.models.AuditLog as Model<IAuditLog> || 
-  mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);
+// Create or get the AuditLog model with defensive checks
+let AuditLog: Model<IAuditLog>;
 
-// Log when AuditLog model is created/accessed
-if (!mongoose.models.AuditLog) {
-  console.log('📋 Models: AuditLog model created successfully');
-} else {
-  console.log('📋 Models: Using existing AuditLog model');
+try {
+  // Check if mongoose.models exists and has AuditLog
+  if (mongoose.models && mongoose.models.AuditLog) {
+    AuditLog = mongoose.models.AuditLog as Model<IAuditLog>;
+    console.log('📋 Models: Using existing AuditLog model');
+  } else {
+    AuditLog = mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);
+    console.log('📋 Models: AuditLog model created successfully');
+  }
+} catch (error) {
+  // Fallback: always create new model
+  console.log('📋 Models: Fallback - creating new AuditLog model');
+  AuditLog = mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);
 }
 
 export default AuditLog;

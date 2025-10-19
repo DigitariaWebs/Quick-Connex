@@ -1,6 +1,6 @@
 "use client";
 
-import { useSSE } from "@/contexts/SSEContext";
+import { useUnifiedSSE } from "@/contexts/UnifiedSSEContext";
 
 export default function SSEDebugger() {
   const {
@@ -11,7 +11,7 @@ export default function SSEDebugger() {
     connectionQuality,
     retryCount,
     subscribers,
-  } = useSSE();
+  } = useUnifiedSSE();
 
   return (
     <div className="fixed bottom-4 right-4 bg-black bg-opacity-75 text-white p-4 rounded-lg text-xs max-w-sm z-50">

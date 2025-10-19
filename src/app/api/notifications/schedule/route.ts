@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
-import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
+import { requireEmployeeOrManagerWithSessionWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
 
 // GET /api/notifications/schedule - Get scheduling notifications
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -192,7 +192,7 @@ export async function GET(request: NextRequest) {
       unread: notifications.filter(n => !n.read).length
     };
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       notifications: limitedNotifications,
       summary,
       type,
@@ -201,7 +201,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching scheduling notifications:', error);
-    return createErrorResponse('Failed to fetch notifications', 'NOTIFICATION_ERROR', 500);
+    return createSessionErrorResponse('Failed to fetch notifications', 'NOTIFICATION_ERROR', 500);
   }
 }
 
@@ -209,7 +209,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -223,14 +223,14 @@ export async function POST(request: NextRequest) {
       case 'mark_read':
         // In a real implementation, you would store notification read status in a database
         // For now, we'll just return success
-        return createSuccessResponse({ 
+        return createSessionSuccessResponse({ 
           message: 'Notifications marked as read',
           notificationIds 
         });
 
       case 'create_reminder':
         if (!transferId || !message) {
-          return createErrorResponse('Transfer ID and message are required', 'VALIDATION_ERROR', 400);
+          return createSessionErrorResponse('Transfer ID and message are required', 'VALIDATION_ERROR', 400);
         }
 
         // Create a reminder notification
@@ -246,11 +246,11 @@ export async function POST(request: NextRequest) {
           read: false
         };
 
-        return createSuccessResponse(reminder, 'Reminder created successfully');
+        return createSessionSuccessResponse(reminder, 'Reminder created successfully');
 
       case 'dismiss_conflict':
         if (!transferId) {
-          return createErrorResponse('Transfer ID is required', 'VALIDATION_ERROR', 400);
+          return createSessionErrorResponse('Transfer ID is required', 'VALIDATION_ERROR', 400);
         }
 
         // Update transfer to acknowledge conflicts
@@ -273,17 +273,17 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        return createSuccessResponse({ 
+        return createSessionSuccessResponse({ 
           message: 'Conflicts dismissed',
           transferId 
         });
 
       default:
-        return createErrorResponse('Invalid action', 'VALIDATION_ERROR', 400);
+        return createSessionErrorResponse('Invalid action', 'VALIDATION_ERROR', 400);
     }
 
   } catch (error) {
     console.error('Error processing notification action:', error);
-    return createErrorResponse('Failed to process notification action', 'NOTIFICATION_ACTION_ERROR', 500);
+    return createSessionErrorResponse('Failed to process notification action', 'NOTIFICATION_ACTION_ERROR', 500);
   }
 }

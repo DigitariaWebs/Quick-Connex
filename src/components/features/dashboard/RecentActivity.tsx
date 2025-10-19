@@ -33,7 +33,7 @@ interface ActivityItem {
 
 interface RecentActivityProps {
   activities: ActivityItem[];
-  userType: "employee" | "manager";
+  userType: "employee" | "manager" | "admin" | "super_admin";
   maxItems?: number;
   loading?: boolean;
   error?: string | null;

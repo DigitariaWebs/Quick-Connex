@@ -87,6 +87,10 @@ export default function DatabasePerformancePage() {
     indexHitRatio: 0,
     cacheHitRatio: 0,
     queriesPerSecond: 0,
+    uptime: 0,
+    version: "",
+    host: "",
+    port: 0,
   });
 
   const [recentQueries, setRecentQueries] = useState<QueryPerformance[]>([]);

@@ -15,27 +15,16 @@ import {
   CheckSquare,
   BarChart3,
   FileText,
-  Settings,
   Shield,
-  HardDrive,
   LogOut,
-  User,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LogoutConfirmationModal from "../../ui/modals/LogoutConfirmationModal";
-
-interface AdminUser {
-  _id: string;
-  userType: "admin" | "super_admin";
-  firstName: string;
-  lastName: string;
-  email: string;
-  isSuperAdmin?: boolean;
-}
+import type { User } from "@/types/user";
 
 interface AdminSidebarProps {
-  user: AdminUser;
+  user: User;
   onLogout: () => void;
   onToggle?: (isCollapsed: boolean) => void;
 }
@@ -77,6 +66,13 @@ const navigation: NavigationSection[] = [
         icon: Radio,
         color: "text-blue-600",
         bgColor: "bg-blue-50",
+      },
+      {
+        name: "Sessions",
+        href: "/admin/sessions",
+        icon: Shield,
+        color: "text-green-600",
+        bgColor: "bg-green-50",
       },
       {
         name: "Database",
@@ -154,34 +150,6 @@ const navigation: NavigationSection[] = [
       },
     ],
   },
-  {
-    section: "System",
-    items: [
-      {
-        name: "Settings",
-        href: "/admin/system/settings",
-        icon: Settings,
-        color: "text-gray-600",
-        bgColor: "bg-gray-50",
-      },
-      {
-        name: "Audit Logs",
-        href: "/admin/audit-logs",
-        icon: Shield,
-        color: "text-red-600",
-        bgColor: "bg-red-50",
-      },
-      {
-        name: "Backups",
-        href: "/admin/system/backups",
-        icon: HardDrive,
-        color: "text-slate-600",
-        bgColor: "bg-slate-50",
-        superAdminOnly: true,
-      },
-    ],
-    superAdminOnly: true,
-  },
 ];
 
 export default function AdminSidebar({
@@ -241,39 +209,10 @@ export default function AdminSidebar({
             isHovered ? "w-72" : "w-20"
           } h-full bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-800 rounded-3xl shadow-2xl transition-all duration-500 ease-in-out overflow-hidden`}
         >
-          {/* Header with User Profile */}
-          <div className="p-6 border-b border-purple-700/50">
-            <div className="flex items-center justify-center">
-              {isHovered ? (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex items-center space-x-3"
-                >
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center shadow-lg ring-2 ring-purple-300">
-                    <User className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-lg font-semibold text-white whitespace-nowrap truncate">
-                      {user.firstName} {user.lastName}
-                    </h2>
-                    <p className="text-purple-200 text-xs whitespace-nowrap truncate">
-                      {user.isSuperAdmin ? "🛡️ Super Admin" : "👑 Admin"}
-                    </p>
-                  </div>
-                </motion.div>
-              ) : (
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center shadow-lg ring-2 ring-purple-300">
-                  <User className="w-6 h-6 text-white" />
-                </div>
-              )}
-            </div>
-          </div>
-
           {/* Navigation */}
           <nav
-            className="p-4 overflow-y-auto"
-            style={{ maxHeight: "calc(100% - 180px)" }}
+            className="pt-6 px-4 pb-20 overflow-y-auto"
+            style={{ maxHeight: "calc(100% - 100px)" }}
           >
             {filteredNavigation.map((section) => (
               <div key={section.section} className="mb-6">

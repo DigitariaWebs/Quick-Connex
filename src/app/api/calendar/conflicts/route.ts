@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
-import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
+import { requireEmployeeOrManagerWithSessionWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
 
 // GET /api/calendar/conflicts - Check for scheduling conflicts
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const resourceType = searchParams.get('resourceType'); // 'driver', 'vehicle', 'location'
 
     if (!startDate || !endDate) {
-      return createErrorResponse('Start date and end date are required', 'VALIDATION_ERROR', 400);
+      return createSessionErrorResponse('Start date and end date are required', 'VALIDATION_ERROR', 400);
     }
 
     const startTime = new Date(startDate);
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
       recommendedAction: getRecommendedAction(conflicts)
     };
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       conflicts,
       conflictsByType,
       summary,
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error checking conflicts:', error);
-    return createErrorResponse('Failed to check conflicts', 'CONFLICT_CHECK_ERROR', 500);
+    return createSessionErrorResponse('Failed to check conflicts', 'CONFLICT_CHECK_ERROR', 500);
   }
 }
 
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user - only managers can resolve conflicts
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -132,12 +132,12 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!transferId || !resolutionStrategy) {
-      return createErrorResponse('Transfer ID and resolution strategy are required', 'VALIDATION_ERROR', 400);
+      return createSessionErrorResponse('Transfer ID and resolution strategy are required', 'VALIDATION_ERROR', 400);
     }
 
     const transfer = await Transfer.findOne({ transferId });
     if (!transfer) {
-      return createErrorResponse('Transfer not found', 'NOT_FOUND', 404);
+      return createSessionErrorResponse('Transfer not found', 'NOT_FOUND', 404);
     }
 
     const results = [];
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
     switch (resolutionStrategy) {
       case 'auto_reschedule':
         if (!newSchedule) {
-          return createErrorResponse('New schedule is required for auto reschedule', 'VALIDATION_ERROR', 400);
+          return createSessionErrorResponse('New schedule is required for auto reschedule', 'VALIDATION_ERROR', 400);
         }
         
         // Update the transfer with new schedule
@@ -231,10 +231,10 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        return createErrorResponse('Invalid resolution strategy', 'VALIDATION_ERROR', 400);
+        return createSessionErrorResponse('Invalid resolution strategy', 'VALIDATION_ERROR', 400);
     }
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       resolutionStrategy,
       results,
       resolvedAt: new Date().toISOString(),
@@ -246,7 +246,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error resolving conflicts:', error);
-    return createErrorResponse('Failed to resolve conflicts', 'RESOLUTION_ERROR', 500);
+    return createSessionErrorResponse('Failed to resolve conflicts', 'RESOLUTION_ERROR', 500);
   }
 }
 

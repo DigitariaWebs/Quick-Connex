@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../auth/useAuth';
-import { useSSE } from '@/contexts/SSEContext';
+import { useUnifiedSSE } from '@/contexts/UnifiedSSEContext';
 
 interface DashboardStats {
   totalPending: number;
@@ -66,7 +66,7 @@ const formatTimestamp = (dateString: string): string => {
 
 export function useDashboardData() {
   const { user, isAuthenticated } = useAuth();
-  const { lastMessage } = useSSE();
+  const { lastMessage } = useUnifiedSSE();
   const [data, setData] = useState<DashboardData>({
     stats: {
       totalPending: 0,

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import Patient from '@/models/Patient';
-import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
+import { requireEmployeeOrManagerWithSessionWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
 
 // GET /api/patients - Get patients (search and list)
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     // Get total count for pagination
     const totalCount = await Patient.countDocuments(query);
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       patients,
       pagination: {
         page,
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching patients:', error);
-    return createErrorResponse('Failed to fetch patients', 'INTERNAL_ERROR', 500);
+    return createSessionErrorResponse('Failed to fetch patients', 'INTERNAL_ERROR', 500);
   }
 }
 
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user - only managers can create patients
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!firstName || !lastName || !age || !dossierNumber) {
-      return createErrorResponse('Missing required fields: firstName, lastName, age, dossierNumber', 'VALIDATION_ERROR', 400);
+      return createSessionErrorResponse('Missing required fields: firstName, lastName, age, dossierNumber', 'VALIDATION_ERROR', 400);
     }
 
     // Check if patient with dossier number already exists
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingPatient) {
-      return createErrorResponse('Patient with this dossier number already exists', 'DUPLICATE_ERROR', 409);
+      return createSessionErrorResponse('Patient with this dossier number already exists', 'DUPLICATE_ERROR', 409);
     }
 
     // Create new patient
@@ -128,10 +128,10 @@ export async function POST(request: NextRequest) {
       .populate('createdBy', 'firstName lastName email')
       .populate('lastModifiedBy', 'firstName lastName email');
 
-    return createSuccessResponse(populatedPatient, 'Patient created successfully', 201);
+    return createSessionSuccessResponse(populatedPatient, 'Patient created successfully', 201);
 
   } catch (error) {
     console.error('Error creating patient:', error);
-    return createErrorResponse('Failed to create patient', 'INTERNAL_ERROR', 500);
+    return createSessionErrorResponse('Failed to create patient', 'INTERNAL_ERROR', 500);
   }
 }

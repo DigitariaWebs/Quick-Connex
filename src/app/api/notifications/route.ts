@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import Notification from '@/models/Notification';
-import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
+import { requireEmployeeOrManagerWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
 
 // GET /api/notifications - Get notifications for the authenticated user
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
       })
     };
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       notifications: transformedNotifications,
       summary,
       pagination: {
@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching notifications:', error);
-    return createErrorResponse('Failed to fetch notifications', 'NOTIFICATION_FETCH_ERROR', 500);
+    return createSessionErrorResponse('Failed to fetch notifications', 'NOTIFICATION_FETCH_ERROR', 500);
   }
 }
 
@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        return createSuccessResponse({ 
+        return createSessionSuccessResponse({ 
           message: 'Notifications marked as read',
           notificationIds: notificationIds || [notificationId] || 'all'
         });
@@ -253,7 +253,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        return createSuccessResponse({ 
+        return createSessionSuccessResponse({ 
           message: 'Notifications dismissed',
           notificationIds: notificationIds || [notificationId] || 'all'
         });
@@ -273,16 +273,16 @@ export async function POST(request: NextRequest) {
           }
         );
 
-        return createSuccessResponse({ 
+        return createSessionSuccessResponse({ 
           message: 'All notifications cleared'
         });
 
       default:
-        return createErrorResponse('Invalid action', 'VALIDATION_ERROR', 400);
+        return createSessionErrorResponse('Invalid action', 'VALIDATION_ERROR', 400);
     }
 
   } catch (error) {
     console.error('Error processing notification action:', error);
-    return createErrorResponse('Failed to process notification action', 'NOTIFICATION_ACTION_ERROR', 500);
+    return createSessionErrorResponse('Failed to process notification action', 'NOTIFICATION_ACTION_ERROR', 500);
   }
 }

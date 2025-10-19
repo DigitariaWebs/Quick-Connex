@@ -1,83 +1,39 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useSession } from '@/contexts/SessionContext';
+import type { User } from '@/types/user';
+import type { UnifiedSessionData } from '@/types/unified-session';
 
-interface User {
-  _id: string;
-  userType: 'employee' | 'manager' | 'admin' | 'super_admin';
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  post?: string;
-  class?: string;
-}
-
+// Legacy useAuth hook that wraps the new SessionContext
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const router = useRouter();
-
-  const checkAuth = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch('/api/auth/verify', {
-        method: 'GET',
-        credentials: 'include', // Include cookies in request
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-        setIsAuthenticated(true);
-      } else {
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      setUser(null);
-      setIsAuthenticated(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const logout = async () => {
-    try {
-      console.log('🚪 Logout: Starting logout process');
-      
-      // Import and disconnect SSE connection immediately
-      const { globalSSEManager } = await import('@/lib/notifications/global-sse-manager');
-      console.log('🔌 Logout: Disconnecting SSE connection');
-      globalSSEManager.clearUser(); // This will disconnect the SSE connection
-      
-      console.log('🌐 Logout: Calling logout API');
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-      
-      console.log('✅ Logout: Logout successful');
-    } catch (error) {
-      console.error('❌ Logout failed:', error);
-    } finally {
-      console.log('🧹 Logout: Clearing user state and redirecting');
-      setUser(null);
-      setIsAuthenticated(false);
-      router.push('/login');
-    }
-  };
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  const sessionContext = useSession();
+  
+  // Convert session user to legacy User type for backward compatibility
+  const user: User | null = sessionContext.user ? {
+    _id: sessionContext.user._id,
+    email: sessionContext.user.email,
+    userType: sessionContext.user.userType,
+    firstName: sessionContext.user.firstName,
+    lastName: sessionContext.user.lastName,
+    status: sessionContext.user.status as 'pending' | 'approved' | 'rejected' | 'suspended',
+    phone: (sessionContext.user as any).phone || '',
+    // Add other required fields with defaults
+    permissions: [],
+    isSuperAdmin: sessionContext.user.userType === 'super_admin',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  } : null;
 
   return {
     user,
-    isLoading,
-    isAuthenticated,
-    logout,
-    checkAuth,
+    isLoading: sessionContext.isLoading,
+    isAuthenticated: sessionContext.isAuthenticated,
+    logout: sessionContext.logout,
+    checkAuth: sessionContext.checkAuth,
+    // Additional session-specific methods
+    session: sessionContext.session,
+    sessionData: sessionContext.sessionData,
+    refreshSession: sessionContext.refreshSession,
+    logoutAllSessions: sessionContext.logoutAllSessions,
+    getSessions: sessionContext.getSessions,
+    revokeSession: sessionContext.revokeSession,
   };
 }

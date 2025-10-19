@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/admin-middleware';
-import { getRealTimeSSEMetrics, getRealTimeConnections } from '@/lib/notifications/sse-monitoring-service';
+import { requireAdminWithSession } from '@/lib/auth/session-auth-middleware';
+import { unifiedSSEServer } from '@/lib/sse/unified-server-manager';
 import { SSEStats } from '@/types/dashboard';
 
 /**
@@ -16,29 +16,22 @@ import { SSEStats } from '@/types/dashboard';
 export async function GET(request: NextRequest) {
   try {
     // Check admin permissions
-    const authResult = await requireAdmin(request);
+    const authResult = await requireAdminWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
 
-    // Get real-time SSE metrics
-    const metrics = getRealTimeSSEMetrics();
-    const connections = getRealTimeConnections();
-
-    // Calculate reconnection rate
-    const totalReconnections = connections.reduce((sum, conn) => sum + (conn.reconnectAttempts || 0), 0);
-    const reconnectionRate = connections.length > 0 
-      ? (totalReconnections / connections.length) * 100 
-      : 0;
+    // Get real-time SSE metrics from unified server
+    const stats = unifiedSSEServer.getStats();
 
     const sseStats: SSEStats = {
-      activeConnections: metrics.activeConnections,
-      totalConnections: metrics.totalConnections,
-      connectionsByType: metrics.connectionsByType,
-      connectionQuality: metrics.connectionQuality,
-      averageConnectionDuration: metrics.averageConnectionDuration,
-      eventsPerMinute: metrics.eventsPerMinute,
-      reconnectionRate: parseFloat(reconnectionRate.toFixed(2))
+      activeConnections: stats.totalConnections,
+      totalConnections: stats.totalConnections,
+      connectionsByType: stats.connectionsByType,
+      connectionQuality: { excellent: 100, good: 0, poor: 0, critical: 0 }, // Default value for unified system
+      averageConnectionDuration: 0, // Not available in unified system
+      eventsPerMinute: 0, // Not available in unified system
+      reconnectionRate: 0 // Not available in unified system
     };
 
     return NextResponse.json({

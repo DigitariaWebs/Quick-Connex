@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
+import { createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
 import NotificationIntegrationService from '@/lib/communication/integrations/notification-integration';
 
 // POST /api/webhooks/sendgrid - Handle SendGrid webhook events
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     
     // SendGrid sends an array of events
     if (!Array.isArray(body)) {
-      return createErrorResponse('Invalid webhook payload', 'INVALID_PAYLOAD', 400);
+      return createSessionErrorResponse('Invalid webhook payload', 'INVALID_PAYLOAD', 400);
     }
 
     console.log(`SendGrid webhook received ${body.length} events`);
@@ -116,14 +116,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       message: 'Webhook processed successfully',
       eventsProcessed: body.length,
     });
 
   } catch (error) {
     console.error('SendGrid webhook error:', error);
-    return createErrorResponse(
+    return createSessionErrorResponse(
       'Failed to process SendGrid webhook',
       'WEBHOOK_ERROR',
       500,
@@ -143,14 +143,14 @@ export async function GET(request: NextRequest) {
       return new NextResponse(challenge, { status: 200 });
     }
 
-    return createSuccessResponse({
+    return createSessionSuccessResponse({
       message: 'SendGrid webhook endpoint is active',
       timestamp: new Date().toISOString(),
     });
 
   } catch (error) {
     console.error('SendGrid webhook GET error:', error);
-    return createErrorResponse(
+    return createSessionErrorResponse(
       'Failed to process SendGrid webhook GET request',
       'WEBHOOK_GET_ERROR',
       500,

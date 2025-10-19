@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IPatient extends Document {
   _id: string;
@@ -89,4 +89,22 @@ PatientSchema.statics.searchPatients = function(query: string, limit: number = 1
   }).limit(limit);
 };
 
-export default mongoose.models.Patient || mongoose.model<IPatient>('Patient', PatientSchema);
+// Create or get the Patient model with defensive checks
+let Patient: Model<IPatient>;
+
+try {
+  // Check if mongoose.models exists and has Patient
+  if (mongoose.models && mongoose.models.Patient) {
+    Patient = mongoose.models.Patient as Model<IPatient>;
+    console.log('📋 Models: Using existing Patient model');
+  } else {
+    Patient = mongoose.model<IPatient>('Patient', PatientSchema);
+    console.log('📋 Models: Patient model created successfully');
+  }
+} catch (error) {
+  // Fallback: always create new model
+  console.log('📋 Models: Fallback - creating new Patient model');
+  Patient = mongoose.model<IPatient>('Patient', PatientSchema);
+}
+
+export default Patient;

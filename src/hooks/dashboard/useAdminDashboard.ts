@@ -4,6 +4,8 @@ import {
   DashboardError, 
   DashboardLoadingState 
 } from '@/types/dashboard';
+import { useUnifiedSSE } from '@/contexts/UnifiedSSEContext';
+import { unifiedSSEClient } from '@/lib/sse/unified-client-manager';
 
 /**
  * useAdminDashboard Hook
@@ -49,7 +51,7 @@ export function useAdminDashboard(
     lastUpdated: null
   });
   const [error, setError] = useState<DashboardError | null>(null);
-  const eventSourceRef = useRef<EventSource | null>(null);
+  const { connected } = useUnifiedSSE();
   const pendingActiveUsers = useRef<number | null>(null); // Store SSE updates that arrive early
   const lastSSEUpdate = useRef<number>(0); // Timestamp of last SSE update
 
@@ -153,21 +155,17 @@ export function useAdminDashboard(
   }, []);
 
   /**
-   * Set up real-time SSE connection for live updates
+   * Set up real-time SSE connection for live updates using unified SSE system
    */
   useEffect(() => {
-    // Create SSE connection
-    const eventSource = new EventSource('/api/notifications/sse', {
-      withCredentials: true
-    });
+    if (!connected) {
+      console.log('📊 Dashboard: SSE not connected, skipping subscription');
+      return;
+    }
 
-    eventSourceRef.current = eventSource;
-
-    // Listen for dashboard updates
-    eventSource.addEventListener('message', (event) => {
+    // Subscribe to dashboard updates using unified SSE system
+    const handleDashboardUpdate = (eventData: any) => {
       try {
-        const eventData = JSON.parse(event.data);
-        
         // Handle dashboard updates (real-time active users count)
         if (eventData.type === 'dashboard_update' && eventData.data) {
           const newActiveUsers = eventData.data.activeUsers;
@@ -195,21 +193,20 @@ export function useAdminDashboard(
       } catch (err) {
         console.error('📊 Dashboard: Error parsing SSE event:', err);
       }
-    });
-
-    eventSource.onerror = (err) => {
-      console.error('📊 Dashboard: SSE connection error:', err);
-      eventSource.close();
     };
+
+    // Subscribe to dashboard updates using unifiedSSEClient
+    const unsubscribe = unifiedSSEClient.subscribe(
+      'dashboard-update',
+      handleDashboardUpdate,
+      'high' // High priority for dashboard updates
+    );
 
     // Cleanup on unmount
     return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-        eventSourceRef.current = null;
-      }
+      unsubscribe();
     };
-  }, []);
+  }, [connected]);
 
   /**
    * Initial fetch on mount

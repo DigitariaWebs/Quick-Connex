@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAuth } from '@/hooks/auth/useAuth';
-import Sidebar from '@/components/features/dashboard/Sidebar';
+import { useAuth } from "@/hooks/auth/useAuth";
+import Sidebar from "@/components/features/dashboard/Sidebar";
 import { User, Phone, Mail, MapPin, Calendar, Award } from "lucide-react";
 
 interface UserProfile {
@@ -135,7 +135,9 @@ export default function ProfilePage() {
                         CIUSSS
                       </p>
                       <p className="text-sm font-semibold text-gray-900">
-                        {profile.ciusss}
+                        {typeof profile.ciusss === "string"
+                          ? profile.ciusss
+                          : (profile.ciusss as any)?.name || "N/A"}
                       </p>
                     </div>
                   </div>

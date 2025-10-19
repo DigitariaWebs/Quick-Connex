@@ -120,7 +120,7 @@ interface TransferRequestCardProps {
   onCancel?: (transferId: string) => void;
   onSelect: (transfer: TransferRequest) => void;
   currentUserId: string;
-  currentUserType: "manager" | "employee";
+  currentUserType: "manager" | "employee" | "admin" | "super_admin";
   isSelected?: boolean;
 }
 

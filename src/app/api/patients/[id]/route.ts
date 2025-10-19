@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import Patient from '@/models/Patient';
-import { requireEmployeeOrManager, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-middleware';
+import { requireEmployeeOrManagerWithSessionWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
 
 // GET /api/patients/[id] - Get a specific patient
 export async function GET(
@@ -10,7 +10,7 @@ export async function GET(
 ) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -23,14 +23,14 @@ export async function GET(
       .populate('lastModifiedBy', 'firstName lastName email');
 
     if (!patient || !patient.isActive) {
-      return createErrorResponse('Patient not found', 'NOT_FOUND', 404);
+      return createSessionErrorResponse('Patient not found', 'NOT_FOUND', 404);
     }
 
-    return createSuccessResponse(patient, 'Patient retrieved successfully');
+    return createSessionSuccessResponse(patient, 'Patient retrieved successfully');
 
   } catch (error) {
     console.error('Error fetching patient:', error);
-    return createErrorResponse('Failed to fetch patient', 'INTERNAL_ERROR', 500);
+    return createSessionErrorResponse('Failed to fetch patient', 'INTERNAL_ERROR', 500);
   }
 }
 
@@ -41,7 +41,7 @@ export async function PUT(
 ) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -68,7 +68,7 @@ export async function PUT(
     const patient = await Patient.findById(id);
 
     if (!patient || !patient.isActive) {
-      return createErrorResponse('Patient not found', 'NOT_FOUND', 404);
+      return createSessionErrorResponse('Patient not found', 'NOT_FOUND', 404);
     }
 
     // Check if dossier number is being changed and if it conflicts
@@ -80,7 +80,7 @@ export async function PUT(
       });
 
       if (existingPatient) {
-        return createErrorResponse('Another patient with this dossier number already exists', 'DUPLICATE_ERROR', 409);
+        return createSessionErrorResponse('Another patient with this dossier number already exists', 'DUPLICATE_ERROR', 409);
       }
     }
 
@@ -107,11 +107,11 @@ export async function PUT(
       .populate('createdBy', 'firstName lastName email')
       .populate('lastModifiedBy', 'firstName lastName email');
 
-    return createSuccessResponse(populatedPatient, 'Patient updated successfully');
+    return createSessionSuccessResponse(populatedPatient, 'Patient updated successfully');
 
   } catch (error) {
     console.error('Error updating patient:', error);
-    return createErrorResponse('Failed to update patient', 'INTERNAL_ERROR', 500);
+    return createSessionErrorResponse('Failed to update patient', 'INTERNAL_ERROR', 500);
   }
 }
 
@@ -122,7 +122,7 @@ export async function DELETE(
 ) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManager(request);
+    const authResult = await requireEmployeeOrManagerWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -133,7 +133,7 @@ export async function DELETE(
     const patient = await Patient.findById(id);
 
     if (!patient || !patient.isActive) {
-      return createErrorResponse('Patient not found', 'NOT_FOUND', 404);
+      return createSessionErrorResponse('Patient not found', 'NOT_FOUND', 404);
     }
 
     // Soft delete - set isActive to false
@@ -142,10 +142,10 @@ export async function DELETE(
 
     await patient.save();
 
-    return createSuccessResponse(null, 'Patient deleted successfully');
+    return createSessionSuccessResponse(null, 'Patient deleted successfully');
 
   } catch (error) {
     console.error('Error deleting patient:', error);
-    return createErrorResponse('Failed to delete patient', 'INTERNAL_ERROR', 500);
+    return createSessionErrorResponse('Failed to delete patient', 'INTERNAL_ERROR', 500);
   }
 }

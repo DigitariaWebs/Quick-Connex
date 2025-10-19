@@ -21,7 +21,7 @@ export async function middleware(request: NextRequest) {
   const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/api/admin');
 
   // API routes that don't require authentication
-  const publicApiRoutes = ['/api/auth/login', '/api/auth/signup', '/api/auth/gmail', '/api/auth/approve-user', '/api/auth/signup-approval', '/api/auth/forgot-password', '/api/auth/reset-password', '/api/files', '/api/hospitals', '/api/templates', '/api/ciusss'];
+  const publicApiRoutes = ['/api/auth/login', '/api/auth/signup', '/api/auth/session/create', '/api/auth/gmail', '/api/auth/approve-user', '/api/auth/signup-approval', '/api/auth/forgot-password', '/api/auth/reset-password', '/api/files', '/api/hospitals', '/api/templates', '/api/ciusss'];
   
   // Check for specific transfer approval/rejection endpoints
   const isTransferApprovalRoute = pathname.match(/^\/api\/transfers\/[^\/]+\/(approve|reject)$/);
@@ -47,26 +47,33 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    // Verify the token
-    const payload = await verifyToken(token);
+    // Use unified session validator for middleware
+    const { sessionValidator } = await import('./lib/auth/unified-session-validator');
+    const validationResult = await sessionValidator.validateForMiddleware(request);
     
-    if (!payload) {
-      // Invalid token
+    if (!validationResult.success) {
       if (pathname.startsWith('/api/')) {
-        return NextResponse.json(
-          { error: 'Invalid authentication token' },
+        return validationResult.response || NextResponse.json(
+          { error: 'Authentication required' },
           { status: 401 }
         );
       }
       return NextResponse.redirect(new URL('/login', request.url));
     }
+
+    const validatedUser = {
+      _id: validationResult.user._id,
+      email: validationResult.user.email,
+      userType: validationResult.user.userType,
+      status: validationResult.user.status
+    };
     
     // Check admin routes - require admin or super_admin role
     if (isAdminRoute) {
-      const isAdmin = payload.userType === 'admin' || payload.userType === 'super_admin';
+      const isAdmin = validatedUser.userType === 'admin' || validatedUser.userType === 'super_admin';
       
       if (!isAdmin) {
-        console.log(`⛔ Admin route access denied for user ${payload.email} (role: ${payload.userType})`);
+        console.log(`⛔ Admin route access denied for user ${validatedUser.email} (role: ${validatedUser.userType})`);
         
         if (pathname.startsWith('/api/')) {
           return NextResponse.json(
@@ -84,15 +91,16 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
       
-      console.log(`✅ Admin route access granted for ${payload.email}`);
+      console.log(`✅ Admin route access granted for ${validatedUser.email}`);
     }
 
     // Add user info to headers for API routes
     if (pathname.startsWith('/api/')) {
       const requestHeaders = new Headers(request.headers);
-      requestHeaders.set('x-user-id', payload.userId);
-      requestHeaders.set('x-user-type', payload.userType);
-      requestHeaders.set('x-user-email', payload.email);
+      requestHeaders.set('x-user-id', validatedUser._id.toString());
+      requestHeaders.set('x-user-type', validatedUser.userType);
+      requestHeaders.set('x-user-email', validatedUser.email);
+      requestHeaders.set('x-session-id', payload.sessionId || '');
 
       return NextResponse.next({
         request: {

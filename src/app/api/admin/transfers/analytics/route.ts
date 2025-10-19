@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/admin-middleware';
+import { requireAdminWithSession } from '@/lib/auth/session-auth-middleware';
 import { logAdminAction } from '@/lib/auth/admin-middleware';
 import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
@@ -23,7 +23,7 @@ import { AuditAction, AuditCategory, TargetResourceType } from '@/models/AuditLo
 export async function GET(request: NextRequest) {
   try {
     // Check admin permissions
-    const authResult = await requireAdmin(request);
+    const authResult = await requireAdminWithSession(request);
     if (!authResult.success) {
       return authResult.response;
     }
@@ -31,7 +31,9 @@ export async function GET(request: NextRequest) {
     const adminUser = authResult.user;
 
     // Check specific permissions
-    if (!adminUser.hasPermission(Permission.VIEW_SYSTEM_METRICS)) {
+    const hasMetricsPermission = adminUser.userType === 'super_admin' || adminUser.userType === 'admin' || (adminUser.permissions && adminUser.permissions.includes(Permission.VIEW_SYSTEM_METRICS));
+    
+    if (!hasMetricsPermission) {
       return NextResponse.json({
         success: false,
         error: 'Insufficient permissions',
