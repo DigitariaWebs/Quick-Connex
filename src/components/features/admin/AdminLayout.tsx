@@ -2,7 +2,7 @@
 
 import { ReactNode, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/auth/useAuth";
+import { useSession } from "@/contexts/SessionContext";
 import AdminSidebar from "./AdminSidebar";
 import AdminHeader from "./AdminHeader";
 
@@ -20,7 +20,7 @@ export default function AdminLayout({
   showBackButton = false,
 }: AdminLayoutProps) {
   const router = useRouter();
-  const { user, isLoading, isAuthenticated, logout, sessionData } = useAuth();
+  const { user, isLoading, isAuthenticated, logout } = useSession();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   // Redirect if not admin
@@ -56,9 +56,8 @@ export default function AdminLayout({
       isAuthenticated,
       hasUser: !!user,
       userType: user?.userType,
-      hasSessionData: !!sessionData,
     });
-  }, [isLoading, isAuthenticated, user, sessionData]);
+  }, [isLoading, isAuthenticated, user]);
 
   // Show loading spinner while checking authentication
   if (isLoading) {
@@ -87,7 +86,17 @@ export default function AdminLayout({
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
       <AdminSidebar
-        user={user}
+        user={{
+          ...user,
+          phone: user.phone || "",
+          createdAt: user.createdAt || new Date(),
+          updatedAt: user.updatedAt || new Date(),
+          status: user.status as
+            | "pending"
+            | "approved"
+            | "rejected"
+            | "suspended",
+        }}
         onLogout={logout}
         onToggle={setSidebarCollapsed}
       />
@@ -100,7 +109,17 @@ export default function AdminLayout({
       >
         {/* Header */}
         <AdminHeader
-          user={user}
+          user={{
+            ...user,
+            phone: user.phone || "",
+            createdAt: user.createdAt || new Date(),
+            updatedAt: user.updatedAt || new Date(),
+            status: user.status as
+              | "pending"
+              | "approved"
+              | "rejected"
+              | "suspended",
+          }}
           onLogout={logout}
           pageTitle={pageTitle}
           pageDescription={pageDescription}

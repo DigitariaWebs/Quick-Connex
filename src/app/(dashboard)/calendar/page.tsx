@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/auth/useAuth";
+import { useSession } from "@/contexts/SessionContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Settings,
@@ -36,7 +36,12 @@ interface CalendarEvent {
 
 export default function CalendarPage() {
   const router = useRouter();
-  const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
+  const {
+    user,
+    isLoading: authLoading,
+    isAuthenticated,
+    logout,
+  } = useSession();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -88,7 +93,21 @@ export default function CalendarPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
       {user && (
-        <Sidebar user={user} onLogout={logout} onToggle={setSidebarCollapsed} />
+        <Sidebar
+          user={{
+            ...user,
+            phone: user.phone || "",
+            status: user.status as
+              | "pending"
+              | "approved"
+              | "rejected"
+              | "suspended",
+            createdAt: user.createdAt || new Date(),
+            updatedAt: user.updatedAt || new Date(),
+          }}
+          onLogout={logout}
+          onToggle={setSidebarCollapsed}
+        />
       )}
 
       {/* Main Content */}
@@ -100,7 +119,17 @@ export default function CalendarPage() {
         {/* Header */}
         {user && (
           <DashboardHeader
-            user={user}
+            user={{
+              ...user,
+              phone: user.phone || "",
+              status: user.status as
+                | "pending"
+                | "approved"
+                | "rejected"
+                | "suspended",
+              createdAt: user.createdAt || new Date(),
+              updatedAt: user.updatedAt || new Date(),
+            }}
             onLogout={logout}
             pageTitle="Transfer Calendar"
             showPlusButton={false}

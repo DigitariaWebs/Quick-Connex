@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdminWithSession } from '@/lib/auth/session-auth-middleware';
+import { requireAdmin } from '@/lib/auth/auth-utils';
 import dbConnect from '@/lib/database/mongoose';
 import AuditLog from '@/models/AuditLog';
 import { RecentActivity } from '@/types/dashboard';
@@ -17,10 +17,7 @@ import { RecentActivity } from '@/types/dashboard';
 export async function GET(request: NextRequest) {
   try {
     // Check admin permissions
-    const authResult = await requireAdminWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireAdmin();
 
     await dbConnect();
 

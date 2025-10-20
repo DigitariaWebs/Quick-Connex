@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../auth/useAuth';
+import { useSession } from '@/contexts/SessionContext';
 import { useUnifiedSSE } from '@/contexts/UnifiedSSEContext';
 
 interface ActivityItem {
@@ -22,7 +22,7 @@ interface RecentActivityData {
 }
 
 export function useRecentActivity(maxItems: number = 5) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useSession();
   const { lastMessage } = useUnifiedSSE();
   const [data, setData] = useState<RecentActivityData>({
     activities: [],

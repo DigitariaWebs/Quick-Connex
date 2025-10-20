@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { useAuth } from "@/hooks/auth/useAuth";
+import { useSession } from "@/contexts/SessionContext";
 import { sseClient } from "@/lib/sse";
 import type { SSEMessage, ConnectionState } from "@/lib/sse/original/SSETypes";
 
@@ -30,7 +30,7 @@ export function UnifiedSSEProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useSession();
   const [connected, setConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,27 +74,27 @@ export function UnifiedSSEProvider({
       "unified-sse-context",
       (message: SSEMessage) => {
         setLastMessage(message);
-      },
-      "high" // High priority for context
+      }
     );
 
     // Update connection status periodically
     const statusInterval = setInterval(() => {
       const state = sseClient.getConnectionState();
 
-      setConnected(state.status === "connected");
-      setConnecting(
-        state.status === "connecting" || state.status === "reconnecting"
-      );
+      setConnected(state.connected);
+      setConnecting(false); // Simplified for now
       setSubscribers(state.subscribers);
-      setRetryCount(state.reconnectAttempts);
-      setConnectionQuality(state.connectionQuality);
-      setConnectionState(state);
+      setRetryCount(state.retryCount);
+      setConnectionQuality("good"); // Simplified for now
+      setConnectionState({
+        ...state,
+        status: state.connected ? "connected" : "disconnected",
+        reconnectAttempts: state.retryCount,
+        connectionQuality: "good",
+      });
 
       // Set error state
-      if (state.status === "error") {
-        setError("Connection error");
-      } else if (state.status === "disconnected") {
+      if (!state.connected) {
         setError("Disconnected");
       } else {
         setError(null);

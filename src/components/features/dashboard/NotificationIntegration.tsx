@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/auth/useAuth";
+import { useSession } from "@/contexts/SessionContext";
 import { useUnifiedSSE } from "@/contexts/UnifiedSSEContext";
 import NotificationManager from "@/components/features/notifications/NotificationManager";
 import { Bell, Settings } from "lucide-react";
@@ -17,7 +17,7 @@ export default function NotificationIntegration({
   showPanel = false,
   position = "top-right",
 }: NotificationIntegrationProps) {
-  const { user } = useAuth();
+  const { user } = useSession();
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 

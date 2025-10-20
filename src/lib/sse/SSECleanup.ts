@@ -5,7 +5,7 @@
  * Similar to SessionCleanup in the session system.
  */
 
-import { SSEClient, SSECleanupResult, SSECleanupConfig } from './SSETypes';
+import { SSEClient, SSECleanupResult, SSECleanupConfig } from './original/SSETypes';
 
 export interface SSECleanupStats {
   totalCleanups: number;

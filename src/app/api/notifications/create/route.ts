@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { VercelNotificationService } from '@/lib/sse/VercelNotificationService';
+import { VercelNotificationService } from '@/lib/sse/vercel/NotificationService';
 
 /**
  * Create Transfer Notification

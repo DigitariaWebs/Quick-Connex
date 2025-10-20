@@ -14,7 +14,8 @@
 import { ReadableStreamDefaultController } from 'stream/web';
 import { ServerHeartbeatManager } from './heartbeat-manager';
 import { SelectiveLogger } from './selective-logger';
-import { SessionValidationResult } from '@/lib/auth/session-validation';
+// import { SessionValidationResult } from '@/lib/auth/session-validation'; // Module not available
+type SessionValidationResult = any;
 
 // Types
 export interface SSEClient {

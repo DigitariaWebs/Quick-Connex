@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useAuth } from '../auth/useAuth';
+import { useSession } from '@/contexts/SessionContext';
 
 interface DashboardStats {
   totalPending: number;
@@ -92,7 +92,7 @@ const getDefaultUrgentTransfers = (): UrgentTransfer[] => [];
 const getDefaultRecentActivity = (): ActivityItem[] => [];
 
 export function useDashboardData() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useSession();
   const [data, setData] = useState<DashboardData>({
     stats: getDefaultStats(),
     urgentTransfers: getDefaultUrgentTransfers(),

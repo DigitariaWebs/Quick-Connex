@@ -109,13 +109,13 @@ export async function PUT(request: NextRequest) {
     for (const channel of validChannels) {
       if (preferences[channel]) {
         if (typeof preferences[channel].enabled !== 'boolean') {
-          return NextResponse.json(`Invalid ${channel}.enabled value`, 'VALIDATION_ERROR', 400);
+          return NextResponse.json({ error: `Invalid ${channel}.enabled value` }, { status: 400 });
         }
         
         if (preferences[channel].types) {
           for (const type of validTypes) {
             if (preferences[channel].types[type] !== undefined && typeof preferences[channel].types[type] !== 'boolean') {
-              return NextResponse.json(`Invalid ${channel}.types.${type} value`, 'VALIDATION_ERROR', 400);
+              return NextResponse.json({ error: `Invalid ${channel}.types.${type} value` }, { status: 400 });
             }
           }
         }
@@ -148,7 +148,7 @@ export async function PUT(request: NextRequest) {
     ).select('notificationPreferences');
 
     if (!updatedUser) {
-      return NextResponse.json('User not found', 'USER_NOT_FOUND', 404);
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     return createSuccessResponse({
@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
     ).select('notificationPreferences');
 
     if (!updatedUser) {
-      return NextResponse.json('User not found', 'USER_NOT_FOUND', 404);
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     return createSuccessResponse({

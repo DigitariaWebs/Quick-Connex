@@ -59,7 +59,7 @@ export class VercelNotificationService {
 
       return {
         success: true,
-        notificationId: notification._id.toString()
+        notificationId: (notification._id as any).toString()
       };
 
     } catch (error) {
@@ -93,7 +93,7 @@ export class VercelNotificationService {
       .limit(limit);
 
       return notifications.map(notif => ({
-        id: notif._id.toString(),
+        id: (notif._id as any).toString(),
         type: notif.type as any,
         title: notif.title,
         message: notif.message,
@@ -102,7 +102,7 @@ export class VercelNotificationService {
         userId,
         userType,
         timestamp: notif.createdAt.toISOString(),
-        read: notif.status === 'read'
+        read: (notif.status as any) === 'read'
       }));
 
     } catch (error) {

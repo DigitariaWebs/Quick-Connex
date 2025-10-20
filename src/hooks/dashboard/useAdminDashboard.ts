@@ -198,8 +198,7 @@ export function useAdminDashboard(
     // Subscribe to dashboard updates using unifiedSSEClient
     const unsubscribe = sseClient.subscribe(
       'dashboard-update',
-      handleDashboardUpdate,
-      'high' // High priority for dashboard updates
+      handleDashboardUpdate
     );
 
     // Cleanup on unmount

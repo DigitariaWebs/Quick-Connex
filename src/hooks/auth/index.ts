@@ -4,6 +4,6 @@
  * This module exports all authentication-related hooks.
  */
 
-export * from '../auth/useAuth';
+// Direct context usage - no wrapper hooks needed
 export * from './useLoginForm';
 export * from './useSignUpForm';

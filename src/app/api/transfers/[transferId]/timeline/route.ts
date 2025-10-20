@@ -84,31 +84,27 @@ export async function POST(
     const { type, title, description, metadata } = body;
 
     if (!transferId) {
-      return createSessionErrorResponse('Transfer ID is required', 'VALIDATION_ERROR', 400);
+      return NextResponse.json({ error: 'Transfer ID is required' }, { status: 400 });
     }
 
     if (!type || !title || !description) {
-      return createSessionErrorResponse('Type, title, and description are required', 'VALIDATION_ERROR', 400);
+      return NextResponse.json({ error: 'Type, title, and description are required' }, { status: 400 });
     }
 
     // Authenticate user
-    const authResult = await requireEmployeeOrManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireEmployeeOrManager();
 
     await dbConnect();
 
     // Find the transfer
     const transfer = await Transfer.findOne({ transferId });
     if (!transfer) {
-      return createSessionErrorResponse('Transfer not found', 'NOT_FOUND', 404);
+      return NextResponse.json({ error: 'Transfer not found' }, { status: 404 });
     }
 
     // Check if user has permission to add events to this transfer
-    const user = authResult.user;
     if (user.userType === 'employee' && transfer.status === 'pending') {
-      return createSessionErrorResponse('Access denied: Cannot modify pending transfers', 'ACCESS_DENIED', 403);
+      return NextResponse.json({ error: 'Access denied: Cannot modify pending transfers' }, { status: 403 });
     }
 
     // Create new timeline event
@@ -138,13 +134,13 @@ export async function POST(
 
     await transfer.save();
 
-    return createSessionSuccessResponse({
+    return createSuccessResponse({
       event: newEvent,
       message: 'Timeline event added successfully'
     }, 'Timeline event added successfully', 201);
 
   } catch (error) {
     console.error('Error adding timeline event:', error);
-    return createSessionErrorResponse('Failed to add timeline event', 'CREATE_ERROR', 500);
+    return handleAuthError(error);
   }
 }

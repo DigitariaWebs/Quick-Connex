@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import Patient from '@/models/Patient';
 import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import mongoose from 'mongoose';
 
 // GET /api/patients - Get patients (search and list)
 export async function GET(request: NextRequest) {
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
     // Get total count for pagination
     const totalCount = await Patient.countDocuments(query);
 
-    return createSessionSuccessResponse({
+    return createSuccessResponse({
       patients,
       pagination: {
         page,
@@ -70,20 +71,12 @@ export async function POST(request: NextRequest) {
       firstName,
       lastName,
       age,
-      dossierNumber,
-      dateOfBirth,
-      gender,
-      phoneNumber,
-      email,
-      address,
-      emergencyContact,
-      medicalInfo,
-      insuranceInfo
+      dossierNumber
     } = body;
 
     // Validate required fields
     if (!firstName || !lastName || !age || !dossierNumber) {
-      return createSessionErrorResponse('Missing required fields: firstName, lastName, age, dossierNumber', 'VALIDATION_ERROR', 400);
+      return NextResponse.json({ error: 'Missing required fields: firstName, lastName, age, dossierNumber' }, { status: 400 });
     }
 
     // Check if patient with dossier number already exists
@@ -93,7 +86,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingPatient) {
-      return createSessionErrorResponse('Patient with this dossier number already exists', 'DUPLICATE_ERROR', 409);
+      return NextResponse.json({ error: 'Patient with this dossier number already exists' }, { status: 409 });
     }
 
     // Create new patient
@@ -102,16 +95,8 @@ export async function POST(request: NextRequest) {
       lastName,
       age,
       dossierNumber: dossierNumber.toUpperCase(),
-      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-      gender,
-      phoneNumber,
-      email,
-      address,
-      emergencyContact,
-      medicalInfo,
-      insuranceInfo,
-      createdBy: user._id,
-      lastModifiedBy: user._id,
+      createdBy: new mongoose.Types.ObjectId(user._id),
+      lastModifiedBy: new mongoose.Types.ObjectId(user._id),
       isActive: true
     });
 

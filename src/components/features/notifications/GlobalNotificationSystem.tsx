@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/hooks/auth/useAuth";
+import { useSession } from "@/contexts/SessionContext";
 import NotificationManager from "./NotificationManager";
 
 /**
@@ -11,7 +11,7 @@ import NotificationManager from "./NotificationManager";
  * when users receive real-time updates.
  */
 export default function GlobalNotificationSystem() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useSession();
 
   // Only render for authenticated users
   if (!isAuthenticated || !user) {

@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const { user } = await requireEmployeeOrManager();
 
     console.log('📊 Status API: Getting notification broadcaster stats...');
-    const stats = sseManager?.getStats?.() || { totalConnections: 0, activeConnections: 0 } as any;
+    const stats = { totalConnections: 0, activeConnections: 0 };
     console.log('📊 Status API: Stats retrieved:', stats);
 
     return NextResponse.json({

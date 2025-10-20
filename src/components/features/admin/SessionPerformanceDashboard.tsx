@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+// import { Progress } from "@/components/ui/progress"; // Component not available
 import { Button } from "@/components/ui/button";
 import {
   RefreshCw,
@@ -180,7 +180,12 @@ export function SessionPerformanceDashboard() {
             <div className="text-2xl font-bold">
               {performance.cacheHitRate}%
             </div>
-            <Progress value={performance.cacheHitRate} className="mt-2" />
+            <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full"
+                style={{ width: `${performance.cacheHitRate}%` }}
+              ></div>
+            </div>
           </CardContent>
         </Card>
 
@@ -235,10 +240,16 @@ export function SessionPerformanceDashboard() {
                     </span>
                   </div>
                   <div className="w-32">
-                    <Progress
-                      value={(count / sessionPool.activeSessions) * 100}
-                      className="h-2"
-                    />
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{
+                          width: `${
+                            (count / sessionPool.activeSessions) * 100
+                          }%`,
+                        }}
+                      ></div>
+                    </div>
                   </div>
                 </div>
               )

@@ -48,7 +48,7 @@ export class VercelSSERepository {
 
       return {
         success: true,
-        id: notification._id.toString()
+        id: (notification._id as any).toString()
       };
 
     } catch (error) {
@@ -83,13 +83,13 @@ export class VercelSSERepository {
         .skip(query.offset || 0);
 
       return notifications.map(notif => ({
-        id: notif._id.toString(),
+        id: (notif._id as any).toString(),
         type: notif.type,
         title: notif.title,
         message: notif.message,
         transferId: notif.transferId,
         priority: notif.priority,
-        targetUserTypes: notif.targetUserTypes,
+        targetUserTypes: (notif as any).targetUserTypes || [],
         createdAt: notif.createdAt,
         status: notif.status
       }));

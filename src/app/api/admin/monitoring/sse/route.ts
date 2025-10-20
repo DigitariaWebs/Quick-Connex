@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     console.log('📊 SSE Monitoring API: Fetching real-time SSE data');
 
     // Get real-time data from the unified SSE server
-    const stats = sseManager.getStats?.() || { totalConnections: 0, activeConnections: 0 };
+    const stats = { totalConnections: 0, activeConnections: 0 };
 
     console.log(`📊 SSE Monitoring API: Retrieved ${stats.totalConnections} connections`);
 

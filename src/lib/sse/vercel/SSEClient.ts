@@ -7,7 +7,7 @@
 
 "use client";
 
-import { VercelNotificationService, TransferNotification } from './NotificationService';
+import { TransferNotification } from './NotificationService';
 
 export interface VercelSSEConfig {
   pollingInterval: number; // How often to poll for notifications
@@ -157,16 +157,37 @@ export class VercelSSEClient {
     if (!this.userId || !this.userType) return;
 
     try {
-      const notifications = await VercelNotificationService.getUserNotifications(
-        this.userId,
-        this.userType,
-        10 // Get last 10 notifications
-      );
+      // Use API call instead of direct database connection
+      const response = await fetch('/api/notifications?limit=10&priority=high', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const notifications = data.success ? data.data.notifications : [];
 
       // Send new notifications to subscribers
-      notifications.forEach(notification => {
+      notifications.forEach((notification: any) => {
         if (!notification.read) {
-          this.broadcastToSubscribers(notification);
+          this.broadcastToSubscribers({
+            id: notification._id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            transferId: notification.data?.transferId,
+            priority: notification.priority,
+            userId: notification.userId,
+            userType: notification.userType,
+            timestamp: notification.createdAt,
+            read: notification.read
+          });
         }
       });
 
@@ -217,7 +238,24 @@ export class VercelSSEClient {
    */
   public async markAsRead(notificationId: string): Promise<{ success: boolean; error?: string }> {
     try {
-      return await VercelNotificationService.markAsRead(notificationId);
+      const response = await fetch('/api/notifications', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'mark_read',
+          notificationIds: [notificationId]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return { success: data.success };
     } catch (error) {
       console.error('❌ Failed to mark notification as read:', error);
       return {
@@ -232,7 +270,20 @@ export class VercelSSEClient {
    */
   public async getNotificationStats(): Promise<any> {
     try {
-      return await VercelNotificationService.getNotificationStats();
+      const response = await fetch('/api/notifications/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.success ? data.data : null;
     } catch (error) {
       console.error('❌ Failed to get notification stats:', error);
       return null;

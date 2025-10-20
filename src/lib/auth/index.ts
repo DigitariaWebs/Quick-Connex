@@ -5,6 +5,7 @@
  * middleware, and services.
  */
 
-export * from './auth-middleware';
-export * from './admin-middleware';
+// Middleware files removed - using auth-utils instead
+// export * from './auth-middleware';
+// export * from './admin-middleware';
 export * from './jwt';

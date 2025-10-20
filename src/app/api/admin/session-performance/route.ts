@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         expiredSessions: poolStats.expiredSessions,
         highRiskSessions: poolStats.highRiskSessions,
         averageSessionAge: poolStats.averageSessionAge,
-        sessionDistribution: Object.fromEntries(poolStats.sessionDistribution),
+        sessionDistribution: poolStats.sessionDistribution || {},
         performanceMetrics: poolStats.performanceMetrics
       },
       performance: {

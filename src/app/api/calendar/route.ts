@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching calendar data:', error);
-    return handleAuthError('Failed to fetch calendar data', 'CALENDAR_ERROR', 500);
+    return handleAuthError(error);
   }
 }
 
@@ -128,23 +128,24 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!transferId) {
-      return handleAuthError('Transfer ID is required', 'VALIDATION_ERROR', 400);
+      return NextResponse.json({ error: 'Transfer ID is required' }, { status: 400 });
     }
 
     // Find the transfer
     const transfer = await Transfer.findOne({ transferId });
     if (!transfer) {
-      return handleAuthError('Transfer not found', 'NOT_FOUND', 404);
+      return NextResponse.json({ error: 'Transfer not found' }, { status: 404 });
     }
 
     // Check for scheduling conflicts
     const conflicts = await checkSchedulingConflicts(transferId, scheduledDate, scheduledEndDate, scheduling);
     
     if (conflicts.length > 0) {
-      return handleAuthError('Scheduling conflicts detected', 'CONFLICT_ERROR', 409, {
+      return NextResponse.json({ 
+        error: 'Scheduling conflicts detected',
         conflicts,
         canProceed: conflicts.every(c => c.severity === 'low')
-      });
+      }, { status: 409 });
     }
 
     // Update transfer scheduling
@@ -194,7 +195,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error updating transfer scheduling:', error);
-    return handleAuthError('Failed to update transfer scheduling', 'UPDATE_ERROR', 500);
+    return handleAuthError(error);
   }
 }
 

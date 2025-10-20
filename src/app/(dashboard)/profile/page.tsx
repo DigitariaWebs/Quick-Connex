@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/auth/useAuth";
+import { useSession } from "@/contexts/SessionContext";
 import Sidebar from "@/components/features/dashboard/Sidebar";
 import { User, Phone, Mail, MapPin, Calendar, Award } from "lucide-react";
 
@@ -27,7 +27,7 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
-  const { user, isLoading: authLoading, logout } = useAuth();
+  const { user, isLoading: authLoading, logout } = useSession();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
@@ -74,7 +74,21 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gray-50">
       {/* Dashboard Sidebar */}
       {user && (
-        <Sidebar user={user} onLogout={logout} onToggle={setSidebarCollapsed} />
+        <Sidebar
+          user={{
+            ...user,
+            phone: user.phone || "",
+            status: user.status as
+              | "pending"
+              | "approved"
+              | "rejected"
+              | "suspended",
+            createdAt: user.createdAt || new Date(),
+            updatedAt: user.updatedAt || new Date(),
+          }}
+          onLogout={logout}
+          onToggle={setSidebarCollapsed}
+        />
       )}
 
       {/* Main Content with Sidebar Spacing */}

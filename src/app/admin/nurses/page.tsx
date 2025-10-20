@@ -2,14 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from '@/hooks/auth/useAuth';
+import { useSession } from "@/contexts/SessionContext";
 import { motion } from "framer-motion";
-import Sidebar from '@/components/features/dashboard/Sidebar';
-import DashboardHeader from '@/components/features/dashboard/DashboardHeader';
+import Sidebar from "@/components/features/dashboard/Sidebar";
+import DashboardHeader from "@/components/features/dashboard/DashboardHeader";
 
 export default function NursesPage() {
   const router = useRouter();
-  const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
+  const {
+    user,
+    isLoading: authLoading,
+    isAuthenticated,
+    logout,
+  } = useSession();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   // Redirect to login if not authenticated
@@ -40,7 +45,21 @@ export default function NursesPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
       {user && (
-        <Sidebar user={user} onLogout={logout} onToggle={setSidebarCollapsed} />
+        <Sidebar
+          user={{
+            ...user,
+            phone: user.phone || "",
+            status: user.status as
+              | "pending"
+              | "approved"
+              | "rejected"
+              | "suspended",
+            createdAt: user.createdAt || new Date(),
+            updatedAt: user.updatedAt || new Date(),
+          }}
+          onLogout={logout}
+          onToggle={setSidebarCollapsed}
+        />
       )}
 
       {/* Main Content */}
@@ -51,7 +70,21 @@ export default function NursesPage() {
       >
         {/* Header */}
         {user && (
-          <DashboardHeader user={user} onLogout={logout} pageTitle="Nurses" />
+          <DashboardHeader
+            user={{
+              ...user,
+              phone: user.phone || "",
+              status: user.status as
+                | "pending"
+                | "approved"
+                | "rejected"
+                | "suspended",
+              createdAt: user.createdAt || new Date(),
+              updatedAt: user.updatedAt || new Date(),
+            }}
+            onLogout={logout}
+            pageTitle="Nurses"
+          />
         )}
 
         <div className="p-4 lg:p-6">

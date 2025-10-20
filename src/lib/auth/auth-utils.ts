@@ -42,7 +42,7 @@ export async function requireAuth(requiredRoles?: string[]): Promise<AuthResult>
     throw new Error(`Access denied. Required roles: ${requiredRoles.join(', ')}`);
   }
 
-  return { user, session };
+  return { user: user as any, session: session as any };
 }
 
 /**
@@ -50,6 +50,10 @@ export async function requireAuth(requiredRoles?: string[]): Promise<AuthResult>
  */
 export async function requireManager(): Promise<AuthResult> {
   return requireAuth(['manager', 'super_admin']);
+}
+
+export async function requireAdmin(): Promise<AuthResult> {
+  return requireAuth(['admin', 'super_admin']);
 }
 
 /**

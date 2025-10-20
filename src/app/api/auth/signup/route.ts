@@ -447,51 +447,49 @@ export async function POST(request: Request) {
             request.headers.get('x-real-ip') ||
             'unknown';
           
-          // Use atomic session creation directly
-          const { AtomicSessionCreation } = await import('@/lib/auth/atomic-session-creation');
+          // Create session directly (simplified approach)
+          const { default: Session } = await import('@/models/Session');
           
-          const sessionResult = await AtomicSessionCreation.createSessionAtomically(
-            (savedUser._id as any).toString(),
-            {
-              userAgent: request.headers.get('user-agent') || 'unknown',
+          const session = new Session({
+            sessionId: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            userId: (savedUser._id as any).toString(),
+            userAgent: request.headers.get('user-agent') || 'unknown',
+            ipAddress: ipAddress,
+            deviceInfo: {
               platform: 'web',
               browser: 'unknown',
-              browserVersion: 'unknown',
               os: 'unknown',
-              osVersion: 'unknown',
-              deviceType: 'desktop',
-              timezone: 'UTC',
-              language: 'en-US'
+              deviceType: 'desktop'
             },
-            ipAddress,
-            undefined, // location
-            'web', // sessionType
-            request
-          );
+            securityContext: {
+              riskScore: 0,
+              flags: [],
+              recommendations: []
+            },
+            isActive: true,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+          });
+          
+          await session.save();
 
-          if (sessionResult.success) {
-            
-            // Create JWT token with session ID
-            const { signToken, setAuthCookie } = await import('@/lib/auth/jwt');
+          // Create JWT token with session ID
+          const { signToken, setAuthCookie } = await import('@/lib/auth/jwt');
             const token = await signToken({
               userId: (savedUser._id as any).toString(),
               email: savedUser.email,
               userType: savedUser.userType,
-              sessionId: sessionResult.session.sessionId
+              sessionId: session.sessionId
             });
 
             // Set secure HTTP-only cookie
             await setAuthCookie(token);
             
             sessionData = {
-              sessionId: sessionResult.session.sessionId,
-              expiresAt: sessionResult.session.expiresAt
+              sessionId: session.sessionId,
+              expiresAt: session.expiresAt
             };
             
             console.log('✅ API: Session created for approved user');
-          } else {
-            console.error('⚠️ API: Failed to create session for approved user:', sessionResult.error);
-          }
         } catch (sessionError) {
           console.error('⚠️ API: Failed to create session for approved user:', sessionError);
         }

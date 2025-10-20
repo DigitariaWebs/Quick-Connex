@@ -5,7 +5,7 @@
  * Follows clean architecture principles - only handles caching.
  */
 
-import { TransferNotification } from './VercelSSEService';
+import { TransferNotification } from './NotificationService';
 
 export interface VercelSSECacheConfig {
   maxCacheSize: number;

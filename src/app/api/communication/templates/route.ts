@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireEmployeeOrManagerWithSessionWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
+import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 import CommunicationService from '@/lib/communication/core/communication-service';
 import { CommunicationChannel } from '@/types/communication';
 
@@ -13,10 +13,7 @@ import { CommunicationChannel } from '@/types/communication';
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireEmployeeOrManager();
 
     const { searchParams } = new URL(request.url);
     const channel = searchParams.get('channel') as CommunicationChannel;
@@ -30,7 +27,7 @@ export async function GET(request: NextRequest) {
       templates = templates.filter(template => template.category === category);
     }
 
-    return createSessionSuccessResponse({
+    return createSuccessResponse({
       templates: templates.map(template => ({
         id: template.id,
         name: template.name,
@@ -48,12 +45,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error getting communication templates:', error);
-    return createSessionErrorResponse(
-      'Failed to get communication templates',
-      'TEMPLATES_FAILED',
-      500,
-      error instanceof Error ? error.message : 'Unknown error'
-    );
+    return handleAuthError(error);
   }
 }
 
@@ -61,33 +53,25 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireEmployeeOrManager();
 
     const body = await request.json();
     const { templateId, data } = body;
 
     if (!templateId || !data) {
-      return createSessionErrorResponse('Missing required fields: templateId, data', 'MISSING_FIELDS', 400);
+      return NextResponse.json({ error: 'Missing required fields: templateId, data' }, { status: 400 });
     }
 
     const communicationService = new CommunicationService();
     const renderedContent = await communicationService.renderTemplate(templateId, data);
 
-    return createSessionSuccessResponse({
+    return createSuccessResponse({
       templateId,
       content: renderedContent,
     });
 
   } catch (error) {
     console.error('Error rendering template:', error);
-    return createSessionErrorResponse(
-      'Failed to render template',
-      'RENDER_FAILED',
-      500,
-      error instanceof Error ? error.message : 'Unknown error'
-    );
+    return handleAuthError(error);
   }
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/auth/useAuth";
+import { useSession } from "@/contexts/SessionContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -87,7 +87,12 @@ interface TransferRequest {
 
 export default function MyTransfersPage() {
   const router = useRouter();
-  const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
+  const {
+    user,
+    isLoading: authLoading,
+    isAuthenticated,
+    logout,
+  } = useSession();
   const [transfers, setTransfers] = useState<TransferRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -298,7 +303,21 @@ export default function MyTransfersPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
       {user && (
-        <Sidebar user={user} onLogout={logout} onToggle={setSidebarCollapsed} />
+        <Sidebar
+          user={{
+            ...user,
+            phone: user.phone || "",
+            status: user.status as
+              | "pending"
+              | "approved"
+              | "rejected"
+              | "suspended",
+            createdAt: user.createdAt || new Date(),
+            updatedAt: user.updatedAt || new Date(),
+          }}
+          onLogout={logout}
+          onToggle={setSidebarCollapsed}
+        />
       )}
 
       {/* Main Content */}
@@ -310,7 +329,17 @@ export default function MyTransfersPage() {
         {/* Header */}
         {user && (
           <DashboardHeader
-            user={user}
+            user={{
+              ...user,
+              phone: user.phone || "",
+              status: user.status as
+                | "pending"
+                | "approved"
+                | "rejected"
+                | "suspended",
+              createdAt: user.createdAt || new Date(),
+              updatedAt: user.updatedAt || new Date(),
+            }}
             onLogout={logout}
             pageTitle="My Accepted Transfers"
             showSearchButton={true}

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const resourceType = searchParams.get('resourceType'); // 'driver', 'vehicle', 'location'
 
     if (!startDate || !endDate) {
-      return handleAuthError('Start date and end date are required', 'VALIDATION_ERROR', 400);
+      return NextResponse.json({ error: 'Start date and end date are required' }, { status: 400 });
     }
 
     const startTime = new Date(startDate);
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error checking conflicts:', error);
-    return handleAuthError('Failed to check conflicts', 'CONFLICT_CHECK_ERROR', 500);
+    return NextResponse.json({ error: 'Failed to check conflicts' }, { status: 500 });
   }
 }
 
@@ -113,10 +113,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user - only managers can resolve conflicts
-    const authResult = await requireEmployeeOrManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireEmployeeOrManager();
 
     await dbConnect();
 
@@ -129,12 +126,12 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!transferId || !resolutionStrategy) {
-      return handleAuthError('Transfer ID and resolution strategy are required', 'VALIDATION_ERROR', 400);
+      return NextResponse.json({ error: 'Transfer ID and resolution strategy are required' }, { status: 400 });
     }
 
     const transfer = await Transfer.findOne({ transferId });
     if (!transfer) {
-      return handleAuthError('Transfer not found', 'NOT_FOUND', 404);
+      return NextResponse.json({ error: 'Transfer not found' }, { status: 404 });
     }
 
     const results = [];
@@ -142,7 +139,7 @@ export async function POST(request: NextRequest) {
     switch (resolutionStrategy) {
       case 'auto_reschedule':
         if (!newSchedule) {
-          return handleAuthError('New schedule is required for auto reschedule', 'VALIDATION_ERROR', 400);
+          return NextResponse.json({ error: 'New schedule is required for auto reschedule' }, { status: 400 });
         }
         
         // Update the transfer with new schedule
@@ -151,11 +148,11 @@ export async function POST(request: NextRequest) {
           {
             scheduledDate: new Date(newSchedule.startDate),
             scheduledEndDate: new Date(newSchedule.endDate),
-            lastModifiedBy: authResult.user._id,
+            lastModifiedBy: user._id,
             $push: {
               statusHistory: {
                 status: transfer.status,
-                changedBy: authResult.user._id,
+                changedBy: user._id,
                 changedAt: new Date(),
                 reason: 'Auto-rescheduled due to conflict resolution'
               }
@@ -183,11 +180,11 @@ export async function POST(request: NextRequest) {
             await Transfer.findByIdAndUpdate(
               affectedTransfer._id,
               {
-                lastModifiedBy: authResult.user._id,
+                lastModifiedBy: user._id,
                 $push: {
                   statusHistory: {
                     status: affectedTransfer.status,
-                    changedBy: authResult.user._id,
+                    changedBy: user._id,
                     changedAt: new Date(),
                     reason: 'Resource reassigned due to conflict resolution'
                   }
@@ -208,11 +205,11 @@ export async function POST(request: NextRequest) {
         await Transfer.findByIdAndUpdate(
           transfer._id,
           {
-            lastModifiedBy: authResult.user._id,
+            lastModifiedBy: user._id,
             $push: {
               statusHistory: {
                 status: transfer.status,
-                changedBy: authResult.user._id,
+                changedBy: user._id,
                 changedAt: new Date(),
                 reason: 'Manual override - conflicts acknowledged'
               }
@@ -228,7 +225,7 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        return handleAuthError('Invalid resolution strategy', 'VALIDATION_ERROR', 400);
+        return NextResponse.json({ error: 'Invalid resolution strategy' }, { status: 400 });
     }
 
     return createSuccessResponse({
@@ -236,14 +233,14 @@ export async function POST(request: NextRequest) {
       results,
       resolvedAt: new Date().toISOString(),
       resolvedBy: {
-        userId: authResult.user._id,
-        name: `${authResult.user.firstName} ${authResult.user.lastName}`
+        userId: user._id,
+        name: `${user.firstName} ${user.lastName}`
       }
     });
 
   } catch (error) {
     console.error('Error resolving conflicts:', error);
-    return handleAuthError('Failed to resolve conflicts', 'RESOLUTION_ERROR', 500);
+    return NextResponse.json({ error: 'Failed to resolve conflicts' }, { status: 500 });
   }
 }
 

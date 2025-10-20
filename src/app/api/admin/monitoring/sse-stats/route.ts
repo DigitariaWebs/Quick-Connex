@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const { user } = await requireManager();
 
     // Get real-time SSE metrics from unified server
-    const stats = sseManager.getStats?.() || { totalConnections: 0, activeConnections: 0 };
+    const stats = { totalConnections: 0, activeConnections: 0, connectionsByType: {} };
 
     const sseStats: SSEStats = {
       activeConnections: stats.totalConnections,

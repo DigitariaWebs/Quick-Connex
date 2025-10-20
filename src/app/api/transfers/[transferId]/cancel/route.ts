@@ -37,15 +37,14 @@ export async function PUT(
       .populate('assignedTo', 'firstName lastName email phone userType');
 
     if (!transfer) {
-      return createSessionErrorResponse('Transfer not found', 'NOT_FOUND', 404);
+      return NextResponse.json({ error: 'Transfer not found' }, { status: 404 });
     }
 
     // Check if transfer can be cancelled
     if (!canCancelTransfer(transfer)) {
-      return createSessionErrorResponse(
-        'Transfer cannot be cancelled. Either the 4-hour window has expired or the transfer is not in a cancellable state.',
-        'CANCELLATION_NOT_ALLOWED',
-        400
+      return NextResponse.json(
+        { error: 'Transfer cannot be cancelled. Either the 4-hour window has expired or the transfer is not in a cancellable state.' },
+        { status: 400 }
       );
     }
 
@@ -76,10 +75,9 @@ export async function PUT(
                           (assignedToIdRaw && userIdRaw && assignedToIdRaw.toString() === userIdRaw.toString());
       
       if (!isAuthorized) {
-        return createSessionErrorResponse(
-          `Only the assigned employee can cancel this transfer. Assigned to: ${assignedToId}, Current user: ${userId}`,
-          'UNAUTHORIZED',
-          403
+        return NextResponse.json(
+          { error: `Only the assigned employee can cancel this transfer. Assigned to: ${assignedToId}, Current user: ${userId}` },
+          { status: 403 }
         );
       }
     }

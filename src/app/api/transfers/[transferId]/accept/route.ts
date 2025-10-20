@@ -46,31 +46,29 @@ export async function PUT(
       .populate('assignedTo', 'firstName lastName email phone userType') as any;
 
     if (!transfer) {
-      return createSessionErrorResponse('Transfer not found', 'NOT_FOUND', 404);
+      return NextResponse.json({ error: 'Transfer not found' }, { status: 404 });
     }
 
     // Check if transfer is in the correct status for acceptance
     if (transfer.status !== 'accepted') {
-      return createSessionErrorResponse(
-        `Transfer cannot be accepted. Current status: ${transfer.status}`,
-        'INVALID_STATUS',
-        400
+      return NextResponse.json(
+        { error: `Transfer cannot be accepted. Current status: ${transfer.status}` },
+        { status: 400 }
       );
     }
 
     // Check if transfer is already assigned to someone else
     if (transfer.assignedTo && transfer.assignedTo.toString() !== assignedTo) {
-      return createSessionErrorResponse(
-        'Transfer is already assigned to another employee',
-        'ALREADY_ASSIGNED',
-        400
+      return NextResponse.json(
+        { error: 'Transfer is already assigned to another employee' },
+        { status: 400 }
       );
     }
 
     // Verify the employee exists
     const employee = await User.findById(assignedTo);
     if (!employee) {
-      return createSessionErrorResponse('Employee not found', 'NOT_FOUND', 404);
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
     // Create timeline events for acceptance

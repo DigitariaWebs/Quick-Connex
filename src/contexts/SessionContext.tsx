@@ -28,6 +28,9 @@ export interface User {
   firstName: string;
   lastName: string;
   status: string;
+  phone: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface SessionContextType {
@@ -135,8 +138,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
       // Disconnect SSE connection if exists
       try {
-        const { unifiedSSEClient } = await import("@/lib/sse");
-        unifiedSSEClient.clearUser();
+        const { sseClient } = await import("@/lib/sse");
+        sseClient.disconnect();
       } catch (error) {
         console.log("SSE manager not available during logout");
       }
@@ -167,7 +170,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       // Disconnect SSE connection
       try {
         const { sseClient } = await import("@/lib/sse");
-        sseClient.clearUser();
+        sseClient.disconnect();
       } catch (error) {
         console.log("SSE manager not available during logout");
       }

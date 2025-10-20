@@ -6,8 +6,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { vercelSSEClient, VercelSSEClient } from '@/lib/sse/VercelSSEClient';
-import { TransferNotification } from '@/lib/sse/VercelNotificationService';
+import { sseClient } from '@/lib/sse';
+import type { VercelSSEClient } from '@/lib/sse/vercel/SSEClient';
+import type { TransferNotification } from '@/lib/sse/vercel/NotificationService';
 
 export interface VercelSSEState {
   connected: boolean;
@@ -33,7 +34,7 @@ export function useVercelSSE(userId?: string, userType?: string) {
   // Connect to SSE
   const connect = useCallback(async (userId: string, userType: string) => {
     try {
-      const result = await vercelSSEClient.connect(userId, userType);
+      const result = await sseClient.connect(userId, userType);
       
       if (result.success) {
         setState(prev => ({
@@ -59,7 +60,7 @@ export function useVercelSSE(userId?: string, userType?: string) {
 
   // Disconnect from SSE
   const disconnect = useCallback(() => {
-    vercelSSEClient.disconnect();
+    sseClient.disconnect();
     setState(prev => ({
       ...prev,
       connected: false,
@@ -74,13 +75,13 @@ export function useVercelSSE(userId?: string, userType?: string) {
     id: string,
     callback: (notification: TransferNotification) => void
   ) => {
-    return vercelSSEClient.subscribe(id, callback);
+    return sseClient.subscribe(id, callback);
   }, []);
 
   // Mark notification as read
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
-      const result = await vercelSSEClient.markAsRead(notificationId);
+      const result = await sseClient.markAsRead(notificationId);
       return result;
     } catch (error) {
       console.error('❌ Failed to mark notification as read:', error);
@@ -91,7 +92,7 @@ export function useVercelSSE(userId?: string, userType?: string) {
   // Get notification statistics
   const getStats = useCallback(async () => {
     try {
-      return await vercelSSEClient.getNotificationStats();
+      return await sseClient.getNotificationStats();
     } catch (error) {
       console.error('❌ Failed to get notification stats:', error);
       return null;
@@ -108,7 +109,7 @@ export function useVercelSSE(userId?: string, userType?: string) {
   // Update state periodically
   useEffect(() => {
     const interval = setInterval(() => {
-      const connectionState = vercelSSEClient.getConnectionState();
+      const connectionState = sseClient.getConnectionState();
       setState(prev => ({
         ...prev,
         connected: connectionState.connected,
@@ -140,7 +141,7 @@ export function useVercelSSE(userId?: string, userType?: string) {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      vercelSSEClient.cleanup();
+      sseClient.cleanup();
     };
   }, []);
 

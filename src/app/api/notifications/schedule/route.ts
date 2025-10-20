@@ -198,7 +198,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching scheduling notifications:', error);
-    return handleAuthError('Failed to fetch notifications', 'NOTIFICATION_ERROR', 500);
+    return handleAuthError(error);
   }
 }
 
@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
 
       case 'create_reminder':
         if (!transferId || !message) {
-          return handleAuthError('Transfer ID and message are required', 'VALIDATION_ERROR', 400);
+          return NextResponse.json({ error: 'Transfer ID and message are required' }, { status: 400 });
         }
 
         // Create a reminder notification
@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
 
       case 'dismiss_conflict':
         if (!transferId) {
-          return handleAuthError('Transfer ID is required', 'VALIDATION_ERROR', 400);
+          return NextResponse.json({ error: 'Transfer ID is required' }, { status: 400 });
         }
 
         // Update transfer to acknowledge conflicts
@@ -273,11 +273,11 @@ export async function POST(request: NextRequest) {
         });
 
       default:
-        return handleAuthError('Invalid action', 'VALIDATION_ERROR', 400);
+        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
   } catch (error) {
     console.error('Error processing notification action:', error);
-    return handleAuthError('Failed to process notification action', 'NOTIFICATION_ACTION_ERROR', 500);
+    return handleAuthError(error);
   }
 }

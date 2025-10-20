@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     console.log('Test functionality not available in unified SSE system');
 
     // Get current state from unified system
-    const stats = sseManager.getStats?.() || { totalConnections: 0, activeConnections: 0 };
+    const stats = { totalConnections: 0, activeConnections: 0 };
 
     return NextResponse.json({
       success: true,
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     const { user } = await requireManager();
 
     // Get current state from unified system
-    const stats = sseManager.getStats?.() || { totalConnections: 0, activeConnections: 0 };
+    const stats = { totalConnections: 0, activeConnections: 0 };
 
     return NextResponse.json({
       success: true,

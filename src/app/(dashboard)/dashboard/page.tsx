@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/auth/useAuth";
+import { useSession } from "@/contexts/SessionContext";
 import { useDashboardData } from "@/hooks/dashboard/useDashboardData";
 import { motion } from "framer-motion";
 import Sidebar from "@/components/features/dashboard/Sidebar";
@@ -33,7 +33,12 @@ interface User {
 
 export default function EmployeeDashboard() {
   const router = useRouter();
-  const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
+  const {
+    user,
+    isLoading: authLoading,
+    isAuthenticated,
+    logout,
+  } = useSession();
   const {
     stats,
     urgentTransfers,
@@ -111,7 +116,21 @@ export default function EmployeeDashboard() {
 
       {/* Sidebar */}
       {user && (
-        <Sidebar user={user} onLogout={logout} onToggle={setSidebarCollapsed} />
+        <Sidebar
+          user={{
+            ...user,
+            phone: user.phone || "",
+            status: user.status as
+              | "pending"
+              | "approved"
+              | "rejected"
+              | "suspended",
+            createdAt: user.createdAt || new Date(),
+            updatedAt: user.updatedAt || new Date(),
+          }}
+          onLogout={logout}
+          onToggle={setSidebarCollapsed}
+        />
       )}
 
       {/* Main Content */}
@@ -123,7 +142,17 @@ export default function EmployeeDashboard() {
         {/* New Header */}
         {user && (
           <DashboardHeader
-            user={user}
+            user={{
+              ...user,
+              phone: user.phone || "",
+              status: user.status as
+                | "pending"
+                | "approved"
+                | "rejected"
+                | "suspended",
+              createdAt: user.createdAt || new Date(),
+              updatedAt: user.updatedAt || new Date(),
+            }}
             onLogout={logout}
             pageTitle="Dashboard"
           />

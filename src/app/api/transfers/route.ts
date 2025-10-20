@@ -129,15 +129,16 @@ export async function POST(request: NextRequest) {
     // Validate transfer data
     const validation = validateTransferData(body);
     if (!validation.isValid) {
-      return createSessionErrorResponse('Validation failed', 'VALIDATION_ERROR', 400, {
+      return NextResponse.json({
+        error: 'Validation failed',
         errors: validation.errors,
         warnings: validation.warnings
-      });
+      }, { status: 400 });
     }
 
     // Use authenticated user
     const requestingUser = user;
-    const issuerFromUser = requestingUser.post || `${requestingUser.firstName} ${requestingUser.lastName}`;
+    const issuerFromUser = `${requestingUser.firstName} ${requestingUser.lastName}`;
 
     // Validate and get hospital references
     let fromHospitalRef, toHospitalRef;
@@ -146,34 +147,34 @@ export async function POST(request: NextRequest) {
     if (fromHospitalId) {
       fromHospitalRef = await Hospital.findById(fromHospitalId);
       if (!fromHospitalRef) {
-        return createSessionErrorResponse('Invalid source hospital ID', 'VALIDATION_ERROR', 400);
+        return NextResponse.json({ error: 'Invalid source hospital ID' }, { status: 400 });
       }
       fromHospitalName = fromHospitalRef.name;
     } else {
       // Fallback: find hospital by name
       fromHospitalRef = await Hospital.findOne({ name: fromHospital, isActive: true });
       if (!fromHospitalRef) {
-        return createSessionErrorResponse('Source hospital not found in system', 'VALIDATION_ERROR', 400);
+        return NextResponse.json({ error: 'Source hospital not found in system' }, { status: 400 });
       }
     }
 
     if (toHospitalId) {
       toHospitalRef = await Hospital.findById(toHospitalId);
       if (!toHospitalRef) {
-        return createSessionErrorResponse('Invalid destination hospital ID', 'VALIDATION_ERROR', 400);
+        return NextResponse.json({ error: 'Invalid destination hospital ID' }, { status: 400 });
       }
       toHospitalName = toHospitalRef.name;
     } else {
       // Fallback: find hospital by name
       toHospitalRef = await Hospital.findOne({ name: toHospital, isActive: true });
       if (!toHospitalRef) {
-        return createSessionErrorResponse('Destination hospital not found in system', 'VALIDATION_ERROR', 400);
+        return NextResponse.json({ error: 'Destination hospital not found in system' }, { status: 400 });
       }
     }
 
     // Validate that hospitals are different
     if ((fromHospitalRef._id as any).toString() === (toHospitalRef._id as any).toString()) {
-      return createSessionErrorResponse('Source and destination hospitals must be different', 'VALIDATION_ERROR', 400);
+      return NextResponse.json({ error: 'Source and destination hospitals must be different' }, { status: 400 });
     }
 
     // Generate unique transfer ID
