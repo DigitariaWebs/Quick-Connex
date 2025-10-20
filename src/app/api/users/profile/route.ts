@@ -2,29 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import User from '@/models/User';
 import Transfer from '@/models/Transfer';
-import { verifyToken } from '@/lib/auth/jwt';
+import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 
 export async function GET(request: NextRequest) {
   try {
-    // Get token from cookies
-    const token = request.cookies.get('auth-token')?.value;
-    
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Verify token
-    const decoded = await verifyToken(token);
-    
-    if (!decoded || !decoded.userId) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
+    // Authenticate user using new session manager
+    const { user } = await requireEmployeeOrManager();
 
     await dbConnect();
 
     // Fetch user profile
-    const user = await User.findById(decoded.userId).select('-password');
-    if (!user) {
+    const userProfile = await User.findById(user._id).select('-password');
+    if (!userProfile) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
@@ -34,18 +23,15 @@ export async function GET(request: NextRequest) {
     // Fetch recent activity
     const recentActivity = await getRecentActivity((user._id as any).toString(), user.userType);
 
-    return NextResponse.json({
-      profile: user,
+    return createSuccessResponse({
+      profile: userProfile,
       stats: transferStats,
       recentActivity: recentActivity
     });
 
   } catch (error) {
     console.error('Error fetching profile data:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleAuthError(error);
   }
 }
 

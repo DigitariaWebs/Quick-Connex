@@ -135,9 +135,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
       // Disconnect SSE connection if exists
       try {
-        const { unifiedSSEClient } = await import(
-          "@/lib/sse/unified-client-manager"
-        );
+        const { unifiedSSEClient } = await import("@/lib/sse");
         unifiedSSEClient.clearUser();
       } catch (error) {
         console.log("SSE manager not available during logout");
@@ -168,10 +166,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
       // Disconnect SSE connection
       try {
-        const { unifiedSSEClient } = await import(
-          "@/lib/sse/unified-client-manager"
-        );
-        unifiedSSEClient.clearUser();
+        const { sseClient } = await import("@/lib/sse");
+        sseClient.clearUser();
       } catch (error) {
         console.log("SSE manager not available during logout");
       }

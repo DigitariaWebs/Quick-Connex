@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import Patient from '@/models/Patient';
-import { requireEmployeeOrManagerWithSessionWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
+import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 
 // GET /api/patients - Get patients (search and list)
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireEmployeeOrManager();
 
     await dbConnect();
 
@@ -56,7 +53,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching patients:', error);
-    return createSessionErrorResponse('Failed to fetch patients', 'INTERNAL_ERROR', 500);
+    return handleAuthError(error);
   }
 }
 
@@ -64,10 +61,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user - only managers can create patients
-    const authResult = await requireEmployeeOrManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireEmployeeOrManager();
 
     await dbConnect();
 
@@ -116,8 +110,8 @@ export async function POST(request: NextRequest) {
       emergencyContact,
       medicalInfo,
       insuranceInfo,
-      createdBy: authResult.user._id,
-      lastModifiedBy: authResult.user._id,
+      createdBy: user._id,
+      lastModifiedBy: user._id,
       isActive: true
     });
 
@@ -128,10 +122,10 @@ export async function POST(request: NextRequest) {
       .populate('createdBy', 'firstName lastName email')
       .populate('lastModifiedBy', 'firstName lastName email');
 
-    return createSessionSuccessResponse(populatedPatient, 'Patient created successfully', 201);
+    return createSuccessResponse(populatedPatient, 'Patient created successfully', 201);
 
   } catch (error) {
     console.error('Error creating patient:', error);
-    return createSessionErrorResponse('Failed to create patient', 'INTERNAL_ERROR', 500);
+    return handleAuthError(error);
   }
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireEmployeeOrManagerWithSessionWithSession } from '@/lib/auth/session-auth-middleware';
-import { unifiedSSEServer } from '@/lib/sse/unified-server-manager';
+import { sseManager } from '@/lib/sse';
 
 interface NotificationData {
   id: string;
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Broadcast the notification to all connected users using unified SSE server
-    const broadcastCount = unifiedSSEServer.broadcastToAll(notificationData);
+    const result = await sseManager.broadcastToAll(notificationData);
     
     console.log(`📡 Test Notification: Broadcasted ${notificationType} to ${broadcastCount} connected users`);
 

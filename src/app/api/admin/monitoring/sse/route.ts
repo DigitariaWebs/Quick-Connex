@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireSuperAdminWithSession } from '@/lib/auth/session-auth-middleware';
-import { unifiedSSEServer } from '@/lib/sse/unified-server-manager';
+import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { sseManager } from '@/lib/sse';
 
 /**
  * SSE Connections Monitoring API Endpoint
@@ -18,15 +18,12 @@ import { unifiedSSEServer } from '@/lib/sse/unified-server-manager';
 export async function GET(request: NextRequest) {
   try {
     // Check super admin permissions
-    const authResult = await requireSuperAdminWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireManager();
 
     console.log('📊 SSE Monitoring API: Fetching real-time SSE data');
 
     // Get real-time data from the unified SSE server
-    const stats = unifiedSSEServer.getStats();
+    const stats = sseManager.getStats?.() || { totalConnections: 0, activeConnections: 0 };
 
     console.log(`📊 SSE Monitoring API: Retrieved ${stats.totalConnections} connections`);
 

@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
-import { requireEmployeeOrManagerWithSessionWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
+import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 import TimelineService from '@/lib/services/timeline-service';
 import TransferNotificationService from '@/lib/communication/integrations/transfer-notification-service';
 import { canCancelTransfer } from '@/lib/transfers/transfer-cancellation-utils';
@@ -23,16 +23,11 @@ export async function PUT(
     const { reason } = body;
 
     if (!transferId) {
-      return createSessionErrorResponse('Transfer ID is required', 'VALIDATION_ERROR', 400);
+      return NextResponse.json({ error: 'Transfer ID is required' }, { status: 400 });
     }
 
     // Authenticate user
-    const authResult = await requireEmployeeOrManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
-
-    const user = authResult.user;
+    const { user } = await requireEmployeeOrManager();
 
     await dbConnect();
 
@@ -156,7 +151,7 @@ export async function PUT(
       // Don't fail the operation if notifications fail
     }
 
-    return createSessionSuccessResponse({
+    return createSuccessResponse({
       success: true,
       message: 'Transfer returned to available pool. Other employees can now accept it.',
       transfer: {
@@ -176,7 +171,7 @@ export async function PUT(
 
   } catch (error) {
     console.error('Error cancelling transfer:', error);
-    return createSessionErrorResponse('Internal server error', 'INTERNAL_ERROR', 500);
+    return handleAuthError(error);
   }
 }
 
@@ -188,14 +183,11 @@ export async function GET(
     const { transferId } = await params;
 
     if (!transferId) {
-      return createSessionErrorResponse('Transfer ID is required', 'VALIDATION_ERROR', 400);
+      return NextResponse.json({ error: 'Transfer ID is required' }, { status: 400 });
     }
 
     // Authenticate user
-    const authResult = await requireEmployeeOrManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireEmployeeOrManager();
 
     await dbConnect();
 
@@ -205,13 +197,12 @@ export async function GET(
       .populate('assignedTo', 'firstName lastName email phone userType') as any;
 
     if (!transfer) {
-      return createSessionErrorResponse('Transfer not found', 'NOT_FOUND', 404);
+      return NextResponse.json({ error: 'Transfer not found' }, { status: 404 });
     }
 
-    const user = authResult.user;
     const canCancel = canCancelTransfer(transfer);
 
-    return createSessionSuccessResponse({
+    return createSuccessResponse({
       transfer: {
         id: transfer._id,
         transferId: transfer.transferId,
@@ -230,6 +221,6 @@ export async function GET(
 
   } catch (error) {
     console.error('Error fetching transfer cancellation info:', error);
-    return createSessionErrorResponse('Internal server error', 'INTERNAL_ERROR', 500);
+    return handleAuthError(error);
   }
 }

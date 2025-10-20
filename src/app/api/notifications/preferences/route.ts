@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import User from '@/models/User';
-import { requireEmployeeOrManagerWithSessionWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
+import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 
 // GET /api/notifications/preferences - Get user's notification preferences
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireEmployeeOrManager();
 
     await dbConnect();
 
-    const user = await User.findById(authResult.user._id).select('notificationPreferences');
+    const userDoc = await User.findById(user._id).select('notificationPreferences');
     
     const defaultPreferences = {
       realtime: {
@@ -79,14 +76,14 @@ export async function GET(request: NextRequest) {
 
     const preferences = defaultPreferences;
 
-    return createSessionSuccessResponse({
+    return createSuccessResponse({
       preferences,
-      userType: authResult.user.userType
+      userType: user.userType
     });
 
   } catch (error) {
     console.error('Error fetching notification preferences:', error);
-    return createSessionErrorResponse('Failed to fetch notification preferences', 'PREFERENCES_FETCH_ERROR', 500);
+    return handleAuthError(error);
   }
 }
 
@@ -94,10 +91,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireEmployeeOrManager();
 
     await dbConnect();
 
@@ -105,7 +99,7 @@ export async function PUT(request: NextRequest) {
     const { preferences } = body;
 
     if (!preferences || typeof preferences !== 'object') {
-      return createSessionErrorResponse('Invalid preferences data', 'VALIDATION_ERROR', 400);
+      return NextResponse.json({ error: 'Invalid preferences data' }, { status: 400 });
     }
 
     // Validate preferences structure
@@ -115,13 +109,13 @@ export async function PUT(request: NextRequest) {
     for (const channel of validChannels) {
       if (preferences[channel]) {
         if (typeof preferences[channel].enabled !== 'boolean') {
-          return createSessionErrorResponse(`Invalid ${channel}.enabled value`, 'VALIDATION_ERROR', 400);
+          return NextResponse.json(`Invalid ${channel}.enabled value`, 'VALIDATION_ERROR', 400);
         }
         
         if (preferences[channel].types) {
           for (const type of validTypes) {
             if (preferences[channel].types[type] !== undefined && typeof preferences[channel].types[type] !== 'boolean') {
-              return createSessionErrorResponse(`Invalid ${channel}.types.${type} value`, 'VALIDATION_ERROR', 400);
+              return NextResponse.json(`Invalid ${channel}.types.${type} value`, 'VALIDATION_ERROR', 400);
             }
           }
         }
@@ -131,21 +125,21 @@ export async function PUT(request: NextRequest) {
     // Validate quiet hours
     if (preferences.quietHours) {
       if (preferences.quietHours.enabled && typeof preferences.quietHours.enabled !== 'boolean') {
-        return createSessionErrorResponse('Invalid quietHours.enabled value', 'VALIDATION_ERROR', 400);
+        return NextResponse.json({ error: 'Invalid quietHours.enabled value' }, { status: 400 });
       }
       
       if (preferences.quietHours.start && !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(preferences.quietHours.start)) {
-        return createSessionErrorResponse('Invalid quietHours.start format (use HH:MM)', 'VALIDATION_ERROR', 400);
+        return NextResponse.json({ error: 'Invalid quietHours.start format (use HH:MM)' }, { status: 400 });
       }
       
       if (preferences.quietHours.end && !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(preferences.quietHours.end)) {
-        return createSessionErrorResponse('Invalid quietHours.end format (use HH:MM)', 'VALIDATION_ERROR', 400);
+        return NextResponse.json({ error: 'Invalid quietHours.end format (use HH:MM)' }, { status: 400 });
       }
     }
 
     // Update user preferences
     const updatedUser = await User.findByIdAndUpdate(
-      authResult.user._id,
+      user._id,
       { 
         notificationPreferences: preferences,
         updatedAt: new Date()
@@ -154,17 +148,17 @@ export async function PUT(request: NextRequest) {
     ).select('notificationPreferences');
 
     if (!updatedUser) {
-      return createSessionErrorResponse('User not found', 'USER_NOT_FOUND', 404);
+      return NextResponse.json('User not found', 'USER_NOT_FOUND', 404);
     }
 
-    return createSessionSuccessResponse({
+    return createSuccessResponse({
       preferences: preferences,
       message: 'Notification preferences updated successfully'
     });
 
   } catch (error) {
     console.error('Error updating notification preferences:', error);
-    return createSessionErrorResponse('Failed to update notification preferences', 'PREFERENCES_UPDATE_ERROR', 500);
+    return handleAuthError(error);
   }
 }
 
@@ -172,10 +166,7 @@ export async function PUT(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireEmployeeOrManager();
 
     await dbConnect();
 
@@ -241,7 +232,7 @@ export async function POST(request: NextRequest) {
     };
 
     const updatedUser = await User.findByIdAndUpdate(
-      authResult.user._id,
+      user._id,
       { 
         notificationPreferences: defaultPreferences,
         updatedAt: new Date()
@@ -250,16 +241,16 @@ export async function POST(request: NextRequest) {
     ).select('notificationPreferences');
 
     if (!updatedUser) {
-      return createSessionErrorResponse('User not found', 'USER_NOT_FOUND', 404);
+      return NextResponse.json('User not found', 'USER_NOT_FOUND', 404);
     }
 
-    return createSessionSuccessResponse({
+    return createSuccessResponse({
       preferences: defaultPreferences,
       message: 'Notification preferences reset to defaults'
     });
 
   } catch (error) {
     console.error('Error resetting notification preferences:', error);
-    return createSessionErrorResponse('Failed to reset notification preferences', 'PREFERENCES_RESET_ERROR', 500);
+    return handleAuthError(error);
   }
 }

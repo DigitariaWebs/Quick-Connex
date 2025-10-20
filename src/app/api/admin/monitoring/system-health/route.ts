@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireSuperAdminWithSession } from '@/lib/auth/session-auth-middleware';
+import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 
 /**
  * GET /api/admin/monitoring/system-health
@@ -14,10 +14,7 @@ import { requireSuperAdminWithSession } from '@/lib/auth/session-auth-middleware
 export async function GET(request: NextRequest) {
   try {
     // Check super admin permissions
-    const authResult = await requireSuperAdminWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireManager();
 
     // TODO: Implement system health endpoint
     

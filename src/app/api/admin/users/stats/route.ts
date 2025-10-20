@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/database/mongoose";
 import User from "@/models/User";
-import { requireAdminWithSession } from "@/lib/auth/session-auth-middleware";
+import { requireManager, handleAuthError, createSuccessResponse } from "@/lib/auth/auth-utils";
 
 /**
  * GET /api/admin/users/stats
@@ -11,10 +11,7 @@ import { requireAdminWithSession } from "@/lib/auth/session-auth-middleware";
 export async function GET(request: NextRequest) {
   try {
     // Verify admin authentication
-    const authResult = await requireAdminWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireManager();
 
     await dbConnect();
 

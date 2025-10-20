@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import Notification from '@/models/Notification';
-import { requireEmployeeOrManagerWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
+import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 
 // GET /api/notifications - Get notifications for the authenticated user
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireEmployeeOrManager();
 
     await dbConnect();
 
@@ -21,8 +18,8 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    const userRoles = [authResult.user.userType];
-    const userId = authResult.user._id;
+    const userRoles = [user.userType];
+    const userId = user._id;
 
     // Build query
     const query: any = {
@@ -132,7 +129,7 @@ export async function GET(request: NextRequest) {
       })
     };
 
-    return createSessionSuccessResponse({
+    return createSuccessResponse({
       notifications: transformedNotifications,
       summary,
       pagination: {
@@ -145,7 +142,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching notifications:', error);
-    return createSessionErrorResponse('Failed to fetch notifications', 'NOTIFICATION_FETCH_ERROR', 500);
+    return handleAuthError(error);
   }
 }
 
@@ -153,17 +150,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireEmployeeOrManager();
 
     await dbConnect();
 
     const body = await request.json();
     const { action, notificationIds, notificationId, all } = body;
 
-    const userId = authResult.user._id;
+    const userId = user._id;
 
     switch (action) {
       case 'mark_read':
@@ -173,7 +167,7 @@ export async function POST(request: NextRequest) {
             {
               $or: [
                 { targetUsers: userId },
-                { targetRoles: { $in: [authResult.user.userType] } }
+                { targetRoles: { $in: [user.userType] } }
               ],
               'deliveries.userId': userId
             },
@@ -207,7 +201,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        return createSessionSuccessResponse({ 
+        return createSuccessResponse({ 
           message: 'Notifications marked as read',
           notificationIds: notificationIds || [notificationId] || 'all'
         });
@@ -219,7 +213,7 @@ export async function POST(request: NextRequest) {
             {
               $or: [
                 { targetUsers: userId },
-                { targetRoles: { $in: [authResult.user.userType] } }
+                { targetRoles: { $in: [user.userType] } }
               ],
               'deliveries.userId': userId
             },
@@ -253,7 +247,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        return createSessionSuccessResponse({ 
+        return createSuccessResponse({ 
           message: 'Notifications dismissed',
           notificationIds: notificationIds || [notificationId] || 'all'
         });
@@ -264,7 +258,7 @@ export async function POST(request: NextRequest) {
           {
             $or: [
               { targetUsers: userId },
-              { targetRoles: { $in: [authResult.user.userType] } }
+              { targetRoles: { $in: [user.userType] } }
             ],
             'deliveries.userId': userId
           },
@@ -273,16 +267,16 @@ export async function POST(request: NextRequest) {
           }
         );
 
-        return createSessionSuccessResponse({ 
+        return createSuccessResponse({ 
           message: 'All notifications cleared'
         });
 
       default:
-        return createSessionErrorResponse('Invalid action', 'VALIDATION_ERROR', 400);
+        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
   } catch (error) {
     console.error('Error processing notification action:', error);
-    return createSessionErrorResponse('Failed to process notification action', 'NOTIFICATION_ACTION_ERROR', 500);
+    return handleAuthError(error);
   }
 }

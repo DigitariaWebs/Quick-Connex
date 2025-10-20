@@ -31,13 +31,9 @@ export function useSignUpForm() {
           text: result.message || 'Account created successfully! Your registration is pending approval. You will receive an email notification once approved.' 
         });
         
-        // If user was approved and session was created, set up SSE connection
+        // If user was approved and session was created, redirect to dashboard
         if (result.session && result.user) {
           console.log('✅ Signup: Session created for approved user');
-          
-          // Import and set user in unified SSE manager
-          const { unifiedSSEClient } = await import('@/lib/sse/unified-client-manager');
-          unifiedSSEClient.setUser(result.user, result.session.sessionId);
           
           // Redirect to appropriate dashboard
           const redirectPath = (result.user.userType === 'admin' || result.user.userType === 'super_admin') 

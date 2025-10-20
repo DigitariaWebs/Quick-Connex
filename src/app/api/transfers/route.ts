@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import { Transfer, User, Hospital, Patient } from '@/lib/database/models';
-import { requireManagerWithSession, requireEmployeeOrManagerWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
+import { requireEmployeeOrManager, requireManager, handleAuthError, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-utils';
 import { validateTransferData } from '@/lib/transfers/transfer-validation';
 import TimelineService from '@/lib/services/timeline-service';
 
@@ -9,17 +9,13 @@ import TimelineService from '@/lib/services/timeline-service';
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user with full session validation
-    const authResult = await requireEmployeeOrManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireEmployeeOrManager();
 
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const scheduledDate = searchParams.get('scheduledDate');
-    const user = authResult.user;
 
     // Build query based on user type
     const query: any = {};
@@ -43,7 +39,7 @@ export async function GET(request: NextRequest) {
       if (status && status !== 'all') {
         if (status === 'pending') {
           // Employees cannot see pending transfers
-          return createSessionSuccessResponse({
+          return createSuccessResponse({
             transfers: [],
             count: 0
           });
@@ -69,14 +65,14 @@ export async function GET(request: NextRequest) {
       .sort({ requestedDate: -1 })
       .limit(50);
 
-    return createSessionSuccessResponse({
+    return createSuccessResponse({
       transfers,
       count: transfers.length
     });
 
   } catch (error) {
     console.error('Error fetching transfers:', error);
-    return createSessionErrorResponse('Failed to fetch transfers', 'FETCH_ERROR', 500);
+    return handleAuthError(error);
   }
 }
 
@@ -84,10 +80,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user - only managers can create transfers
-    const authResult = await requireManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireManager();
 
     await dbConnect();
 
@@ -143,7 +136,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Use authenticated user
-    const requestingUser = authResult.user;
+    const requestingUser = user;
     const issuerFromUser = requestingUser.post || `${requestingUser.firstName} ${requestingUser.lastName}`;
 
     // Validate and get hospital references
@@ -342,7 +335,7 @@ export async function POST(request: NextRequest) {
       console.error('Error sending transfer request notifications:', notificationError);
     }
 
-    return createSessionSuccessResponse(populatedTransfer, 'Transfer request created successfully', 201);
+    return createSuccessResponse(populatedTransfer, 'Transfer request created successfully', 201);
 
   } catch (error) {
     console.error('Error creating transfer:', error);
@@ -351,9 +344,6 @@ export async function POST(request: NextRequest) {
       stack: (error as Error).stack,
       name: (error as Error).name
     });
-    return createSessionErrorResponse(`Failed to create transfer request: ${(error as Error).message}`, 'CREATE_ERROR', 500, {
-      originalError: (error as Error).message,
-      errorType: (error as Error).name
-    });
+    return handleAuthError(error);
   }
 }

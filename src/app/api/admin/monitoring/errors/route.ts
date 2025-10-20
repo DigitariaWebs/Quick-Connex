@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireSuperAdminWithSession } from '@/lib/auth/session-auth-middleware';
+import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 
 /**
  * Error Logs Monitoring API Endpoint
@@ -294,10 +294,7 @@ function simulateNewErrors() {
 export async function GET(request: NextRequest) {
   try {
     // Check admin permissions
-    const authResult = await requireSuperAdminWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireManager();
 
     // Initialize mock data if needed
     initializeMockData();

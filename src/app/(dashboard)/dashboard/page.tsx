@@ -11,7 +11,7 @@ import TransferOverview from "@/components/features/dashboard/TransferOverview";
 import UrgentAlerts from "@/components/features/dashboard/UrgentAlerts";
 import RecentActivity from "@/components/features/dashboard/RecentActivity";
 import QuickActions from "@/components/features/dashboard/QuickActions";
-import SchedulingNotifications from "@/components/features/notifications/SchedulingNotifications";
+// import SchedulingNotifications from "@/components/features/notifications/SchedulingNotifications"; // TEMPORARILY DISABLED
 // import NotificationPopupManager from "@/components/features/notifications/NotificationPopupManager"; // Disabled - using GlobalNotificationSystem instead
 // import ToastNotificationTester from "@/components/features/notifications/ToastNotificationTester"; // Removed - no longer needed
 import TransferFormModal from "@/components/ui/modals/TransferFormModal";
@@ -200,10 +200,10 @@ export default function EmployeeDashboard() {
             )}
           </div>
 
-          {/* Scheduling Notifications */}
-          <div className="mb-8">
+          {/* Scheduling Notifications - TEMPORARILY DISABLED */}
+          {/* <div className="mb-8">
             <SchedulingNotifications limit={5} showSummary={true} />
-          </div>
+          </div> */}
 
           {/* Toast Notification Tester - Removed */}
 

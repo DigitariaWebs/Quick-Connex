@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdminWithSession } from '@/lib/auth/session-auth-middleware';
+import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 import { logAdminAction } from '@/lib/auth/admin-middleware';
 import dbConnect from '@/lib/database/mongoose';
 import mongoose from 'mongoose';
@@ -47,12 +47,9 @@ interface BulkOperation {
 export async function GET(request: NextRequest) {
   try {
     // Check admin permissions
-    const authResult = await requireAdminWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireManager();
 
-    const adminUser = authResult.user;
+    const adminUser = user;
     
     // Check specific permissions
     const hasViewPermission = adminUser.userType === 'super_admin' || adminUser.userType === 'admin' || (adminUser.permissions && adminUser.permissions.includes(Permission.VIEW_ALL_TRANSFERS));
@@ -251,12 +248,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check admin permissions
-    const authResult = await requireAdminWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireManager();
 
-    const adminUser = authResult.user;
+    const adminUser = user;
     const body = await request.json();
 
     // Check if this is a bulk operation

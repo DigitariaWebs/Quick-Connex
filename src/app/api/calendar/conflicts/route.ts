@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
-import { requireEmployeeOrManagerWithSessionWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
+import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 
 // GET /api/calendar/conflicts - Check for scheduling conflicts
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireEmployeeOrManager();
 
     await dbConnect();
 
@@ -21,7 +18,7 @@ export async function GET(request: NextRequest) {
     const resourceType = searchParams.get('resourceType'); // 'driver', 'vehicle', 'location'
 
     if (!startDate || !endDate) {
-      return createSessionErrorResponse('Start date and end date are required', 'VALIDATION_ERROR', 400);
+      return handleAuthError('Start date and end date are required', 'VALIDATION_ERROR', 400);
     }
 
     const startTime = new Date(startDate);
@@ -96,7 +93,7 @@ export async function GET(request: NextRequest) {
       recommendedAction: getRecommendedAction(conflicts)
     };
 
-    return createSessionSuccessResponse({
+    return createSuccessResponse({
       conflicts,
       conflictsByType,
       summary,
@@ -108,7 +105,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error checking conflicts:', error);
-    return createSessionErrorResponse('Failed to check conflicts', 'CONFLICT_CHECK_ERROR', 500);
+    return handleAuthError('Failed to check conflicts', 'CONFLICT_CHECK_ERROR', 500);
   }
 }
 
@@ -132,12 +129,12 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!transferId || !resolutionStrategy) {
-      return createSessionErrorResponse('Transfer ID and resolution strategy are required', 'VALIDATION_ERROR', 400);
+      return handleAuthError('Transfer ID and resolution strategy are required', 'VALIDATION_ERROR', 400);
     }
 
     const transfer = await Transfer.findOne({ transferId });
     if (!transfer) {
-      return createSessionErrorResponse('Transfer not found', 'NOT_FOUND', 404);
+      return handleAuthError('Transfer not found', 'NOT_FOUND', 404);
     }
 
     const results = [];
@@ -145,7 +142,7 @@ export async function POST(request: NextRequest) {
     switch (resolutionStrategy) {
       case 'auto_reschedule':
         if (!newSchedule) {
-          return createSessionErrorResponse('New schedule is required for auto reschedule', 'VALIDATION_ERROR', 400);
+          return handleAuthError('New schedule is required for auto reschedule', 'VALIDATION_ERROR', 400);
         }
         
         // Update the transfer with new schedule
@@ -231,10 +228,10 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        return createSessionErrorResponse('Invalid resolution strategy', 'VALIDATION_ERROR', 400);
+        return handleAuthError('Invalid resolution strategy', 'VALIDATION_ERROR', 400);
     }
 
-    return createSessionSuccessResponse({
+    return createSuccessResponse({
       resolutionStrategy,
       results,
       resolvedAt: new Date().toISOString(),
@@ -246,7 +243,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error resolving conflicts:', error);
-    return createSessionErrorResponse('Failed to resolve conflicts', 'RESOLUTION_ERROR', 500);
+    return handleAuthError('Failed to resolve conflicts', 'RESOLUTION_ERROR', 500);
   }
 }
 

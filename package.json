@@ -5,6 +5,7 @@
   "packageManager": "npm@10.0.0",
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:locked": "node scripts/dev-with-lock.js",
     "dev:server": "node server.js",
     "dev:next": "next dev --turbopack",
     "build": "next build",
@@ -29,7 +30,9 @@
     "create-transfer-notify": "node scripts/create-test-transfer-with-notifications.js",
     "check-twilio": "node scripts/check-twilio-status.js",
     "check-sms": "node scripts/check-sms-details.js",
-    "clear-transfers": "node scripts/essentials/clear-transfers.js"
+    "clear-transfers": "node scripts/essentials/clear-transfers.js",
+    "kill-servers": "chmod +x scripts/kill-nextjs-servers.sh && ./scripts/kill-nextjs-servers.sh",
+    "check-servers": "node scripts/check-servers.js"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.6",

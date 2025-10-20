@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdminWithSession } from '@/lib/auth/session-auth-middleware';
-import { unifiedSSEServer } from '@/lib/sse/unified-server-manager';
+import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { sseManager } from '@/lib/sse';
 import { SSEStats } from '@/types/dashboard';
 
 /**
@@ -16,13 +16,10 @@ import { SSEStats } from '@/types/dashboard';
 export async function GET(request: NextRequest) {
   try {
     // Check admin permissions
-    const authResult = await requireAdminWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireManager();
 
     // Get real-time SSE metrics from unified server
-    const stats = unifiedSSEServer.getStats();
+    const stats = sseManager.getStats?.() || { totalConnections: 0, activeConnections: 0 };
 
     const sseStats: SSEStats = {
       activeConnections: stats.totalConnections,

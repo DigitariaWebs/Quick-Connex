@@ -2,11 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "@/hooks/auth/useAuth";
-import {
-  unifiedSSEClient,
-  SSEMessage,
-  ConnectionState,
-} from "@/lib/sse/unified-client-manager";
+import { sseClient } from "@/lib/sse";
+import type { SSEMessage, ConnectionState } from "@/lib/sse/original/SSETypes";
 
 /**
  * Unified SSE Context
@@ -52,12 +49,11 @@ export function UnifiedSSEProvider({
   // Set user in unified client manager when user changes
   useEffect(() => {
     if (user && isAuthenticated) {
-      // Get session ID from user or auth context
-      const sessionId =
-        (user as any).sessionId || (user as any).session?.sessionId;
-      unifiedSSEClient.setUser(user, sessionId);
+      // Connect to SSE with user information
+      sseClient.connect(user._id, user.userType);
     } else {
-      unifiedSSEClient.clearUser();
+      // Disconnect from SSE
+      sseClient.disconnect();
     }
   }, [user, isAuthenticated]);
 
@@ -74,7 +70,7 @@ export function UnifiedSSEProvider({
     }
 
     // Subscribe to unified SSE client
-    const unsubscribe = unifiedSSEClient.subscribe(
+    const unsubscribe = sseClient.subscribe(
       "unified-sse-context",
       (message: SSEMessage) => {
         setLastMessage(message);
@@ -84,7 +80,7 @@ export function UnifiedSSEProvider({
 
     // Update connection status periodically
     const statusInterval = setInterval(() => {
-      const state = unifiedSSEClient.getConnectionState();
+      const state = sseClient.getConnectionState();
 
       setConnected(state.status === "connected");
       setConnecting(

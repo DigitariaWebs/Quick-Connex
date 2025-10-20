@@ -1,26 +1,31 @@
 import { useSession } from '@/contexts/SessionContext';
 import type { User } from '@/types/user';
-import type { UnifiedSessionData } from '@/types/unified-session';
+import { useMemo } from 'react';
 
 // Legacy useAuth hook that wraps the new SessionContext
 export function useAuth() {
   const sessionContext = useSession();
   
   // Convert session user to legacy User type for backward compatibility
-  const user: User | null = sessionContext.user ? {
-    _id: sessionContext.user._id,
-    email: sessionContext.user.email,
-    userType: sessionContext.user.userType,
-    firstName: sessionContext.user.firstName,
-    lastName: sessionContext.user.lastName,
-    status: sessionContext.user.status as 'pending' | 'approved' | 'rejected' | 'suspended',
-    phone: (sessionContext.user as any).phone || '',
-    // Add other required fields with defaults
-    permissions: [],
-    isSuperAdmin: sessionContext.user.userType === 'super_admin',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  } : null;
+  // Memoize the user object to prevent unnecessary re-renders
+  const user: User | null = useMemo(() => {
+    if (!sessionContext.user) return null;
+    
+    return {
+      _id: sessionContext.user._id,
+      email: sessionContext.user.email,
+      userType: sessionContext.user.userType,
+      firstName: sessionContext.user.firstName,
+      lastName: sessionContext.user.lastName,
+      status: sessionContext.user.status as 'pending' | 'approved' | 'rejected' | 'suspended',
+      phone: (sessionContext.user as any).phone || '',
+      // Add other required fields with defaults
+      permissions: [],
+      isSuperAdmin: sessionContext.user.userType === 'super_admin',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }, [sessionContext.user]);
 
   return {
     user,

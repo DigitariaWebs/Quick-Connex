@@ -20,6 +20,7 @@ import { SessionCleanup } from './SessionCleanup';
 // Simple interfaces
 export interface SessionResult {
   success: boolean;
+  token?: string;
   session?: any;
   user?: any;
   error?: string;
@@ -55,18 +56,24 @@ export class SessionManager {
     location?: any
   ): Promise<SessionResult> {
     try {
+      console.log('🔍 SessionManager: Starting session creation for user:', userId);
       await dbConnect();
+      console.log('🔍 SessionManager: Database connected');
       
       // Get user
       const user = await User.findById(userId);
       if (!user) {
+        console.log('❌ SessionManager: User not found');
         return { success: false, error: 'User not found' };
       }
+      console.log('🔍 SessionManager: User found:', user.email);
       
       // Check if user is approved
       if (user.status !== 'approved') {
+        console.log('❌ SessionManager: User not approved, status:', user.status);
         return { success: false, error: 'User account not approved' };
       }
+      console.log('🔍 SessionManager: User is approved');
       
       // Check concurrent session limits
       const existingSessions = await Session.find({ 
@@ -126,19 +133,19 @@ export class SessionManager {
       
       // Generate session ID and refresh token
       const sessionId = uuidv4();
-      
-        // Log security event if high risk
-        if (riskScore >= 50) {
-          await SecurityLogging.logSessionCreated(
-            userId,
-            sessionId,
-            ipAddress,
-            deviceInfo.userAgent || '',
-            riskScore,
-            suspiciousCheck.flags
-          );
-        }
       const refreshToken = uuidv4();
+      
+      // Log security event if high risk
+      if (riskScore >= 50) {
+        await SecurityLogging.logSessionCreated(
+          userId,
+          sessionId,
+          ipAddress,
+          deviceInfo.userAgent || '',
+          riskScore,
+          suspiciousCheck.flags
+        );
+      }
       const hashedRefreshToken = await bcrypt.hash(refreshToken, 12);
       
       // Create session
@@ -164,7 +171,9 @@ export class SessionManager {
         refreshToken: hashedRefreshToken,
         sessionType: 'web',
         concurrentSessions: existingSessions.length + 1,
-        isPrimary: existingSessions.length === 0
+        isPrimary: existingSessions.length === 0,
+        isActive: true,
+        revoked: false
       });
       
       await session.save();
@@ -177,13 +186,11 @@ export class SessionManager {
         sessionId: sessionId
       });
       
-      // Set HTTP-only cookie
-      await setAuthCookie(jwtToken);
-      
       console.log(`✅ Session created for user ${user.email} (${sessionId})`);
       
       return {
         success: true,
+        token: jwtToken,
         session: {
           sessionId,
           expiresAt: session.expiresAt,
@@ -204,9 +211,11 @@ export class SessionManager {
       
     } catch (error) {
       console.error('❌ Session creation failed:', error);
+      console.error('❌ Error details:', error instanceof Error ? error.message : String(error));
+      console.error('❌ Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
       return { 
         success: false, 
-        error: 'Failed to create session' 
+        error: error instanceof Error ? error.message : 'Failed to create session'
       };
     }
   }
@@ -216,22 +225,37 @@ export class SessionManager {
    */
   static async validateSession(sessionId: string, ipAddress?: string): Promise<ValidationResult> {
     try {
+      console.log('🔍 SessionManager: Validating session:', sessionId);
       await dbConnect();
+      console.log('🔍 SessionManager: Database connected');
       
-      // Use session pool for better performance
-      const session = await sessionPool.getSession(sessionId);
+      // Query session directly from database
+      const session = await Session.findOne({
+        sessionId,
+        isActive: true,
+        revoked: false,
+        expiresAt: { $gt: new Date() }
+      });
+      console.log('🔍 SessionManager: Session found:', !!session);
       
       if (!session) {
+        console.log('❌ SessionManager: Session not found');
         return { success: false, error: 'Session not found' };
       }
       
+      console.log('🔍 SessionManager: Checking if expired...');
       if (session.isExpired()) {
+        console.log('❌ SessionManager: Session expired');
         return { success: false, error: 'Session expired' };
       }
       
+      console.log('🔍 SessionManager: Checking if revoked...');
       if (session.isRevoked()) {
+        console.log('❌ SessionManager: Session revoked');
         return { success: false, error: 'Session revoked' };
       }
+      
+      console.log('✅ SessionManager: Session basic checks passed');
       
         // IP binding validation
         if (ipAddress) {

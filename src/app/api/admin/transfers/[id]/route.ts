@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdminWithSession } from '@/lib/auth/session-auth-middleware';
+import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 import { logAdminAction } from '@/lib/auth/admin-middleware';
 import dbConnect from '@/lib/database/mongoose';
 import { Transfer, User } from '@/lib/database/models';
@@ -31,10 +31,7 @@ export async function GET(
 ) {
   try {
     // Check admin permissions
-    const authResult = await requireAdminWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireManager();
 
     const adminUser = authResult.user;
     const { id } = await params;
@@ -158,10 +155,7 @@ export async function PUT(
 ) {
   try {
     // Check admin permissions
-    const authResult = await requireAdminWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireManager();
 
     const adminUser = authResult.user;
     const { id } = await params;
@@ -291,10 +285,7 @@ export async function DELETE(
 ) {
   try {
     // Check admin permissions
-    const authResult = await requireAdminWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireManager();
 
     const adminUser = authResult.user;
     const { id } = await params;

@@ -33,10 +33,6 @@ export function useLoginForm() {
         console.log('✅ Login: Session created by API');
         console.log('🔍 Session data:', result.session);
         
-        // Import and set user in unified SSE manager immediately
-        const { unifiedSSEClient } = await import('@/lib/sse/unified-client-manager');
-        unifiedSSEClient.setUser(result.user, result.session.sessionId);
-        
         // Redirect based on user type
         const redirectPath = (result.user.userType === 'admin' || result.user.userType === 'super_admin') 
           ? '/admin/dashboard' 
@@ -45,7 +41,7 @@ export function useLoginForm() {
         console.log(`✅ Login: Redirecting ${result.user.userType} to ${redirectPath}`);
         setTimeout(() => {
           router.replace(redirectPath); // Use replace to avoid history issues
-        }, 1000);
+        }, 2000); // Increased delay to allow SessionContext to complete auth check
       } else {
         // Handle different error types
         if (response.status === 403 && result.status === 'pending') {

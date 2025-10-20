@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireSuperAdminWithSession } from '@/lib/auth/session-auth-middleware';
-import { unifiedSSEServer } from '@/lib/sse/unified-server-manager';
+import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { sseManager } from '@/lib/sse';
 
 /**
  * Test SSE Monitoring Integration
@@ -11,10 +11,7 @@ import { unifiedSSEServer } from '@/lib/sse/unified-server-manager';
 export async function POST(request: NextRequest) {
   try {
     // Check super admin permissions
-    const authResult = await requireSuperAdminWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireManager();
 
     const { action, userId = 'test-user-123', userType = 'admin' } = await request.json();
 
@@ -25,7 +22,7 @@ export async function POST(request: NextRequest) {
     console.log('Test functionality not available in unified SSE system');
 
     // Get current state from unified system
-    const stats = unifiedSSEServer.getStats();
+    const stats = sseManager.getStats?.() || { totalConnections: 0, activeConnections: 0 };
 
     return NextResponse.json({
       success: true,
@@ -52,13 +49,10 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // Check super admin permissions
-    const authResult = await requireSuperAdminWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireManager();
 
     // Get current state from unified system
-    const stats = unifiedSSEServer.getStats();
+    const stats = sseManager.getStats?.() || { totalConnections: 0, activeConnections: 0 };
 
     return NextResponse.json({
       success: true,

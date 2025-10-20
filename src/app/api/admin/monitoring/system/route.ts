@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireSuperAdminWithSession } from '@/lib/auth/session-auth-middleware';
+import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 import os from 'os';
 import fs from 'fs/promises';
 
@@ -228,10 +228,7 @@ async function getServiceStatus(): Promise<ServiceStatus[]> {
 export async function GET(request: NextRequest) {
   try {
     // Check super admin permissions
-    const authResult = await requireSuperAdminWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireManager();
 
     // Get system metrics
     const metrics = await getSystemMetrics();

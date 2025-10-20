@@ -5,7 +5,7 @@ import {
   DashboardLoadingState 
 } from '@/types/dashboard';
 import { useUnifiedSSE } from '@/contexts/UnifiedSSEContext';
-import { unifiedSSEClient } from '@/lib/sse/unified-client-manager';
+import { sseClient } from '@/lib/sse';
 
 /**
  * useAdminDashboard Hook
@@ -196,7 +196,7 @@ export function useAdminDashboard(
     };
 
     // Subscribe to dashboard updates using unifiedSSEClient
-    const unsubscribe = unifiedSSEClient.subscribe(
+    const unsubscribe = sseClient.subscribe(
       'dashboard-update',
       handleDashboardUpdate,
       'high' // High priority for dashboard updates

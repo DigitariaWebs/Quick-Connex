@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell,
@@ -15,7 +15,7 @@ import {
   MapPin,
   Eye,
 } from "lucide-react";
-import { useUnifiedSSE } from "@/contexts/UnifiedSSEContext";
+// SSE removed temporarily
 
 interface Notification {
   id: string;
@@ -70,42 +70,29 @@ export default function SchedulingNotifications({
     "all"
   );
 
-  // Use SSE for real-time notifications
-  const { connected, error: sseError, lastMessage } = useUnifiedSSE();
+  // SSE removed temporarily
+
+  // Add protection against multiple simultaneous API calls
+  const isFetchingRef = useRef(false);
 
   useEffect(() => {
+    if (isFetchingRef.current) {
+      console.log("🔄 SchedulingNotifications: Already fetching, skipping...");
+      return;
+    }
     fetchNotifications();
   }, []);
 
-  // Handle SSE messages
-  useEffect(() => {
-    if (lastMessage) {
-      if (lastMessage.type === "notification_count_update") {
-        // Update summary with new count
-        setSummary((prev) => ({
-          ...prev,
-          unread: lastMessage.data?.unreadCount || prev.unread,
-        }));
-      } else if (lastMessage.type === "scheduling_notification") {
-        // Add new scheduling notification
-        setNotifications((prev) =>
-          [lastMessage as any, ...prev].slice(0, limit)
-        );
-        setSummary((prev) => ({
-          ...prev,
-          total: prev.total + 1,
-          unread: prev.unread + 1,
-          [lastMessage.data?.priority || "medium"]:
-            prev[
-              (lastMessage.data?.priority ||
-                "medium") as keyof NotificationSummary
-            ] + 1,
-        }));
-      }
-    }
-  }, [lastMessage, limit]);
+  // SSE message handling removed temporarily
 
   const fetchNotifications = async () => {
+    if (isFetchingRef.current) {
+      console.log("🔄 SchedulingNotifications: Already fetching, skipping...");
+      return;
+    }
+
+    console.log("🚀 SchedulingNotifications: Starting fetch...");
+    isFetchingRef.current = true;
     setLoading(true);
     setError(null);
 
@@ -115,8 +102,12 @@ export default function SchedulingNotifications({
         limit: limit.toString(),
       });
 
+      console.log(
+        "📅 SchedulingNotifications: Fetching schedule notifications..."
+      );
       const response = await fetch(`/api/notifications/schedule?${params}`);
       const data = await response.json();
+      console.log("✅ SchedulingNotifications: Schedule notifications fetched");
 
       if (data.success) {
         setNotifications(data.data.notifications);
@@ -128,6 +119,8 @@ export default function SchedulingNotifications({
       setError("Network error occurred");
       console.error("Error fetching notifications:", err);
     } finally {
+      console.log("✅ SchedulingNotifications: Fetch completed");
+      isFetchingRef.current = false;
       setLoading(false);
     }
   };

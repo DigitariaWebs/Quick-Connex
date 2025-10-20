@@ -1,28 +1,17 @@
-/**
- * SSE System - Clean Exports
- * 
- * Clean, focused exports for the SSE system following clean architecture principles.
- * Similar to the session system's clean exports.
+/*
+ * SSE Facade - Environment-based implementation switch
+ *
+ * Use SSE_IMPLEMENTATION env var to choose between 'vercel' (default) and 'original'.
+ * All app imports should use '@/lib/sse' only.
  */
 
-// Main SSE Manager (Orchestrator)
-export { sseManager, SSEManager } from './SSEManager';
-export type { SSEManagerConfig } from './SSEManager';
-
-// Core Components
-export { SSESecurity, SSE_SECURITY_CONFIG } from './SSESecurity';
-export { SSECache } from './SSECache';
+// Common exports (implementation-agnostic)
 export { SSECleanup } from './SSECleanup';
-export { SSEMetrics, SSE_METRICS_CONFIG } from './SSEMetrics';
 
-// Utility Components (Keep existing)
-export { ExponentialBackoff } from './reconnection-strategy';
-export { HeartbeatManager, ServerHeartbeatManager } from './heartbeat-manager';
-export { SelectiveLogger } from './selective-logger';
-
-// Type Definitions
-export * from './SSETypes';
-
-// Legacy Support (for backward compatibility)
-export { sseClient, SSEClient } from './SSEClient';
-export { sseServer, SSEServer } from './SSEServer';
+// Default to Vercel-compatible implementation
+export { vercelSSEManager as sseManager } from './vercel/SSEManager';
+export { VercelSSEService as SSEService } from './vercel/SSEService';
+export { VercelSSERepository as SSERepository } from './vercel/SSERepository';
+export { VercelSSECache as SSECache, VERCEL_SSE_CACHE_CONFIG as SSE_CACHE_CONFIG } from './vercel/SSECache';
+export { vercelSSEClient as sseClient } from './vercel/SSEClient';
+export * from './vercel/index';

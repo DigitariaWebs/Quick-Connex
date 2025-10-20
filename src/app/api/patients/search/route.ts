@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import Patient from '@/models/Patient';
-import { requireEmployeeOrManagerWithSessionWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
+import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 
 // GET /api/patients/search - Search patients
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireEmployeeOrManager();
 
     await dbConnect();
 
@@ -19,7 +16,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
 
     if (!query || query.trim().length < 2) {
-      return createSessionErrorResponse('Search query must be at least 2 characters', 'VALIDATION_ERROR', 400);
+      return NextResponse.json({ error: 'Search query must be at least 2 characters' }, { status: 400 });
     }
 
     const searchRegex = new RegExp(query.trim(), 'i');
@@ -36,10 +33,10 @@ export async function GET(request: NextRequest) {
     .limit(limit)
     .sort({ lastName: 1, firstName: 1 });
 
-    return createSessionSuccessResponse(patients, 'Patient search completed');
+    return createSuccessResponse(patients, 'Patient search completed');
 
   } catch (error) {
     console.error('Error searching patients:', error);
-    return createSessionErrorResponse('Failed to search patients', 'INTERNAL_ERROR', 500);
+    return handleAuthError(error);
   }
 }

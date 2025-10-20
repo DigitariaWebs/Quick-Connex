@@ -4,7 +4,7 @@ import User from "@/models/User";
 import { CIUSSS } from "@/models/CIUSSS";
 import Hospital from "@/models/Hospital";
 import mongoose from "mongoose";
-import { requireAdminWithSession } from "@/lib/auth/session-auth-middleware";
+import { requireManager, handleAuthError, createSuccessResponse } from "@/lib/auth/auth-utils";
 
 /**
  * GET /api/admin/users
@@ -14,10 +14,7 @@ import { requireAdminWithSession } from "@/lib/auth/session-auth-middleware";
 export async function GET(request: NextRequest) {
   try {
     // Verify admin authentication
-    const authResult = await requireAdminWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireManager();
 
     await dbConnect();
     
@@ -116,10 +113,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verify admin authentication
-    const authResult = await requireAdminWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireManager();
 
     await dbConnect();
     

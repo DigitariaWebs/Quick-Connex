@@ -2,16 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
 import mongoose from 'mongoose';
-import { requireEmployeeOrManagerWithSessionWithSession, createSessionErrorResponse, createSessionSuccessResponse } from '@/lib/auth/session-auth-middleware';
+import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 
 // GET /api/calendar - Get calendar view of transfers
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const authResult = await requireEmployeeOrManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireEmployeeOrManager();
 
     await dbConnect();
 
@@ -99,7 +96,7 @@ export async function GET(request: NextRequest) {
     // Sort events by start time
     calendarEvents.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
 
-    return createSessionSuccessResponse({
+    return createSuccessResponse({
       events: calendarEvents,
       view,
       startDate: start.toISOString(),
@@ -109,7 +106,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching calendar data:', error);
-    return createSessionErrorResponse('Failed to fetch calendar data', 'CALENDAR_ERROR', 500);
+    return handleAuthError('Failed to fetch calendar data', 'CALENDAR_ERROR', 500);
   }
 }
 
@@ -117,10 +114,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user - only managers can create/update scheduling
-    const authResult = await requireEmployeeOrManagerWithSession(request);
-    if (!authResult.success) {
-      return authResult.response;
-    }
+    const { user } = await requireEmployeeOrManager();
 
     await dbConnect();
 
@@ -134,20 +128,20 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!transferId) {
-      return createSessionErrorResponse('Transfer ID is required', 'VALIDATION_ERROR', 400);
+      return handleAuthError('Transfer ID is required', 'VALIDATION_ERROR', 400);
     }
 
     // Find the transfer
     const transfer = await Transfer.findOne({ transferId });
     if (!transfer) {
-      return createSessionErrorResponse('Transfer not found', 'NOT_FOUND', 404);
+      return handleAuthError('Transfer not found', 'NOT_FOUND', 404);
     }
 
     // Check for scheduling conflicts
     const conflicts = await checkSchedulingConflicts(transferId, scheduledDate, scheduledEndDate, scheduling);
     
     if (conflicts.length > 0) {
-      return createSessionErrorResponse('Scheduling conflicts detected', 'CONFLICT_ERROR', 409, {
+      return handleAuthError('Scheduling conflicts detected', 'CONFLICT_ERROR', 409, {
         conflicts,
         canProceed: conflicts.every(c => c.severity === 'low')
       });
@@ -155,7 +149,7 @@ export async function POST(request: NextRequest) {
 
     // Update transfer scheduling
     const updateData: any = {
-      lastModifiedBy: authResult.user._id
+      lastModifiedBy: user._id
     };
 
     if (scheduledDate) {
@@ -176,7 +170,7 @@ export async function POST(request: NextRequest) {
     // Add status history entry
     const statusEntry = {
       status: transfer.status,
-      changedBy: new mongoose.Types.ObjectId(authResult.user._id),
+      changedBy: new mongoose.Types.ObjectId(user._id),
       changedAt: new Date(),
       reason: `Scheduling ${action}`
     };
@@ -196,11 +190,11 @@ export async function POST(request: NextRequest) {
     .populate('requestedBy', 'firstName lastName email userType')
     .populate('assignedTo', 'firstName lastName email');
 
-    return createSessionSuccessResponse(updatedTransfer, 'Transfer scheduling updated successfully');
+    return createSuccessResponse(updatedTransfer, 'Transfer scheduling updated successfully');
 
   } catch (error) {
     console.error('Error updating transfer scheduling:', error);
-    return createSessionErrorResponse('Failed to update transfer scheduling', 'UPDATE_ERROR', 500);
+    return handleAuthError('Failed to update transfer scheduling', 'UPDATE_ERROR', 500);
   }
 }
 

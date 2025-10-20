@@ -7,7 +7,7 @@
 
 "use client";
 
-import { VercelNotificationService, TransferNotification } from './VercelNotificationService';
+import { VercelNotificationService, TransferNotification } from './NotificationService';
 
 export interface VercelSSEConfig {
   pollingInterval: number; // How often to poll for notifications
@@ -251,3 +251,4 @@ export class VercelSSEClient {
 
 // Export singleton instance
 export const vercelSSEClient = VercelSSEClient.getInstance();
+
