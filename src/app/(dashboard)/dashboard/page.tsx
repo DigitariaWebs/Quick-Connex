@@ -57,6 +57,7 @@ export default function EmployeeDashboard() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
+      console.log("🔒 Dashboard: User not authenticated, redirecting to login");
       router.push("/login");
     }
   }, [authLoading, isAuthenticated, router]);

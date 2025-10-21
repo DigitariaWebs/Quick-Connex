@@ -152,8 +152,9 @@ export class TransferNotificationService {
       const adminName = process.env.ADMIN_NAME || process.env.EMAIL_FROM_NAME || 'System Administrator';
       const adminPhone = process.env.ADMIN_PHONE || '+15140000000';
       
+      
       if (!adminEmail) {
-        console.error('No admin email configured in environment variables');
+        console.error('❌ Admin email not configured. Please set ADMIN_EMAIL environment variable.');
         return;
       }
       
@@ -185,16 +186,14 @@ export class TransferNotificationService {
         reason: transfer.reason,
         scheduledDate: transfer.scheduledDate ? new Date(transfer.scheduledDate).toLocaleDateString() : 'Not scheduled',
         scheduledTime: transfer.scheduling?.transferTime || 'Not specified',
-        requestedBy: `${requestedBy.firstName} ${requestedBy.lastName}`,
+        requestedBy: `${requestedBy.firstName || 'Unknown'} ${requestedBy.lastName || 'User'}`,
         requestorEmail: requestedBy.email,
-        requestorPhone: requestedBy.phone,
+        requestorPhone: requestedBy.phone || 'Not provided',
         requestedByEmail: requestedBy.email, // For email template compatibility
-        requestedByPhone: requestedBy.phone, // For email template compatibility
+        requestedByPhone: requestedBy.phone || 'Not provided', // For email template compatibility
         notes: transfer.notes || 'No additional notes',
         // Category-specific details
         ...transferDisplayInfo.details,
-        approvalUrl: `${process.env.BASE_URL || 'http://localhost:3000'}/api/transfers/${transfer._id}/approve?admin=${adminContact.email}`,
-        rejectionUrl: `${process.env.BASE_URL || 'http://localhost:3000'}/api/transfers/${transfer._id}/reject?admin=${adminContact.email}`,
         // New template variables for modern design
         priorityGradient: transfer.priority.toUpperCase() === 'URGENT' 
           ? 'linear-gradient(135deg, #fef2f2 0%, #fecaca 25%, #fca5a5 50%, #f87171 75%, #ef4444 100%)'
@@ -502,11 +501,7 @@ Phone: ${transferData.requestedByPhone}
 
 Notes: ${transferData.notes}
 
-APPROVAL REQUIRED:
-✅ Approve: ${transferData.approvalUrl}
-❌ Reject: ${transferData.rejectionUrl}
-
-Please review and respond to this transfer request as soon as possible.
+Please log into the admin dashboard to review and approve/reject this transfer request.
     `.trim();
   }
 
@@ -546,9 +541,7 @@ ID: ${transferData.transferId}
 Patient: ${transferData.patientName} (${transferData.patientAge}y)
 From: ${transferData.fromHospital}
 To: ${transferData.toHospital}
-Requested by: ${transferData.requestedBy}
-Approve: ${transferData.approvalUrl}
-Reject: ${transferData.rejectionUrl}`;
+Requested by: ${transferData.requestedBy}`;
   }
 
   /**

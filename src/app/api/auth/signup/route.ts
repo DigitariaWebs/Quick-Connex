@@ -267,9 +267,21 @@ export async function POST(request: Request) {
       }
       
       userData.post = postTitleMap[post];
+      
+      // Validate and convert CIUSSS reference
+      if (!mongoose.Types.ObjectId.isValid(ciusssValue)) {
+        validationErrors.ciusss = ['Invalid CIUSSS selection'];
+      } else {
         userData.ciusss = new mongoose.Types.ObjectId(ciusssValue);
+      }
+      
+      // Validate and convert Hospital reference
       if (managerHospitalId) {
-        userData.hospital = new mongoose.Types.ObjectId(managerHospitalId);
+        if (!mongoose.Types.ObjectId.isValid(managerHospitalId)) {
+          validationErrors.managerHospitalId = ['Invalid hospital selection'];
+        } else {
+          userData.hospital = new mongoose.Types.ObjectId(managerHospitalId);
+        }
       }
     }
 

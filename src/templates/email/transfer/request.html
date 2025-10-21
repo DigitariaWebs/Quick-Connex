@@ -61,7 +61,7 @@
           and approval.
         </p>
       </div>
-      {{/if}} {{categorySpecificContent}}
+      {{/if}} {{{categorySpecificContent}}}
 
       <div
         style="
@@ -197,61 +197,6 @@
         <p style="margin: 0; color: #1f2937; line-height: 1.6">{{notes}}</p>
       </div>
       {{/if}}
-
-      <div style="text-align: center; margin: 40px 0">
-        <a
-          href="{{approvalUrl}}"
-          style="
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            padding: 16px 32px;
-            text-decoration: none;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 16px;
-            display: inline-block;
-            box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
-            margin: 0 8px;
-            transition: all 0.3s ease;
-          "
-        >
-          ✅ Approve Transfer
-        </a>
-        <a
-          href="{{rejectionUrl}}"
-          style="
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: white;
-            padding: 16px 32px;
-            text-decoration: none;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 16px;
-            display: inline-block;
-            box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
-            margin: 0 8px;
-            transition: all 0.3s ease;
-          "
-        >
-          ❌ Reject Transfer
-        </a>
-      </div>
-
-      <div
-        style="
-          background: #f1f5f9;
-          padding: 20px;
-          border-radius: 12px;
-          margin: 30px 0 0 0;
-          border-left: 4px solid #64748b;
-        "
-      >
-        <p style="margin: 0; color: #475569; font-size: 14px; line-height: 1.5">
-          <strong>Note:</strong> Please review the transfer details carefully
-          before making a decision. Once approved, the transfer will be
-          published to all employees for assignment.
-        </p>
-      </div>
 
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0" />
 

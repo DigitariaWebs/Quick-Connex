@@ -7,7 +7,7 @@ This document describes the new transfer approval system that has been implement
 The transfer approval system implements a comprehensive workflow where:
 1. **Managers** create transfer requests
 2. **Admins** receive email and SMS notifications for approval
-3. **Admins** can approve or reject transfers via email links or API calls
+3. **Admins** can approve or reject transfers via the admin dashboard
 4. **Approved transfers** are published to employees for assignment
 5. **All parties** receive appropriate notifications throughout the process
 
@@ -24,8 +24,8 @@ The transfer approval system implements a comprehensive workflow where:
    - Manages notifications for transfer requests, approvals, and rejections
 
 3. **Approval API Endpoints**
-   - `POST/GET /api/transfers/[transferId]/approve` - Approve transfers
-   - `POST/GET /api/transfers/[transferId]/reject` - Reject transfers
+   - `POST /api/transfers/[transferId]/approve` - Approve transfers (admin dashboard only)
+   - `POST /api/transfers/[transferId]/reject` - Reject transfers (admin dashboard only)
 
 4. **Enhanced Transfer Creation** (`src/app/api/transfers/route.ts`)
    - Modified to send notifications to admins when transfers are created
@@ -52,17 +52,18 @@ await TransferNotificationService.sendNewTransferRequestNotification(transfer, m
 
 ### 2. Admin Notification
 Admins receive:
-- **Email**: Detailed HTML email with transfer information and approval/rejection links
-- **SMS**: Concise SMS with transfer details and action links
+- **Email**: Detailed HTML email with transfer information and dashboard link
+- **SMS**: Concise SMS with transfer details and dashboard link
 
 ### 3. Admin Approval/Rejection
 Admins can approve or reject transfers via:
 
-#### Email Links
-- **Approve**: `https://yourdomain.com/api/transfers/{transferId}/approve?admin={adminEmail}`
-- **Reject**: `https://yourdomain.com/api/transfers/{transferId}/reject?admin={adminEmail}`
+#### Admin Dashboard
+- **Access**: `https://yourdomain.com/admin/transfers`
+- **Actions**: Approve/Reject transfers through the web interface
+- **Benefits**: Better user experience, audit trail, bulk operations
 
-#### API Calls
+#### API Calls (Dashboard Integration)
 ```typescript
 // Approve transfer
 POST /api/transfers/{transferId}/approve

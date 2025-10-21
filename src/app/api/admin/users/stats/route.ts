@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/database/mongoose";
 import User from "@/models/User";
-import { requireManager, handleAuthError, createSuccessResponse } from "@/lib/auth/auth-utils";
+import { requireAdmin, handleAuthError, createSuccessResponse } from "@/lib/auth/auth-utils";
 
 /**
  * GET /api/admin/users/stats
@@ -11,7 +11,7 @@ import { requireManager, handleAuthError, createSuccessResponse } from "@/lib/au
 export async function GET(request: NextRequest) {
   try {
     // Verify admin authentication
-    const { user } = await requireManager();
+    const { user } = await requireAdmin();
 
     await dbConnect();
 
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
       User.countDocuments({ status: "approved" }),
       User.countDocuments({ status: "pending" }),
       User.countDocuments({ accountLockedUntil: { $gt: new Date() } }),
-      User.countDocuments({ isSuperAdmin: true }),
+      User.countDocuments({ userType: "super_admin" }),
     ]);
 
     // Process role statistics

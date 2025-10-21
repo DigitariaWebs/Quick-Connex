@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 import { sseManager } from '@/lib/sse';
 
 /**
@@ -11,7 +11,7 @@ import { sseManager } from '@/lib/sse';
 export async function POST(request: NextRequest) {
   try {
     // Check super admin permissions
-    const { user } = await requireManager();
+    const { user } = await requireAdmin();
 
     const { action, userId = 'test-user-123', userType = 'admin' } = await request.json();
 
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // Check super admin permissions
-    const { user } = await requireManager();
+    const { user } = await requireAdmin();
 
     // Get current state from unified system
     const stats = { totalConnections: 0, activeConnections: 0 };

@@ -2,7 +2,7 @@
  * Transfer Rejection API
  * 
  * This endpoint handles transfer rejection by admin users.
- * Can be accessed via email link or direct API call.
+ * Can only be accessed via admin dashboard (POST requests).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -14,104 +14,6 @@ import Hospital from '@/models/Hospital';
 import { CommunicationService } from '@/lib/communication/core/communication-service';
 import { EmailMessage } from '@/types/communication';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ transferId: string }> }
-) {
-  try {
-    console.log('Rejection endpoint called');
-    const { transferId } = await params;
-    const { searchParams } = new URL(request.url);
-    const adminEmail = searchParams.get('admin');
-    const reason = searchParams.get('reason') || 'Rejected by administrator';
-
-    if (!transferId) {
-      return NextResponse.json(
-        { error: 'Transfer ID is required' },
-        { status: 400 }
-      );
-    }
-
-    await dbConnect();
-
-    // Find the transfer
-    const transfer = await Transfer.findById(transferId)
-      .populate('requestedBy', 'firstName lastName email phone userType')
-
-    if (!transfer) {
-      return NextResponse.json(
-        { error: 'Transfer not found' },
-        { status: 404 }
-      );
-    }
-
-    if (transfer.status !== 'pending') {
-      return NextResponse.json(
-        { error: `Transfer is already ${transfer.status}` },
-        { status: 400 }
-      );
-    }
-
-    // Find the admin user - try specific email first, then fall back to any manager
-    let admin;
-    if (adminEmail) {
-      admin = await User.findOne({ email: adminEmail, userType: 'manager' });
-    }
-    
-    // If no specific admin found or no email provided, use any available manager
-    if (!admin) {
-      admin = await User.findOne({ userType: 'manager' }).sort({ createdAt: 1 }); // Get the first manager
-      console.log(`⚠️ Admin email ${adminEmail || 'not provided'} not found, using fallback manager: ${admin?.email}`);
-    }
-
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'No manager found in the system. Please ensure at least one manager account exists.' },
-        { status: 404 }
-      );
-    }
-
-    // Verify user is a manager (should be true from query above, but double-check)
-    if (admin.userType !== 'manager') {
-      return NextResponse.json(
-        { error: 'Unauthorized: Manager privileges required' },
-        { status: 403 }
-      );
-    }
-
-    // Update transfer status to cancelled (rejected)
-    transfer.status = 'cancelled';
-    transfer.lastModifiedBy = admin._id as any;
-    transfer.statusHistory.push({
-      status: 'cancelled',
-      changedBy: admin._id as any,
-      changedAt: new Date(),
-      reason: reason
-    });
-
-    await transfer.save();
-
-    // Send rejection notification to manager
-    try {
-      // await sendTransferRejectionNotification(transfer, admin, reason);
-    } catch (notificationError) {
-      console.error('Error sending rejection notification:', notificationError);
-      // Don't fail the rejection if notifications fail
-    }
-
-    // Return success response with redirect
-    const redirectUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/approval-success?message=transfer-rejected&transferId=${transferId}`;
-    
-    return NextResponse.redirect(new URL(redirectUrl, request.url));
-
-  } catch (error) {
-    console.error('Error rejecting transfer:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
-}
 
 export async function POST(
   request: NextRequest,
@@ -165,10 +67,10 @@ export async function POST(
       );
     }
 
-    // Check if user is a manager (admin role)
-    if (admin.userType !== 'manager') {
+    // Check if user is an admin
+    if (!['admin', 'super_admin'].includes(admin.userType)) {
       return NextResponse.json(
-        { error: 'Unauthorized: Manager privileges required' },
+        { error: 'Unauthorized: Admin privileges required' },
         { status: 403 }
       );
     }
@@ -185,13 +87,9 @@ export async function POST(
 
     await transfer.save();
 
-    // Send rejection notification to manager
-    try {
-      // await sendTransferRejectionNotification(transfer, admin, reason);
-    } catch (notificationError) {
-      console.error('Error sending rejection notification:', notificationError);
-      // Don't fail the rejection if notifications fail
-    }
+    // Note: Notifications are disabled for in-app rejections
+    // Only the transfer state is updated, no email/SMS notifications are sent
+    console.log('✅ Transfer rejected - state updated without notifications');
 
     return NextResponse.json({
       success: true,

@@ -259,17 +259,44 @@ export default function AdminTransfersPage() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch transfers");
+        let errorMessage = "Failed to fetch transfers";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
+      console.log("🔍 Frontend: API Response:", {
+        success: data.success,
+        hasData: !!data.data,
+        transfersCount: data.data?.transfers?.length || 0,
+        stats: data.data?.stats,
+        pagination: data.data?.pagination,
+      });
+
+      // Debug: Log the specific stats values
+      if (data.data?.stats) {
+        console.log("🔍 Frontend: Stats breakdown:", {
+          total: data.data.stats.total,
+          pending: data.data.stats.pending,
+          accepted: data.data.stats.accepted,
+          inProgress: data.data.stats.inProgress,
+          completed: data.data.stats.completed,
+          cancelled: data.data.stats.cancelled,
+        });
+      }
 
       if (data.success) {
         const fetchedTransfers = data.data.transfers || [];
         setTransfers(fetchedTransfers);
         setAllTransfers(fetchedTransfers); // Store all transfers for client-side filtering
         setStats(data.data.stats);
+        console.log("🔄 Admin page: Stats updated to:", data.data.stats);
         // Store original stats only on the very first load
         if (!hasLoadedInitialStats) {
           setOriginalStats(data.data.stats);
@@ -510,8 +537,11 @@ export default function AdminTransfersPage() {
   };
 
   const handleTransferUpdate = () => {
-    // Refresh the transfers list when a transfer is updated
-    fetchTransfers(currentPage);
+    // Refresh the transfers list and stats when a transfer is updated
+    console.log("🔄 Admin page: Transfer updated, refreshing data...");
+    console.log("🔄 Admin page: Current stats before refresh:", stats);
+    setIsRefreshing(true);
+    fetchTransfers(1); // Reset to page 1 to show updated data
   };
 
   if (loading && transfers.length === 0) {
@@ -549,6 +579,9 @@ export default function AdminTransfersPage() {
                     <TrendingUp
                       className={`w-5 h-5 ${STAT_CARD_COLORS.total.iconColor}`}
                     />
+                    {isRefreshing && (
+                      <RefreshCw className="w-3 h-3 text-gray-400 animate-spin" />
+                    )}
                   </div>
                   <p
                     className={`text-[10px] ${STAT_CARD_COLORS.total.textColor} font-medium uppercase tracking-wider mb-1`}
@@ -578,6 +611,9 @@ export default function AdminTransfersPage() {
                     <Clock
                       className={`w-5 h-5 ${STAT_CARD_COLORS.pending.iconColor}`}
                     />
+                    {isRefreshing && (
+                      <RefreshCw className="w-3 h-3 text-gray-400 animate-spin" />
+                    )}
                   </div>
                   <p
                     className={`text-[10px] ${STAT_CARD_COLORS.pending.textColor} font-medium uppercase tracking-wider mb-1`}
@@ -607,6 +643,9 @@ export default function AdminTransfersPage() {
                     <Zap
                       className={`w-5 h-5 ${STAT_CARD_COLORS.inProgress.iconColor}`}
                     />
+                    {isRefreshing && (
+                      <RefreshCw className="w-3 h-3 text-gray-400 animate-spin" />
+                    )}
                   </div>
                   <p
                     className={`text-[10px] ${STAT_CARD_COLORS.inProgress.textColor} font-medium uppercase tracking-wider mb-1`}
@@ -636,6 +675,9 @@ export default function AdminTransfersPage() {
                     <AlertTriangle
                       className={`w-5 h-5 ${STAT_CARD_COLORS.urgent.iconColor}`}
                     />
+                    {isRefreshing && (
+                      <RefreshCw className="w-3 h-3 text-gray-400 animate-spin" />
+                    )}
                   </div>
                   <p
                     className={`text-[10px] ${STAT_CARD_COLORS.urgent.textColor} font-medium uppercase tracking-wider mb-1`}

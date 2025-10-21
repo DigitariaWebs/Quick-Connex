@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 
 /**
  * Clear SSE Monitoring Data
@@ -9,7 +9,7 @@ import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/au
 export async function POST(request: NextRequest) {
   try {
     // Check super admin permissions
-    const { user } = await requireManager();
+    const { user } = await requireAdmin();
 
     console.log('🧹 Clearing SSE monitoring data...');
 

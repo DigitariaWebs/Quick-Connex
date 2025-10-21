@@ -21,14 +21,11 @@ import {
   Activity,
   Settings,
   Trash2,
-  Edit,
-  Eye,
   Ban,
   Unlock,
   Key,
   Download,
   Upload,
-  MoreHorizontal,
   TrendingUp,
   BarChart3,
   Sparkles,
@@ -147,10 +144,29 @@ export default function UserManagement() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch users");
+        let errorMessage = "Failed to fetch users";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
+      console.log("🔍 Frontend Users: API Response:", {
+        success: data.success,
+        hasData: !!data.data,
+        usersCount: data.data?.users?.length || 0,
+        total: data.data?.total,
+        pagination: {
+          page: data.data?.page,
+          limit: data.data?.limit,
+          totalPages: data.data?.totalPages,
+        },
+      });
 
       if (data.success) {
         const fetchedUsers = data.data.users;
@@ -668,32 +684,6 @@ export default function UserManagement() {
                                 )}
                               </div>
                             </div>
-                          </div>
-
-                          {/* Action Buttons */}
-                          <div
-                            className="flex items-center space-x-2"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="View Details"
-                              onClick={() => handleUserClick(user)}
-                            >
-                              <Eye size={16} />
-                            </button>
-                            <button
-                              className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                              title="Edit User"
-                            >
-                              <Edit size={16} />
-                            </button>
-                            <button
-                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="More Actions"
-                            >
-                              <MoreHorizontal size={16} />
-                            </button>
                           </div>
                         </div>
                       </motion.div>

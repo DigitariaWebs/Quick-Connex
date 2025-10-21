@@ -18,6 +18,8 @@
     "clear-db": "node scripts/essentials/clear-database.js",
     "create-transfers": "node scripts/create-test-transfers.js",
     "db-stats": "node scripts/essentials/database-stats.js",
+    "cleanup-login-data": "node scripts/essentials/cleanup-login-data.js",
+    "cleanup-redundant-login-data": "node scripts/essentials/cleanup-redundant-login-data.js",
     "list-transfers": "node scripts/essentials/list-transfers.js",
     "list-users": "node scripts/essentials/list-users.js",
     "seed-users": "node scripts/essentials/seed-database.js",
@@ -32,7 +34,10 @@
     "check-sms": "node scripts/check-sms-details.js",
     "clear-transfers": "node scripts/essentials/clear-transfers.js",
     "kill-servers": "chmod +x scripts/kill-nextjs-servers.sh && ./scripts/kill-nextjs-servers.sh",
-    "check-servers": "node scripts/check-servers.js"
+    "check-servers": "node scripts/check-servers.js",
+    "dev:admin": "PORT=3000 npm run dev:server",
+    "dev:manager": "PORT=3001 npm run dev:server",
+    "dev:dual": "chmod +x scripts/run-dual-instances.sh && ./scripts/run-dual-instances.sh"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.6",
@@ -62,7 +67,7 @@
     "mongoose": "^8.18.1",
     "motion": "^12.23.24",
     "next": "15.5.3",
-    "node-fetch": "^3.3.2",
+    "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.6",
     "react": "19.1.0",
     "react-datepicker": "^8.7.0",

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 
 /**
  * GET /api/admin/monitoring/system-health
@@ -14,7 +14,7 @@ import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/au
 export async function GET(request: NextRequest) {
   try {
     // Check super admin permissions
-    const { user } = await requireManager();
+    const { user } = await requireAdmin();
 
     // TODO: Implement system health endpoint
     

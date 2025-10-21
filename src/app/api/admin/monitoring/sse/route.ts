@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 import { sseManager } from '@/lib/sse';
 
 /**
@@ -18,7 +18,7 @@ import { sseManager } from '@/lib/sse';
 export async function GET(request: NextRequest) {
   try {
     // Check super admin permissions
-    const { user } = await requireManager();
+    const { user } = await requireAdmin();
 
     console.log('📊 SSE Monitoring API: Fetching real-time SSE data');
 

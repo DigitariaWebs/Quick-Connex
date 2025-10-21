@@ -185,12 +185,13 @@ export default function AdminSidebar({
   };
 
   // Filter out super admin only items and sections if user is not super admin
+  const isSuperAdmin = user.userType === "super_admin";
   const filteredNavigation = navigation
-    .filter((section) => !section.superAdminOnly || user.isSuperAdmin)
+    .filter((section) => !section.superAdminOnly || isSuperAdmin)
     .map((section) => ({
       ...section,
       items: section.items.filter(
-        (item) => !item.superAdminOnly || user.isSuperAdmin
+        (item) => !item.superAdminOnly || isSuperAdmin
       ),
     }))
     .filter((section) => section.items.length > 0);

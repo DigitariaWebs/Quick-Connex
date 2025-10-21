@@ -33,6 +33,8 @@ export enum AuditAction {
   TRANSFER_UPDATED = 'transfer_updated',
   TRANSFER_DELETED = 'transfer_deleted',
   TRANSFER_CANCELLED = 'transfer_cancelled',
+  TRANSFER_APPROVED = 'transfer_approved',
+  TRANSFER_REJECTED = 'transfer_rejected',
   TRANSFER_FORCE_COMPLETED = 'transfer_force_completed',
   TRANSFER_REASSIGNED = 'transfer_reassigned',
   BULK_TRANSFER_OPERATION = 'bulk_transfer_operation',

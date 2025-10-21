@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { getDashboardRoute } from '@/lib/auth/user-routing';
 
 export function useLoginForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,21 +28,23 @@ export function useLoginForm() {
       const result = await response.json();
       
       if (response.ok) {
-        // JWT token and session are now created by the login API
-        setMessage({ type: 'success', text: 'Login successful!' });
+        setMessage({ type: 'success', text: 'Login successful! Redirecting...' });
         
         console.log('✅ Login: Session created by API');
         console.log('🔍 Session data:', result.session);
+        console.log('👤 User data:', result.user);
         
-        // Redirect based on user type
-        const redirectPath = (result.user.userType === 'admin' || result.user.userType === 'super_admin') 
-          ? '/admin/dashboard' 
-          : '/dashboard';
+        // Determine redirect path based on user type using utility
+        const redirectPath = getDashboardRoute(result.user.userType);
         
         console.log(`✅ Login: Redirecting ${result.user.userType} to ${redirectPath}`);
+        
+        // Use a shorter delay and force page reload to ensure clean state
         setTimeout(() => {
-          router.replace(redirectPath); // Use replace to avoid history issues
-        }, 2000); // Increased delay to allow SessionContext to complete auth check
+          // Force a hard navigation to ensure all contexts are reset
+          window.location.href = redirectPath;
+        }, 1000);
+        
       } else {
         // Handle different error types
         if (response.status === 403 && result.status === 'pending') {
@@ -59,6 +62,7 @@ export function useLoginForm() {
         }
       }
     } catch (error) {
+      console.error('Login error:', error);
       setMessage({ type: 'error', text: 'Failed to connect to server. Please try again.' });
     } finally {
       setIsLoading(false);

@@ -71,7 +71,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         if (data.success && data.user) {
           console.log(
             "✅ SessionContext: User authenticated:",
-            data.user.email
+            data.user.email,
+            "UserType:",
+            data.user.userType
           );
           setUser(data.user);
           setSession(data.session || null);
@@ -82,7 +84,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             scheduleSessionRefresh(data.session.remainingTime);
           }
         } else {
-          console.log("❌ SessionContext: Authentication failed");
+          console.log(
+            "❌ SessionContext: Authentication failed - no user data"
+          );
           setUser(null);
           setSession(null);
           setIsAuthenticated(false);
@@ -90,14 +94,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       } else {
         console.log(
           "❌ SessionContext: Authentication failed:",
-          response.status
+          response.status,
+          response.statusText
         );
         setUser(null);
         setSession(null);
         setIsAuthenticated(false);
       }
     } catch (error) {
-      console.error("Session check failed:", error);
+      console.error("❌ SessionContext: Session check failed:", error);
       setUser(null);
       setSession(null);
       setIsAuthenticated(false);

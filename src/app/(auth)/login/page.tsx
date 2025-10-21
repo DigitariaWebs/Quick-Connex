@@ -46,8 +46,8 @@ function LoginForm() {
     }
   }, [searchParams]);
 
-  // No authentication check needed on login page
-  // The middleware will handle redirects for authenticated users
+  // Authentication check is handled by middleware
+  // If user is already authenticated, middleware will redirect them
 
   return (
     <div className="min-h-screen flex relative">

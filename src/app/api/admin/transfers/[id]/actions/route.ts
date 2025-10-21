@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 // import { logAdminAction } from '@/lib/auth/admin-middleware'; // Removed - using auth-utils instead
 import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import { Permission } from '@/models/User';
 import { AuditAction, AuditCategory, TargetResourceType } from '@/models/AuditLog';
+import TransferNotificationService from '@/lib/communication/integrations/transfer-notification-service';
 
 /**
  * Admin Transfer Actions API Endpoint
@@ -32,7 +33,7 @@ export async function POST(
 ) {
   try {
     // Check admin permissions
-    const { user } = await requireManager();
+    const { user } = await requireAdmin();
 
     const adminUser = user;
     const { id } = await params;
@@ -79,6 +80,32 @@ export async function POST(
 
     // Perform the requested action
     switch (action) {
+      case 'approve':
+        updateData.status = 'accepted';
+        updateData.approvedBy = adminUser._id;
+        updateData.approvedAt = new Date();
+        actionDescription = `Approved by admin${reason ? `: ${reason}` : ''}`;
+        auditAction = AuditAction.TRANSFER_APPROVED;
+        
+        const approveNote = `[ADMIN APPROVED - ${new Date().toISOString()}] ${reason || 'Transfer approved by administrator'}`;
+        updateData.notes = transfer.notes ? 
+          `${transfer.notes}\n\n${approveNote}` : 
+          approveNote;
+        break;
+
+      case 'reject':
+        updateData.status = 'cancelled';
+        updateData.rejectedBy = adminUser._id;
+        updateData.rejectedAt = new Date();
+        actionDescription = `Rejected by admin: ${reason || 'No reason provided'}`;
+        auditAction = AuditAction.TRANSFER_REJECTED;
+        
+        const rejectNote = `[ADMIN REJECTED - ${new Date().toISOString()}] ${reason || 'Transfer rejected by administrator'}`;
+        updateData.notes = transfer.notes ? 
+          `${transfer.notes}\n\n${rejectNote}` : 
+          rejectNote;
+        break;
+
       case 'force_complete':
         updateData.status = 'completed';
         updateData.completedDate = new Date();
@@ -252,6 +279,10 @@ export async function POST(
     await Transfer.findByIdAndUpdate(id, {
       $push: { timeline: timelineEntry }
     });
+
+    // Note: Notifications are disabled for in-app admin actions
+    // Only the transfer state is updated, no email/SMS notifications are sent
+    console.log('✅ Admin action completed - state updated without notifications');
 
     // Log admin action (simplified implementation)
     console.log('Admin action logged:', {

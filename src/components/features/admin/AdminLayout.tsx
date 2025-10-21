@@ -23,11 +23,32 @@ export default function AdminLayout({
   const { user, isLoading, isAuthenticated, logout } = useSession();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
-  // Redirect if not admin
+  // Handle authentication and authorization checks
   useEffect(() => {
-    if (!isLoading && isAuthenticated && user) {
+    // Only proceed if we're not loading
+    if (isLoading) return;
+
+    // Add a small delay to prevent race conditions
+    const timeoutId = setTimeout(() => {
+      // If not authenticated, redirect to login
+      if (!isAuthenticated) {
+        console.log(
+          "🔒 AdminLayout: User not authenticated, redirecting to login"
+        );
+        router.push("/login");
+        return;
+      }
+
+      // If authenticated but no user data yet, wait
+      if (!user) {
+        console.log("⏳ AdminLayout: Waiting for user data...");
+        return;
+      }
+
+      // Check if user is admin
       const isAdmin =
         user?.userType === "admin" || user?.userType === "super_admin";
+
       if (!isAdmin) {
         console.log(
           "🔒 AdminLayout: User is not admin, redirecting to dashboard"
@@ -36,18 +57,10 @@ export default function AdminLayout({
       } else {
         console.log("✅ AdminLayout: User is admin, allowing access");
       }
-    }
-  }, [isLoading, isAuthenticated, user, router]);
+    }, 100); // Small delay to prevent race conditions
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      console.log(
-        "🔒 AdminLayout: User not authenticated, redirecting to login"
-      );
-      router.push("/login");
-    }
-  }, [isLoading, isAuthenticated, router]);
+    return () => clearTimeout(timeoutId);
+  }, [isLoading, isAuthenticated, user, router]);
 
   // Debug authentication state
   useEffect(() => {

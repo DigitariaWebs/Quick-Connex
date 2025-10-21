@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 
 /**
  * API Performance Monitoring API Endpoint
@@ -254,7 +254,7 @@ function simulateAPIActivity() {
 export async function GET(request: NextRequest) {
   try {
     // Check super admin permissions
-    const { user } = await requireManager();
+    const { user } = await requireAdmin();
 
     // Get query parameters
     const { searchParams } = new URL(request.url);

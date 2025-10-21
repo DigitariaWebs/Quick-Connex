@@ -109,10 +109,12 @@ export default function TransferForm({
             }
           }
 
-          // Check if user is a manager
-          if (data.user.userType !== "manager") {
+          // Check if user has permission to create transfers (managers, admins, and super_admins)
+          if (
+            !["manager", "admin", "super_admin"].includes(data.user.userType)
+          ) {
             setError(
-              "Only managers can create transfer requests. Please contact your administrator if you need access."
+              "Only managers, admins, and super admins can create transfer requests. Please contact your administrator if you need access."
             );
           }
         } else {
@@ -155,7 +157,7 @@ export default function TransferForm({
     // Check if user is a manager before proceeding
     if (!user || user.userType !== "manager") {
       setError(
-        "Only managers can create transfer requests. Please contact your administrator if you need access."
+        "Only managers, admins, and super admins can create transfer requests. Please contact your administrator if you need access."
       );
       setIsSubmitting(false);
       return;
@@ -450,8 +452,8 @@ export default function TransferForm({
             Access Restricted
           </h3>
           <p className="text-red-600">
-            Only managers can create transfer requests. Please contact your
-            administrator if you need access.
+            Only managers, admins, and super admins can create transfer
+            requests. Please contact your administrator if you need access.
           </p>
         </div>
       </div>

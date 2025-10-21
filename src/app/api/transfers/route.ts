@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Types } from 'mongoose';
 import dbConnect from '@/lib/database/mongoose';
 import { Transfer, User, Hospital, Patient } from '@/lib/database/models';
 import { requireEmployeeOrManager, requireManager, handleAuthError, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-utils';
@@ -214,8 +215,8 @@ export async function POST(request: NextRequest) {
             lastName: patientLastName,
             age: parseInt(patientAge as string),
             dossierNumber: patientDossierNumber.toUpperCase(),
-            createdBy: requestingUser._id,
-            lastModifiedBy: requestingUser._id,
+            createdBy: new Types.ObjectId(requestingUser._id),
+            lastModifiedBy: new Types.ObjectId(requestingUser._id),
             isActive: true
           });
           await patientRecord.save();
@@ -225,7 +226,7 @@ export async function POST(request: NextRequest) {
           patientRecord.firstName = patientFirstName;
           patientRecord.lastName = patientLastName;
           patientRecord.age = parseInt(patientAge as string);
-          patientRecord.lastModifiedBy = requestingUser._id;
+          patientRecord.lastModifiedBy = new Types.ObjectId(requestingUser._id);
           await patientRecord.save();
           console.log('✅ Existing patient record updated:', patientRecord._id);
         }
@@ -263,7 +264,7 @@ export async function POST(request: NextRequest) {
     // Create timeline event for transfer creation
     const creationEvent = TimelineService.createTransferCreatedEvent(
       {
-        id: requestingUser._id as any,
+        id: new Types.ObjectId(requestingUser._id),
         name: `${requestingUser.firstName} ${requestingUser.lastName}`,
         email: requestingUser.email,
         userType: requestingUser.userType as 'manager' | 'employee' | 'admin'
@@ -294,7 +295,7 @@ export async function POST(request: NextRequest) {
       toHospital: toHospitalRef._id,
       fromHospitalName,
       toHospitalName,
-      requestedBy: requestingUser._id,
+      requestedBy: new Types.ObjectId(requestingUser._id),
       patient: patientRecord?._id, // Link to patient record if available
       reason,
       priority,
@@ -306,10 +307,10 @@ export async function POST(request: NextRequest) {
       scheduling: {
         transferTime: transferTime || '09:00'
       },
-      lastModifiedBy: requestingUser._id,
+      lastModifiedBy: new Types.ObjectId(requestingUser._id),
       statusHistory: [{
         status: 'pending',
-        changedBy: requestingUser._id,
+        changedBy: new Types.ObjectId(requestingUser._id),
         changedAt: new Date(),
         reason: 'Transfer created'
       }],
@@ -330,10 +331,33 @@ export async function POST(request: NextRequest) {
 
     // Send comprehensive notifications to admins (email + SMS)
     try {
+      console.log('🔍 Fetching full user data for notifications...');
+      
+      // Fetch the full user data from database for notifications
+      let fullUserData;
+      try {
+        fullUserData = await User.findById(new Types.ObjectId(requestingUser.userId)).select('firstName lastName email phone userType');
+      } catch (dbError) {
+        console.error('❌ Database error fetching user data:', dbError);
+        return createSuccessResponse(populatedTransfer, 'Transfer request created successfully', 201);
+      }
+      
+      if (!fullUserData) {
+        console.error('❌ Full user data not found for notifications');
+        return createSuccessResponse(populatedTransfer, 'Transfer request created successfully', 201);
+      }
+      
+      console.log('📧 Starting notification service...');
       const TransferNotificationService = (await import('@/lib/communication/integrations/transfer-notification-service')).default;
-      await TransferNotificationService.sendNewTransferRequestNotification(populatedTransfer, requestingUser);
+      await TransferNotificationService.sendNewTransferRequestNotification(populatedTransfer, fullUserData);
+      console.log('✅ Notifications sent successfully');
     } catch (notificationError) {
-      console.error('Error sending transfer request notifications:', notificationError);
+      console.error('❌ Error sending transfer request notifications:', notificationError);
+      console.error('❌ Notification error details:', {
+        message: notificationError.message,
+        stack: notificationError.stack,
+        name: notificationError.name
+      });
     }
 
     return createSuccessResponse(populatedTransfer, 'Transfer request created successfully', 201);

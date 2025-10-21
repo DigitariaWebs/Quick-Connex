@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 // import { logAdminAction } from '@/lib/auth/admin-middleware'; // Removed - using auth-utils instead
 import dbConnect from '@/lib/database/mongoose';
 import { Transfer, User } from '@/lib/database/models';
@@ -31,7 +31,7 @@ export async function GET(
 ) {
   try {
     // Check admin permissions
-    const { user } = await requireManager();
+    const { user } = await requireAdmin();
 
     const adminUser = user;
     const { id } = await params;
@@ -154,7 +154,7 @@ export async function PUT(
 ) {
   try {
     // Check admin permissions
-    const { user } = await requireManager();
+    const { user } = await requireAdmin();
 
     const adminUser = user;
     const { id } = await params;
@@ -284,7 +284,7 @@ export async function DELETE(
 ) {
   try {
     // Check admin permissions
-    const { user } = await requireManager();
+    const { user } = await requireAdmin();
 
     const adminUser = user;
     const { id } = await params;
@@ -372,8 +372,36 @@ export async function DELETE(
 function getAvailableActions(adminUser: any, transfer: any) {
   const actions = [];
 
-  // Cancel action
-  if (adminUser.hasPermission(Permission.CANCEL_ANY_TRANSFER) && 
+  // Admin and super_admin users have all permissions
+  const isAdmin = adminUser.userType === 'admin' || adminUser.userType === 'super_admin';
+
+  // Approval actions for pending transfers
+  if (transfer.status === 'pending') {
+    // Approve action
+    actions.push({
+      id: 'approve',
+      label: 'Approve Transfer',
+      description: 'Approve this transfer request',
+      icon: 'ThumbsUp',
+      color: 'green',
+      requiresConfirmation: true,
+      requiresReason: false
+    });
+
+    // Reject action
+    actions.push({
+      id: 'reject',
+      label: 'Reject Transfer',
+      description: 'Reject this transfer request',
+      icon: 'ThumbsDown',
+      color: 'red',
+      requiresConfirmation: true,
+      requiresReason: true
+    });
+  }
+
+  // Cancel action - available for admins and users with permission
+  if ((isAdmin || adminUser.hasPermission(Permission.CANCEL_ANY_TRANSFER)) && 
       transfer.status !== 'cancelled' && transfer.status !== 'completed') {
     actions.push({
       id: 'cancel',
@@ -386,8 +414,8 @@ function getAvailableActions(adminUser: any, transfer: any) {
     });
   }
 
-  // Force complete action
-  if (adminUser.hasPermission(Permission.FORCE_COMPLETE_TRANSFER) && 
+  // Force complete action - available for admins and users with permission
+  if ((isAdmin || adminUser.hasPermission(Permission.FORCE_COMPLETE_TRANSFER)) && 
       transfer.status === 'in_progress') {
     actions.push({
       id: 'force_complete',
@@ -399,8 +427,8 @@ function getAvailableActions(adminUser: any, transfer: any) {
     });
   }
 
-  // Reassign action
-  if (adminUser.hasPermission(Permission.REASSIGN_TRANSFERS) && 
+  // Reassign action - available for admins and users with permission
+  if ((isAdmin || adminUser.hasPermission(Permission.REASSIGN_TRANSFERS)) && 
       transfer.status !== 'completed' && transfer.status !== 'cancelled') {
     actions.push({
       id: 'reassign',
@@ -412,8 +440,8 @@ function getAvailableActions(adminUser: any, transfer: any) {
     });
   }
 
-  // Update priority action
-  if (adminUser.hasPermission(Permission.EDIT_ANY_TRANSFER)) {
+  // Update priority action - available for admins and users with permission
+  if (isAdmin || adminUser.hasPermission(Permission.EDIT_ANY_TRANSFER)) {
     actions.push({
       id: 'update_priority',
       label: 'Update Priority',
@@ -424,15 +452,17 @@ function getAvailableActions(adminUser: any, transfer: any) {
     });
   }
 
-  // Add admin note action
-  actions.push({
-    id: 'add_note',
-    label: 'Add Admin Note',
-    description: 'Add an internal note visible to admins',
-    icon: 'MessageSquare',
-    color: 'gray',
-    requiresConfirmation: false
-  });
+  // Add admin note action - always available for admins
+  if (isAdmin) {
+    actions.push({
+      id: 'add_note',
+      label: 'Add Admin Note',
+      description: 'Add an internal note visible to admins',
+      icon: 'MessageSquare',
+      color: 'gray',
+      requiresConfirmation: false
+    });
+  }
 
   return actions;
 }

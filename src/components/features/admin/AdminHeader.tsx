@@ -71,7 +71,7 @@ export default function AdminHeader({
                   {user.firstName} {user.lastName}
                 </p>
                 <p className="text-xs text-purple-600 font-medium capitalize">
-                  {user.isSuperAdmin ? "Super Admin" : "Admin"}
+                  {user.userType === "super_admin" ? "Super Admin" : "Admin"}
                 </p>
               </div>
             </div>

@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
+import AnimatedStatusIcon from "../notifications/AnimatedStatusIcon";
+import { useSession } from "@/contexts/SessionContext";
 import {
   X,
   RefreshCw,
@@ -26,6 +29,10 @@ import {
   Shield,
   Eye,
   MoreHorizontal,
+  ThumbsUp,
+  ThumbsDown,
+  XCircle as XCircleIcon,
+  Loader2,
 } from "lucide-react";
 import LoadingSpinner from "@/components/features/dashboard/LoadingSpinner";
 import {
@@ -203,6 +210,9 @@ const iconMap: Record<string, any> = {
   Trash2,
   RefreshCw,
   MoreHorizontal,
+  ThumbsUp,
+  ThumbsDown,
+  XCircleIcon,
 };
 
 interface TransferDetailsModalProps {
@@ -234,6 +244,76 @@ export default function TransferDetailsModal({
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const [actionReason, setActionReason] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [feedbackStatus, setFeedbackStatus] = useState<
+    "success" | "error" | null
+  >(null);
+
+  // Get current user from session
+  const { user: currentUser } = useSession();
+
+  // Function to refresh transfer data
+  const refreshTransferData = async () => {
+    if (!transferId) return;
+
+    try {
+      setLoading(true);
+
+      let response;
+      try {
+        response = await fetch(`/api/admin/transfers/${transferId}`, {
+          method: "GET",
+          credentials: "include",
+        });
+      } catch (fetchError) {
+        console.error("Network error during fetch:", fetchError);
+        throw new Error("Network error: Unable to connect to server");
+      }
+
+      if (!response) {
+        throw new Error("No response received from server");
+      }
+
+      if (!response.ok) {
+        let errorMessage = "Failed to fetch transfer details";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData?.message || errorData?.error || errorMessage;
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+          errorMessage = `HTTP ${response?.status || "Unknown"}: ${
+            response?.statusText || "Unknown Error"
+          }`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error("Failed to parse response JSON:", jsonError);
+        throw new Error("Invalid response format from server");
+      }
+
+      if (data && data.success && data.data && data.data.transfer) {
+        setTransfer(data.data.transfer);
+        console.log("✅ Transfer data refreshed successfully");
+      } else {
+        console.error("❌ Invalid response data structure:", data);
+        throw new Error("Invalid response data structure");
+      }
+    } catch (error) {
+      console.error("Error refreshing transfer data:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to refresh transfer data"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Fetch additional transfer details (timeline, related transfers, etc.)
   const fetchAdditionalDetails = async () => {
@@ -249,10 +329,17 @@ export default function TransferDetailsModal({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || "Failed to fetch transfer details"
-        );
+        let errorMessage = "Failed to fetch transfer details";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData?.message || errorData?.error || errorMessage;
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+          errorMessage = `HTTP ${response?.status || "Unknown"}: ${
+            response?.statusText || "Unknown Error"
+          }`;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -403,479 +490,777 @@ export default function TransferDetailsModal({
     return priorityMap[priority as keyof typeof priorityMap] || "bg-gray-50";
   };
 
+  // Handle approve transfer
+  const handleApproveTransfer = async () => {
+    if (!transferId) return;
+
+    setActionLoading("approve");
+    setError(null);
+
+    try {
+      const requestBody = {
+        adminEmail: currentUser?.email || "admin@system.com",
+        reason: "Approved by administrator",
+      };
+
+      console.log("🚀 Approving transfer:", {
+        transferId,
+        adminEmail: requestBody.adminEmail,
+        currentUser: currentUser?.email,
+      });
+
+      const response = await fetch(`/api/transfers/${transferId}/approve`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Failed to approve transfer";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData?.message || errorData?.error || errorMessage;
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+          errorMessage = `HTTP ${response?.status || "Unknown"}: ${
+            response?.statusText || "Unknown Error"
+          }`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        setFeedbackStatus("success");
+
+        // Refresh transfer data to show updated status
+        await refreshTransferData();
+
+        // Notify parent component
+        if (onTransferUpdate) {
+          onTransferUpdate();
+        }
+
+        // Close modal after a short delay to show success feedback
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } else {
+        throw new Error(data.message || "Failed to approve transfer");
+      }
+    } catch (error) {
+      console.error("Error approving transfer:", error);
+      setFeedbackStatus("error");
+      setError(
+        error instanceof Error ? error.message : "Failed to approve transfer"
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Handle reject transfer
+  const handleRejectTransfer = async () => {
+    if (!transferId) return;
+
+    setActionLoading("reject");
+    setError(null);
+
+    try {
+      const requestBody = {
+        adminEmail: currentUser?.email || "admin@system.com",
+        reason: "Rejected by administrator",
+      };
+
+      console.log("🚀 Rejecting transfer:", {
+        transferId,
+        adminEmail: requestBody.adminEmail,
+        currentUser: currentUser?.email,
+      });
+
+      const response = await fetch(`/api/transfers/${transferId}/reject`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Failed to reject transfer";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData?.message || errorData?.error || errorMessage;
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+          errorMessage = `HTTP ${response?.status || "Unknown"}: ${
+            response?.statusText || "Unknown Error"
+          }`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        setFeedbackStatus("success");
+
+        // Refresh transfer data to show updated status
+        await refreshTransferData();
+
+        // Notify parent component
+        if (onTransferUpdate) {
+          onTransferUpdate();
+        }
+
+        // Close modal after a short delay to show success feedback
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } else {
+        throw new Error(data.message || "Failed to reject transfer");
+      }
+    } catch (error) {
+      console.error("Error rejecting transfer:", error);
+      setFeedbackStatus("error");
+      setError(
+        error instanceof Error ? error.message : "Failed to reject transfer"
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Handle cancel transfer
+  const handleCancelTransfer = async () => {
+    if (!transferId) return;
+
+    setActionLoading("cancel");
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/transfers/${transferId}/cancel`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          reason: "Cancelled by administrator",
+        }),
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Failed to cancel transfer";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData?.message || errorData?.error || errorMessage;
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+          errorMessage = `HTTP ${response?.status || "Unknown"}: ${
+            response?.statusText || "Unknown Error"
+          }`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        setFeedbackStatus("success");
+
+        // Refresh transfer data to show updated status
+        await refreshTransferData();
+
+        // Notify parent component
+        if (onTransferUpdate) {
+          onTransferUpdate();
+        }
+
+        // Close modal after a short delay to show success feedback
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } else {
+        throw new Error(data.message || "Failed to cancel transfer");
+      }
+    } catch (error) {
+      console.error("Error cancelling transfer:", error);
+      setFeedbackStatus("error");
+      setError(
+        error instanceof Error ? error.message : "Failed to cancel transfer"
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        onClick={onClose}
-      >
-        {/* Backdrop */}
-        <div className="absolute inset-0 bg-black/20 backdrop-blur-md" />
-
-        {/* Modal Content */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          transition={{ duration: 0.2 }}
-          className={`relative w-full max-w-6xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden ${
-            transfer && !loading
-              ? getPriorityBackgroundColor(transfer.priority)
-              : "bg-white"
-          }`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Content */}
-          <div
-            className="overflow-y-auto max-h-[90vh] p-6"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/20 backdrop-blur-md z-50 flex items-center justify-center p-4"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-800">
-                  {transfer?.transferId || "Loading..."}
-                </h2>
-              </div>
-              <div className="flex items-center space-x-3">
-                {transfer &&
-                  (() => {
-                    const statusConfig = getTransferStatusConfig(
-                      transfer.status
-                    );
-                    const StatusIcon = statusConfig.icon;
-                    return (
-                      <div
-                        className={`px-3 py-1 rounded-full ${statusConfig.badgeClass} flex items-center space-x-2`}
-                      >
-                        <StatusIcon size={16} />
-                        <span className="font-medium">
-                          {statusConfig.label}
-                        </span>
-                      </div>
-                    );
-                  })()}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={onClose}
-                  className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                  title="Close"
-                >
-                  <X size={16} />
-                </motion.button>
-              </div>
-            </div>
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <LoadingSpinner />
-              </div>
-            ) : error ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Error Loading Transfer
-                  </h3>
-                  <p className="text-gray-600 mb-4">{error}</p>
-                  <button
-                    onClick={handleRefresh}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Try Again
-                  </button>
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+              className={`relative w-full max-w-6xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden ${
+                transfer && !loading
+                  ? getPriorityBackgroundColor(transfer.priority)
+                  : "bg-white"
+              }`}
+            >
+              {/* Content */}
+              <div
+                className="overflow-y-auto max-h-[90vh] p-6"
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-800">
+                      {transfer?.transferId || "Loading..."}
+                    </h2>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    {transfer &&
+                      (() => {
+                        const statusConfig = getTransferStatusConfig(
+                          transfer.status
+                        );
+                        const StatusIcon = statusConfig.icon;
+                        return (
+                          <div
+                            className={`px-3 py-1 rounded-full ${statusConfig.badgeClass} flex items-center space-x-2`}
+                          >
+                            <StatusIcon size={16} />
+                            <span className="font-medium">
+                              {statusConfig.label}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onClose();
+                      }}
+                      className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                      title="Close"
+                    >
+                      <X size={16} />
+                    </motion.button>
+                  </div>
                 </div>
-              </div>
-            ) : transfer ? (
-              <div className="space-y-6">
-                {/* Transfer Overview */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm"
-                >
-                  {/* Transfer Information */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Patient/Transfer Info */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Transfer Information
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <LoadingSpinner />
+                  </div>
+                ) : error ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                      <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        Error Loading Transfer
                       </h3>
-
-                      {transfer.transferCategory === "patient" &&
-                        transfer.patientInfo && (
-                          <div className="space-y-3">
-                            <div className="flex items-center space-x-3">
-                              <User size={20} className="text-blue-600" />
-                              <div>
-                                <p className="font-medium text-gray-900">
-                                  {transfer.patientInfo.firstName}{" "}
-                                  {transfer.patientInfo.lastName}
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                  Age: {transfer.patientInfo.age} | Dossier:{" "}
-                                  {transfer.patientInfo.dossierNumber || "N/A"}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                      {transfer.transferCategory === "envelope" &&
-                        transfer.transferData?.envelopeInfo && (
-                          <div className="space-y-3">
-                            <div className="flex items-center space-x-3">
-                              {(() => {
-                                const categoryConfig =
-                                  getTransferCategoryConfig("envelope");
-                                const CategoryIcon = categoryConfig.icon;
-                                return (
-                                  <CategoryIcon
-                                    size={20}
-                                    className={categoryConfig.color}
-                                  />
-                                );
-                              })()}
-                              <div>
-                                <p className="font-medium text-gray-900">
-                                  Envelope #
-                                  {
-                                    transfer.transferData.envelopeInfo
-                                      .envelopeNumber
-                                  }
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                  From:{" "}
-                                  {
-                                    transfer.transferData.envelopeInfo
-                                      .senderName
-                                  }
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                  To:{" "}
-                                  {
-                                    transfer.transferData.envelopeInfo
-                                      .recipientName
-                                  }
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                      {transfer.transferCategory === "medical_instruments" &&
-                        transfer.transferData?.equipmentInfo && (
-                          <div className="space-y-3">
-                            <div className="flex items-center space-x-3">
-                              {(() => {
-                                const categoryConfig =
-                                  getTransferCategoryConfig(
-                                    "medical_instruments"
-                                  );
-                                const CategoryIcon = categoryConfig.icon;
-                                return (
-                                  <CategoryIcon
-                                    size={20}
-                                    className={categoryConfig.color}
-                                  />
-                                );
-                              })()}
-                              <div>
-                                <p className="font-medium text-gray-900">
-                                  {
-                                    transfer.transferData.equipmentInfo
-                                      .equipmentName
-                                  }
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                  Model:{" "}
-                                  {transfer.transferData.equipmentInfo.model}
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                  Serial:{" "}
-                                  {transfer.transferData.equipmentInfo
-                                    .serialNumber || "N/A"}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                    </div>
-
-                    {/* Hospital Information */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Route Information
-                      </h3>
-
-                      <div className="space-y-4">
-                        <div className="flex items-start space-x-3">
-                          <MapPin
-                            size={18}
-                            className="text-red-600 flex-shrink-0 mt-0.5"
-                          />
-                          <div>
-                            <p className="font-medium text-gray-900">From</p>
-                            <p className="text-sm text-gray-600">
-                              {transfer.fromHospital.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {transfer.fromHospital.address}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-start space-x-3">
-                          <MapPin
-                            size={18}
-                            className="text-green-600 flex-shrink-0 mt-0.5"
-                          />
-                          <div>
-                            <p className="font-medium text-gray-900">To</p>
-                            <p className="text-sm text-gray-600">
-                              {transfer.toHospital.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {transfer.toHospital.address}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                      <p className="text-gray-600 mb-4">{error}</p>
+                      <button
+                        onClick={handleRefresh}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Try Again
+                      </button>
                     </div>
                   </div>
+                ) : transfer ? (
+                  <div className="space-y-6">
+                    {/* Transfer Overview */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm"
+                    >
+                      {/* Transfer Information */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Patient/Transfer Info */}
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Transfer Information
+                          </h3>
 
-                  {/* Request Details */}
-                  <div className="mt-6 pt-6 border-t border-gray-200">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="flex items-center space-x-3">
-                        <User size={18} className="text-blue-600" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            Requested By
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {transfer.requestedBy.firstName}{" "}
-                            {transfer.requestedBy.lastName}
-                          </p>
+                          {transfer.transferCategory === "patient" &&
+                            transfer.patientInfo && (
+                              <div className="space-y-3">
+                                <div className="flex items-center space-x-3">
+                                  <User size={20} className="text-blue-600" />
+                                  <div>
+                                    <p className="font-medium text-gray-900">
+                                      {transfer.patientInfo.firstName}{" "}
+                                      {transfer.patientInfo.lastName}
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                      Age: {transfer.patientInfo.age} | Dossier:{" "}
+                                      {transfer.patientInfo.dossierNumber ||
+                                        "N/A"}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                          {transfer.transferCategory === "envelope" &&
+                            transfer.transferData?.envelopeInfo && (
+                              <div className="space-y-3">
+                                <div className="flex items-center space-x-3">
+                                  {(() => {
+                                    const categoryConfig =
+                                      getTransferCategoryConfig("envelope");
+                                    const CategoryIcon = categoryConfig.icon;
+                                    return (
+                                      <CategoryIcon
+                                        size={20}
+                                        className={categoryConfig.color}
+                                      />
+                                    );
+                                  })()}
+                                  <div>
+                                    <p className="font-medium text-gray-900">
+                                      Envelope #
+                                      {
+                                        transfer.transferData.envelopeInfo
+                                          .envelopeNumber
+                                      }
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                      From:{" "}
+                                      {
+                                        transfer.transferData.envelopeInfo
+                                          .senderName
+                                      }
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                      To:{" "}
+                                      {
+                                        transfer.transferData.envelopeInfo
+                                          .recipientName
+                                      }
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                          {transfer.transferCategory ===
+                            "medical_instruments" &&
+                            transfer.transferData?.equipmentInfo && (
+                              <div className="space-y-3">
+                                <div className="flex items-center space-x-3">
+                                  {(() => {
+                                    const categoryConfig =
+                                      getTransferCategoryConfig(
+                                        "medical_instruments"
+                                      );
+                                    const CategoryIcon = categoryConfig.icon;
+                                    return (
+                                      <CategoryIcon
+                                        size={20}
+                                        className={categoryConfig.color}
+                                      />
+                                    );
+                                  })()}
+                                  <div>
+                                    <p className="font-medium text-gray-900">
+                                      {
+                                        transfer.transferData.equipmentInfo
+                                          .equipmentName
+                                      }
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                      Model:{" "}
+                                      {
+                                        transfer.transferData.equipmentInfo
+                                          .model
+                                      }
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                      Serial:{" "}
+                                      {transfer.transferData.equipmentInfo
+                                        .serialNumber || "N/A"}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                         </div>
-                      </div>
 
-                      <div className="flex items-center space-x-3">
-                        <Calendar size={18} className="text-purple-600" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            Requested Date
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {new Date(
-                              transfer.requestedDate
-                            ).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
+                        {/* Hospital Information */}
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Route Information
+                          </h3>
 
-                      {transfer.assignedTo && (
-                        <div className="flex items-center space-x-3">
-                          <UserCheck size={18} className="text-green-600" />
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              Assigned To
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              {transfer.assignedTo.firstName}{" "}
-                              {transfer.assignedTo.lastName}
-                            </p>
+                          <div className="space-y-4">
+                            <div className="flex items-start space-x-3">
+                              <MapPin
+                                size={18}
+                                className="text-red-600 flex-shrink-0 mt-0.5"
+                              />
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  From
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  {transfer.fromHospital.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {transfer.fromHospital.address}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-start space-x-3">
+                              <MapPin
+                                size={18}
+                                className="text-green-600 flex-shrink-0 mt-0.5"
+                              />
+                              <div>
+                                <p className="font-medium text-gray-900">To</p>
+                                <p className="text-sm text-gray-600">
+                                  {transfer.toHospital.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {transfer.toHospital.address}
+                                </p>
+                              </div>
+                            </div>
                           </div>
+                        </div>
+                      </div>
+
+                      {/* Request Details */}
+                      <div className="mt-6 pt-6 border-t border-gray-200">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="flex items-center space-x-3">
+                            <User size={18} className="text-blue-600" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                Requested By
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {transfer.requestedBy.firstName}{" "}
+                                {transfer.requestedBy.lastName}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-3">
+                            <Calendar size={18} className="text-purple-600" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                Requested Date
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {new Date(
+                                  transfer.requestedDate
+                                ).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+
+                          {transfer.assignedTo && (
+                            <div className="flex items-center space-x-3">
+                              <UserCheck size={18} className="text-green-600" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">
+                                  Assigned To
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  {transfer.assignedTo.firstName}{" "}
+                                  {transfer.assignedTo.lastName}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Reason */}
+                      {transfer.reason && (
+                        <div className="mt-6 pt-6 border-t border-gray-200">
+                          <h4 className="text-sm font-medium text-gray-900 mb-2">
+                            Reason
+                          </h4>
+                          <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                            {transfer.reason}
+                          </p>
                         </div>
                       )}
-                    </div>
-                  </div>
 
-                  {/* Reason */}
-                  {transfer.reason && (
-                    <div className="mt-6 pt-6 border-t border-gray-200">
-                      <h4 className="text-sm font-medium text-gray-900 mb-2">
-                        Reason
-                      </h4>
-                      <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                        {transfer.reason}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Notes */}
-                  {transfer.notes && (
-                    <div className="mt-6 pt-6 border-t border-gray-200">
-                      <h4 className="text-sm font-medium text-gray-900 mb-2">
-                        Notes
-                      </h4>
-                      <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                        {transfer.notes}
-                      </p>
-                    </div>
-                  )}
-                </motion.div>
-
-                {/* Floating Admin Actions Button */}
-                {adminContext && availableActions.length > 0 && (
-                  <div className="fixed bottom-8 right-8 z-50">
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{
-                        delay: 0.3,
-                        type: "spring",
-                        stiffness: 300,
-                      }}
-                      className="relative group floating-menu-container"
-                    >
-                      {/* Main Floating Button */}
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="w-14 h-14 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center text-white group-hover:from-purple-700 group-hover:to-blue-700"
-                      >
-                        <MoreHorizontal
-                          size={24}
-                          className={`transition-transform duration-300 ${
-                            isMenuOpen ? "rotate-90" : ""
-                          }`}
-                        />
-                      </motion.button>
-
-                      {/* Floating Action Options */}
-                      <div
-                        className={`absolute bottom-16 right-0 transition-all duration-300 transform ${
-                          isMenuOpen
-                            ? "opacity-100 translate-y-0 pointer-events-auto"
-                            : "opacity-0 translate-y-2 pointer-events-none"
-                        }`}
-                      >
-                        <div className="bg-white rounded-2xl shadow-2xl border-2 border-gray-200 p-4 min-w-[220px] space-y-2 backdrop-blur-sm">
-                          <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3 text-center">
-                            Admin Actions
-                          </div>
-                          {availableActions
-                            .filter(
-                              (action) =>
-                                !action.id.toLowerCase().includes("note") &&
-                                !action.label.toLowerCase().includes("note")
-                            )
-                            .map((action, index) => {
-                              const ActionIcon =
-                                typeof action.icon === "string"
-                                  ? iconMap[action.icon]
-                                  : action.icon;
-
-                              // Define different colors for each button
-                              const buttonColors = [
-                                "bg-blue-100 border-blue-300 text-blue-800 hover:bg-blue-200",
-                                "bg-green-100 border-green-300 text-green-800 hover:bg-green-200",
-                                "bg-purple-100 border-purple-300 text-purple-800 hover:bg-purple-200",
-                                "bg-orange-100 border-orange-300 text-orange-800 hover:bg-orange-200",
-                                "bg-pink-100 border-pink-300 text-pink-800 hover:bg-pink-200",
-                                "bg-indigo-100 border-indigo-300 text-indigo-800 hover:bg-indigo-200",
-                                "bg-teal-100 border-teal-300 text-teal-800 hover:bg-teal-200",
-                              ];
-
-                              // Make cancel button red
-                              const isCancelAction =
-                                action.id.toLowerCase().includes("cancel") ||
-                                action.label.toLowerCase().includes("cancel") ||
-                                action.label.toLowerCase().includes("reject");
-
-                              const colorClass = isCancelAction
-                                ? "bg-red-100 border-red-300 text-red-800 hover:bg-red-200"
-                                : buttonColors[index % buttonColors.length];
-
-                              return (
-                                <motion.button
-                                  key={action.id}
-                                  initial={{ opacity: 0, x: 20 }}
-                                  animate={{
-                                    opacity: 1,
-                                    x: 0,
-                                    transition: { delay: index * 0.05 },
-                                  }}
-                                  whileHover={{
-                                    scale: 1.02,
-                                    x: 4,
-                                    transition: { duration: 0.2 },
-                                  }}
-                                  whileTap={{ scale: 0.98 }}
-                                  onClick={() => {
-                                    setSelectedAction(action.id);
-                                    setShowActionModal(true);
-                                  }}
-                                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 border-2 hover:shadow-lg hover:scale-105 ${colorClass}`}
-                                >
-                                  {ActionIcon && <ActionIcon size={18} />}
-                                  <span className="text-sm font-semibold text-black">
-                                    {action.label}
-                                  </span>
-                                </motion.button>
-                              );
-                            })}
+                      {/* Notes */}
+                      {transfer.notes && (
+                        <div className="mt-6 pt-6 border-t border-gray-200">
+                          <h4 className="text-sm font-medium text-gray-900 mb-2">
+                            Notes
+                          </h4>
+                          <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                            {transfer.notes}
+                          </p>
                         </div>
-                      </div>
+                      )}
                     </motion.div>
-                  </div>
-                )}
 
-                {/* Timeline */}
-                {transfer.timeline && transfer.timeline.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm"
-                  >
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
-                      <History size={20} className="text-blue-600" />
-                      <span>Timeline</span>
-                    </h2>
-                    <div className="space-y-4">
-                      {transfer.timeline.map((event, index) => (
-                        <div
-                          key={event.id}
-                          className="flex items-start space-x-4"
-                        >
-                          <Clock
-                            size={18}
-                            className="text-blue-600 flex-shrink-0 mt-0.5"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <h4 className="font-medium text-gray-900">
-                                {event.title}
-                              </h4>
-                              <span className="text-sm text-gray-500">
-                                {new Date(event.timestamp).toLocaleString()}
-                              </span>
+                    {/* Timeline */}
+                    {transfer.timeline && transfer.timeline.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm"
+                      >
+                        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+                          <History size={20} className="text-blue-600" />
+                          <span>Timeline</span>
+                        </h2>
+                        <div className="space-y-4">
+                          {transfer.timeline.map((event, index) => (
+                            <div
+                              key={event.id}
+                              className="flex items-start space-x-4"
+                            >
+                              <Clock
+                                size={18}
+                                className="text-blue-600 flex-shrink-0 mt-0.5"
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between">
+                                  <h4 className="font-medium text-gray-900">
+                                    {event.title}
+                                  </h4>
+                                  <span className="text-sm text-gray-500">
+                                    {new Date(event.timestamp).toLocaleString()}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600 mt-1">
+                                  {event.description}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  by {event.actor.name} ({event.actor.userType})
+                                </p>
+                              </div>
                             </div>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {event.description}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              by {event.actor.name} ({event.actor.userType})
-                            </p>
-                          </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
+                      </motion.div>
+                    )}
+                  </div>
+                ) : null}
               </div>
-            ) : null}
-          </div>
-        </motion.div>
-      </motion.div>
+
+              {/* Floating Admin Actions Button - Always visible */}
+              <div className="fixed bottom-8 right-8 z-50">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{
+                    delay: 0.3,
+                    type: "spring",
+                    stiffness: 300,
+                  }}
+                  className="relative group floating-menu-container"
+                >
+                  {/* Main Floating Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    className="w-14 h-14 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center text-white group-hover:from-purple-700 group-hover:to-blue-700"
+                  >
+                    <MoreHorizontal
+                      size={24}
+                      className={`transition-transform duration-300 ${
+                        isMenuOpen ? "rotate-90" : ""
+                      }`}
+                    />
+                  </motion.button>
+
+                  {/* Floating Action Options */}
+                  <div
+                    className={`absolute bottom-16 right-0 transition-all duration-300 transform ${
+                      isMenuOpen
+                        ? "opacity-100 translate-y-0 pointer-events-auto"
+                        : "opacity-0 translate-y-2 pointer-events-none"
+                    }`}
+                  >
+                    <div className="bg-white rounded-2xl shadow-2xl border-2 border-gray-200 p-4 min-w-[220px] space-y-2 backdrop-blur-sm">
+                      <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3 text-center">
+                        Admin Actions
+                      </div>
+
+                      {/* Dynamic Actions based on transfer status */}
+                      {transfer?.status === "pending" && (
+                        <>
+                          {/* Pending Transfer Actions */}
+                          <motion.button
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{
+                              opacity: 1,
+                              x: 0,
+                              transition: { delay: 0.05 },
+                            }}
+                            whileHover={{
+                              scale: actionLoading === "approve" ? 1 : 1.02,
+                              x: actionLoading === "approve" ? 0 : 4,
+                              transition: { duration: 0.2 },
+                            }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => handleApproveTransfer()}
+                            disabled={actionLoading === "approve"}
+                            className={`w-full flex items-center justify-center px-4 py-3 rounded-xl font-medium transition-all duration-200 border-2 hover:shadow-lg hover:scale-105 bg-green-100 border-green-400 text-green-900 hover:bg-green-200 font-semibold ${
+                              actionLoading === "approve"
+                                ? "opacity-75 cursor-not-allowed"
+                                : ""
+                            }`}
+                          >
+                            {actionLoading === "approve" ? (
+                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            ) : null}
+                            <span className="text-sm font-semibold text-black">
+                              {actionLoading === "approve"
+                                ? "Approving..."
+                                : "Approve Transfer"}
+                            </span>
+                          </motion.button>
+
+                          <motion.button
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{
+                              opacity: 1,
+                              x: 0,
+                              transition: { delay: 0.1 },
+                            }}
+                            whileHover={{
+                              scale: actionLoading === "reject" ? 1 : 1.02,
+                              x: actionLoading === "reject" ? 0 : 4,
+                              transition: { duration: 0.2 },
+                            }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => handleRejectTransfer()}
+                            disabled={actionLoading === "reject"}
+                            className={`w-full flex items-center justify-center px-4 py-3 rounded-xl font-medium transition-all duration-200 border-2 hover:shadow-lg hover:scale-105 bg-red-100 border-red-400 text-red-900 hover:bg-red-200 font-semibold ${
+                              actionLoading === "reject"
+                                ? "opacity-75 cursor-not-allowed"
+                                : ""
+                            }`}
+                          >
+                            {actionLoading === "reject" ? (
+                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            ) : null}
+                            <span className="text-sm font-semibold text-black">
+                              {actionLoading === "reject"
+                                ? "Rejecting..."
+                                : "Reject Transfer"}
+                            </span>
+                          </motion.button>
+                        </>
+                      )}
+
+                      {transfer?.status === "in_progress" && (
+                        <>
+                          {/* In Progress Transfer Actions */}
+                          <motion.button
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{
+                              opacity: 1,
+                              x: 0,
+                              transition: { delay: 0.05 },
+                            }}
+                            whileHover={{
+                              scale: actionLoading === "cancel" ? 1 : 1.02,
+                              x: actionLoading === "cancel" ? 0 : 4,
+                              transition: { duration: 0.2 },
+                            }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => handleCancelTransfer()}
+                            disabled={actionLoading === "cancel"}
+                            className={`w-full flex items-center justify-center px-4 py-3 rounded-xl font-medium transition-all duration-200 border-2 hover:shadow-lg hover:scale-105 bg-red-100 border-red-300 text-red-800 hover:bg-red-200 ${
+                              actionLoading === "cancel"
+                                ? "opacity-75 cursor-not-allowed"
+                                : ""
+                            }`}
+                          >
+                            {actionLoading === "cancel" ? (
+                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            ) : null}
+                            <span className="text-sm font-semibold text-black">
+                              {actionLoading === "cancel"
+                                ? "Cancelling..."
+                                : "Cancel Transfer"}
+                            </span>
+                          </motion.button>
+                        </>
+                      )}
+
+                      {/* Show message if no actions available */}
+                      {transfer?.status !== "pending" &&
+                        transfer?.status !== "in_progress" && (
+                          <div className="text-center py-4">
+                            <div className="text-sm text-gray-500 mb-2">
+                              No actions available for
+                            </div>
+                            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                              {transfer?.status || "Unknown"} Status
+                            </div>
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </motion.div>
+          </motion.div>
+        </>
+      )}
+
+      {/* Success/Error Feedback */}
+      {feedbackStatus &&
+        typeof window !== "undefined" &&
+        createPortal(
+          <div className="fixed bottom-4 left-4 z-[1000]">
+            <AnimatedStatusIcon
+              status={feedbackStatus}
+              message={
+                feedbackStatus === "success"
+                  ? "Transfer action completed successfully"
+                  : error || "Failed to complete transfer action"
+              }
+              durationMs={1700}
+              onHide={() => {
+                setFeedbackStatus(null);
+                setError(null);
+              }}
+            />
+          </div>,
+          document.body
+        )}
     </AnimatePresence>
   );
 }

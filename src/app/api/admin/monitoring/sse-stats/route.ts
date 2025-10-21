@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 import { sseManager } from '@/lib/sse';
 import { SSEStats } from '@/types/dashboard';
 
@@ -16,7 +16,7 @@ import { SSEStats } from '@/types/dashboard';
 export async function GET(request: NextRequest) {
   try {
     // Check admin permissions
-    const { user } = await requireManager();
+    const { user } = await requireAdmin();
 
     // Get real-time SSE metrics from unified server
     const stats = { totalConnections: 0, activeConnections: 0, connectionsByType: {} };

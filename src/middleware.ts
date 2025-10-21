@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/auth/jwt-middleware';
+import { getLoginRedirectRoute } from '@/lib/auth/user-routing';
 
 // ===== TYPES =====
 interface AuthPayload {
@@ -224,6 +225,15 @@ export async function middleware(request: NextRequest) {
       }
       
       logStructured(createLogContext('info', 'Admin access granted', requestId, pathname, request.method, metrics));
+    }
+    
+    // Check if user is trying to access login page while authenticated
+    if (pathname === '/login' && payload) {
+      // Redirect authenticated users to their appropriate dashboard
+      const redirectPath = getLoginRedirectRoute(payload.userType);
+      
+      logStructured(createLogContext('info', 'Authenticated user accessing login, redirecting to dashboard', requestId, pathname, request.method, metrics));
+      return NextResponse.redirect(new URL(redirectPath, request.url));
     }
     
     metrics.success = true;

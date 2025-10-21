@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 import os from 'os';
 import fs from 'fs/promises';
 
@@ -228,7 +228,7 @@ async function getServiceStatus(): Promise<ServiceStatus[]> {
 export async function GET(request: NextRequest) {
   try {
     // Check super admin permissions
-    const { user } = await requireManager();
+    const { user } = await requireAdmin();
 
     // Get system metrics
     const metrics = await getSystemMetrics();

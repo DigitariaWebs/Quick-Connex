@@ -46,13 +46,9 @@ export interface User {
     };
     isActive: boolean;
   };
-  lastLogin?: Date;
-  lastLoginIp?: string;
   createdAt: Date;
   updatedAt: Date;
   permissions?: string[];
-  isSuperAdmin?: boolean;
-  failedLoginAttempts?: number;
   accountLockedUntil?: Date;
   approvedBy?: string;
   approvedAt?: Date;
@@ -62,7 +58,6 @@ export interface User {
   suspensionReason?: string;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
-  lastPasswordChange?: Date;
   loginHistory?: Array<{
     timestamp: Date;
     ipAddress: string;
@@ -70,6 +65,10 @@ export interface User {
     success: boolean;
     location?: string;
   }>;
+  // Calculated fields from loginHistory
+  lastLogin?: Date | null;
+  lastLoginIp?: string | null;
+  recentFailedAttempts?: number;
   documents?: Array<{
     fileId: string;
     documentType: 'cv' | 'opiqPermit' | 'rcr';

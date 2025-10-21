@@ -4,7 +4,7 @@ import User from "@/models/User";
 import { CIUSSS } from "@/models/CIUSSS";
 import Hospital from "@/models/Hospital";
 import mongoose from "mongoose";
-import { requireManager, handleAuthError, createSuccessResponse } from "@/lib/auth/auth-utils";
+import { requireAdmin, handleAuthError, createSuccessResponse } from "@/lib/auth/auth-utils";
 
 /**
  * GET /api/admin/users
@@ -14,7 +14,14 @@ import { requireManager, handleAuthError, createSuccessResponse } from "@/lib/au
 export async function GET(request: NextRequest) {
   try {
     // Verify admin authentication
-    const { user } = await requireManager();
+    console.log('🔍 Admin Users API: Starting authentication...');
+    const { user } = await requireAdmin();
+    console.log('🔍 Admin Users API: Authentication successful, user:', {
+      hasUser: !!user,
+      userType: user?.userType,
+      hasId: !!user?._id,
+      idType: typeof user?._id
+    });
 
     await dbConnect();
     
@@ -70,21 +77,81 @@ export async function GET(request: NextRequest) {
     // Calculate pagination
     const skip = (page - 1) * limit;
 
-    // Fetch users with pagination
-    const [users, total] = await Promise.all([
+    // Fetch users without population first to avoid ObjectId casting errors
+    console.log('🔍 Admin Users API: Fetching users without population...');
+    const [rawUsers, total] = await Promise.all([
       User.find(filter)
-        .populate("ciusss", "code name region isActive")
-        .populate("hospital", "name address organization specialties isActive")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
       User.countDocuments(filter),
     ]);
+    
+    console.log('🔍 Admin Users API: Found raw users:', rawUsers.length);
+    if (rawUsers.length > 0) {
+      console.log('🔍 Admin Users API: Sample user data:', {
+        id: rawUsers[0]._id,
+        name: `${rawUsers[0].firstName} ${rawUsers[0].lastName}`,
+        userType: rawUsers[0].userType,
+        ciusssType: typeof rawUsers[0].ciusss,
+        ciusssValue: rawUsers[0].ciusss,
+        hospitalType: typeof rawUsers[0].hospital,
+        hospitalValue: rawUsers[0].hospital
+      });
+    }
+
+    // Manually populate CIUSSS and Hospital data
+    console.log('🔍 Admin Users API: Manually populating CIUSSS and Hospital data...');
+    const users = await Promise.all(rawUsers.map(async (user) => {
+      const populatedUser = { ...user };
+      
+      // Handle CIUSSS population
+      if (user.ciusss) {
+        try {
+          // Check if ciusss is an ObjectId or string
+          if (typeof user.ciusss === 'string') {
+            // If it's a string, try to find by code
+            const ciusss = await CIUSSS.findOne({ code: user.ciusss });
+            populatedUser.ciusss = ciusss;
+          } else {
+            // If it's an ObjectId, populate normally
+            const ciusss = await CIUSSS.findById(user.ciusss);
+            populatedUser.ciusss = ciusss;
+          }
+        } catch (error) {
+          console.warn(`⚠️ Failed to populate CIUSSS for user ${user._id}:`, error.message);
+          populatedUser.ciusss = null;
+        }
+      }
+      
+      // Handle Hospital population
+      if (user.hospital) {
+        try {
+          // Check if hospital is an ObjectId or string
+          if (typeof user.hospital === 'string') {
+            // If it's a string, try to find by name
+            const hospital = await Hospital.default.findOne({ name: user.hospital });
+            populatedUser.hospital = hospital;
+          } else {
+            // If it's an ObjectId, populate normally
+            const hospital = await Hospital.default.findById(user.hospital);
+            populatedUser.hospital = hospital;
+          }
+        } catch (error) {
+          console.warn(`⚠️ Failed to populate Hospital for user ${user._id}:`, error.message);
+          populatedUser.hospital = null;
+        }
+      }
+      
+      return populatedUser;
+    }));
+    
+    console.log('🔍 Admin Users API: Successfully populated users:', users.length);
 
     const totalPages = Math.ceil(total / limit);
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       data: {
         users,
@@ -95,11 +162,33 @@ export async function GET(request: NextRequest) {
         hasNext: page < totalPages,
         hasPrev: page > 1,
       },
+    };
+    
+    console.log('🔍 Admin Users API: Response data structure:', {
+      success: responseData.success,
+      usersCount: responseData.data.users.length,
+      total: responseData.data.total,
+      pagination: {
+        page: responseData.data.page,
+        limit: responseData.data.limit,
+        totalPages: responseData.data.totalPages
+      }
     });
+
+    return NextResponse.json(responseData);
   } catch (error) {
-    console.error("Error fetching users:", error);
+    console.error("❌ Admin users API error:", error);
+    console.error("❌ Error details:", {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace'
+    });
     return NextResponse.json(
-      { success: false, message: "Internal server error" },
+      { 
+        success: false, 
+        error: 'Failed to fetch users',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
@@ -113,7 +202,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verify admin authentication
-    const { user } = await requireManager();
+    const { user } = await requireAdmin();
 
     await dbConnect();
     
@@ -135,21 +224,55 @@ export async function POST(request: NextRequest) {
 
     // Validate CIUSSS and Hospital references for managers
     if (userType === 'manager') {
+      // Validate CIUSSS reference
       if (ciusssId) {
+        // Ensure it's a valid ObjectId, not a string
+        if (!mongoose.Types.ObjectId.isValid(ciusssId)) {
+          return NextResponse.json(
+            { 
+              success: false, 
+              message: "CIUSSS reference must be a valid ObjectId",
+              error: "Invalid CIUSSS format"
+            },
+            { status: 400 }
+          );
+        }
+        
         const ciusssExists = await CIUSSS.findById(ciusssId);
         if (!ciusssExists) {
           return NextResponse.json(
-            { success: false, message: "Invalid CIUSSS reference" },
+            { 
+              success: false, 
+              message: "CIUSSS reference not found in database",
+              error: "Invalid CIUSSS reference"
+            },
             { status: 400 }
           );
         }
       }
       
+      // Validate Hospital reference
       if (hospitalId) {
+        // Ensure it's a valid ObjectId, not a string
+        if (!mongoose.Types.ObjectId.isValid(hospitalId)) {
+          return NextResponse.json(
+            { 
+              success: false, 
+              message: "Hospital reference must be a valid ObjectId",
+              error: "Invalid Hospital format"
+            },
+            { status: 400 }
+          );
+        }
+        
         const hospitalExists = await mongoose.models.Hospital?.findById(hospitalId);
         if (!hospitalExists) {
           return NextResponse.json(
-            { success: false, message: "Invalid Hospital reference" },
+            { 
+              success: false, 
+              message: "Hospital reference not found in database",
+              error: "Invalid Hospital reference"
+            },
             { status: 400 }
           );
         }

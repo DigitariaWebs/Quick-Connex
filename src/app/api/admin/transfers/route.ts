@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 // import { logAdminAction } from '@/lib/auth/admin-middleware'; // Removed - using auth-utils instead
 import dbConnect from '@/lib/database/mongoose';
 import mongoose from 'mongoose';
@@ -46,10 +46,15 @@ interface BulkOperation {
 // GET /api/admin/transfers - Get transfers with advanced filtering
 export async function GET(request: NextRequest) {
   try {
-    // Check admin permissions
-    const { user } = await requireManager();
-
-    const adminUser = user;
+    // Check admin permissions (now returns full user data)
+    console.log('🔍 Admin Transfers API: Starting authentication...');
+    const { user: adminUser } = await requireAdmin();
+    console.log('🔍 Admin Transfers API: Authentication successful, admin user:', {
+      hasUser: !!adminUser,
+      userType: adminUser?.userType,
+      hasId: !!adminUser?._id,
+      hasName: !!(adminUser?.firstName && adminUser?.lastName)
+    });
     
     // Check specific permissions
     const hasViewPermission = adminUser.userType === 'super_admin' || adminUser.userType === 'admin';
@@ -147,6 +152,10 @@ export async function GET(request: NextRequest) {
     sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
     // Get transfers with populated data
+    console.log('🔍 Admin Transfers API: Query:', JSON.stringify(query, null, 2));
+    console.log('🔍 Admin Transfers API: Sort:', JSON.stringify(sort, null, 2));
+    console.log('🔍 Admin Transfers API: Pagination:', { page, limit, skip });
+    
     const transfers = await Transfer.find(query)
       .populate('requestedBy', 'firstName lastName email userType')
       .populate('fromHospital', 'name address organization')
@@ -156,11 +165,14 @@ export async function GET(request: NextRequest) {
       .sort(sort)
       .skip(skip)
       .limit(limit);
+    
+    console.log('🔍 Admin Transfers API: Found transfers:', transfers.length);
 
     // Get total count for pagination
     const totalCount = await Transfer.countDocuments(query);
 
     // Get statistics
+    console.log('🔍 Admin Transfers API: Getting statistics...');
     const stats = await Transfer.aggregate([
       { $match: query },
       {
@@ -179,10 +191,31 @@ export async function GET(request: NextRequest) {
         }
       }
     ]);
+    
+    console.log('🔍 Admin Transfers API: Stats result:', JSON.stringify(stats, null, 2));
+    
+    // Debug: Let's also check the actual status counts in the database
+    const statusCounts = await Transfer.aggregate([
+      { $match: query },
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+    console.log('🔍 Admin Transfers API: Status counts:', JSON.stringify(statusCounts, null, 2));
 
     // Log admin action
+    console.log('🔍 Admin Transfers API: Admin user debug:', {
+      adminUser: adminUser,
+      hasId: !!adminUser._id,
+      idType: typeof adminUser._id,
+      idValue: adminUser._id
+    });
+    
     console.log('Admin action logged:', {
-      adminId: adminUser._id.toString(),
+      adminId: adminUser._id?.toString() || 'no-id',
       adminName: `${adminUser.firstName} ${adminUser.lastName}`,
       adminEmail: adminUser.email,
       adminRole: adminUser.userType as 'admin' | 'super_admin',
@@ -208,7 +241,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       data: {
         transfers,
@@ -232,10 +265,24 @@ export async function GET(request: NextRequest) {
         },
         filters: filters
       }
+    };
+    
+    console.log('🔍 Admin Transfers API: Response data structure:', {
+      success: responseData.success,
+      transfersCount: responseData.data.transfers.length,
+      stats: responseData.data.stats,
+      pagination: responseData.data.pagination
     });
+    
+    return NextResponse.json(responseData);
 
   } catch (error) {
-    console.error('Admin transfers API error:', error);
+    console.error('❌ Admin transfers API error:', error);
+    console.error('❌ Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace'
+    });
     return NextResponse.json({
       success: false,
       error: 'Failed to fetch transfers',
@@ -248,7 +295,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check admin permissions
-    const { user } = await requireManager();
+    const { user } = await requireAdmin();
 
     const adminUser = user;
     const body = await request.json();
@@ -290,7 +337,7 @@ export async function POST(request: NextRequest) {
 
     // Log admin action
     console.log('Admin action logged:', {
-      adminId: adminUser._id.toString(),
+      adminId: adminUser._id?.toString() || 'no-id',
       adminName: `${adminUser.firstName} ${adminUser.lastName}`,
       adminEmail: adminUser.email,
       adminRole: adminUser.userType as 'admin' | 'super_admin',
@@ -299,7 +346,7 @@ export async function POST(request: NextRequest) {
       description: `Created transfer ${transfer.transferId} (${transfer.transferCategory})`,
       targetResource: {
         type: TargetResourceType.TRANSFER,
-        id: (transfer._id as any).toString(),
+        id: (transfer._id as any)?.toString() || 'no-id',
         name: transfer.transferId
       },
       metadata: {
@@ -429,7 +476,7 @@ async function handleBulkOperation(
 
         // Log individual action
         console.log('Admin action logged:', {
-          adminId: adminUser._id.toString(),
+          adminId: adminUser._id?.toString() || 'no-id',
           adminName: `${adminUser.firstName} ${adminUser.lastName}`,
           adminEmail: adminUser.email,
           adminRole: adminUser.userType as 'admin' | 'super_admin',

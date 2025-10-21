@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
 // import { logAdminAction } from '@/lib/auth/admin-middleware'; // Removed - using auth-utils instead
 import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
@@ -23,7 +23,7 @@ import { AuditAction, AuditCategory, TargetResourceType } from '@/models/AuditLo
 export async function GET(request: NextRequest) {
   try {
     // Check admin permissions
-    const { user } = await requireManager();
+    const { user } = await requireAdmin();
 
     const adminUser = user;
 

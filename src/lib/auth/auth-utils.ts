@@ -53,14 +53,51 @@ export async function requireManager(): Promise<AuthResult> {
 }
 
 export async function requireAdmin(): Promise<AuthResult> {
-  return requireAuth(['admin', 'super_admin']);
+  const authResult = await requireAuth(['admin', 'super_admin']);
+  
+  if (!authResult.user) {
+    return authResult;
+  }
+  
+  // Fetch full user data from database for admin operations
+  try {
+    const { default: dbConnect } = await import('@/lib/database/mongoose');
+    const { default: User } = await import('@/models/User');
+    
+    await dbConnect();
+    
+    const fullUser = await User.findById(authResult.user.userId);
+    if (!fullUser) {
+      throw new Error('Admin user not found in database');
+    }
+    
+    // Return the full user data instead of just JWT payload
+    return {
+      user: {
+        _id: fullUser._id,
+        userId: fullUser._id.toString(),
+        email: fullUser.email,
+        userType: fullUser.userType,
+        firstName: fullUser.firstName,
+        lastName: fullUser.lastName,
+        status: fullUser.status,
+        phone: fullUser.phone,
+        createdAt: fullUser.createdAt,
+        updatedAt: fullUser.updatedAt
+      },
+      session: authResult.session
+    };
+  } catch (error) {
+    console.error('Error fetching admin user data:', error);
+    throw new Error('Unable to retrieve admin user information');
+  }
 }
 
 /**
- * Require employee, manager, or super_admin access
+ * Require employee, manager, admin, or super_admin access
  */
 export async function requireEmployeeOrManager(): Promise<AuthResult> {
-  return requireAuth(['employee', 'manager', 'super_admin']);
+  return requireAuth(['employee', 'manager', 'admin', 'super_admin']);
 }
 
 /**
