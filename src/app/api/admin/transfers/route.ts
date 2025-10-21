@@ -167,6 +167,13 @@ export async function GET(request: NextRequest) {
       .limit(limit);
     
     console.log('🔍 Admin Transfers API: Found transfers:', transfers.length);
+    
+    // Debug: Check for null requestedBy values
+    const nullRequestedBy = transfers.filter(t => !t.requestedBy);
+    if (nullRequestedBy.length > 0) {
+      console.log('⚠️ Found transfers with null requestedBy:', nullRequestedBy.length);
+      console.log('⚠️ Transfer IDs with null requestedBy:', nullRequestedBy.map(t => t._id));
+    }
 
     // Get total count for pagination
     const totalCount = await Transfer.countDocuments(query);
@@ -193,6 +200,20 @@ export async function GET(request: NextRequest) {
     ]);
     
     console.log('🔍 Admin Transfers API: Stats result:', JSON.stringify(stats, null, 2));
+    
+    // Debug: Check if stats are being calculated correctly
+    if (stats.length > 0) {
+      console.log('🔍 Admin Transfers API: Stats breakdown:', {
+        total: stats[0].total,
+        pending: stats[0].pending,
+        accepted: stats[0].accepted,
+        inProgress: stats[0].inProgress,
+        completed: stats[0].completed,
+        cancelled: stats[0].cancelled
+      });
+    } else {
+      console.log('⚠️ Admin Transfers API: No stats returned from aggregation');
+    }
     
     // Debug: Let's also check the actual status counts in the database
     const statusCounts = await Transfer.aggregate([

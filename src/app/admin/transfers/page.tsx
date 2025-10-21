@@ -297,6 +297,7 @@ export default function AdminTransfersPage() {
         setAllTransfers(fetchedTransfers); // Store all transfers for client-side filtering
         setStats(data.data.stats);
         console.log("🔄 Admin page: Stats updated to:", data.data.stats);
+        console.log("🔄 Admin page: Previous stats were:", stats);
         // Store original stats only on the very first load
         if (!hasLoadedInitialStats) {
           setOriginalStats(data.data.stats);
@@ -541,7 +542,12 @@ export default function AdminTransfersPage() {
     console.log("🔄 Admin page: Transfer updated, refreshing data...");
     console.log("🔄 Admin page: Current stats before refresh:", stats);
     setIsRefreshing(true);
-    fetchTransfers(1); // Reset to page 1 to show updated data
+
+    // Add a small delay to ensure the database has been updated
+    setTimeout(() => {
+      console.log("🔄 Admin page: Refreshing transfers after delay...");
+      fetchTransfers(1); // Reset to page 1 to show updated data
+    }, 500);
   };
 
   if (loading && transfers.length === 0) {

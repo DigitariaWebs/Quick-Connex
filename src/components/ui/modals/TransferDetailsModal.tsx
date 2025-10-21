@@ -929,10 +929,12 @@ export default function TransferDetailsModal({
                                   From
                                 </p>
                                 <p className="text-sm text-gray-600">
-                                  {transfer.fromHospital.name}
+                                  {transfer.fromHospital?.name ||
+                                    "Unknown Hospital"}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                  {transfer.fromHospital.address}
+                                  {transfer.fromHospital?.address ||
+                                    "Address not available"}
                                 </p>
                               </div>
                             </div>
@@ -945,10 +947,12 @@ export default function TransferDetailsModal({
                               <div>
                                 <p className="font-medium text-gray-900">To</p>
                                 <p className="text-sm text-gray-600">
-                                  {transfer.toHospital.name}
+                                  {transfer.toHospital?.name ||
+                                    "Unknown Hospital"}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                  {transfer.toHospital.address}
+                                  {transfer.toHospital?.address ||
+                                    "Address not available"}
                                 </p>
                               </div>
                             </div>
@@ -966,8 +970,8 @@ export default function TransferDetailsModal({
                                 Requested By
                               </p>
                               <p className="text-sm text-gray-600">
-                                {transfer.requestedBy.firstName}{" "}
-                                {transfer.requestedBy.lastName}
+                                {transfer.requestedBy?.firstName || "Unknown"}{" "}
+                                {transfer.requestedBy?.lastName || "User"}
                               </p>
                             </div>
                           </div>
@@ -994,8 +998,8 @@ export default function TransferDetailsModal({
                                   Assigned To
                                 </p>
                                 <p className="text-sm text-gray-600">
-                                  {transfer.assignedTo.firstName}{" "}
-                                  {transfer.assignedTo.lastName}
+                                  {transfer.assignedTo?.firstName || "Not"}{" "}
+                                  {transfer.assignedTo?.lastName || "Assigned"}
                                 </p>
                               </div>
                             </div>
