@@ -52,3 +52,4 @@ export async function getTokenFromCookies(): Promise<string | null> {
     return null;
   }
 }
+
