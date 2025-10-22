@@ -170,6 +170,7 @@ export default function UserManagement() {
 
       if (data.success) {
         const fetchedUsers = data.data.users;
+
         setUsers(fetchedUsers);
         setAllUsers(fetchedUsers); // Store all users for client-side filtering
         setTotalUsers(data.data.total);
@@ -351,10 +352,13 @@ export default function UserManagement() {
 
   // Handle select all
   const handleSelectAll = () => {
-    if (selectedUsers.length === users.length) {
+    const validUsers = users.filter(
+      (user) => user._id && user._id.trim() !== ""
+    );
+    if (selectedUsers.length === validUsers.length) {
       setSelectedUsers([]);
     } else {
-      setSelectedUsers(users.map((user) => user._id));
+      setSelectedUsers(validUsers.map((user) => user._id));
     }
   };
 
@@ -382,6 +386,18 @@ export default function UserManagement() {
   const handleCloseModal = () => {
     setShowUserModal(false);
     setSelectedUser(null);
+  };
+
+  // Handle document download
+  const handleDocumentDownload = (doc: any) => {
+    // Create a temporary link element and trigger download
+    const link = document.createElement("a");
+    link.href = doc.downloadUrl;
+    link.download = doc.originalName;
+    link.target = "_blank";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // Handle user update (local state update)
@@ -413,6 +429,195 @@ export default function UserManagement() {
       fetchUsers(); // Refresh users list
       fetchUserStats(); // Refresh stats to ensure accuracy
     }, 500);
+  };
+
+  // Bulk operation helper functions
+  const canBulkApprove = () => {
+    return selectedUsers.some((userId) => {
+      const user = users.find((u) => u._id === userId);
+      return user && user.status === "pending";
+    });
+  };
+
+  const canBulkReject = () => {
+    return selectedUsers.some((userId) => {
+      const user = users.find((u) => u._id === userId);
+      return user && user.status === "pending";
+    });
+  };
+
+  const canBulkSuspend = () => {
+    return selectedUsers.some((userId) => {
+      const user = users.find((u) => u._id === userId);
+      return user && user.status === "approved";
+    });
+  };
+
+  // Bulk approve users
+  const handleBulkApprove = async () => {
+    if (selectedUsers.length === 0) return;
+
+    const pendingUsers = selectedUsers.filter((userId) => {
+      const user = users.find((u) => u._id === userId);
+      return user && user.status === "pending";
+    });
+
+    if (pendingUsers.length === 0) {
+      alert("No pending users selected for approval.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/admin/users/bulk-approve", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ userIds: pendingUsers }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to approve users");
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update stats immediately
+        updateStatsSmart("approve", "mixed");
+
+        // Clear selection
+        setSelectedUsers([]);
+
+        // Refresh data
+        setTimeout(() => {
+          fetchUsers();
+          fetchUserStats();
+        }, 500);
+
+        alert(`Successfully approved ${data.approvedCount} users.`);
+      } else {
+        throw new Error(data.message || "Failed to approve users");
+      }
+    } catch (error) {
+      console.error("Error bulk approving users:", error);
+      alert("Failed to approve users. Please try again.");
+    }
+  };
+
+  // Bulk reject users
+  const handleBulkReject = async () => {
+    if (selectedUsers.length === 0) return;
+
+    const pendingUsers = selectedUsers.filter((userId) => {
+      const user = users.find((u) => u._id === userId);
+      return user && user.status === "pending";
+    });
+
+    if (pendingUsers.length === 0) {
+      alert("No pending users selected for rejection.");
+      return;
+    }
+
+    const reason =
+      prompt("Please provide a reason for rejection:") ||
+      "Bulk rejection by administrator";
+
+    try {
+      const response = await fetch("/api/admin/users/bulk-reject", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ userIds: pendingUsers, reason }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to reject users");
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update stats immediately
+        updateStatsSmart("reject", "mixed");
+
+        // Clear selection
+        setSelectedUsers([]);
+
+        // Refresh data
+        setTimeout(() => {
+          fetchUsers();
+          fetchUserStats();
+        }, 500);
+
+        alert(`Successfully rejected ${data.rejectedCount} users.`);
+      } else {
+        throw new Error(data.message || "Failed to reject users");
+      }
+    } catch (error) {
+      console.error("Error bulk rejecting users:", error);
+      alert("Failed to reject users. Please try again.");
+    }
+  };
+
+  // Bulk suspend users
+  const handleBulkSuspend = async () => {
+    if (selectedUsers.length === 0) return;
+
+    const approvedUsers = selectedUsers.filter((userId) => {
+      const user = users.find((u) => u._id === userId);
+      return user && user.status === "approved";
+    });
+
+    if (approvedUsers.length === 0) {
+      alert("No approved users selected for suspension.");
+      return;
+    }
+
+    const reason =
+      prompt("Please provide a reason for suspension:") ||
+      "Bulk suspension by administrator";
+
+    try {
+      const response = await fetch("/api/admin/users/bulk-suspend", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ userIds: approvedUsers, reason }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to suspend users");
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update stats immediately
+        updateStatsSmart("suspend", "mixed");
+
+        // Clear selection
+        setSelectedUsers([]);
+
+        // Refresh data
+        setTimeout(() => {
+          fetchUsers();
+          fetchUserStats();
+        }, 500);
+
+        alert(`Successfully suspended ${data.suspendedCount} users.`);
+      } else {
+        throw new Error(data.message || "Failed to suspend users");
+      }
+    } catch (error) {
+      console.error("Error bulk suspending users:", error);
+      alert("Failed to suspend users. Please try again.");
+    }
   };
 
   // Smart stats update based on user action
@@ -783,80 +988,191 @@ export default function UserManagement() {
               </div>
             ) : (
               <div className="space-y-4">
+                {/* Bulk Operations Bar */}
+                {selectedUsers.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-blue-50 border border-blue-200 rounded-xl p-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2">
+                          <CheckCircle2 className="w-5 h-5 text-blue-600" />
+                          <span className="font-medium text-blue-900">
+                            {selectedUsers.length} user
+                            {selectedUsers.length > 1 ? "s" : ""} selected
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => setSelectedUsers([])}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          Clear selection
+                        </button>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        {/* Bulk Approve */}
+                        <button
+                          onClick={() => handleBulkApprove()}
+                          disabled={!canBulkApprove()}
+                          className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <UserCheck className="w-4 h-4" />
+                          <span>Approve Selected</span>
+                        </button>
+
+                        {/* Bulk Reject */}
+                        <button
+                          onClick={() => handleBulkReject()}
+                          disabled={!canBulkReject()}
+                          className="flex items-center space-x-2 px-4 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <UserX className="w-4 h-4" />
+                          <span>Reject Selected</span>
+                        </button>
+
+                        {/* Bulk Suspend */}
+                        <button
+                          onClick={() => handleBulkSuspend()}
+                          disabled={!canBulkSuspend()}
+                          className="flex items-center space-x-2 px-4 py-2 bg-orange-100 text-orange-800 rounded-lg hover:bg-orange-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <Ban className="w-4 h-4" />
+                          <span>Suspend Selected</span>
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Users List Header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={
+                        selectedUsers.length ===
+                          users.filter(
+                            (user) => user._id && user._id.trim() !== ""
+                          ).length &&
+                        users.filter(
+                          (user) => user._id && user._id.trim() !== ""
+                        ).length > 0
+                      }
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      Select all (
+                      {
+                        users.filter(
+                          (user) => user._id && user._id.trim() !== ""
+                        ).length
+                      }{" "}
+                      users)
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    Click on a user to view details
+                  </div>
+                </div>
+
                 {/* Users List */}
                 <div className="space-y-3">
-                  {users.map((user) => {
-                    const statusConfig = getUserStatusConfig(user.status);
-                    const roleConfig = getUserRoleConfig(user.userType);
-                    const StatusIcon = statusConfig.icon;
-                    const RoleIcon = roleConfig.icon;
+                  {users
+                    .filter((user) => user._id && user._id.trim() !== "") // Filter out users without valid IDs
+                    .map((user, index) => {
+                      const statusConfig = getUserStatusConfig(user.status);
+                      const roleConfig = getUserRoleConfig(user.userType);
+                      const StatusIcon = statusConfig.icon;
+                      const RoleIcon = roleConfig.icon;
 
-                    return (
-                      <motion.div
-                        key={user._id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-gray-50 rounded-2xl p-4 hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
-                        onClick={() => handleUserClick(user)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-4">
-                            {/* User Avatar */}
-                            <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-lg">
-                              {`${user.firstName.charAt(
-                                0
-                              )}${user.lastName.charAt(0)}`}
-                            </div>
-
-                            {/* User Info */}
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-1">
-                                <h4 className="font-semibold text-gray-900">
-                                  {user.firstName} {user.lastName}
-                                </h4>
-                                <div
-                                  className={`px-2 py-1 rounded-full text-xs font-medium ${statusConfig.badgeClass}`}
-                                >
-                                  <StatusIcon
-                                    size={12}
-                                    className="inline mr-1"
-                                  />
-                                  {statusConfig.label}
-                                </div>
-                                <div
-                                  className={`px-2 py-1 rounded-full text-xs font-medium ${roleConfig.badgeClass}`}
-                                >
-                                  <RoleIcon size={12} className="inline mr-1" />
-                                  {roleConfig.label}
-                                </div>
+                      return (
+                        <motion.div
+                          key={`user-${user._id || index}-${
+                            user.email || "unknown"
+                          }`} // More robust key generation
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-gray-50 rounded-2xl p-4 hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+                          onClick={() => handleUserClick(user)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                              {/* Selection Checkbox */}
+                              <div
+                                className="flex items-center"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selectedUsers.includes(user._id)}
+                                  onChange={() => handleSelectUser(user._id)}
+                                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                                />
                               </div>
-                              <div className="flex items-center space-x-4 text-sm text-gray-600">
-                                <span className="flex items-center">
-                                  <Mail size={14} className="mr-1" />
-                                  {user.email}
-                                </span>
-                                {(user.ciusss?.name || user.hospital?.name) && (
+                              {/* User Avatar */}
+                              <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                                {`${user.firstName.charAt(
+                                  0
+                                )}${user.lastName.charAt(0)}`}
+                              </div>
+
+                              {/* User Info */}
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2 mb-1">
+                                  <h4 className="font-semibold text-gray-900">
+                                    {user.firstName} {user.lastName}
+                                  </h4>
+                                  <div
+                                    className={`px-2 py-1 rounded-full text-xs font-medium ${statusConfig.badgeClass}`}
+                                  >
+                                    <StatusIcon
+                                      size={12}
+                                      className="inline mr-1"
+                                    />
+                                    {statusConfig.label}
+                                  </div>
+                                  <div
+                                    className={`px-2 py-1 rounded-full text-xs font-medium ${roleConfig.badgeClass}`}
+                                  >
+                                    <RoleIcon
+                                      size={12}
+                                      className="inline mr-1"
+                                    />
+                                    {roleConfig.label}
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-4 text-sm text-gray-600">
                                   <span className="flex items-center">
-                                    <Building size={14} className="mr-1" />
-                                    {user.ciusss?.name || user.hospital?.name}
+                                    <Mail size={14} className="mr-1" />
+                                    {user.email}
                                   </span>
-                                )}
-                                {user.lastLogin && (
-                                  <span className="flex items-center">
-                                    <Calendar size={14} className="mr-1" />
-                                    Last login:{" "}
-                                    {new Date(
-                                      user.lastLogin
-                                    ).toLocaleDateString()}
-                                  </span>
-                                )}
+                                  {(user.ciusss?.name ||
+                                    user.hospital?.name) && (
+                                    <span className="flex items-center">
+                                      <Building size={14} className="mr-1" />
+                                      {user.ciusss?.name || user.hospital?.name}
+                                    </span>
+                                  )}
+                                  {user.lastLogin && (
+                                    <span className="flex items-center">
+                                      <Calendar size={14} className="mr-1" />
+                                      Last login:{" "}
+                                      {new Date(
+                                        user.lastLogin
+                                      ).toLocaleDateString()}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
+                        </motion.div>
+                      );
+                    })}
                 </div>
 
                 {/* Pagination */}
@@ -909,15 +1225,18 @@ export default function UserManagement() {
       </div>
 
       {/* User Details Modal */}
-      <UserDetailsModal
-        isOpen={showUserModal}
-        onClose={handleCloseModal}
-        user={selectedUser}
-        loading={loading}
-        onUserIconUpdate={handleUserUpdate}
-        onUserIconAction={handleUserAction}
-        onUserUpdate={handleUserUpdateFromModal}
-      />
+      {showUserModal && (
+        <UserDetailsModal
+          isOpen={showUserModal}
+          onClose={handleCloseModal}
+          user={selectedUser}
+          loading={loading}
+          onUserIconUpdate={handleUserUpdate}
+          onUserIconAction={handleUserAction}
+          onUserUpdate={handleUserUpdateFromModal}
+          onDocumentDownload={handleDocumentDownload}
+        />
+      )}
     </AdminLayout>
   );
 }

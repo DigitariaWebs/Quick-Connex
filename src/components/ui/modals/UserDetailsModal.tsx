@@ -35,6 +35,9 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  FileText,
+  Image,
+  File,
 } from "lucide-react";
 import {
   getUserStatusConfig,
@@ -55,6 +58,7 @@ interface UserDetailsModalProps {
     action: "approve" | "reject" | "suspend" | "activate",
     userType: string
   ) => void;
+  onDocumentDownload?: (document: any) => void;
 }
 
 /**
@@ -74,6 +78,7 @@ export default function UserDetailsModal({
   onUserIconUpdate,
   onUserIconAction,
   onUserUpdate,
+  onDocumentDownload,
 }: UserDetailsModalProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
@@ -87,6 +92,14 @@ export default function UserDetailsModal({
     "success" | "error" | null
   >(null);
   const [error, setError] = useState<string | null>(null);
+  const [userDocuments, setUserDocuments] = useState<any[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Set mounted state for SSR compatibility
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Fetch detailed user data when modal opens
   useEffect(() => {
@@ -107,6 +120,26 @@ export default function UserDetailsModal({
         });
     }
   }, [isOpen, user?._id]);
+
+  // Fetch user documents for employees
+  useEffect(() => {
+    if (isOpen && user?._id && user.userType === "employee") {
+      setDocumentsLoading(true);
+      fetch(`/api/users/${user._id}/documents`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.documents) {
+            setUserDocuments(data.documents);
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching user documents:", error);
+        })
+        .finally(() => {
+          setDocumentsLoading(false);
+        });
+    }
+  }, [isOpen, user?._id, user?.userType]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -720,7 +753,7 @@ export default function UserDetailsModal({
                               .slice(0, 10)
                               .map((login, index) => (
                                 <div
-                                  key={index}
+                                  key={`login-${login.timestamp}-${index}`}
                                   className="flex items-center justify-between p-2 bg-gray-50 rounded"
                                 >
                                   <div className="flex items-center space-x-2">
@@ -743,6 +776,85 @@ export default function UserDetailsModal({
                           </div>
                         </div>
                       )}
+
+                    {/* Employee Documents */}
+                    {user?.userType === "employee" && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                          Employee Documents
+                        </h3>
+                        {documentsLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                          </div>
+                        ) : userDocuments.length > 0 ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {userDocuments.map((document, index) => (
+                              <motion.div
+                                key={`document-${document.fileId || index}-${
+                                  document.originalName || "unknown"
+                                }`}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                                className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors cursor-pointer"
+                                onClick={() => onDocumentDownload?.(document)}
+                              >
+                                <div className="flex items-start space-x-3">
+                                  <div className="flex-shrink-0">
+                                    {document.originalName
+                                      .toLowerCase()
+                                      .includes(".pdf") ? (
+                                      <FileText className="w-8 h-8 text-red-500" />
+                                    ) : document.originalName
+                                        .toLowerCase()
+                                        .match(/\.(jpg|jpeg|png|gif|webp)$/) ? (
+                                      <Image className="w-8 h-8 text-blue-500" />
+                                    ) : (
+                                      <File className="w-8 h-8 text-gray-500" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="text-sm font-medium text-gray-900 truncate">
+                                      {document.originalName}
+                                    </h4>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {document.documentType}
+                                    </p>
+                                    <div className="flex items-center space-x-2 mt-2">
+                                      <span className="text-xs text-gray-400">
+                                        {(document.size / 1024 / 1024).toFixed(
+                                          2
+                                        )}{" "}
+                                        MB
+                                      </span>
+                                      <span className="text-xs text-gray-400">
+                                        •
+                                      </span>
+                                      <span className="text-xs text-gray-400">
+                                        {new Date(
+                                          document.uploadedAt
+                                        ).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex-shrink-0">
+                                    <Eye className="w-4 h-4 text-gray-400" />
+                                  </div>
+                                </div>
+                              </motion.div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                            <p className="text-gray-500">
+                              No documents uploaded
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Recent Activity */}
                     <div>
@@ -921,6 +1033,7 @@ export default function UserDetailsModal({
 
       {/* Success/Error Feedback */}
       {feedbackStatus &&
+        isMounted &&
         typeof window !== "undefined" &&
         createPortal(
           <div className="fixed bottom-4 left-4 z-[1000]">

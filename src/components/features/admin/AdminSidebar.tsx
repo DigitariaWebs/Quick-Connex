@@ -11,9 +11,6 @@ import {
   AlertTriangle,
   ArrowRightLeft,
   Users,
-  Bell,
-  CheckSquare,
-  BarChart3,
   FileText,
   Shield,
   LogOut,
@@ -114,32 +111,6 @@ const navigation: NavigationSection[] = [
         icon: Users,
         color: "text-pink-600",
         bgColor: "bg-pink-50",
-      },
-      {
-        name: "Notifications",
-        href: "/admin/notifications",
-        icon: Bell,
-        color: "text-orange-600",
-        bgColor: "bg-orange-50",
-      },
-      {
-        name: "Approval Queue",
-        href: "/admin/users/approval-queue",
-        icon: CheckSquare,
-        color: "text-teal-600",
-        bgColor: "bg-teal-50",
-      },
-    ],
-  },
-  {
-    section: "Analytics",
-    items: [
-      {
-        name: "System Analytics",
-        href: "/admin/analytics",
-        icon: BarChart3,
-        color: "text-violet-600",
-        bgColor: "bg-violet-50",
       },
       {
         name: "Reports",
