@@ -223,7 +223,10 @@ export default function UserManagement() {
       filteredUsers = filteredUsers.filter((u) => u.status === "pending");
     } else if (activeFilter === "suspended") {
       filteredUsers = filteredUsers.filter((u) => u.status === "suspended");
+    } else if (activeFilter === "rejected") {
+      filteredUsers = filteredUsers.filter((u) => u.status === "rejected");
     }
+    // If activeFilter is "all", no additional filtering is applied
 
     // Apply role filter (from role buttons)
     if (activeRoleFilter === "employee") {
@@ -231,16 +234,79 @@ export default function UserManagement() {
     } else if (activeRoleFilter === "manager") {
       filteredUsers = filteredUsers.filter((u) => u.userType === "manager");
     }
+    // If activeRoleFilter is "all", no additional filtering is applied
 
-    setUsers(filteredUsers);
+    // Calculate pagination for filtered results
+    const totalFilteredUsers = filteredUsers.length;
+    const totalPagesForFiltered = Math.max(
+      1,
+      Math.ceil(totalFilteredUsers / pageSize)
+    );
+
+    // Reset to page 1 if current page is beyond the available pages
+    const newCurrentPage =
+      currentPage > totalPagesForFiltered ? 1 : currentPage;
+
+    // Update pagination state
+    setTotalUsers(totalFilteredUsers);
+    setTotalPages(totalPagesForFiltered);
+    if (newCurrentPage !== currentPage) {
+      setCurrentPage(newCurrentPage);
+    }
+
+    // Apply pagination to filtered results
+    const startIndex = (newCurrentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+    setUsers(paginatedUsers);
   };
 
   // Apply client-side filters when they change
   useEffect(() => {
-    if (allUsers.length > 0) {
+    // Only apply client-side filtering if there are active filters
+    const hasActiveFilters =
+      activeFilter !== "all" || activeRoleFilter !== "all";
+    if (hasActiveFilters && allUsers.length > 0) {
       applyClientSideFilters();
     }
-  }, [activeFilter, activeRoleFilter, allUsers]);
+    // If no active filters, don't do anything - let server-side pagination handle it
+  }, [activeFilter, activeRoleFilter, allUsers, currentPage]);
+
+  // Fetch all users for client-side filtering
+  const fetchAllUsers = async () => {
+    try {
+      const response = await fetch("/api/admin/users?limit=1000", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setAllUsers(data.data.users);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching all users:", error);
+    }
+  };
+
+  // When switching to filtered views, fetch all users for client-side filtering
+  useEffect(() => {
+    const hasActiveFilters =
+      activeFilter !== "all" || activeRoleFilter !== "all";
+    if (hasActiveFilters) {
+      fetchAllUsers();
+    }
+  }, [activeFilter, activeRoleFilter]);
+
+  // When switching back to "All Users", fetch fresh data from server
+  useEffect(() => {
+    if (activeFilter === "all" && activeRoleFilter === "all") {
+      fetchUsers();
+    }
+  }, [activeFilter, activeRoleFilter]);
 
   // Initial data fetch
   useEffect(() => {
@@ -318,22 +384,96 @@ export default function UserManagement() {
     setSelectedUser(null);
   };
 
-  // Handle user update
+  // Handle user update (local state update)
   const handleUserUpdate = (userId: string, updates: Partial<User>) => {
     setUsers((prev) =>
       prev.map((user) => (user._id === userId ? { ...user, ...updates } : user))
     );
+    setAllUsers((prev) =>
+      prev.map((user) => (user._id === userId ? { ...user, ...updates } : user))
+    );
+  };
+
+  // Handle user update from modal (refresh data)
+  const handleUserUpdateFromModal = (
+    action: "approve" | "reject" | "suspend" | "activate",
+    userType: string
+  ) => {
+    // Update stats immediately for instant feedback
+    updateStatsSmart(action, userType);
+
+    // Refresh the users list and stats when a user is updated
+    console.log("🔄 Admin page: User updated, refreshing data...");
+    console.log("🔄 Admin page: Current stats before refresh:", stats);
+    setIsRefreshing(true);
+
+    // Add a small delay to ensure the database has been updated
+    setTimeout(() => {
+      console.log("🔄 Admin page: Refreshing users after delay...");
+      fetchUsers(); // Refresh users list
+      fetchUserStats(); // Refresh stats to ensure accuracy
+    }, 500);
+  };
+
+  // Smart stats update based on user action
+  const updateStatsSmart = (
+    action: "approve" | "reject" | "suspend" | "activate",
+    userType: string
+  ) => {
+    if (!stats) return;
+
+    console.log("🧠 Smart stats update:", {
+      action,
+      userType,
+      currentStats: stats,
+    });
+
+    setStats((prevStats) => {
+      if (!prevStats) return prevStats;
+
+      const newStats = { ...prevStats };
+
+      if (action === "approve") {
+        // User approved: pending decreases, approved increases
+        newStats.pending = Math.max(0, prevStats.pending - 1);
+        newStats.approved = prevStats.approved + 1;
+
+        // Update role-specific stats if available
+        if (userType === "employee" && "employees" in newStats) {
+          (newStats as any).employees = ((newStats as any).employees || 0) + 1;
+        } else if (userType === "manager" && "managers" in newStats) {
+          (newStats as any).managers = ((newStats as any).managers || 0) + 1;
+        }
+      } else if (action === "reject") {
+        // User rejected: pending decreases, rejected increases
+        newStats.pending = Math.max(0, prevStats.pending - 1);
+        newStats.rejected = (prevStats.rejected || 0) + 1;
+      } else if (action === "suspend") {
+        // User suspended: approved decreases, suspended increases
+        newStats.approved = Math.max(0, prevStats.approved - 1);
+        newStats.suspended = (prevStats.suspended || 0) + 1;
+      } else if (action === "activate") {
+        // User activated: suspended decreases, approved increases
+        newStats.suspended = Math.max(0, (prevStats.suspended || 0) - 1);
+        newStats.approved = prevStats.approved + 1;
+      }
+
+      console.log("🧠 Updated stats:", newStats);
+      return newStats;
+    });
   };
 
   // Handle stats card click for filtering (client-side only)
   const handleStatsCardClick = (filterType: string) => {
     setActiveFilter(filterType);
+    setCurrentPage(1); // Reset to first page when switching filters
     // No need to update filters state for client-side filtering
   };
 
   // Handle role filter click (client-side only)
   const handleRoleFilterClick = (roleType: string) => {
     setActiveRoleFilter(roleType);
+    setCurrentPage(1); // Reset to first page when switching filters
     // No need to update filters state for client-side filtering
   };
 
@@ -405,17 +545,24 @@ export default function UserManagement() {
                     <Users
                       className={`w-5 h-5 ${USER_STAT_CARD_COLORS.total.iconColor}`}
                     />
+                    {isRefreshing && (
+                      <RefreshCw className="w-3 h-3 text-gray-400 animate-spin" />
+                    )}
                   </div>
                   <p
                     className={`text-[10px] ${USER_STAT_CARD_COLORS.total.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
                     Total Users
                   </p>
-                  <p
+                  <motion.p
+                    key={(originalStats || stats)?.total}
+                    initial={{ scale: 1.1, opacity: 0.7 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
                     className={`text-2xl font-bold ${USER_STAT_CARD_COLORS.total.valueColor}`}
                   >
                     {(originalStats || stats)?.total}
-                  </p>
+                  </motion.p>
                 </motion.div>
 
                 {/* Approved Users - Green */}
@@ -434,17 +581,24 @@ export default function UserManagement() {
                     <CheckCircle2
                       className={`w-5 h-5 ${USER_STAT_CARD_COLORS.approved.iconColor}`}
                     />
+                    {isRefreshing && (
+                      <RefreshCw className="w-3 h-3 text-gray-400 animate-spin" />
+                    )}
                   </div>
                   <p
                     className={`text-[10px] ${USER_STAT_CARD_COLORS.approved.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
                     Approved
                   </p>
-                  <p
+                  <motion.p
+                    key={(originalStats || stats)?.approved}
+                    initial={{ scale: 1.1, opacity: 0.7 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
                     className={`text-2xl font-bold ${USER_STAT_CARD_COLORS.approved.valueColor}`}
                   >
                     {(originalStats || stats)?.approved}
-                  </p>
+                  </motion.p>
                 </motion.div>
 
                 {/* Pending - Orange */}
@@ -463,17 +617,24 @@ export default function UserManagement() {
                     <Clock
                       className={`w-5 h-5 ${USER_STAT_CARD_COLORS.pending.iconColor}`}
                     />
+                    {isRefreshing && (
+                      <RefreshCw className="w-3 h-3 text-gray-400 animate-spin" />
+                    )}
                   </div>
                   <p
                     className={`text-[10px] ${USER_STAT_CARD_COLORS.pending.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
                     Pending
                   </p>
-                  <p
+                  <motion.p
+                    key={(originalStats || stats)?.pending}
+                    initial={{ scale: 1.1, opacity: 0.7 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
                     className={`text-2xl font-bold ${USER_STAT_CARD_COLORS.pending.valueColor}`}
                   >
                     {(originalStats || stats)?.pending}
-                  </p>
+                  </motion.p>
                 </motion.div>
 
                 {/* Suspended - Red */}
@@ -492,17 +653,24 @@ export default function UserManagement() {
                     <AlertTriangle
                       className={`w-5 h-5 ${USER_STAT_CARD_COLORS.suspended.iconColor}`}
                     />
+                    {isRefreshing && (
+                      <RefreshCw className="w-3 h-3 text-gray-400 animate-spin" />
+                    )}
                   </div>
                   <p
                     className={`text-[10px] ${USER_STAT_CARD_COLORS.suspended.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
                     Suspended
                   </p>
-                  <p
+                  <motion.p
+                    key={(originalStats || stats)?.suspended}
+                    initial={{ scale: 1.1, opacity: 0.7 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
                     className={`text-2xl font-bold ${USER_STAT_CARD_COLORS.suspended.valueColor}`}
                   >
                     {(originalStats || stats)?.suspended}
-                  </p>
+                  </motion.p>
                 </motion.div>
               </div>
             )}
@@ -667,12 +835,12 @@ export default function UserManagement() {
                                   <Mail size={14} className="mr-1" />
                                   {user.email}
                                 </span>
-                                <span className="flex items-center">
-                                  <Building size={14} className="mr-1" />
-                                  {user.ciusss?.name ||
-                                    user.hospital?.name ||
-                                    "No Organization"}
-                                </span>
+                                {(user.ciusss?.name || user.hospital?.name) && (
+                                  <span className="flex items-center">
+                                    <Building size={14} className="mr-1" />
+                                    {user.ciusss?.name || user.hospital?.name}
+                                  </span>
+                                )}
                                 {user.lastLogin && (
                                   <span className="flex items-center">
                                     <Calendar size={14} className="mr-1" />
@@ -692,7 +860,7 @@ export default function UserManagement() {
                 </div>
 
                 {/* Pagination */}
-                {totalPages > 1 && (
+                {totalPages > 0 && (
                   <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                     <div className="text-sm text-gray-600">
                       Showing {(currentPage - 1) * pageSize + 1} to{" "}
@@ -710,7 +878,7 @@ export default function UserManagement() {
                         Previous
                       </button>
                       <span className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg">
-                        {currentPage} of {totalPages}
+                        {Math.min(currentPage, totalPages)} of {totalPages}
                       </span>
                       <button
                         onClick={() =>
@@ -718,11 +886,19 @@ export default function UserManagement() {
                             Math.min(totalPages, prev + 1)
                           )
                         }
-                        disabled={currentPage === totalPages}
+                        disabled={currentPage >= totalPages}
                         className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Next
                       </button>
+                      {currentPage > totalPages && (
+                        <button
+                          onClick={() => setCurrentPage(1)}
+                          className="px-3 py-1 text-sm bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200"
+                        >
+                          Go to Page 1
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -740,6 +916,7 @@ export default function UserManagement() {
         loading={loading}
         onUserIconUpdate={handleUserUpdate}
         onUserIconAction={handleUserAction}
+        onUserUpdate={handleUserUpdateFromModal}
       />
     </AdminLayout>
   );

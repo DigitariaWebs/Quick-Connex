@@ -66,8 +66,7 @@ export async function POST(request: Request) {
       })) || [],
       documentSummary: getDocumentSummary(user),
       signupDate: user.createdAt.toLocaleDateString(),
-      approvalUrl: `${baseUrl}/api/auth/approve-user?userId=${userId}&action=approve`,
-      rejectionUrl: `${baseUrl}/api/auth/approve-user?userId=${userId}&action=reject`
+      dashboardUrl: `${baseUrl}/admin/users`
     };
 
     // Create email message
@@ -174,11 +173,8 @@ function generateApprovalEmailHTML(userDetails: any): string {
         ` : ''}
         
         <div style="text-align: center; margin: 40px 0;">
-          <a href="${userDetails.approvalUrl}" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3); margin: 0 8px;">
-            ✅ Approve User
-          </a>
-          <a href="${userDetails.rejectionUrl}" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3); margin: 0 8px;">
-            ❌ Reject User
+          <a href="${userDetails.dashboardUrl}" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);">
+            🎛️ Review in Admin Dashboard
           </a>
         </div>
         
@@ -228,10 +224,9 @@ ${userDetails.documents.map((doc: any) => `- ${doc.type.toUpperCase()}: ${doc.na
 ACTION REQUIRED:
 Please review the user's information and documents carefully before making a decision.
 
-APPROVE USER: ${userDetails.approvalUrl}
-REJECT USER: ${userDetails.rejectionUrl}
+REVIEW IN ADMIN DASHBOARD: ${userDetails.dashboardUrl}
 
-Note: Once approved, the user will receive an email notification and can access Groupe BZ Services.
+Note: You can approve or reject this user directly from the admin dashboard. Once approved, the user will receive an email notification and can access Groupe BZ Services.
 
 This is an automated message from Groupe BZ Services.
 If you have any questions, please contact the system administrator.

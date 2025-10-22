@@ -76,9 +76,19 @@ export async function POST(request: NextRequest) {
       await user.recordLogin(ipAddress, userAgent, false);
       console.log('🔐 Login: Unapproved user login attempt recorded');
       
+      // Return specific message based on user status
+      let message = 'Account not approved';
+      if (user.status === 'suspended') {
+        message = 'Account suspended';
+      } else if (user.status === 'rejected') {
+        message = 'Account rejected';
+      } else if (user.status === 'pending') {
+        message = 'Account pending approval';
+      }
+      
       return NextResponse.json(
         { 
-          message: 'Account not approved',
+          message: message,
           status: user.status
         },
         { status: 403 }

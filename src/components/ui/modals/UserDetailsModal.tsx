@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
+import AnimatedStatusIcon from "../notifications/AnimatedStatusIcon";
 import {
   X,
   Mail,
@@ -16,7 +18,6 @@ import {
   Eye,
   Ban,
   Unlock,
-  Key,
   Download,
   Upload,
   MoreHorizontal,
@@ -33,6 +34,7 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronUp,
+  Loader2,
 } from "lucide-react";
 import {
   getUserStatusConfig,
@@ -49,6 +51,10 @@ interface UserDetailsModalProps {
   loading?: boolean;
   onUserIconUpdate?: (userId: string, updates: Partial<User>) => void;
   onUserIconAction?: (userId: string, action: string, data?: any) => void;
+  onUserUpdate?: (
+    action: "approve" | "reject" | "suspend" | "activate",
+    userType: string
+  ) => void;
 }
 
 /**
@@ -67,6 +73,7 @@ export default function UserDetailsModal({
   loading = false,
   onUserIconUpdate,
   onUserIconAction,
+  onUserUpdate,
 }: UserDetailsModalProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
@@ -75,6 +82,11 @@ export default function UserDetailsModal({
   const [activitiesLoading, setActivitiesLoading] = useState(false);
   const [detailedUser, setDetailedUser] = useState<User | null>(null);
   const [userDetailsLoading, setUserDetailsLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [feedbackStatus, setFeedbackStatus] = useState<
+    "success" | "error" | null
+  >(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch detailed user data when modal opens
   useEffect(() => {
@@ -142,6 +154,230 @@ export default function UserDetailsModal({
     }
   }, [isOpen, user]);
 
+  // Handle approval/rejection actions
+  const handleApprovalAction = async (action: "approve" | "reject") => {
+    if (!user?._id) return;
+
+    setActionLoading(action);
+    setError(null);
+
+    try {
+      let reason = "";
+      if (action === "reject") {
+        reason =
+          prompt("Please provide a reason for rejection:") ||
+          "Rejected by administrator";
+      }
+
+      const endpoint =
+        action === "approve"
+          ? `/api/admin/users/${user._id}/approve`
+          : `/api/admin/users/${user._id}/reject`;
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ reason }),
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Failed to ${action} user`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData?.message || errorData?.error || errorMessage;
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+          errorMessage = `HTTP ${response?.status || "Unknown"}: ${
+            response?.statusText || "Unknown Error"
+          }`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        setFeedbackStatus("success");
+
+        // Update user status locally
+        if (onUserIconUpdate) {
+          onUserIconUpdate(user._id, {
+            status: action === "approve" ? "approved" : "rejected",
+            approvedAt: new Date(),
+            rejectionReason: action === "reject" ? reason : undefined,
+          });
+        }
+
+        // Notify parent component to refresh data with action details
+        if (onUserUpdate && user) {
+          onUserUpdate(action, user.userType);
+        }
+
+        // Close modal after a short delay to show success feedback
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } else {
+        throw new Error(data.message || `Failed to ${action} user}`);
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing user:`, error);
+      setFeedbackStatus("error");
+      setError(
+        error instanceof Error ? error.message : `Failed to ${action} user`
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Handle suspend action
+  const handleSuspendAction = async () => {
+    if (!user?._id) return;
+
+    setActionLoading("suspend");
+    setError(null);
+
+    try {
+      const reason =
+        prompt("Please provide a reason for suspension:") ||
+        "Account suspended by administrator";
+
+      const response = await fetch(`/api/admin/users/${user._id}/suspend`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ reason }),
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Failed to suspend user";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData?.message || errorData?.error || errorMessage;
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+          errorMessage = `HTTP ${response?.status || "Unknown"}: ${
+            response?.statusText || "Unknown Error"
+          }`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        setFeedbackStatus("success");
+
+        // Update user status locally
+        if (onUserIconUpdate) {
+          onUserIconUpdate(user._id, {
+            status: "suspended",
+            approvedAt: new Date(),
+            rejectionReason: reason,
+          });
+        }
+
+        // Notify parent component to refresh data
+        if (onUserUpdate) {
+          onUserUpdate("suspend", user.userType);
+        }
+
+        // Close modal after a short delay to show success feedback
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } else {
+        throw new Error(data.message || "Failed to suspend user");
+      }
+    } catch (error) {
+      console.error("Error suspending user:", error);
+      setFeedbackStatus("error");
+      setError(
+        error instanceof Error ? error.message : "Failed to suspend user"
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Handle activate action
+  const handleActivateAction = async () => {
+    if (!user?._id) return;
+
+    setActionLoading("activate");
+    setError(null);
+
+    try {
+      const reason =
+        prompt("Please provide a reason for reactivation:") ||
+        "Account reactivated by administrator";
+
+      const response = await fetch(`/api/admin/users/${user._id}/activate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ reason }),
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Failed to activate user";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData?.message || errorData?.error || errorMessage;
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+          errorMessage = `HTTP ${response?.status || "Unknown"}: ${
+            response?.statusText || "Unknown Error"
+          }`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        setFeedbackStatus("success");
+
+        // Update user status locally
+        if (onUserIconUpdate) {
+          onUserIconUpdate(user._id, {
+            status: "approved",
+            approvedAt: new Date(),
+            rejectionReason: undefined,
+          });
+        }
+
+        // Notify parent component to refresh data
+        if (onUserUpdate) {
+          onUserUpdate("activate", user.userType);
+        }
+
+        // Close modal after a short delay to show success feedback
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } else {
+        throw new Error(data.message || "Failed to activate user");
+      }
+    } catch (error) {
+      console.error("Error activating user:", error);
+      setFeedbackStatus("error");
+      setError(
+        error instanceof Error ? error.message : "Failed to activate user"
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   if (!isOpen) return null;
 
   const statusConfig = user ? getUserStatusConfig(user.status) : null;
@@ -149,57 +385,124 @@ export default function UserDetailsModal({
   const StatusIcon = statusConfig?.icon;
   const RoleIcon = roleConfig?.icon;
 
-  // Available admin actions
-  const availableActions = [
-    {
-      id: "activate",
-      label: "Activate UserIcon",
-      icon: "CheckCircle2",
-      buttonClass:
-        "bg-green-100 border-green-300 text-green-800 hover:bg-green-200",
-    },
-    {
-      id: "suspend",
-      label: "Suspend UserIcon",
-      icon: "Ban",
-      buttonClass: "bg-red-100 border-red-300 text-red-800 hover:bg-red-200",
-    },
-    {
-      id: "resetPassword",
-      label: "Reset Password",
-      icon: "Key",
-      buttonClass:
-        "bg-blue-100 border-blue-300 text-blue-800 hover:bg-blue-200",
-    },
-    {
-      id: "unlockAccount",
-      label: "Unlock Account",
-      icon: "Unlock",
-      buttonClass:
-        "bg-purple-100 border-purple-300 text-purple-800 hover:bg-purple-200",
-    },
-    {
-      id: "exportData",
-      label: "Export Data",
-      icon: "Download",
-      buttonClass:
-        "bg-orange-100 border-orange-300 text-orange-800 hover:bg-orange-200",
-    },
-    {
-      id: "delete",
-      label: "Delete UserIcon",
-      icon: "Trash2",
-      buttonClass: "bg-red-100 border-red-300 text-red-800 hover:bg-red-200",
-    },
-  ];
+  // Smart admin actions based on user status
+  const getAvailableActions = () => {
+    if (!user) return [];
+
+    switch (user.status) {
+      case "pending":
+        // Only show approve/reject for pending users
+        return [
+          {
+            id: "approve",
+            label: "Approve User",
+            icon: "UserCheck",
+            buttonClass:
+              "bg-green-100 border-green-300 text-green-800 hover:bg-green-200",
+          },
+          {
+            id: "reject",
+            label: "Reject User",
+            icon: "UserX",
+            buttonClass:
+              "bg-red-100 border-red-300 text-red-800 hover:bg-red-200",
+          },
+        ];
+
+      case "approved":
+        // Show management actions for approved users
+        return [
+          {
+            id: "suspend",
+            label: "Suspend User",
+            icon: "Ban",
+            buttonClass:
+              "bg-red-100 border-red-300 text-red-800 hover:bg-red-200",
+          },
+          {
+            id: "exportData",
+            label: "Export Data",
+            icon: "Download",
+            buttonClass:
+              "bg-orange-100 border-orange-300 text-orange-800 hover:bg-orange-200",
+          },
+          {
+            id: "delete",
+            label: "Delete User",
+            icon: "Trash2",
+            buttonClass:
+              "bg-red-100 border-red-300 text-red-800 hover:bg-red-200",
+          },
+        ];
+
+      case "rejected":
+        // Show limited actions for rejected users
+        return [
+          {
+            id: "approve",
+            label: "Approve User",
+            icon: "UserCheck",
+            buttonClass:
+              "bg-green-100 border-green-300 text-green-800 hover:bg-green-200",
+          },
+          {
+            id: "delete",
+            label: "Delete User",
+            icon: "Trash2",
+            buttonClass:
+              "bg-red-100 border-red-300 text-red-800 hover:bg-red-200",
+          },
+        ];
+
+      case "suspended":
+        // Show reactivation actions for suspended users
+        return [
+          {
+            id: "activate",
+            label: "Activate User",
+            icon: "CheckCircle2",
+            buttonClass:
+              "bg-green-100 border-green-300 text-green-800 hover:bg-green-200",
+          },
+          {
+            id: "delete",
+            label: "Delete User",
+            icon: "Trash2",
+            buttonClass:
+              "bg-red-100 border-red-300 text-red-800 hover:bg-red-200",
+          },
+        ];
+
+      default:
+        // Fallback for unknown status
+        return [
+          {
+            id: "activate",
+            label: "Activate User",
+            icon: "CheckCircle2",
+            buttonClass:
+              "bg-green-100 border-green-300 text-green-800 hover:bg-green-200",
+          },
+          {
+            id: "delete",
+            label: "Delete User",
+            icon: "Trash2",
+            buttonClass:
+              "bg-red-100 border-red-300 text-red-800 hover:bg-red-200",
+          },
+        ];
+    }
+  };
+
+  const availableActions = getAvailableActions();
 
   const iconMap: Record<string, any> = {
     CheckCircle2,
     Ban,
-    Key,
-    Unlock,
     Download,
     Trash2,
+    UserCheck,
+    UserX,
   };
 
   return (
@@ -302,19 +605,19 @@ export default function UserDetailsModal({
                               </div>
                             </div>
                           )}
-                          <div className="flex items-center space-x-3">
-                            <Building className="w-5 h-5 text-gray-400" />
-                            <div>
-                              <p className="text-sm text-gray-500">
-                                Organization
-                              </p>
-                              <p className="font-medium text-gray-900">
-                                {user.ciusss?.name ||
-                                  user.hospital?.name ||
-                                  "No Organization"}
-                              </p>
+                          {(user.ciusss?.name || user.hospital?.name) && (
+                            <div className="flex items-center space-x-3">
+                              <Building className="w-5 h-5 text-gray-400" />
+                              <div>
+                                <p className="text-sm text-gray-500">
+                                  Organization
+                                </p>
+                                <p className="font-medium text-gray-900">
+                                  {user.ciusss?.name || user.hospital?.name}
+                                </p>
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
                         <div className="space-y-3">
                           {user.post && (
@@ -551,6 +854,8 @@ export default function UserDetailsModal({
                               ? "bg-red-100 border-red-300 text-red-800 hover:bg-red-200"
                               : action.buttonClass;
 
+                            const isLoading = actionLoading === action.id;
+
                             return (
                               <motion.button
                                 key={action.id}
@@ -561,21 +866,45 @@ export default function UserDetailsModal({
                                   transition: { delay: index * 0.05 },
                                 }}
                                 whileHover={{
-                                  scale: 1.02,
-                                  x: 4,
+                                  scale: isLoading ? 1 : 1.02,
+                                  x: isLoading ? 0 : 4,
                                   transition: { duration: 0.2 },
                                 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => {
-                                  setSelectedAction(action.id);
-                                  setShowActionModal(true);
-                                  setIsMenuOpen(false);
+                                  if (
+                                    action.id === "approve" ||
+                                    action.id === "reject"
+                                  ) {
+                                    handleApprovalAction(action.id);
+                                  } else if (action.id === "activate") {
+                                    handleActivateAction();
+                                  } else if (action.id === "suspend") {
+                                    handleSuspendAction();
+                                  } else {
+                                    setSelectedAction(action.id);
+                                    setShowActionModal(true);
+                                    setIsMenuOpen(false);
+                                  }
                                 }}
-                                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 border-2 hover:shadow-lg hover:scale-105 ${colorClass}`}
+                                disabled={isLoading}
+                                className={`w-full flex items-center justify-center px-4 py-3 rounded-xl font-medium transition-all duration-200 border-2 hover:shadow-lg hover:scale-105 ${
+                                  isLoading
+                                    ? "opacity-75 cursor-not-allowed"
+                                    : ""
+                                } ${colorClass}`}
                               >
-                                {ActionIcon && <ActionIcon size={18} />}
+                                {isLoading ? (
+                                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                ) : (
+                                  ActionIcon && (
+                                    <ActionIcon size={18} className="mr-2" />
+                                  )
+                                )}
                                 <span className="text-sm font-semibold text-black">
-                                  {action.label}
+                                  {isLoading
+                                    ? `${action.label}...`
+                                    : action.label}
                                 </span>
                               </motion.button>
                             );
@@ -589,6 +918,28 @@ export default function UserDetailsModal({
           </motion.div>
         </>
       )}
+
+      {/* Success/Error Feedback */}
+      {feedbackStatus &&
+        typeof window !== "undefined" &&
+        createPortal(
+          <div className="fixed bottom-4 left-4 z-[1000]">
+            <AnimatedStatusIcon
+              status={feedbackStatus}
+              message={
+                feedbackStatus === "success"
+                  ? "User action completed successfully"
+                  : error || "Failed to complete user action"
+              }
+              durationMs={1700}
+              onHide={() => {
+                setFeedbackStatus(null);
+                setError(null);
+              }}
+            />
+          </div>,
+          document.body
+        )}
     </AnimatePresence>
   );
 }
