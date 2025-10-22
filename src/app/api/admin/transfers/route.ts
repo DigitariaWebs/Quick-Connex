@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 // Import all models through centralized initialization
 import { Hospital, User, Patient, Transfer } from '@/lib/database/models';
 import { Permission } from '@/models/User';
-import { AuditAction, AuditCategory, TargetResourceType } from '@/models/AuditLog';
+import { AuditAction, AuditCategory, TargetResourceType } from '@/models/UnifiedAuditLog';
 
 /**
  * Admin Transfers API Endpoint

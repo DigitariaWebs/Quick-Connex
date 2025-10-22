@@ -261,8 +261,16 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    // Create timeline event for transfer creation
-    const creationEvent = TimelineService.createTransferCreatedEvent(
+    // Extract request info for audit logging
+    const requestInfo = {
+      ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown',
+      userAgent: request.headers.get('user-agent') || 'unknown',
+      method: request.method,
+      endpoint: request.url
+    };
+
+    // Create timeline event for transfer creation with audit logging
+    const creationEvent = await TimelineService.createTransferCreatedEventWithAudit(
       {
         id: new Types.ObjectId(requestingUser._id),
         name: `${requestingUser.firstName} ${requestingUser.lastName}`,
@@ -282,7 +290,9 @@ export async function POST(request: NextRequest) {
         toHospitalName,
         priority,
         reason
-      }
+      },
+      transferId,
+      requestInfo
     );
 
     // Create transfer request with polymorphic data

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/auth-utils';
 import dbConnect from '@/lib/database/mongoose';
-import AuditLog from '@/models/AuditLog';
+import UnifiedAuditLog from '@/models/UnifiedAuditLog';
 import { RecentActivity } from '@/types/dashboard';
 
 /**
@@ -34,10 +34,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total count
-    const total = await AuditLog.countDocuments(query);
+    const total = await UnifiedAuditLog.countDocuments(query);
 
     // Get recent audit logs
-    const auditLogs = await AuditLog.find(query)
+    const auditLogs = await UnifiedAuditLog.find(query)
       .sort({ timestamp: -1 })
       .skip((page - 1) * limit)
       .limit(limit)

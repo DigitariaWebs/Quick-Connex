@@ -9,6 +9,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
 import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import TimelineService from '@/lib/services/timeline-service';
+import { TimelineQueryOptions } from '@/types/timeline';
+import { TimelineEventType } from '@/types/transfer';
 
 export async function GET(
   request: NextRequest,
@@ -16,6 +19,7 @@ export async function GET(
 ) {
   try {
     const { transferId } = await params;
+    const { searchParams } = new URL(request.url);
 
     if (!transferId) {
       return NextResponse.json({ error: 'Transfer ID is required' }, { status: 400 });
@@ -38,11 +42,21 @@ export async function GET(
       return NextResponse.json({ error: 'Access denied: Cannot view pending transfers' }, { status: 403 });
     }
 
-    // Return timeline data directly
-    const timelineEvents = transfer.timeline || [];
+    // Parse query options for enhanced timeline
+    const options: TimelineQueryOptions = {
+      page: parseInt(searchParams.get('page') || '1'),
+      limit: parseInt(searchParams.get('limit') || '50'),
+      startDate: searchParams.get('startDate') ? new Date(searchParams.get('startDate')!) : undefined,
+      endDate: searchParams.get('endDate') ? new Date(searchParams.get('endDate')!) : undefined,
+      eventTypes: searchParams.get('eventTypes')?.split(',') as TimelineEventType[],
+      actorTypes: searchParams.get('actorTypes')?.split(','),
+      includeSystemEvents: searchParams.get('includeSystemEvents') !== 'false',
+      sortBy: searchParams.get('sortBy') as 'timestamp' | 'type' | 'actor' || 'timestamp',
+      sortOrder: searchParams.get('sortOrder') as 'asc' | 'desc' || 'desc'
+    };
 
-    // Sort timeline events by timestamp (newest first)
-    timelineEvents.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    // Get enhanced timeline from audit logs
+    const timelineItems = await TimelineService.getTimelineForTransfer(transferId, options);
 
     return createSuccessResponse({
       transfer: {
@@ -59,8 +73,13 @@ export async function GET(
         reason: transfer.reason,
         notes: transfer.notes
       },
-      timeline: timelineEvents,
-      totalEvents: timelineEvents.length,
+      timeline: timelineItems,
+      totalEvents: timelineItems.length,
+      pagination: {
+        page: options.page,
+        limit: options.limit,
+        hasMore: timelineItems.length === options.limit
+      },
       lastUpdated: transfer.updatedAt
     });
 
@@ -107,13 +126,11 @@ export async function POST(
       return NextResponse.json({ error: 'Access denied: Cannot modify pending transfers' }, { status: 403 });
     }
 
-    // Create new timeline event
-    const newEvent = {
-      id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    // Create new timeline event with audit logging
+    const eventData = {
       type,
       title,
       description,
-      timestamp: new Date(),
       actor: {
         id: user._id as any,
         name: `${user.firstName} ${user.lastName}`,
@@ -124,6 +141,21 @@ export async function POST(
       isSystemEvent: false,
       isVisible: true
     };
+
+    // Extract request info for audit logging
+    const requestInfo = {
+      ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown',
+      userAgent: request.headers.get('user-agent') || 'unknown',
+      method: request.method,
+      endpoint: request.url
+    };
+
+    // Create timeline event with audit logging
+    const newEvent = await TimelineService.createEventWithAudit(
+      eventData,
+      transferId,
+      requestInfo
+    );
 
     // Add event to timeline
     if (!transfer.timeline) {

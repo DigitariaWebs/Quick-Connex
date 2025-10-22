@@ -4,7 +4,7 @@ import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth
 import dbConnect from '@/lib/database/mongoose';
 import { Transfer, User } from '@/lib/database/models';
 import { Permission } from '@/models/User';
-import { AuditAction, AuditCategory, TargetResourceType } from '@/models/AuditLog';
+import { AuditAction, AuditCategory, TargetResourceType } from '@/models/UnifiedAuditLog';
 
 /**
  * Individual Transfer Admin API Endpoint

@@ -3,10 +3,19 @@
  * 
  * Handles comprehensive timeline tracking for transfer requests.
  * Automatically creates timeline events for all transfer-related actions.
+ * Enhanced to also log events to UnifiedAuditLog for compliance and security.
  */
 
 import { Types } from 'mongoose';
 import { TimelineEvent, TimelineEventType } from '@/types/transfer';
+import { TimelineItem, TimelineQueryOptions } from '@/types/timeline';
+import UnifiedAuditLog, { 
+  AuditAction, 
+  AuditCategory, 
+  ActorType, 
+  TargetResourceType, 
+  RiskLevel 
+} from '@/models/UnifiedAuditLog';
 
 export interface TimelineEventData {
   type: TimelineEventType;
@@ -55,7 +64,329 @@ export class TimelineService {
   }
 
   /**
-   * Create a transfer creation event
+   * Create a timeline event and automatically log to audit system
+   */
+  static async createEventWithAudit(
+    data: TimelineEventData, 
+    transferId: string,
+    requestInfo?: {
+      ipAddress?: string;
+      userAgent?: string;
+      method?: string;
+      endpoint?: string;
+    }
+  ): Promise<TimelineEvent> {
+    // Create the timeline event
+    const timelineEvent = this.createEvent(data);
+    
+    // Log to audit system
+    await this.logToAuditSystem(timelineEvent, transferId, requestInfo);
+    
+    return timelineEvent;
+  }
+
+  /**
+   * Log timeline event to UnifiedAuditLog system
+   */
+  private static async logToAuditSystem(
+    timelineEvent: TimelineEvent,
+    transferId: string,
+    requestInfo?: {
+      ipAddress?: string;
+      userAgent?: string;
+      method?: string;
+      endpoint?: string;
+    }
+  ): Promise<void> {
+    try {
+      // Map timeline event type to audit action
+      const auditAction = this.mapTimelineTypeToAuditAction(timelineEvent.type);
+      const auditCategory = this.mapTimelineTypeToAuditCategory(timelineEvent.type);
+      const riskLevel = this.assessRiskLevel(timelineEvent.type, timelineEvent.metadata);
+      
+      // Create audit log entry
+      const auditLog = new UnifiedAuditLog({
+        // Actor information
+        actorId: timelineEvent.actor.id.toString(),
+        actorType: this.mapUserTypeToActorType(timelineEvent.actor.userType),
+        actorEmail: timelineEvent.actor.email,
+        actorName: timelineEvent.actor.name,
+        actorRole: timelineEvent.actor.userType,
+        
+        // Action details
+        action: auditAction,
+        category: auditCategory,
+        description: timelineEvent.description,
+        
+        // Target resource
+        targetResource: {
+          type: TargetResourceType.TRANSFER,
+          id: transferId,
+          name: `Transfer ${transferId}`,
+          metadata: {
+            timelineEventId: timelineEvent.id,
+            timelineEventType: timelineEvent.type
+          }
+        },
+        
+        // Change tracking
+        changes: {
+          before: timelineEvent.metadata?.oldValue,
+          after: timelineEvent.metadata?.newValue,
+          fields: this.extractChangedFields(timelineEvent.metadata),
+          changeSummary: timelineEvent.title
+        },
+        
+        // Context
+        context: {
+          reason: timelineEvent.metadata?.reason,
+          details: timelineEvent.metadata?.details,
+          timelineEventType: timelineEvent.type,
+          isSystemEvent: timelineEvent.isSystemEvent
+        },
+        
+        // Request information
+        requestInfo: {
+          ipAddress: requestInfo?.ipAddress || 'unknown',
+          userAgent: requestInfo?.userAgent || 'unknown',
+          method: requestInfo?.method || 'unknown',
+          endpoint: requestInfo?.endpoint || 'unknown'
+        },
+        
+        // Security context
+        securityContext: {
+          riskLevel,
+          isSensitive: this.isSensitiveAction(timelineEvent.type),
+          requiresReview: this.requiresReview(timelineEvent.type),
+          securityFlags: this.getSecurityFlags(timelineEvent.type),
+          riskScore: this.calculateRiskScore(timelineEvent.type, timelineEvent.metadata)
+        },
+        
+        // Outcome
+        outcome: 'success',
+        
+        // Timing
+        timestamp: timelineEvent.timestamp,
+        
+        // Additional flags
+        isAutomated: timelineEvent.isSystemEvent || false,
+        isBulkOperation: false
+      });
+      
+      await auditLog.save();
+      
+    } catch (error) {
+      // Don't throw error for audit logging failures - timeline should still work
+      console.error('Failed to log timeline event to audit system:', error);
+    }
+  }
+
+  /**
+   * Map timeline event type to audit action
+   */
+  private static mapTimelineTypeToAuditAction(timelineType: TimelineEventType): AuditAction {
+    const mapping: Record<TimelineEventType, AuditAction> = {
+      'created': AuditAction.TRANSFER_CREATED,
+      'transfer_created': AuditAction.TRANSFER_CREATED,
+      'status_changed': AuditAction.TRANSFER_UPDATED,
+      'assigned': AuditAction.TRANSFER_REASSIGNED,
+      'unassigned': AuditAction.TRANSFER_REASSIGNED,
+      'patient_updated': AuditAction.TRANSFER_UPDATED,
+      'hospital_updated': AuditAction.TRANSFER_UPDATED,
+      'scheduled': AuditAction.TRANSFER_UPDATED,
+      'rescheduled': AuditAction.TRANSFER_UPDATED,
+      'document_uploaded': AuditAction.FILE_UPLOADED,
+      'document_removed': AuditAction.FILE_DELETED,
+      'notes_updated': AuditAction.TRANSFER_UPDATED,
+      'priority_changed': AuditAction.TRANSFER_UPDATED,
+      'reason_updated': AuditAction.TRANSFER_UPDATED,
+      'approved': AuditAction.TRANSFER_APPROVED,
+      'rejected': AuditAction.TRANSFER_REJECTED,
+      'accepted': AuditAction.TRANSFER_UPDATED,
+      'started': AuditAction.TRANSFER_UPDATED,
+      'completed': AuditAction.TRANSFER_COMPLETED,
+      'cancelled': AuditAction.TRANSFER_CANCELLED,
+      'communication': AuditAction.NOTIFICATION_SENT,
+      'system': AuditAction.SYSTEM_ALERT,
+      'admin_action': AuditAction.TRANSFER_UPDATED,
+      'manager_action': AuditAction.TRANSFER_UPDATED,
+      'employee_action': AuditAction.TRANSFER_UPDATED
+    };
+    
+    return mapping[timelineType] || AuditAction.TRANSFER_UPDATED;
+  }
+
+  /**
+   * Map timeline event type to audit category
+   */
+  private static mapTimelineTypeToAuditCategory(timelineType: TimelineEventType): AuditCategory {
+    if (timelineType.includes('document_')) {
+      return AuditCategory.FILE_OPERATION;
+    }
+    if (timelineType.includes('communication')) {
+      return AuditCategory.NOTIFICATION;
+    }
+    if (timelineType === 'system') {
+      return AuditCategory.SYSTEM_CONFIGURATION;
+    }
+    return AuditCategory.TRANSFER_MANAGEMENT;
+  }
+
+  /**
+   * Map user type to actor type
+   */
+  private static mapUserTypeToActorType(userType: string): ActorType {
+    switch (userType) {
+      case 'admin':
+        return ActorType.ADMIN;
+      case 'manager':
+      case 'employee':
+        return ActorType.USER;
+      default:
+        return ActorType.USER;
+    }
+  }
+
+  /**
+   * Assess risk level based on timeline event type and metadata
+   */
+  private static assessRiskLevel(timelineType: TimelineEventType, metadata?: any): RiskLevel {
+    const highRiskTypes = ['cancelled', 'rejected', 'admin_action'];
+    const mediumRiskTypes = ['completed', 'approved', 'assigned', 'unassigned'];
+    
+    if (highRiskTypes.includes(timelineType)) {
+      return RiskLevel.HIGH;
+    }
+    
+    if (mediumRiskTypes.includes(timelineType)) {
+      return RiskLevel.MEDIUM;
+    }
+    
+    return RiskLevel.LOW;
+  }
+
+  /**
+   * Check if action is sensitive
+   */
+  private static isSensitiveAction(timelineType: TimelineEventType): boolean {
+    const sensitiveTypes = ['cancelled', 'rejected', 'admin_action', 'patient_updated'];
+    return sensitiveTypes.includes(timelineType);
+  }
+
+  /**
+   * Check if action requires review
+   */
+  private static requiresReview(timelineType: TimelineEventType): boolean {
+    const reviewTypes = ['cancelled', 'rejected', 'admin_action'];
+    return reviewTypes.includes(timelineType);
+  }
+
+  /**
+   * Get security flags for timeline event
+   */
+  private static getSecurityFlags(timelineType: TimelineEventType): string[] {
+    const flags: string[] = [];
+    
+    if (timelineType.includes('document_')) {
+      flags.push('file_operation');
+    }
+    
+    if (timelineType.includes('admin_') || timelineType.includes('manager_')) {
+      flags.push('privileged_action');
+    }
+    
+    if (timelineType === 'cancelled' || timelineType === 'rejected') {
+      flags.push('status_change');
+    }
+    
+    return flags;
+  }
+
+  /**
+   * Calculate risk score for timeline event
+   */
+  private static calculateRiskScore(timelineType: TimelineEventType, metadata?: any): number {
+    let score = 20; // Base score
+    
+    // Increase score based on event type
+    if (timelineType === 'cancelled' || timelineType === 'rejected') {
+      score += 40;
+    }
+    
+    if (timelineType.includes('admin_')) {
+      score += 30;
+    }
+    
+    if (timelineType === 'patient_updated') {
+      score += 25;
+    }
+    
+    // Increase score if sensitive data is involved
+    if (metadata?.oldValue || metadata?.newValue) {
+      score += 15;
+    }
+    
+    return Math.min(score, 100);
+  }
+
+  /**
+   * Extract changed fields from metadata
+   */
+  private static extractChangedFields(metadata?: any): string[] {
+    if (!metadata) return [];
+    
+    const fields: string[] = [];
+    
+    if (metadata.oldValue && metadata.newValue) {
+      // Compare objects to find changed fields
+      const oldObj = typeof metadata.oldValue === 'object' ? metadata.oldValue : {};
+      const newObj = typeof metadata.newValue === 'object' ? metadata.newValue : {};
+      
+      const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
+      
+      for (const key of allKeys) {
+        if (oldObj[key] !== newObj[key]) {
+          fields.push(key);
+        }
+      }
+    }
+    
+    return fields;
+  }
+
+  /**
+   * Create a transfer creation event with audit logging
+   */
+  static async createTransferCreatedEventWithAudit(
+    actor: { id: Types.ObjectId; name: string; email: string; userType: 'manager' | 'employee' | 'admin' },
+    transferData: any,
+    transferId: string,
+    requestInfo?: {
+      ipAddress?: string;
+      userAgent?: string;
+      method?: string;
+      endpoint?: string;
+    }
+  ): Promise<TimelineEvent> {
+    const eventData: TimelineEventData = {
+      type: 'transfer_created',
+      title: 'Transfer Request Created',
+      description: `Transfer request created for ${transferData.patientInfo?.firstName || 'patient'} ${transferData.patientInfo?.lastName || ''}`,
+      actor,
+      metadata: {
+        transferCategory: transferData.transferCategory,
+        fromHospital: transferData.fromHospitalName,
+        toHospital: transferData.toHospitalName,
+        priority: transferData.priority,
+        reason: transferData.reason
+      }
+    };
+
+    return await this.createEventWithAudit(eventData, transferId, requestInfo);
+  }
+
+  /**
+   * Create a transfer creation event (legacy method for backward compatibility)
    */
   static createTransferCreatedEvent(
     actor: { id: Types.ObjectId; name: string; email: string; userType: 'manager' | 'employee' | 'admin' },
@@ -78,7 +409,39 @@ export class TimelineService {
   }
 
   /**
-   * Create a status change event
+   * Create a status change event with audit logging
+   */
+  static async createStatusChangeEventWithAudit(
+    actor: { id: Types.ObjectId; name: string; email: string; userType: 'manager' | 'employee' | 'admin' },
+    oldStatus: string,
+    newStatus: string,
+    transferId: string,
+    reason?: string,
+    requestInfo?: {
+      ipAddress?: string;
+      userAgent?: string;
+      method?: string;
+      endpoint?: string;
+    }
+  ): Promise<TimelineEvent> {
+    const eventData: TimelineEventData = {
+      type: 'status_changed',
+      title: `Status Changed: ${oldStatus} → ${newStatus}`,
+      description: `Transfer status changed from ${oldStatus} to ${newStatus}${reason ? ` - ${reason}` : ''}`,
+      actor,
+      metadata: {
+        oldValue: oldStatus,
+        newValue: newStatus,
+        reason,
+        details: `Status transition from ${oldStatus} to ${newStatus}`
+      }
+    };
+
+    return await this.createEventWithAudit(eventData, transferId, requestInfo);
+  }
+
+  /**
+   * Create a status change event (legacy method for backward compatibility)
    */
   static createStatusChangeEvent(
     actor: { id: Types.ObjectId; name: string; email: string; userType: 'manager' | 'employee' | 'admin' },
@@ -418,6 +781,397 @@ export class TimelineService {
         details: `Transfer ${isReschedule ? 'rescheduled' : 'scheduled'} for ${scheduledDate.toLocaleDateString()} at ${transferTime}`
       }
     });
+  }
+
+  // ============================================================================
+  // TIMELINE RETRIEVAL METHODS (Enhanced for Direct Audit Log Integration)
+  // ============================================================================
+
+  /**
+   * Get timeline for a specific transfer from audit logs
+   */
+  static async getTimelineForTransfer(
+    transferId: string, 
+    options: TimelineQueryOptions = {}
+  ): Promise<TimelineItem[]> {
+    try {
+      // Build query for audit logs
+      const query: any = {
+        'targetResource.type': 'transfer',
+        'targetResource.id': transferId
+      };
+
+      // Apply date filters
+      if (options.startDate || options.endDate) {
+        query.timestamp = {};
+        if (options.startDate) query.timestamp.$gte = options.startDate;
+        if (options.endDate) query.timestamp.$lte = options.endDate;
+      }
+
+      // Apply event type filters
+      if (options.eventTypes && options.eventTypes.length > 0) {
+        query.action = { $in: this.mapTimelineTypesToAuditActions(options.eventTypes) };
+      }
+
+      // Apply actor type filters
+      if (options.actorTypes && options.actorTypes.length > 0) {
+        query.actorType = { $in: options.actorTypes };
+      }
+
+      // Get audit logs
+      const auditLogs = await UnifiedAuditLog.find(query)
+        .sort({ timestamp: -1 })
+        .limit(options.limit || 100)
+        .lean();
+
+      console.log(`🔍 Timeline Debug - Transfer ID: ${transferId}`);
+      console.log(`🔍 Query:`, JSON.stringify(query, null, 2));
+      console.log(`🔍 Found ${auditLogs.length} audit logs`);
+
+      // Transform audit logs to timeline items
+      const timelineItems = auditLogs.map(auditLog => 
+        this.transformAuditLogToTimelineItem(auditLog)
+      );
+
+      console.log(`🔍 Transformed to ${timelineItems.length} timeline items`);
+
+      // Apply additional filters
+      return this.applyTimelineFilters(timelineItems, options);
+
+    } catch (error) {
+      console.error('Error getting timeline for transfer:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get timeline for a specific user from audit logs
+   */
+  static async getTimelineForUser(
+    userId: string, 
+    options: TimelineQueryOptions = {}
+  ): Promise<TimelineItem[]> {
+    try {
+      // Build query for audit logs
+      const query: any = {
+        actorId: userId
+      };
+
+      // Apply date filters
+      if (options.startDate || options.endDate) {
+        query.timestamp = {};
+        if (options.startDate) query.timestamp.$gte = options.startDate;
+        if (options.endDate) query.timestamp.$lte = options.endDate;
+      }
+
+      // Apply event type filters
+      if (options.eventTypes && options.eventTypes.length > 0) {
+        query.action = { $in: this.mapTimelineTypesToAuditActions(options.eventTypes) };
+      }
+
+      // Get audit logs
+      const auditLogs = await UnifiedAuditLog.find(query)
+        .sort({ timestamp: -1 })
+        .limit(options.limit || 100)
+        .lean();
+
+      // Transform audit logs to timeline items
+      const timelineItems = auditLogs.map(auditLog => 
+        this.transformAuditLogToTimelineItem(auditLog)
+      );
+
+      // Apply additional filters
+      return this.applyTimelineFilters(timelineItems, options);
+
+    } catch (error) {
+      console.error('Error getting timeline for user:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get timeline for admin overview from audit logs
+   */
+  static async getTimelineForAdmin(
+    options: TimelineQueryOptions = {}
+  ): Promise<TimelineItem[]> {
+    try {
+      // Build query for audit logs
+      const query: any = {
+        category: AuditCategory.TRANSFER_MANAGEMENT
+      };
+
+      // Apply date filters
+      if (options.startDate || options.endDate) {
+        query.timestamp = {};
+        if (options.startDate) query.timestamp.$gte = options.startDate;
+        if (options.endDate) query.timestamp.$lte = options.endDate;
+      }
+
+      // Apply event type filters
+      if (options.eventTypes && options.eventTypes.length > 0) {
+        query.action = { $in: this.mapTimelineTypesToAuditActions(options.eventTypes) };
+      }
+
+      // Apply actor type filters
+      if (options.actorTypes && options.actorTypes.length > 0) {
+        query.actorType = { $in: options.actorTypes };
+      }
+
+      // Get audit logs
+      const auditLogs = await UnifiedAuditLog.find(query)
+        .sort({ timestamp: -1 })
+        .limit(options.limit || 200)
+        .lean();
+
+      // Transform audit logs to timeline items
+      const timelineItems = auditLogs.map(auditLog => 
+        this.transformAuditLogToTimelineItem(auditLog)
+      );
+
+      // Apply additional filters
+      return this.applyTimelineFilters(timelineItems, options);
+
+    } catch (error) {
+      console.error('Error getting timeline for admin:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Transform UnifiedAuditLog to TimelineItem
+   */
+  private static transformAuditLogToTimelineItem(auditLog: any): TimelineItem {
+    return {
+      // Identifiers
+      timelineItemId: auditLog._id.toString(),
+      transferId: auditLog.targetResource?.id || 'unknown',
+      
+      // Event Details
+      kind: this.mapAuditActionToTimelineKind(auditLog.action),
+      title: auditLog.description,
+      description: auditLog.description,
+      timestamp: auditLog.timestamp,
+      order: new Date(auditLog.timestamp).getTime(),
+      
+      // Actor Information
+      actor: {
+        id: auditLog.actorId,
+        type: auditLog.actorType,
+        name: auditLog.actorName || 'Unknown',
+        email: auditLog.actorEmail || 'unknown@example.com',
+        role: auditLog.actorRole || 'user'
+      },
+      
+      // Change Information
+      diff: auditLog.changes ? {
+        before: auditLog.changes.before,
+        after: auditLog.changes.after,
+        fields: auditLog.changes.fields || [],
+        summary: auditLog.changes.changeSummary || auditLog.description
+      } : undefined,
+      
+      // Status Information (extracted from changes)
+      statusAfter: this.extractStatusFromChanges(auditLog.changes),
+      assignedToAfter: this.extractAssignedToFromChanges(auditLog.changes),
+      
+      // UI Enhancements
+      badges: this.generateBadges(auditLog),
+      tags: this.generateTags(auditLog),
+      isSensitive: auditLog.securityContext?.isSensitive || false,
+      requiresReview: auditLog.securityContext?.requiresReview || false
+    };
+  }
+
+  /**
+   * Apply filters and sorting to timeline items
+   */
+  private static applyTimelineFilters(
+    items: TimelineItem[], 
+    options: TimelineQueryOptions
+  ): TimelineItem[] {
+    let filteredItems = [...items];
+
+    // Apply system event filter
+    if (options.includeSystemEvents === false) {
+      filteredItems = filteredItems.filter(item => 
+        !item.tags.includes('system')
+      );
+    }
+
+    // Apply sorting
+    if (options.sortBy) {
+      filteredItems.sort((a, b) => {
+        let comparison = 0;
+        
+        switch (options.sortBy) {
+          case 'timestamp':
+            comparison = a.timestamp.getTime() - b.timestamp.getTime();
+            break;
+          case 'type':
+            comparison = a.kind.localeCompare(b.kind);
+            break;
+          case 'actor':
+            comparison = a.actor.name.localeCompare(b.actor.name);
+            break;
+        }
+        
+        return options.sortOrder === 'desc' ? -comparison : comparison;
+      });
+    }
+
+    // Apply pagination
+    if (options.page && options.limit) {
+      const startIndex = (options.page - 1) * options.limit;
+      const endIndex = startIndex + options.limit;
+      filteredItems = filteredItems.slice(startIndex, endIndex);
+    }
+
+    return filteredItems;
+  }
+
+  /**
+   * Map timeline event types to audit actions
+   */
+  private static mapTimelineTypesToAuditActions(timelineTypes: TimelineEventType[]): AuditAction[] {
+    const mapping: Record<TimelineEventType, AuditAction> = {
+      'created': AuditAction.TRANSFER_CREATED,
+      'transfer_created': AuditAction.TRANSFER_CREATED,
+      'status_changed': AuditAction.TRANSFER_UPDATED,
+      'assigned': AuditAction.TRANSFER_REASSIGNED,
+      'unassigned': AuditAction.TRANSFER_REASSIGNED,
+      'patient_updated': AuditAction.TRANSFER_UPDATED,
+      'hospital_updated': AuditAction.TRANSFER_UPDATED,
+      'scheduled': AuditAction.TRANSFER_UPDATED,
+      'rescheduled': AuditAction.TRANSFER_UPDATED,
+      'document_uploaded': AuditAction.FILE_UPLOADED,
+      'document_removed': AuditAction.FILE_DELETED,
+      'notes_updated': AuditAction.TRANSFER_UPDATED,
+      'priority_changed': AuditAction.TRANSFER_UPDATED,
+      'reason_updated': AuditAction.TRANSFER_UPDATED,
+      'approved': AuditAction.TRANSFER_APPROVED,
+      'rejected': AuditAction.TRANSFER_REJECTED,
+      'accepted': AuditAction.TRANSFER_UPDATED,
+      'started': AuditAction.TRANSFER_UPDATED,
+      'completed': AuditAction.TRANSFER_COMPLETED,
+      'cancelled': AuditAction.TRANSFER_CANCELLED,
+      'communication': AuditAction.NOTIFICATION_SENT,
+      'system': AuditAction.SYSTEM_ALERT,
+      'admin_action': AuditAction.TRANSFER_UPDATED,
+      'manager_action': AuditAction.TRANSFER_UPDATED,
+      'employee_action': AuditAction.TRANSFER_UPDATED
+    };
+
+    return timelineTypes.map(type => mapping[type]).filter(Boolean);
+  }
+
+  /**
+   * Map audit action to timeline kind
+   */
+  private static mapAuditActionToTimelineKind(action: AuditAction): string {
+    const mapping: Record<AuditAction, string> = {
+      [AuditAction.TRANSFER_CREATED]: 'created',
+      [AuditAction.TRANSFER_UPDATED]: 'updated',
+      [AuditAction.TRANSFER_DELETED]: 'deleted',
+      [AuditAction.TRANSFER_CANCELLED]: 'cancelled',
+      [AuditAction.TRANSFER_APPROVED]: 'approved',
+      [AuditAction.TRANSFER_REJECTED]: 'rejected',
+      [AuditAction.TRANSFER_COMPLETED]: 'completed',
+      [AuditAction.TRANSFER_REASSIGNED]: 'reassigned',
+      [AuditAction.FILE_UPLOADED]: 'document_uploaded',
+      [AuditAction.FILE_DELETED]: 'document_removed',
+      [AuditAction.NOTIFICATION_SENT]: 'communication',
+      [AuditAction.SYSTEM_ALERT]: 'system'
+    };
+
+    return mapping[action] || 'updated';
+  }
+
+  /**
+   * Extract status from changes
+   */
+  private static extractStatusFromChanges(changes: any): string | undefined {
+    if (!changes?.after) return undefined;
+    
+    if (typeof changes.after === 'object' && changes.after.status) {
+      return changes.after.status;
+    }
+    
+    if (typeof changes.after === 'string' && ['pending', 'accepted', 'in_progress', 'completed', 'cancelled'].includes(changes.after)) {
+      return changes.after;
+    }
+    
+    return undefined;
+  }
+
+  /**
+   * Extract assignedTo from changes
+   */
+  private static extractAssignedToFromChanges(changes: any): string | undefined {
+    if (!changes?.after) return undefined;
+    
+    if (typeof changes.after === 'object' && changes.after.assignedTo) {
+      return changes.after.assignedTo;
+    }
+    
+    return undefined;
+  }
+
+  /**
+   * Generate badges for timeline item
+   */
+  private static generateBadges(auditLog: any): string[] {
+    const badges: string[] = [];
+    
+    // Risk level badges
+    if (auditLog.securityContext?.riskLevel === RiskLevel.HIGH) {
+      badges.push('high-risk');
+    } else if (auditLog.securityContext?.riskLevel === RiskLevel.MEDIUM) {
+      badges.push('medium-risk');
+    }
+    
+    // Sensitive action badges
+    if (auditLog.securityContext?.isSensitive) {
+      badges.push('sensitive');
+    }
+    
+    // Review required badges
+    if (auditLog.securityContext?.requiresReview) {
+      badges.push('needs-review');
+    }
+    
+    // Outcome badges
+    if (auditLog.outcome === 'failure') {
+      badges.push('failed');
+    }
+    
+    return badges;
+  }
+
+  /**
+   * Generate tags for timeline item
+   */
+  private static generateTags(auditLog: any): string[] {
+    const tags: string[] = [];
+    
+    // Action type tags
+    tags.push(auditLog.action);
+    tags.push(auditLog.category);
+    
+    // Actor type tags
+    tags.push(auditLog.actorType);
+    
+    // Security tags
+    if (auditLog.securityContext?.securityFlags) {
+      tags.push(...auditLog.securityContext.securityFlags);
+    }
+    
+    // System event tags
+    if (auditLog.isAutomated) {
+      tags.push('system');
+    }
+    
+    return [...new Set(tags)]; // Remove duplicates
   }
 }
 

@@ -6,7 +6,7 @@ import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import Hospital from '@/models/Hospital';
 import { Permission } from '@/models/User';
-import { AuditAction, AuditCategory, TargetResourceType } from '@/models/AuditLog';
+import { AuditAction, AuditCategory, TargetResourceType } from '@/models/UnifiedAuditLog';
 
 /**
  * Admin Transfer Analytics API Endpoint

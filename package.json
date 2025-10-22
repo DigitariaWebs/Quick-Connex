@@ -37,7 +37,8 @@
     "check-servers": "node scripts/check-servers.js",
     "dev:admin": "PORT=3000 npm run dev:server",
     "dev:manager": "PORT=3001 npm run dev:server",
-    "dev:dual": "chmod +x scripts/run-dual-instances.sh && ./scripts/run-dual-instances.sh"
+    "dev:dual": "chmod +x scripts/run-dual-instances.sh && ./scripts/run-dual-instances.sh",
+    "start:railway": "NODE_ENV=production node server.js"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.6",

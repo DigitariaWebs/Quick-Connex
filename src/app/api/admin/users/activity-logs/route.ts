@@ -1,23 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
+import UnifiedAuditLog, { AuditCategory, ActorType } from '@/models/UnifiedAuditLog';
 
 /**
  * GET /api/admin/users/activity-logs
  * 
- * Get user activity logs
+ * Get user activity logs with filtering and pagination
  * Query params: userId (optional), startDate, endDate, limit, offset
  */
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Implement user activity logs
+    const { searchParams } = new URL(request.url);
+    
+    // Parse query parameters
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+    const skip = (page - 1) * limit;
+    
+    const userId = searchParams.get('userId');
+    const category = searchParams.get('category') as AuditCategory;
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+    const outcome = searchParams.get('outcome');
+    
+    // Build query
+    const query: any = {};
+    
+    if (userId) {
+      query.$or = [
+        { actorId: userId },
+        { 'targetResource.id': userId }
+      ];
+    }
+    
+    if (category) query.category = category;
+    if (outcome) query.outcome = outcome;
+    
+    // Date range filtering
+    if (startDate || endDate) {
+      query.timestamp = {};
+      if (startDate) query.timestamp.$gte = new Date(startDate);
+      if (endDate) query.timestamp.$lte = new Date(endDate);
+    }
+    
+    // Execute query with pagination
+    const [logs, total] = await Promise.all([
+      UnifiedAuditLog.find(query)
+        .sort({ timestamp: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      UnifiedAuditLog.countDocuments(query)
+    ]);
+    
+    // Calculate pagination info
+    const totalPages = Math.ceil(total / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
     
     return NextResponse.json({
       success: true,
       data: {
-        logs: [],
+        logs,
         pagination: {
-          page: 1,
-          limit: 50,
-          total: 0
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNextPage,
+          hasPrevPage
         }
       }
     });
@@ -29,6 +79,7 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
 
 
 

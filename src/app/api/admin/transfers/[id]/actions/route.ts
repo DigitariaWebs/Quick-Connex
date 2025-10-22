@@ -5,7 +5,7 @@ import dbConnect from '@/lib/database/mongoose';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import { Permission } from '@/models/User';
-import { AuditAction, AuditCategory, TargetResourceType } from '@/models/AuditLog';
+import { AuditAction, AuditCategory, TargetResourceType } from '@/models/UnifiedAuditLog';
 import TransferNotificationService from '@/lib/communication/integrations/transfer-notification-service';
 
 /**

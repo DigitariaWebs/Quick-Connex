@@ -12,7 +12,7 @@ import Hospital from '@/models/Hospital';
 import User from '@/models/User';
 import Patient from '@/models/Patient';
 import Transfer from '@/models/Transfer';
-import AuditLog from '@/models/AuditLog';
+import UnifiedAuditLog from '@/models/UnifiedAuditLog';
 import Notification from '@/models/Notification';
 import { CIUSSS } from '@/models/CIUSSS';
 
@@ -20,7 +20,7 @@ import { CIUSSS } from '@/models/CIUSSS';
 console.log('📋 Models: Initializing all models...');
 
 // Verify all models are registered
-const requiredModels = ['Hospital', 'User', 'Patient', 'Transfer', 'AuditLog', 'Notification', 'CIUSSS'];
+const requiredModels = ['Hospital', 'User', 'Patient', 'Transfer', 'UnifiedAuditLog', 'Notification', 'CIUSSS'];
 const missingModels = requiredModels.filter(modelName => !mongoose.models || !mongoose.models[modelName]);
 
 if (missingModels.length > 0) {
@@ -34,7 +34,7 @@ export {
   User,
   Patient,
   Transfer,
-  AuditLog,
+  UnifiedAuditLog,
   Notification,
   CIUSSS
 };

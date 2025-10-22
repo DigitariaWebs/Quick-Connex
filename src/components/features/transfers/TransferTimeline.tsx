@@ -131,6 +131,10 @@ interface TimelineEvent {
     details?: string;
     [key: string]: any;
   };
+  badges?: string[];
+  tags?: string[];
+  isSensitive?: boolean;
+  requiresReview?: boolean;
   isSystemEvent?: boolean;
   isVisible?: boolean;
 }
@@ -209,8 +213,15 @@ export default function TransferTimeline({
     setError(null);
 
     try {
+      // Add query parameters for enhanced timeline service
+      const queryParams = new URLSearchParams({
+        limit: "50",
+        sortBy: "timestamp",
+        sortOrder: "desc",
+      });
+
       const response = await fetch(
-        `/api/transfers/${transfer.transferId}/timeline`
+        `/api/transfers/${transfer.transferId}/timeline?${queryParams}`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch timeline data");
@@ -218,7 +229,40 @@ export default function TransferTimeline({
 
       const data = await response.json();
       if (data.success) {
-        setTimelineEvents(data.data.timeline || []);
+        // Handle both old timeline format and new enhanced timeline format
+        const timelineData = data.data.timeline || [];
+
+        // Transform enhanced timeline items to component format if needed
+        const transformedEvents = timelineData.map((item: any) => {
+          // If it's already in the old format, use as is
+          if (item.type && item.actor) {
+            return item;
+          }
+
+          // If it's in the new enhanced format, transform it
+          return {
+            id: item.timelineItemId || item.id,
+            title: item.title,
+            description: item.description,
+            timestamp: item.timestamp,
+            type: item.kind || item.type,
+            actor: {
+              id: item.actor.id,
+              name: item.actor.name,
+              email: item.actor.email,
+              userType: item.actor.userType || item.actor.role,
+            },
+            metadata: item.diff,
+            badges: item.badges || [],
+            tags: item.tags || [],
+            isSensitive: item.isSensitive || false,
+            requiresReview: item.requiresReview || false,
+            isSystemEvent: item.tags?.includes("system") || false,
+            isVisible: true,
+          };
+        });
+
+        setTimelineEvents(transformedEvents);
       } else {
         throw new Error(data.message || "Failed to fetch timeline data");
       }
@@ -232,167 +276,6 @@ export default function TransferTimeline({
     } finally {
       setLoading(false);
     }
-  };
-
-  // Generate hardcoded timeline data based on transfer status (fallback)
-  const generateTimelineEvents = (
-    transfer: TransferRequest
-  ): TimelineEvent[] => {
-    const baseEvents: TimelineEvent[] = [
-      {
-        id: "request",
-        title: "Transfer Request Initiated",
-        description: `Transfer requested by ${transfer.requestedBy.firstName} ${transfer.requestedBy.lastName}`,
-        timestamp: transfer.requestedDate,
-        type: "request",
-        actor: {
-          id: transfer.requestedBy.email, // Using email as ID since _id is not available
-          name: `${transfer.requestedBy.firstName} ${transfer.requestedBy.lastName}`,
-          email: transfer.requestedBy.email,
-          userType: transfer.requestedBy.userType,
-        },
-      },
-      {
-        id: "review",
-        title: "Medical Review",
-        description:
-          "Medical team reviewing patient eligibility and transfer requirements",
-        timestamp: new Date(
-          new Date(transfer.requestedDate).getTime() + 15 * 60000
-        ).toISOString(),
-        type: "approval",
-        actor: {
-          id: "medical-reviewer",
-          name: "Dr. Sarah Mitchell",
-          email: "sarah.mitchell@hospital.com",
-          userType: "medical",
-        },
-      },
-    ];
-
-    if (["accepted", "in_progress", "completed"].includes(transfer.status)) {
-      baseEvents.push({
-        id: "approval",
-        title: "Transfer Approved",
-        description: "Transfer request approved by medical supervisor",
-        timestamp: new Date(
-          new Date(transfer.requestedDate).getTime() + 45 * 60000
-        ).toISOString(),
-        type: "approval",
-        actor: {
-          id: "medical-approver",
-          name: "Dr. Michael Rodriguez",
-          email: "michael.rodriguez@hospital.com",
-          userType: "medical",
-        },
-      });
-
-      baseEvents.push({
-        id: "preparation",
-        title: "Transport Preparation",
-        description: "Ambulance crew preparing for patient transport",
-        timestamp: new Date(
-          new Date(transfer.requestedDate).getTime() + 2 * 3600000
-        ).toISOString(),
-        type: "preparation",
-        actor: {
-          id: "emt-team-alpha",
-          name: "EMT Team Alpha",
-          email: "emt.alpha@hospital.com",
-          userType: "transport",
-        },
-      });
-    }
-
-    if (["in_progress", "completed"].includes(transfer.status)) {
-      baseEvents.push({
-        id: "departure",
-        title: "Patient Transport Started",
-        description: "Ambulance departed from origin hospital",
-        timestamp: new Date(
-          new Date(transfer.requestedDate).getTime() + 3 * 3600000
-        ).toISOString(),
-        type: "transport",
-        actor: {
-          id: "emt-team-alpha",
-          name: "EMT Team Alpha",
-          email: "emt.alpha@hospital.com",
-          userType: "transport",
-        },
-      });
-
-      baseEvents.push({
-        id: "transit",
-        title: "En Route Update",
-        description: "Transport proceeding normally, patient stable",
-        timestamp: new Date(
-          new Date(transfer.requestedDate).getTime() + 3.5 * 3600000
-        ).toISOString(),
-        type: "transport",
-        actor: {
-          id: "paramedic-johnson",
-          name: "Paramedic Johnson",
-          email: "johnson@hospital.com",
-          userType: "medical",
-        },
-      });
-    }
-
-    if (transfer.status === "completed") {
-      baseEvents.push({
-        id: "arrival",
-        title: "Arrived at Destination",
-        description: "Patient successfully transferred to destination hospital",
-        timestamp: new Date(
-          new Date(transfer.requestedDate).getTime() + 4 * 3600000
-        ).toISOString(),
-        type: "arrival",
-        actor: {
-          id: "receiving-team",
-          name: "Receiving Team",
-          email: "receiving@hospital.com",
-          userType: "medical",
-        },
-      });
-
-      baseEvents.push({
-        id: "completion",
-        title: "Transfer Completed",
-        description: "Transfer successfully completed and documented",
-        timestamp: new Date(
-          new Date(transfer.requestedDate).getTime() + 4.5 * 3600000
-        ).toISOString(),
-        type: "completion",
-        actor: {
-          id: "system",
-          name: "System",
-          email: "system@hospital.com",
-          userType: "system",
-        },
-      });
-    }
-
-    // Add some notes/communications
-    baseEvents.push({
-      id: "note1",
-      title: "Communication Note",
-      description: "Family notified of transfer status",
-      timestamp: new Date(
-        new Date(transfer.requestedDate).getTime() + 1.5 * 3600000
-      ).toISOString(),
-      type: "note",
-      actor: {
-        id: "nurse-collins",
-        name: "Nurse Collins",
-        email: "collins@hospital.com",
-        userType: "nurse",
-      },
-    });
-
-    return baseEvents.sort(
-      (a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
   };
 
   // Get icon for timeline event type
@@ -437,9 +320,24 @@ export default function TransferTimeline({
   };
 
   // Get status color for timeline event
-  const getEventStatusColor = (type: string, isSystemEvent?: boolean) => {
+  const getEventStatusColor = (
+    type: string,
+    isSystemEvent?: boolean,
+    badges?: string[]
+  ) => {
     if (isSystemEvent) {
       return "bg-gray-500";
+    }
+
+    // Check for high-risk or sensitive actions
+    if (badges?.includes("high-risk") || badges?.includes("sensitive")) {
+      return "bg-red-500";
+    }
+    if (badges?.includes("medium-risk")) {
+      return "bg-yellow-500";
+    }
+    if (badges?.includes("needs-review")) {
+      return "bg-orange-500";
     }
 
     switch (type) {
@@ -466,11 +364,8 @@ export default function TransferTimeline({
     }
   };
 
-  // Use real timeline events or fallback to generated ones
-  const displayEvents =
-    timelineEvents.length > 0
-      ? timelineEvents
-      : generateTimelineEvents(transfer);
+  // Use real timeline events only (no hardcoded fallback)
+  const displayEvents = timelineEvents;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -666,95 +561,164 @@ export default function TransferTimeline({
 
                       {/* Timeline Events */}
                       <div className="space-y-6">
-                        {displayEvents.map((event, index) => (
-                          <motion.div
-                            key={event.id}
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            className="relative flex items-start space-x-4"
-                          >
-                            {/* Timeline Dot */}
-                            <div
-                              className={`relative flex-shrink-0 w-12 h-12 rounded-2xl ${getEventStatusColor(
-                                event.type,
-                                event.isSystemEvent
-                              )} flex items-center justify-center shadow-lg`}
-                            >
-                              {getEventIcon(event.type)}
-                            </div>
-
-                            {/* Event Content */}
+                        {displayEvents.length === 0 ? (
+                          <div className="text-center py-8">
+                            <Activity
+                              size={48}
+                              className="mx-auto text-gray-400 mb-4"
+                            />
+                            <h3 className="text-lg font-medium text-gray-900 mb-2">
+                              No Timeline Events
+                            </h3>
+                            <p className="text-gray-500">
+                              {loading
+                                ? "Loading timeline events..."
+                                : error
+                                ? "Failed to load timeline events"
+                                : "No timeline events found for this transfer"}
+                            </p>
+                            {error && (
+                              <button
+                                onClick={fetchTimelineData}
+                                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                              >
+                                Retry
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          displayEvents.map((event, index) => (
                             <motion.div
-                              whileHover={{ scale: 1.02 }}
-                              className="flex-1 bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-white/20 hover:shadow-md transition-all cursor-pointer"
-                              onClick={() =>
-                                setExpandedEvent(
-                                  expandedEvent === event.id ? null : event.id
-                                )
-                              }
+                              key={event.id}
+                              initial={{ opacity: 0, x: 20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.1 }}
+                              className="relative flex items-start space-x-4"
                             >
-                              <div className="flex items-center justify-between mb-2">
-                                <h3 className="font-semibold text-gray-900">
-                                  {event.title}
-                                </h3>
-                                <span className="text-xs text-gray-500 bg-gray-100/50 px-2 py-1 rounded-lg backdrop-blur-sm">
-                                  {formatTimestamp(event.timestamp)}
-                                </span>
+                              {/* Timeline Dot */}
+                              <div
+                                className={`relative flex-shrink-0 w-12 h-12 rounded-2xl ${getEventStatusColor(
+                                  event.type,
+                                  event.isSystemEvent,
+                                  event.badges
+                                )} flex items-center justify-center shadow-lg`}
+                              >
+                                {getEventIcon(event.type)}
                               </div>
 
-                              <p className="text-sm text-gray-600 mb-2">
-                                {event.description}
-                              </p>
-
-                              <div className="flex items-center space-x-2 text-xs text-gray-500">
-                                <User size={12} />
-                                <span>{event.actor.name}</span>
-                                {event.actor.userType && (
-                                  <span className="px-1 py-0.5 bg-gray-100 rounded text-xs">
-                                    {event.actor.userType}
+                              {/* Event Content */}
+                              <motion.div
+                                whileHover={{ scale: 1.02 }}
+                                className="flex-1 bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-white/20 hover:shadow-md transition-all cursor-pointer"
+                                onClick={() =>
+                                  setExpandedEvent(
+                                    expandedEvent === event.id ? null : event.id
+                                  )
+                                }
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center space-x-2">
+                                    <h3 className="font-semibold text-gray-900">
+                                      {event.title}
+                                    </h3>
+                                    {/* Badges */}
+                                    {event.badges &&
+                                      event.badges.length > 0 && (
+                                        <div className="flex space-x-1">
+                                          {event.badges.map(
+                                            (badge, badgeIndex) => (
+                                              <span
+                                                key={badgeIndex}
+                                                className={`text-xs px-2 py-1 rounded-full ${
+                                                  badge === "high-risk" ||
+                                                  badge === "sensitive"
+                                                    ? "bg-red-100 text-red-700"
+                                                    : badge === "medium-risk"
+                                                    ? "bg-yellow-100 text-yellow-700"
+                                                    : badge === "needs-review"
+                                                    ? "bg-orange-100 text-orange-700"
+                                                    : "bg-blue-100 text-blue-700"
+                                                }`}
+                                              >
+                                                {badge.replace("-", " ")}
+                                              </span>
+                                            )
+                                          )}
+                                        </div>
+                                      )}
+                                    {/* Sensitive content indicator */}
+                                    {event.isSensitive && (
+                                      <Shield
+                                        size={14}
+                                        className="text-red-500"
+                                      />
+                                    )}
+                                    {/* Review required indicator */}
+                                    {event.requiresReview && (
+                                      <AlertTriangle
+                                        size={14}
+                                        className="text-orange-500"
+                                      />
+                                    )}
+                                  </div>
+                                  <span className="text-xs text-gray-500 bg-gray-100/50 px-2 py-1 rounded-lg backdrop-blur-sm">
+                                    {formatTimestamp(event.timestamp)}
                                   </span>
-                                )}
-                              </div>
+                                </div>
 
-                              {/* Expanded Details */}
-                              <AnimatePresence>
-                                {expandedEvent === event.id &&
-                                  (event.metadata?.details ||
-                                    event.metadata?.reason) && (
-                                    <motion.div
-                                      initial={{ opacity: 0, height: 0 }}
-                                      animate={{ opacity: 1, height: "auto" }}
-                                      exit={{ opacity: 0, height: 0 }}
-                                      transition={{ duration: 0.2 }}
-                                      className="mt-3 pt-3 border-t border-gray-200/50 overflow-hidden"
-                                    >
-                                      <div className="text-xs text-gray-600 bg-gray-50/50 p-2 rounded-lg backdrop-blur-sm">
-                                        {event.metadata?.details && (
-                                          <p className="mb-1">
-                                            {event.metadata.details}
-                                          </p>
-                                        )}
-                                        {event.metadata?.reason && (
-                                          <p className="text-gray-500">
-                                            Reason: {event.metadata.reason}
-                                          </p>
-                                        )}
-                                        {event.metadata?.oldValue &&
-                                          event.metadata?.newValue && (
-                                            <p className="text-gray-500 mt-1">
-                                              Changed from "
-                                              {event.metadata.oldValue}" to "
-                                              {event.metadata.newValue}"
+                                <p className="text-sm text-gray-600 mb-2">
+                                  {event.description}
+                                </p>
+
+                                <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                  <User size={12} />
+                                  <span>{event.actor.name}</span>
+                                  {event.actor.userType && (
+                                    <span className="px-1 py-0.5 bg-gray-100 rounded text-xs">
+                                      {event.actor.userType}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Expanded Details */}
+                                <AnimatePresence>
+                                  {expandedEvent === event.id &&
+                                    (event.metadata?.details ||
+                                      event.metadata?.reason) && (
+                                      <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: "auto" }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="mt-3 pt-3 border-t border-gray-200/50 overflow-hidden"
+                                      >
+                                        <div className="text-xs text-gray-600 bg-gray-50/50 p-2 rounded-lg backdrop-blur-sm">
+                                          {event.metadata?.details && (
+                                            <p className="mb-1">
+                                              {event.metadata.details}
                                             </p>
                                           )}
-                                      </div>
-                                    </motion.div>
-                                  )}
-                              </AnimatePresence>
+                                          {event.metadata?.reason && (
+                                            <p className="text-gray-500">
+                                              Reason: {event.metadata.reason}
+                                            </p>
+                                          )}
+                                          {event.metadata?.oldValue &&
+                                            event.metadata?.newValue && (
+                                              <p className="text-gray-500 mt-1">
+                                                Changed from "
+                                                {event.metadata.oldValue}" to "
+                                                {event.metadata.newValue}"
+                                              </p>
+                                            )}
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                </AnimatePresence>
+                              </motion.div>
                             </motion.div>
-                          </motion.div>
-                        ))}
+                          ))
+                        )}
                       </div>
 
                       {/* Timeline End */}
