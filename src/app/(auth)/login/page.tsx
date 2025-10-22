@@ -50,7 +50,7 @@ function LoginForm() {
   // If user is already authenticated, middleware will redirect them
 
   return (
-    <div className="min-h-screen flex relative">
+    <div className="min-h-screen flex flex-col lg:flex-row relative">
       {/* Animated Gradient Background */}
       <motion.div
         className="absolute inset-0 z-0"
@@ -70,8 +70,8 @@ function LoginForm() {
         }}
       />
 
-      {/* Left Side Content */}
-      <div className="flex-1 flex items-center justify-center px-8 lg:px-16 z-10">
+      {/* Left Side Content - Hidden on mobile, shown on desktop */}
+      <div className="hidden lg:flex flex-1 items-center justify-center px-8 lg:px-16 z-10">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
@@ -88,18 +88,20 @@ function LoginForm() {
         </motion.div>
       </div>
 
-      {/* Right Side - Login Form */}
-      <div className="w-1/2 flex items-center justify-center px-8 lg:px-16 z-10">
+      {/* Login Form - Full width on mobile, half width on desktop */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-4 lg:px-8 xl:px-16 z-10 min-h-screen lg:min-h-0">
         <motion.div
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
           className="w-full max-w-2xl"
         >
-          <div className="bg-white rounded-3xl p-12 shadow-2xl max-h-[90vh] min-h-[700px] overflow-y-auto">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold text-gray-900 mb-3">Sign In</h2>
-              <p className="text-lg text-gray-600">
+          <div className="bg-white rounded-2xl lg:rounded-3xl p-6 lg:p-12 shadow-2xl max-h-[90vh] min-h-screen lg:min-h-[700px] overflow-y-auto">
+            <div className="text-center mb-6 lg:mb-10">
+              <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">
+                Sign In
+              </h2>
+              <p className="text-base lg:text-lg text-gray-600">
                 Access your patient management account
               </p>
             </div>
@@ -126,11 +128,11 @@ function LoginForm() {
               </div>
             )}
 
-            <form className="space-y-6" onSubmit={handleSubmit}>
+            <form className="space-y-4 lg:space-y-6" onSubmit={handleSubmit}>
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-base font-medium text-gray-700 mb-3"
+                  className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
                 >
                   Email
                 </label>
@@ -139,7 +141,7 @@ function LoginForm() {
                   name="email"
                   type="email"
                   required
-                  className="w-full px-5 py-4 text-lg border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black"
+                  className="w-full px-4 lg:px-5 py-3 lg:py-4 text-base lg:text-lg border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black"
                   placeholder="Enter your email"
                 />
               </div>
@@ -147,7 +149,7 @@ function LoginForm() {
               <div>
                 <label
                   htmlFor="password"
-                  className="block text-base font-medium text-gray-700 mb-3"
+                  className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
                 >
                   Password
                 </label>
@@ -157,7 +159,7 @@ function LoginForm() {
                     name="password"
                     type={showPassword ? "text" : "password"}
                     required
-                    className="w-full px-5 py-4 text-lg border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-12 placeholder:text-gray-500 text-black"
+                    className="w-full px-4 lg:px-5 py-3 lg:py-4 text-base lg:text-lg border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-12 placeholder:text-gray-500 text-black"
                     placeholder="Enter your password"
                   />
                   <button
@@ -204,11 +206,11 @@ function LoginForm() {
                 </div>
               </div>
 
-              <div className="pt-6">
+              <div className="pt-4 lg:pt-6">
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-6 text-lg rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 lg:py-4 px-6 text-base lg:text-lg rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                 >
                   {isLoading ? "Signing In..." : "Sign In"}
                 </button>
@@ -228,13 +230,13 @@ function LoginForm() {
                     window.location.href = "/forgot-password";
                   }
                 }}
-                className="text-sm text-green-600 hover:text-green-500 transition-colors duration-200 cursor-pointer underline bg-transparent border-none p-0"
+                className="text-sm text-green-600 hover:text-green-500 transition-colors duration-200 cursor-pointer underline bg-transparent border-none p-2 min-h-[44px] flex items-center justify-center"
               >
                 Forgot your password?
               </button>
             </div>
 
-            <p className="text-center text-base text-gray-600 mt-8">
+            <p className="text-center text-sm lg:text-base text-gray-600 mt-6 lg:mt-8">
               Don't have an account?{" "}
               <Link
                 href="/signup"

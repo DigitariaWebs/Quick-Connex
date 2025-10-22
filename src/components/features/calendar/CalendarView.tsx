@@ -227,7 +227,7 @@ export default function CalendarView({
       days.push(
         <div
           key={i}
-          className={`min-h-[120px] border border-gray-200 p-2 rounded-lg ${
+          className={`min-h-[80px] lg:min-h-[120px] border border-gray-200 p-1 lg:p-2 rounded-lg ${
             currentDay.getMonth() !== month
               ? "bg-gray-50 text-gray-400"
               : "bg-white"
@@ -237,33 +237,37 @@ export default function CalendarView({
               : ""
           }`}
         >
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium">{currentDay.getDate()}</span>
+          <div className="flex justify-between items-center mb-1 lg:mb-2">
+            <span className="text-xs lg:text-sm font-medium">
+              {currentDay.getDate()}
+            </span>
             {currentDay.getMonth() === month && (
               <button
                 onClick={() => onCreateTransfer?.(new Date(currentDay))}
-                className="w-6 h-6 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
+                className="w-5 h-5 lg:w-6 lg:h-6 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
               >
-                <Plus size={12} />
+                <Plus size={10} className="lg:w-3 lg:h-3" />
               </button>
             )}
           </div>
 
-          <div className="space-y-1">
-            {dayEvents.slice(0, 3).map((event) => (
+          <div className="space-y-0.5 lg:space-y-1">
+            {dayEvents.slice(0, 2).map((event) => (
               <div
                 key={event.id}
                 onClick={() => {
                   onEventClick?.(event);
                 }}
-                className="text-xs p-2 rounded-lg cursor-pointer hover:opacity-80 transition-all"
+                className="text-xs p-1 lg:p-2 rounded-lg cursor-pointer hover:opacity-80 transition-all"
                 style={{
                   backgroundColor: event.backgroundColor,
                   color: event.textColor,
                 }}
               >
-                <div className="font-medium truncate">{event.title}</div>
-                <div className="opacity-75 text-xs">
+                <div className="font-medium truncate text-xs">
+                  {event.title}
+                </div>
+                <div className="opacity-75 text-xs hidden lg:block">
                   {new Date(event.start).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -271,9 +275,9 @@ export default function CalendarView({
                 </div>
               </div>
             ))}
-            {dayEvents.length > 3 && (
+            {dayEvents.length > 2 && (
               <div className="text-xs text-gray-500">
-                +{dayEvents.length - 3} more
+                +{dayEvents.length - 2} more
               </div>
             )}
           </div>
@@ -284,11 +288,11 @@ export default function CalendarView({
     }
 
     return (
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-1 lg:gap-2">
         {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
           <div
             key={day + index}
-            className="p-2 text-center text-sm font-medium text-gray-500"
+            className="p-1 lg:p-2 text-center text-xs lg:text-sm font-medium text-gray-500"
           >
             {day}
           </div>
@@ -314,28 +318,30 @@ export default function CalendarView({
 
       days.push(
         <div key={i} className="flex-1 border border-gray-200 rounded-lg">
-          <div className="p-3 bg-gray-50 rounded-t-lg">
+          <div className="p-2 lg:p-3 bg-gray-50 rounded-t-lg">
             <div className="text-xs font-medium text-gray-500">
               {day.toLocaleDateString([], { weekday: "short" }).charAt(0)}
             </div>
-            <div className="text-lg font-bold">{day.getDate()}</div>
+            <div className="text-base lg:text-lg font-bold">
+              {day.getDate()}
+            </div>
           </div>
 
-          <div className="p-2 space-y-2 min-h-[400px]">
+          <div className="p-1 lg:p-2 space-y-1 lg:space-y-2 min-h-[200px] lg:min-h-[400px]">
             {dayEvents.map((event) => (
               <div
                 key={event.id}
                 onClick={() => {
                   onEventClick?.(event);
                 }}
-                className="p-2 rounded-lg cursor-pointer hover:opacity-80 text-xs transition-all"
+                className="p-1 lg:p-2 rounded-lg cursor-pointer hover:opacity-80 text-xs transition-all"
                 style={{
                   backgroundColor: event.backgroundColor,
                   color: event.textColor,
                 }}
               >
-                <div className="font-medium">{event.title}</div>
-                <div className="opacity-75 text-xs">
+                <div className="font-medium truncate">{event.title}</div>
+                <div className="opacity-75 text-xs hidden lg:block">
                   {new Date(event.start).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -348,7 +354,11 @@ export default function CalendarView({
       );
     }
 
-    return <div className="flex">{days}</div>;
+    return (
+      <div className="flex flex-col lg:flex-row space-y-2 lg:space-y-0 lg:space-x-2">
+        {days}
+      </div>
+    );
   };
 
   const renderDayView = () => {
@@ -357,10 +367,55 @@ export default function CalendarView({
       return eventDate.toDateString() === currentDate.toDateString();
     });
 
+    // Mobile: Simple list view, Desktop: Timeline view
+    return (
+      <div className="block lg:hidden">
+        {/* Mobile: Simple List View */}
+        <div className="space-y-2">
+          {dayEvents.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <div className="text-4xl mb-2">📅</div>
+              <p>No events scheduled for this day</p>
+            </div>
+          ) : (
+            dayEvents.map((event) => (
+              <div
+                key={event.id}
+                onClick={() => {
+                  onEventClick?.(event);
+                }}
+                className="p-3 rounded-lg cursor-pointer hover:opacity-80 transition-all border"
+                style={{
+                  backgroundColor: event.backgroundColor,
+                  color: event.textColor,
+                  borderColor: event.borderColor,
+                }}
+              >
+                <div className="font-medium text-sm">{event.title}</div>
+                <div className="opacity-75 text-xs mt-1">
+                  {new Date(event.start).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderDayViewDesktop = () => {
+    const dayEvents = events.filter((event) => {
+      const eventDate = new Date(event.start);
+      return eventDate.toDateString() === currentDate.toDateString();
+    });
+
     const hours = Array.from({ length: 24 }, (_, i) => i);
 
     return (
-      <div className="flex">
+      <div className="hidden lg:flex">
         <div className="w-16 border-r border-gray-200">
           {hours.map((hour) => (
             <div
@@ -427,7 +482,12 @@ export default function CalendarView({
       case "week":
         return renderWeekView();
       case "day":
-        return renderDayView();
+        return (
+          <>
+            {renderDayView()}
+            {renderDayViewDesktop()}
+          </>
+        );
       default:
         return renderMonthView();
     }
@@ -443,53 +503,62 @@ export default function CalendarView({
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-      {/* Minimal Header with Circular Controls */}
-      <div className="p-4 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => navigateDate("prev")}
-            className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
-          >
-            <ChevronLeft size={18} />
-          </button>
+      {/* Mobile-Optimized Header */}
+      <div className="p-3 lg:p-4">
+        {/* Mobile: Stack controls vertically, Desktop: Keep horizontal */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0">
+          {/* Navigation Controls */}
+          <div className="flex items-center justify-between lg:justify-start lg:space-x-3">
+            <div className="flex items-center space-x-2 lg:space-x-3">
+              <button
+                onClick={() => navigateDate("prev")}
+                className="w-8 h-8 lg:w-10 lg:h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
+              >
+                <ChevronLeft size={16} className="lg:w-[18px] lg:h-[18px]" />
+              </button>
 
-          <h3 className="text-lg font-semibold text-gray-800 min-w-[180px] text-center">
-            {currentDate.toLocaleDateString([], {
-              year: "numeric",
-              month: "long",
-              ...(view === "day" && { day: "numeric" }),
-            })}
-          </h3>
+              <h3 className="text-base lg:text-lg font-semibold text-gray-800 text-center lg:min-w-[180px]">
+                {currentDate.toLocaleDateString([], {
+                  year: "numeric",
+                  month: "long",
+                  ...(view === "day" && { day: "numeric" }),
+                })}
+              </h3>
 
-          <button
-            onClick={() => navigateDate("next")}
-            className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
-          >
-            <ChevronRight size={18} />
-          </button>
-        </div>
+              <button
+                onClick={() => navigateDate("next")}
+                className="w-8 h-8 lg:w-10 lg:h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
+              >
+                <ChevronRight size={16} className="lg:w-[18px] lg:h-[18px]" />
+              </button>
+            </div>
+          </div>
 
-        <div className="flex items-center space-x-2">
-          {(["month", "week", "day"] as const).map((viewType) => (
+          {/* View Controls and Refresh */}
+          <div className="flex items-center justify-between lg:justify-end lg:space-x-2">
+            <div className="flex items-center space-x-1 lg:space-x-2">
+              {(["month", "week", "day"] as const).map((viewType) => (
+                <button
+                  key={viewType}
+                  onClick={() => setView(viewType)}
+                  className={`w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
+                    view === viewType
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {viewType.charAt(0).toUpperCase()}
+                </button>
+              ))}
+            </div>
+
             <button
-              key={viewType}
-              onClick={() => setView(viewType)}
-              className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
-                view === viewType
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
+              onClick={fetchCalendarEvents}
+              className="w-8 h-8 lg:w-10 lg:h-10 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full flex items-center justify-center transition-colors"
             >
-              {viewType.charAt(0).toUpperCase()}
+              <RefreshCw size={14} className="lg:w-4 lg:h-4" />
             </button>
-          ))}
-
-          <button
-            onClick={fetchCalendarEvents}
-            className="w-10 h-10 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full flex items-center justify-center transition-colors ml-2"
-          >
-            <RefreshCw size={16} />
-          </button>
+          </div>
         </div>
       </div>
 

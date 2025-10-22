@@ -145,7 +145,7 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen flex relative">
+    <div className="min-h-screen flex flex-col lg:flex-row relative">
       {/* Animated Gradient Background */}
       <motion.div
         className="absolute inset-0 z-0"
@@ -165,8 +165,8 @@ export default function SignUpPage() {
         }}
       />
 
-      {/* Left Side Content */}
-      <div className="flex-1 flex items-center justify-center px-8 lg:px-16 z-10">
+      {/* Left Side Content - Hidden on mobile, shown on desktop */}
+      <div className="hidden lg:flex flex-1 items-center justify-center px-8 lg:px-16 z-10">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
@@ -183,24 +183,26 @@ export default function SignUpPage() {
         </motion.div>
       </div>
 
-      {/* Right Side - Signup Form */}
-      <div className="w-1/2 flex items-center justify-center px-8 lg:px-16 z-10">
+      {/* Signup Form - Full width on mobile, half width on desktop */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-4 lg:px-8 xl:px-16 z-10 min-h-screen lg:min-h-0">
         <motion.div
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
           className="w-full max-w-2xl"
         >
-          <div className="bg-white rounded-3xl p-12 shadow-2xl max-h-[90vh] min-h-[700px] overflow-y-auto hide-scrollbar">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-3">Sign Up</h2>
-              <p className="text-lg text-gray-600">
+          <div className="bg-white rounded-2xl lg:rounded-3xl p-6 lg:p-12 shadow-2xl max-h-[90vh] min-h-screen lg:min-h-[700px] overflow-y-auto hide-scrollbar">
+            <div className="text-center mb-6 lg:mb-8">
+              <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">
+                Sign Up
+              </h2>
+              <p className="text-base lg:text-lg text-gray-600">
                 Your Patient Management Platform
               </p>
             </div>
 
             {/* User Type Selection */}
-            <div className="flex rounded-xl overflow-hidden bg-gray-50 mb-8">
+            <div className="flex rounded-xl overflow-hidden bg-gray-50 mb-6 lg:mb-8">
               <UserTypeButton
                 type="employee"
                 currentType={userType}
@@ -226,11 +228,11 @@ export default function SignUpPage() {
               </div>
             )}
 
-            <form className="space-y-6" onSubmit={handleSubmit}>
+            <form className="space-y-4 lg:space-y-6" onSubmit={handleSubmit}>
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-base font-medium text-gray-700 mb-3"
+                  className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
                 >
                   Email
                 </label>
@@ -239,7 +241,7 @@ export default function SignUpPage() {
                   name="email"
                   type="email"
                   required
-                  className={`w-full px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
+                  className={`w-full px-4 lg:px-5 py-3 lg:py-4 text-base lg:text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
                     hasFieldError("email")
                       ? "border-red-300 bg-red-50"
                       : "border-gray-200"
@@ -260,7 +262,7 @@ export default function SignUpPage() {
               <div>
                 <label
                   htmlFor="password"
-                  className="block text-base font-medium text-gray-700 mb-3"
+                  className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
                 >
                   Password
                 </label>
@@ -270,7 +272,7 @@ export default function SignUpPage() {
                     name="password"
                     type={showPassword ? "text" : "password"}
                     required
-                    className={`w-full px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-12 placeholder:text-gray-500 text-black ${
+                    className={`w-full px-4 lg:px-5 py-3 lg:py-4 text-base lg:text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-12 placeholder:text-gray-500 text-black ${
                       hasFieldError("password")
                         ? "border-red-300 bg-red-50"
                         : "border-gray-200"
@@ -416,11 +418,11 @@ export default function SignUpPage() {
               </div>
 
               {/* Name Fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
                 <div>
                   <label
                     htmlFor="firstName"
-                    className="block text-base font-medium text-gray-700 mb-3"
+                    className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
                   >
                     First Name
                   </label>
@@ -429,7 +431,7 @@ export default function SignUpPage() {
                     name="firstName"
                     type="text"
                     required
-                    className={`w-full px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
+                    className={`w-full px-4 lg:px-5 py-3 lg:py-4 text-base lg:text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
                       hasFieldError("firstName")
                         ? "border-red-300 bg-red-50"
                         : "border-gray-200"
@@ -449,7 +451,7 @@ export default function SignUpPage() {
                 <div>
                   <label
                     htmlFor="lastName"
-                    className="block text-base font-medium text-gray-700 mb-3"
+                    className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
                   >
                     Last Name
                   </label>
@@ -458,7 +460,7 @@ export default function SignUpPage() {
                     name="lastName"
                     type="text"
                     required
-                    className={`w-full px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
+                    className={`w-full px-4 lg:px-5 py-3 lg:py-4 text-base lg:text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
                       hasFieldError("lastName")
                         ? "border-red-300 bg-red-50"
                         : "border-gray-200"
@@ -886,18 +888,18 @@ export default function SignUpPage() {
                 </>
               )}
 
-              <div className="pt-6">
+              <div className="pt-4 lg:pt-6">
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-6 text-lg rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 lg:py-4 px-6 text-base lg:text-lg rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                 >
                   {isLoading ? "Creating Account..." : "Sign Up"}
                 </button>
               </div>
             </form>
 
-            <p className="text-center text-base text-gray-600 mt-8">
+            <p className="text-center text-sm lg:text-base text-gray-600 mt-6 lg:mt-8">
               Already have an account?{" "}
               <Link
                 href="/login"

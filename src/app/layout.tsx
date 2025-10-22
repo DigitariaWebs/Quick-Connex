@@ -5,7 +5,6 @@ import { UnifiedSSEProvider } from "@/contexts/UnifiedSSEContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { SessionProvider } from "@/contexts/SessionContext";
 import ServerConnectionLogger from "@/components/features/notifications/ServerConnectionLogger";
-import SSEDebugger from "@/components/features/notifications/SSEDebugger";
 import GlobalNotificationSystem from "@/components/features/notifications/GlobalNotificationSystem";
 // Remove startup logging from layout - not compatible with Vercel
 // import { logApplicationStartup } from "@/lib/utils/startup-logger";
@@ -46,7 +45,6 @@ export default function RootLayout({
           <UnifiedSSEProvider>
             <NotificationProvider>
               <ServerConnectionLogger />
-              <SSEDebugger />
               <GlobalNotificationSystem />
               {children}
             </NotificationProvider>

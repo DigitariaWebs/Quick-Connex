@@ -48,6 +48,7 @@ export default function EmployeeDashboard() {
     refetch,
   } = useDashboardData();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isMyTransfersModalOpen, setIsMyTransfersModalOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
@@ -106,15 +107,6 @@ export default function EmployeeDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Notification Popup Manager - DISABLED (using GlobalNotificationSystem instead) */}
-      {/* <NotificationPopupManager
-        maxNotifications={5}
-        autoHide={true}
-        hideDelay={5000}
-        position="top-right"
-        enableSound={true}
-      /> */}
-
       {/* Sidebar */}
       {user && (
         <Sidebar
@@ -131,6 +123,8 @@ export default function EmployeeDashboard() {
           }}
           onLogout={logout}
           onToggle={setSidebarCollapsed}
+          onMobileToggle={setIsMobileMenuOpen}
+          isMobileOpen={isMobileMenuOpen}
         />
       )}
 
@@ -140,7 +134,7 @@ export default function EmployeeDashboard() {
           sidebarCollapsed ? "lg:ml-28" : "lg:ml-80"
         }`}
       >
-        {/* New Header */}
+        {/* Header */}
         {user && (
           <DashboardHeader
             user={{
@@ -156,6 +150,7 @@ export default function EmployeeDashboard() {
             }}
             onLogout={logout}
             pageTitle="Dashboard"
+            onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           />
         )}
 

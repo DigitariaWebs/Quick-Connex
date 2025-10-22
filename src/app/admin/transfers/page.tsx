@@ -563,19 +563,19 @@ export default function AdminTransfersPage() {
   return (
     <AdminLayout pageTitle="Transfer Management">
       {/* Main Layout Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
         {/* Left Sidebar - Stats Cards */}
         <div className="lg:col-span-2 space-y-4">
           <div className="p-0">
             {(originalStats || stats) && (
-              <div className="grid grid-cols-1 gap-3 max-w-48">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-3 lg:gap-3 lg:max-w-48">
                 {/* Total - Beige */}
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   onClick={() => handleStatsCardClick("all")}
                   className={`${STAT_CARD_COLORS.total.bg} ${
                     STAT_CARD_COLORS.total.border
-                  } p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
+                  } p-3 lg:p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
                     activeFilter === "all"
                       ? "ring-2 ring-blue-500 ring-opacity-50"
                       : ""
@@ -583,19 +583,19 @@ export default function AdminTransfersPage() {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <TrendingUp
-                      className={`w-5 h-5 ${STAT_CARD_COLORS.total.iconColor}`}
+                      className={`w-4 h-4 lg:w-5 lg:h-5 ${STAT_CARD_COLORS.total.iconColor}`}
                     />
                     {isRefreshing && (
                       <RefreshCw className="w-3 h-3 text-gray-400 animate-spin" />
                     )}
                   </div>
                   <p
-                    className={`text-[10px] ${STAT_CARD_COLORS.total.textColor} font-medium uppercase tracking-wider mb-1`}
+                    className={`text-[9px] lg:text-[10px] ${STAT_CARD_COLORS.total.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
                     Total
                   </p>
                   <p
-                    className={`text-2xl font-bold ${STAT_CARD_COLORS.total.valueColor}`}
+                    className={`text-lg lg:text-2xl font-bold ${STAT_CARD_COLORS.total.valueColor}`}
                   >
                     {(originalStats || stats)?.total}
                   </p>
@@ -607,7 +607,7 @@ export default function AdminTransfersPage() {
                   onClick={() => handleStatsCardClick("pending")}
                   className={`${STAT_CARD_COLORS.pending.bg} ${
                     STAT_CARD_COLORS.pending.border
-                  } p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
+                  } p-3 lg:p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
                     activeFilter === "pending"
                       ? "ring-2 ring-blue-500 ring-opacity-50"
                       : ""
@@ -615,19 +615,19 @@ export default function AdminTransfersPage() {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <Clock
-                      className={`w-5 h-5 ${STAT_CARD_COLORS.pending.iconColor}`}
+                      className={`w-4 h-4 lg:w-5 lg:h-5 ${STAT_CARD_COLORS.pending.iconColor}`}
                     />
                     {isRefreshing && (
                       <RefreshCw className="w-3 h-3 text-gray-400 animate-spin" />
                     )}
                   </div>
                   <p
-                    className={`text-[10px] ${STAT_CARD_COLORS.pending.textColor} font-medium uppercase tracking-wider mb-1`}
+                    className={`text-[9px] lg:text-[10px] ${STAT_CARD_COLORS.pending.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
                     Pending
                   </p>
                   <p
-                    className={`text-2xl font-bold ${STAT_CARD_COLORS.pending.valueColor}`}
+                    className={`text-lg lg:text-2xl font-bold ${STAT_CARD_COLORS.pending.valueColor}`}
                   >
                     {(originalStats || stats)?.pending}
                   </p>
@@ -639,7 +639,7 @@ export default function AdminTransfersPage() {
                   onClick={() => handleStatsCardClick("inProgress")}
                   className={`${STAT_CARD_COLORS.inProgress.bg} ${
                     STAT_CARD_COLORS.inProgress.border
-                  } p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
+                  } p-3 lg:p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
                     activeFilter === "inProgress"
                       ? "ring-2 ring-blue-500 ring-opacity-50"
                       : ""
@@ -647,19 +647,19 @@ export default function AdminTransfersPage() {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <Zap
-                      className={`w-5 h-5 ${STAT_CARD_COLORS.inProgress.iconColor}`}
+                      className={`w-4 h-4 lg:w-5 lg:h-5 ${STAT_CARD_COLORS.inProgress.iconColor}`}
                     />
                     {isRefreshing && (
                       <RefreshCw className="w-3 h-3 text-gray-400 animate-spin" />
                     )}
                   </div>
                   <p
-                    className={`text-[10px] ${STAT_CARD_COLORS.inProgress.textColor} font-medium uppercase tracking-wider mb-1`}
+                    className={`text-[9px] lg:text-[10px] ${STAT_CARD_COLORS.inProgress.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
                     In Progress
                   </p>
                   <p
-                    className={`text-2xl font-bold ${STAT_CARD_COLORS.inProgress.valueColor}`}
+                    className={`text-lg lg:text-2xl font-bold ${STAT_CARD_COLORS.inProgress.valueColor}`}
                   >
                     {(originalStats || stats)?.inProgress}
                   </p>
@@ -671,7 +671,7 @@ export default function AdminTransfersPage() {
                   onClick={() => handleStatsCardClick("urgent")}
                   className={`${STAT_CARD_COLORS.urgent.bg} ${
                     STAT_CARD_COLORS.urgent.border
-                  } p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
+                  } p-3 lg:p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
                     activeFilter === "urgent"
                       ? "ring-2 ring-blue-500 ring-opacity-50"
                       : ""
@@ -679,19 +679,19 @@ export default function AdminTransfersPage() {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <AlertTriangle
-                      className={`w-5 h-5 ${STAT_CARD_COLORS.urgent.iconColor}`}
+                      className={`w-4 h-4 lg:w-5 lg:h-5 ${STAT_CARD_COLORS.urgent.iconColor}`}
                     />
                     {isRefreshing && (
                       <RefreshCw className="w-3 h-3 text-gray-400 animate-spin" />
                     )}
                   </div>
                   <p
-                    className={`text-[10px] ${STAT_CARD_COLORS.urgent.textColor} font-medium uppercase tracking-wider mb-1`}
+                    className={`text-[9px] lg:text-[10px] ${STAT_CARD_COLORS.urgent.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
                     Urgent
                   </p>
                   <p
-                    className={`text-2xl font-bold ${STAT_CARD_COLORS.urgent.valueColor}`}
+                    className={`text-lg lg:text-2xl font-bold ${STAT_CARD_COLORS.urgent.valueColor}`}
                   >
                     {(originalStats || stats)?.urgent}
                   </p>
@@ -706,9 +706,9 @@ export default function AdminTransfersPage() {
           {/* Transfers List Section */}
           <div className={CARD_STYLES.rounded}>
             {/* Header */}
-            <div className="px-6 py-5 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
+            <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-gray-200">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                <div className="flex items-center space-x-2 lg:space-x-4 overflow-x-auto">
                   {/* Category Filter Buttons */}
                   <div className="flex items-center space-x-2">
                     {/* All Categories Button */}
@@ -716,13 +716,13 @@ export default function AdminTransfersPage() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => handleCategoryFilterClick("all")}
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      className={`flex items-center space-x-1 lg:space-x-2 px-2 lg:px-3 py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 ${
                         activeCategoryFilter === "all"
                           ? "bg-gray-900 text-white shadow-md"
                           : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                       }`}
                     >
-                      <BarChart3 className="w-4 h-4" />
+                      <BarChart3 className="w-3 h-3 lg:w-4 lg:h-4" />
                       <span>All</span>
                     </motion.button>
 
@@ -731,13 +731,13 @@ export default function AdminTransfersPage() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => handleCategoryFilterClick("patient")}
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      className={`flex items-center space-x-1 lg:space-x-2 px-2 lg:px-3 py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 ${
                         activeCategoryFilter === "patient"
                           ? "bg-blue-500 text-white shadow-md"
                           : "bg-blue-50 text-blue-700 hover:bg-blue-100"
                       }`}
                     >
-                      <User className="w-4 h-4" />
+                      <User className="w-3 h-3 lg:w-4 lg:h-4" />
                       <span>Patients</span>
                     </motion.button>
 
@@ -746,13 +746,13 @@ export default function AdminTransfersPage() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => handleCategoryFilterClick("envelope")}
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      className={`flex items-center space-x-1 lg:space-x-2 px-2 lg:px-3 py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 ${
                         activeCategoryFilter === "envelope"
                           ? "bg-orange-500 text-white shadow-md"
                           : "bg-orange-50 text-orange-700 hover:bg-orange-100"
                       }`}
                     >
-                      <Package className="w-4 h-4" />
+                      <Package className="w-3 h-3 lg:w-4 lg:h-4" />
                       <span>Envelopes</span>
                     </motion.button>
 
@@ -763,25 +763,27 @@ export default function AdminTransfersPage() {
                       onClick={() =>
                         handleCategoryFilterClick("medical_instruments")
                       }
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      className={`flex items-center space-x-1 lg:space-x-2 px-2 lg:px-3 py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 ${
                         activeCategoryFilter === "medical_instruments"
                           ? "bg-purple-500 text-white shadow-md"
                           : "bg-purple-50 text-purple-700 hover:bg-purple-100"
                       }`}
                     >
-                      <Stethoscope className="w-4 h-4" />
+                      <Stethoscope className="w-3 h-3 lg:w-4 lg:h-4" />
                       <span>Instruments</span>
                     </motion.button>
                   </div>
                 </div>
                 {/* Search */}
-                <ExpandableSearchBar
-                  onSearch={handleSearch}
-                  placeholder="Search transfers..."
-                  expandDirection="left"
-                  width={280}
-                  className="h-12"
-                />
+                <div className="w-full lg:w-auto">
+                  <ExpandableSearchBar
+                    onSearch={handleSearch}
+                    placeholder="Search transfers..."
+                    expandDirection="left"
+                    width={280}
+                    className="h-10 lg:h-12"
+                  />
+                </div>
               </div>
             </div>
 
@@ -789,7 +791,7 @@ export default function AdminTransfersPage() {
             {loading ? (
               <>
                 {/* Table Header Skeleton */}
-                <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
+                <div className="px-4 lg:px-6 py-3 bg-gray-50 border-b border-gray-200">
                   <div className="grid grid-cols-12 gap-4">
                     <div className="col-span-3 h-3 bg-gray-200 rounded animate-pulse"></div>
                     <div className="col-span-2 h-3 bg-gray-200 rounded animate-pulse"></div>
@@ -802,7 +804,7 @@ export default function AdminTransfersPage() {
                 {/* Skeleton Rows */}
                 <div className="divide-y divide-gray-100">
                   {Array.from({ length: 8 }).map((_, index) => (
-                    <div key={index} className="px-6 py-4">
+                    <div key={index} className="px-4 lg:px-6 py-4">
                       <div className="grid grid-cols-12 gap-4 items-center">
                         <div className="col-span-3 flex items-center space-x-3">
                           <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
@@ -833,7 +835,7 @@ export default function AdminTransfersPage() {
                 </div>
               </>
             ) : error ? (
-              <div className="p-8 text-center">
+              <div className="p-6 lg:p-8 text-center">
                 <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
                 <p className="text-red-600 font-medium">{error}</p>
                 <button
@@ -844,7 +846,7 @@ export default function AdminTransfersPage() {
                 </button>
               </div>
             ) : transfers.length === 0 ? (
-              <div className="p-8 text-center">
+              <div className="p-6 lg:p-8 text-center">
                 <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600 font-medium">No transfers found</p>
                 <p className="text-gray-500 text-sm">
@@ -854,7 +856,7 @@ export default function AdminTransfersPage() {
             ) : (
               <>
                 {/* Table Header */}
-                <div className="px-6 py-3 bg-gray-50 border-b border-gray-200 hidden lg:block">
+                <div className="px-4 lg:px-6 py-3 bg-gray-50 border-b border-gray-200 hidden lg:block">
                   <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     <div className="col-span-3">Transfer ID</div>
                     <div className="col-span-2">Patient/Item</div>
@@ -899,7 +901,7 @@ export default function AdminTransfersPage() {
                         animate={{ opacity: 1 }}
                         transition={{ delay: index * 0.02 }}
                         onClick={() => handleViewTransfer(transfer._id)}
-                        className="px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                        className="px-4 lg:px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
                       >
                         {/* Desktop View */}
                         <div className="hidden lg:grid grid-cols-12 gap-4 items-center">
@@ -982,17 +984,17 @@ export default function AdminTransfersPage() {
                         {/* Mobile/Tablet View */}
                         <div className="lg:hidden space-y-3">
                           <div className="flex items-start justify-between">
-                            <div className="flex items-center space-x-3">
+                            <div className="flex items-center space-x-2 lg:space-x-3 min-w-0 flex-1">
                               <div className="flex-shrink-0">
                                 <CategoryIcon
-                                  className={`w-6 h-6 ${categoryConfig.color}`}
+                                  className={`w-5 h-5 lg:w-6 lg:h-6 ${categoryConfig.color}`}
                                 />
                               </div>
-                              <div>
-                                <p className="text-sm font-semibold text-gray-900">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs lg:text-sm font-semibold text-gray-900 truncate">
                                   {transfer.transferId}
                                 </p>
-                                <p className="text-xs text-gray-500 capitalize">
+                                <p className="text-xs text-gray-500 capitalize truncate">
                                   {transfer.transferCategory.replace("_", " ")}
                                 </p>
                               </div>
@@ -1003,12 +1005,12 @@ export default function AdminTransfersPage() {
                               {statusConfig.label}
                             </span>
                           </div>
-                          <div className="pl-13">
-                            <p className="text-sm font-medium text-gray-900 mb-2">
+                          <div className="pl-7 lg:pl-13">
+                            <p className="text-xs lg:text-sm font-medium text-gray-900 mb-2 truncate">
                               {getItemName()}
                             </p>
-                            <div className="flex items-center space-x-2 text-xs text-gray-600 mb-2">
-                              <MapPin className="w-3 h-3" />
+                            <div className="flex items-center space-x-1 lg:space-x-2 text-xs text-gray-600 mb-2">
+                              <MapPin className="w-3 h-3 flex-shrink-0" />
                               <span className="truncate">
                                 {transfer.fromHospital.name} →{" "}
                                 {transfer.toHospital.name}
@@ -1045,7 +1047,7 @@ export default function AdminTransfersPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="px-6 py-4 border-t border-gray-200">
+              <div className="px-4 lg:px-6 py-4 border-t border-gray-200">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div className="text-sm text-gray-600">
                     Showing {(currentPage - 1) * 20 + 1} to{" "}

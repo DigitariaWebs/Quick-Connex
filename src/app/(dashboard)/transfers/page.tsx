@@ -28,6 +28,7 @@ import Sidebar from "@/components/features/dashboard/Sidebar";
 import DashboardHeader from "@/components/features/dashboard/DashboardHeader";
 import LoadingSpinner from "@/components/features/dashboard/LoadingSpinner";
 import TransferTimeline from "@/components/features/transfers/TransferTimeline";
+import TransferFormModal from "@/components/ui/modals/TransferFormModal";
 import { BORDER_RADIUS, getTransferStatusConfig } from "@/constants";
 
 interface TransferRequest {
@@ -106,8 +107,10 @@ export default function TransfersPage() {
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"date" | "priority">("date");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedTransfer, setSelectedTransfer] =
     useState<TransferRequest | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -277,9 +280,26 @@ export default function TransfersPage() {
     setSelectedTransfer(null);
   };
 
+  const handleMobileToggle = (isOpen: boolean) => {
+    setIsMobileMenuOpen(isOpen);
+  };
+
+  const handleMobileMenuToggle = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
   const handleCreateTransfer = () => {
-    // Navigate to dashboard where managers can create transfers
-    router.push("/dashboard");
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCloseCreateModal = () => {
+    setIsCreateModalOpen(false);
+  };
+
+  const handleTransferCreated = () => {
+    // Refresh the transfers list after creating a new transfer
+    fetchTransfers();
+    setIsCreateModalOpen(false);
   };
 
   // Animation variants
@@ -333,6 +353,8 @@ export default function TransfersPage() {
           }}
           onLogout={logout}
           onToggle={setSidebarCollapsed}
+          onMobileToggle={handleMobileToggle}
+          isMobileOpen={isMobileMenuOpen}
         />
       )}
 
@@ -361,23 +383,27 @@ export default function TransfersPage() {
             showSearchButton={true}
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
+            onMobileMenuToggle={handleMobileMenuToggle}
+            hideMobileMenu={!!selectedTransfer}
           />
         )}
 
         <div className="p-4 lg:p-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-6 gap-3 lg:gap-4 mb-6">
             {/* Total */}
             <div
-              className={`bg-white ${BORDER_RADIUS["3xl"]} p-6 sidebar-shadow border border-gray-100`}
+              className={`bg-white ${BORDER_RADIUS["3xl"]} p-4 lg:p-6 sidebar-shadow border border-gray-100`}
             >
               <div className="flex items-center">
                 <div className={`p-2 bg-blue-100 ${BORDER_RADIUS.lg}`}>
-                  <Users className="w-6 h-6 text-blue-600" />
+                  <Users className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="ml-3 lg:ml-4">
+                  <p className="text-xs lg:text-sm font-medium text-gray-600">
+                    Total
+                  </p>
+                  <p className="text-xl lg:text-2xl font-bold text-gray-900">
                     {stats.total}
                   </p>
                 </div>
@@ -386,7 +412,7 @@ export default function TransfersPage() {
 
             {/* Pending */}
             <div
-              className={`bg-white ${BORDER_RADIUS["3xl"]} p-6 sidebar-shadow border border-gray-100`}
+              className={`bg-white ${BORDER_RADIUS["3xl"]} p-4 lg:p-6 sidebar-shadow border border-gray-100`}
             >
               <div className="flex items-center">
                 <div
@@ -395,14 +421,16 @@ export default function TransfersPage() {
                   } ${BORDER_RADIUS.lg}`}
                 >
                   <Clock
-                    className={`w-6 h-6 ${
+                    className={`w-5 h-5 lg:w-6 lg:h-6 ${
                       getTransferStatusConfig("pending").color
                     }`}
                   />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Pending</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="ml-3 lg:ml-4">
+                  <p className="text-xs lg:text-sm font-medium text-gray-600">
+                    Pending
+                  </p>
+                  <p className="text-xl lg:text-2xl font-bold text-gray-900">
                     {stats.pending}
                   </p>
                 </div>
@@ -411,7 +439,7 @@ export default function TransfersPage() {
 
             {/* Accepted */}
             <div
-              className={`bg-white ${BORDER_RADIUS["3xl"]} p-6 sidebar-shadow border border-gray-100`}
+              className={`bg-white ${BORDER_RADIUS["3xl"]} p-4 lg:p-6 sidebar-shadow border border-gray-100`}
             >
               <div className="flex items-center">
                 <div
@@ -420,14 +448,16 @@ export default function TransfersPage() {
                   } ${BORDER_RADIUS.lg}`}
                 >
                   <CheckCircle2
-                    className={`w-6 h-6 ${
+                    className={`w-5 h-5 lg:w-6 lg:h-6 ${
                       getTransferStatusConfig("accepted").color
                     }`}
                   />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Accepted</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="ml-3 lg:ml-4">
+                  <p className="text-xs lg:text-sm font-medium text-gray-600">
+                    Accepted
+                  </p>
+                  <p className="text-xl lg:text-2xl font-bold text-gray-900">
                     {stats.accepted}
                   </p>
                 </div>
@@ -436,7 +466,7 @@ export default function TransfersPage() {
 
             {/* In Progress */}
             <div
-              className={`bg-white ${BORDER_RADIUS["3xl"]} p-6 sidebar-shadow border border-gray-100`}
+              className={`bg-white ${BORDER_RADIUS["3xl"]} p-4 lg:p-6 sidebar-shadow border border-gray-100`}
             >
               <div className="flex items-center">
                 <div
@@ -445,16 +475,16 @@ export default function TransfersPage() {
                   } ${BORDER_RADIUS.lg}`}
                 >
                   <Clock
-                    className={`w-6 h-6 ${
+                    className={`w-5 h-5 lg:w-6 lg:h-6 ${
                       getTransferStatusConfig("in_progress").color
                     }`}
                   />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">
+                <div className="ml-3 lg:ml-4">
+                  <p className="text-xs lg:text-sm font-medium text-gray-600">
                     In Progress
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-xl lg:text-2xl font-bold text-gray-900">
                     {stats.inProgress}
                   </p>
                 </div>
@@ -463,15 +493,17 @@ export default function TransfersPage() {
 
             {/* Urgent */}
             <div
-              className={`bg-white ${BORDER_RADIUS["3xl"]} p-6 sidebar-shadow border border-gray-100`}
+              className={`bg-white ${BORDER_RADIUS["3xl"]} p-4 lg:p-6 sidebar-shadow border border-gray-100`}
             >
               <div className="flex items-center">
                 <div className={`p-2 bg-red-100 ${BORDER_RADIUS.lg}`}>
-                  <AlertTriangle className="w-6 h-6 text-red-600" />
+                  <AlertTriangle className="w-5 h-5 lg:w-6 lg:h-6 text-red-600" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Urgent</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="ml-3 lg:ml-4">
+                  <p className="text-xs lg:text-sm font-medium text-gray-600">
+                    Urgent
+                  </p>
+                  <p className="text-xl lg:text-2xl font-bold text-gray-900">
                     {stats.urgent}
                   </p>
                 </div>
@@ -480,7 +512,7 @@ export default function TransfersPage() {
 
             {/* Completed */}
             <div
-              className={`bg-white ${BORDER_RADIUS["3xl"]} p-6 sidebar-shadow border border-gray-100`}
+              className={`bg-white ${BORDER_RADIUS["3xl"]} p-4 lg:p-6 sidebar-shadow border border-gray-100`}
             >
               <div className="flex items-center">
                 <div
@@ -489,14 +521,16 @@ export default function TransfersPage() {
                   } ${BORDER_RADIUS.lg}`}
                 >
                   <CheckCircle2
-                    className={`w-6 h-6 ${
+                    className={`w-5 h-5 lg:w-6 lg:h-6 ${
                       getTransferStatusConfig("completed").color
                     }`}
                   />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Completed</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="ml-3 lg:ml-4">
+                  <p className="text-xs lg:text-sm font-medium text-gray-600">
+                    Completed
+                  </p>
+                  <p className="text-xl lg:text-2xl font-bold text-gray-900">
                     {stats.completed}
                   </p>
                 </div>
@@ -506,15 +540,15 @@ export default function TransfersPage() {
 
           {/* Filters */}
           <div
-            className={`bg-white ${BORDER_RADIUS["3xl"]} sidebar-shadow border border-gray-100 p-6 mb-6`}
+            className={`bg-white ${BORDER_RADIUS["3xl"]} sidebar-shadow border border-gray-100 p-4 lg:p-6 mb-6`}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">
+              <h3 className="text-base lg:text-lg font-semibold text-gray-800">
                 Filter & Sort
               </h3>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center space-x-1 text-green-600 hover:text-green-700 transition-colors"
+                className="flex items-center space-x-1 text-green-600 hover:text-green-700 transition-colors p-2 -m-2 min-h-[44px]"
               >
                 <Filter size={16} />
                 <span className="text-sm font-medium">
@@ -538,7 +572,7 @@ export default function TransfersPage() {
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     {/* Status Filter */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -558,7 +592,7 @@ export default function TransfersPage() {
                                 | "cancelled"
                             )
                           }
-                          className={`w-full appearance-none bg-white border border-gray-200 ${BORDER_RADIUS["2xl"]} px-4 py-3 text-sm text-gray-700 font-medium shadow-sm hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:shadow-lg transition-all duration-200 cursor-pointer`}
+                          className={`w-full appearance-none bg-white border border-gray-200 ${BORDER_RADIUS["2xl"]} px-4 py-3 lg:py-3 text-sm text-gray-700 font-medium shadow-sm hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:shadow-lg transition-all duration-200 cursor-pointer min-h-[44px]`}
                         >
                           <option value="all">All Statuses</option>
                           <option value="pending">Pending</option>
@@ -584,7 +618,7 @@ export default function TransfersPage() {
                           onChange={(e) =>
                             setPriorityFilter(e.target.value || null)
                           }
-                          className={`w-full appearance-none bg-white border border-gray-200 ${BORDER_RADIUS["2xl"]} px-4 py-3 text-sm text-gray-700 font-medium shadow-sm hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:shadow-lg transition-all duration-200 cursor-pointer`}
+                          className={`w-full appearance-none bg-white border border-gray-200 ${BORDER_RADIUS["2xl"]} px-4 py-3 lg:py-3 text-sm text-gray-700 font-medium shadow-sm hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:shadow-lg transition-all duration-200 cursor-pointer min-h-[44px]`}
                         >
                           <option value="">All Priorities</option>
                           <option value="urgent">🔴 Urgent</option>
@@ -606,9 +640,9 @@ export default function TransfersPage() {
                       <div className="flex space-x-2">
                         <button
                           onClick={() => setSortBy("date")}
-                          className={`px-3 py-1 ${
+                          className={`px-3 py-2 ${
                             BORDER_RADIUS.xl
-                          } text-xs font-medium ${
+                          } text-sm font-medium min-h-[44px] flex items-center justify-center ${
                             sortBy === "date"
                               ? "bg-green-100 text-green-800"
                               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -618,9 +652,9 @@ export default function TransfersPage() {
                         </button>
                         <button
                           onClick={() => setSortBy("priority")}
-                          className={`px-3 py-1 ${
+                          className={`px-3 py-2 ${
                             BORDER_RADIUS.xl
-                          } text-xs font-medium ${
+                          } text-sm font-medium min-h-[44px] flex items-center justify-center ${
                             sortBy === "priority"
                               ? "bg-green-100 text-green-800"
                               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -632,7 +666,7 @@ export default function TransfersPage() {
                     </div>
 
                     {/* Clear Filters */}
-                    <div className="flex items-end">
+                    <div className="flex items-end sm:col-span-2 lg:col-span-1">
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
@@ -642,7 +676,7 @@ export default function TransfersPage() {
                           setSearchTerm("");
                           setSortBy("date");
                         }}
-                        className={`w-full px-4 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 ${BORDER_RADIUS["2xl"]} font-medium hover:from-gray-200 hover:to-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all duration-200 text-sm shadow-sm`}
+                        className={`w-full px-4 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 ${BORDER_RADIUS["2xl"]} font-medium hover:from-gray-200 hover:to-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all duration-200 text-sm shadow-sm min-h-[44px] flex items-center justify-center`}
                       >
                         <span className="flex items-center justify-center">
                           <X className="w-4 h-4 mr-1" />
@@ -676,7 +710,7 @@ export default function TransfersPage() {
               variants={containerVariants}
               initial="hidden"
               animate="show"
-              className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+              className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
             >
               {filteredTransfers.length === 0 ? (
                 <motion.div
@@ -717,7 +751,7 @@ export default function TransfersPage() {
                     layout
                     className={`${
                       selectedTransfer?._id === transfer._id
-                        ? "fixed top-1/2 left-1/4 transform -translate-x-1/2 -translate-y-1/2 z-50 w-96"
+                        ? "hidden lg:fixed lg:top-1/2 lg:left-1/4 lg:transform lg:-translate-x-1/2 lg:-translate-y-1/2 lg:z-50 lg:w-96"
                         : ""
                     }`}
                     animate={
@@ -785,6 +819,13 @@ export default function TransfersPage() {
           isVisible={!!selectedTransfer}
         />
       )}
+
+      {/* Transfer Creation Modal */}
+      <TransferFormModal
+        isOpen={isCreateModalOpen}
+        onClose={handleCloseCreateModal}
+        onSuccess={handleTransferCreated}
+      />
     </div>
   );
 }

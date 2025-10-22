@@ -44,6 +44,7 @@ export default function CalendarPage() {
   } = useSession();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
     null
@@ -107,6 +108,8 @@ export default function CalendarPage() {
           }}
           onLogout={logout}
           onToggle={setSidebarCollapsed}
+          onMobileToggle={setIsMobileMenuOpen}
+          isMobileOpen={isMobileMenuOpen}
         />
       )}
 
@@ -134,6 +137,7 @@ export default function CalendarPage() {
             pageTitle="Transfer Calendar"
             showPlusButton={false}
             onPlusClick={() => router.push("/transfers")}
+            onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           />
         )}
 
@@ -161,12 +165,12 @@ export default function CalendarPage() {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden"
+              className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden mx-2 lg:mx-0"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Dynamic Header Based on Transfer Type */}
               <div
-                className={`relative px-8 py-6 ${
+                className={`relative px-4 lg:px-8 py-4 lg:py-6 ${
                   selectedEvent.extendedProps.transferCategory === "patient"
                     ? "bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600"
                     : selectedEvent.extendedProps.transferCategory ===
@@ -177,13 +181,13 @@ export default function CalendarPage() {
               >
                 <button
                   onClick={() => setShowEventDetails(false)}
-                  className="absolute top-4 right-4 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-all"
+                  className="absolute top-3 right-3 lg:top-4 lg:right-4 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-all"
                 >
-                  <X size={18} className="text-white" />
+                  <X size={16} className="text-white lg:w-[18px] lg:h-[18px]" />
                 </button>
 
-                <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
+                <div className="flex items-center space-x-3 lg:space-x-4">
+                  <div className="w-12 h-12 lg:w-16 lg:h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
                     {selectedEvent.extendedProps.transferCategory ===
                     "patient" ? (
                       <User size={28} className="text-white" />
@@ -195,8 +199,8 @@ export default function CalendarPage() {
                     )}
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold text-white">
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 mb-2">
+                      <span className="px-2 lg:px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold text-white w-fit">
                         {selectedEvent.extendedProps.transferCategory ===
                         "patient"
                           ? "Patient Transfer"
@@ -206,7 +210,7 @@ export default function CalendarPage() {
                           : "Medical Equipment"}
                       </span>
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        className={`px-2 lg:px-3 py-1 rounded-full text-xs font-semibold w-fit ${
                           selectedEvent.extendedProps.priority === "urgent"
                             ? "bg-red-500 text-white"
                             : selectedEvent.extendedProps.priority === "high"
@@ -219,7 +223,7 @@ export default function CalendarPage() {
                         {selectedEvent.extendedProps.priority.toUpperCase()}
                       </span>
                     </div>
-                    <h2 className="text-2xl font-bold text-white">
+                    <h2 className="text-lg lg:text-2xl font-bold text-white">
                       {selectedEvent.title}
                     </h2>
                     <p className="text-white/80 text-sm mt-1 flex items-center">
@@ -239,15 +243,15 @@ export default function CalendarPage() {
               </div>
 
               {/* Content */}
-              <div className="overflow-y-auto max-h-[calc(90vh-200px)] p-8 space-y-6">
+              <div className="overflow-y-auto max-h-[calc(90vh-200px)] p-4 lg:p-8 space-y-4 lg:space-y-6">
                 {/* Transfer-Specific Details */}
                 {selectedEvent.extendedProps.transferCategory === "patient" && (
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 lg:p-6 border border-blue-100">
                     <h3 className="text-sm font-semibold text-blue-900 mb-4 flex items-center">
                       <User size={16} className="mr-2" />
                       Patient Information
                     </h3>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <p className="text-xs text-gray-500 font-medium">
                           Full Name
@@ -279,12 +283,12 @@ export default function CalendarPage() {
 
                 {selectedEvent.extendedProps.transferCategory ===
                   "envelope" && (
-                  <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-100">
+                  <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-4 lg:p-6 border border-orange-100">
                     <h3 className="text-sm font-semibold text-orange-900 mb-4 flex items-center">
                       <Package size={16} className="mr-2" />
                       Envelope Information
                     </h3>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <p className="text-xs text-gray-500 font-medium">
                           Sender
@@ -333,12 +337,12 @@ export default function CalendarPage() {
 
                 {selectedEvent.extendedProps.transferCategory ===
                   "medical_instruments" && (
-                  <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-6 border border-purple-100">
+                  <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-4 lg:p-6 border border-purple-100">
                     <h3 className="text-sm font-semibold text-purple-900 mb-4 flex items-center">
                       <Stethoscope size={16} className="mr-2" />
                       Equipment Information
                     </h3>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <p className="text-xs text-gray-500 font-medium">
                           Equipment Name
@@ -385,12 +389,12 @@ export default function CalendarPage() {
                 )}
 
                 {/* Transfer Route */}
-                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                <div className="bg-white rounded-xl p-4 lg:p-6 border border-gray-200 shadow-sm">
                   <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center">
                     <MapPin size={16} className="mr-2 text-gray-400" />
                     Transfer Route
                   </h3>
-                  <div className="flex items-center space-x-4">
+                  <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
                     <div className="flex-1">
                       <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-lg p-4 border border-red-100">
                         <p className="text-xs font-semibold text-red-600 mb-1">
@@ -407,8 +411,11 @@ export default function CalendarPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex-shrink-0">
-                      <ArrowRight size={24} className="text-gray-400" />
+                    <div className="flex-shrink-0 flex justify-center lg:justify-start">
+                      <ArrowRight
+                        size={20}
+                        className="text-gray-400 lg:w-6 lg:h-6"
+                      />
                     </div>
                     <div className="flex-1">
                       <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-100">
@@ -430,8 +437,8 @@ export default function CalendarPage() {
                 </div>
 
                 {/* Schedule & Status */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-white rounded-xl p-4 lg:p-5 border border-gray-200 shadow-sm">
                     <div className="flex items-center space-x-2 mb-3">
                       <Clock size={16} className="text-gray-400" />
                       <h3 className="text-sm font-semibold text-gray-900">
@@ -465,7 +472,7 @@ export default function CalendarPage() {
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+                  <div className="bg-white rounded-xl p-4 lg:p-5 border border-gray-200 shadow-sm">
                     <div className="flex items-center space-x-2 mb-3">
                       <AlertCircle size={16} className="text-gray-400" />
                       <h3 className="text-sm font-semibold text-gray-900">

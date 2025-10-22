@@ -22,6 +22,7 @@ export default function AdminLayout({
   const router = useRouter();
   const { user, isLoading, isAuthenticated, logout } = useSession();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Handle authentication and authorization checks
   useEffect(() => {
@@ -112,6 +113,8 @@ export default function AdminLayout({
         }}
         onLogout={logout}
         onToggle={setSidebarCollapsed}
+        onMobileToggle={setIsMobileMenuOpen}
+        isMobileOpen={isMobileMenuOpen}
       />
 
       {/* Main Content */}
@@ -137,6 +140,7 @@ export default function AdminLayout({
           pageTitle={pageTitle}
           pageDescription={pageDescription}
           showBackButton={showBackButton}
+          onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         />
 
         {/* Page Content */}

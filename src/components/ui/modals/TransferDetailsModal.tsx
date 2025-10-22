@@ -712,7 +712,7 @@ export default function TransferDetailsModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/20 backdrop-blur-md z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/20 backdrop-blur-md z-50 flex items-center justify-center p-2 lg:p-4"
           >
             {/* Modal */}
             <motion.div
@@ -721,7 +721,7 @@ export default function TransferDetailsModal({
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
-              className={`relative w-full max-w-6xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden ${
+              className={`relative w-full max-w-6xl max-h-[95vh] lg:max-h-[90vh] rounded-2xl lg:rounded-3xl shadow-2xl overflow-hidden ${
                 transfer && !loading
                   ? getPriorityBackgroundColor(transfer.priority)
                   : "bg-white"
@@ -729,17 +729,17 @@ export default function TransferDetailsModal({
             >
               {/* Content */}
               <div
-                className="overflow-y-auto max-h-[90vh] p-6"
+                className="overflow-y-auto max-h-[95vh] lg:max-h-[90vh] p-4 lg:p-6"
                 style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
               >
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-800">
+                <div className="flex items-center justify-between mb-4 lg:mb-6">
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-lg lg:text-xl font-semibold text-gray-800 truncate">
                       {transfer?.transferId || "Loading..."}
                     </h2>
                   </div>
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2 lg:space-x-3 flex-shrink-0">
                     {transfer &&
                       (() => {
                         const statusConfig = getTransferStatusConfig(
@@ -748,10 +748,10 @@ export default function TransferDetailsModal({
                         const StatusIcon = statusConfig.icon;
                         return (
                           <div
-                            className={`px-3 py-1 rounded-full ${statusConfig.badgeClass} flex items-center space-x-2`}
+                            className={`px-2 lg:px-3 py-1 rounded-full ${statusConfig.badgeClass} flex items-center space-x-1 lg:space-x-2`}
                           >
-                            <StatusIcon size={16} />
-                            <span className="font-medium">
+                            <StatusIcon size={14} className="lg:w-4 lg:h-4" />
+                            <span className="font-medium text-xs lg:text-sm">
                               {statusConfig.label}
                             </span>
                           </div>
@@ -764,10 +764,10 @@ export default function TransferDetailsModal({
                         e.stopPropagation();
                         onClose();
                       }}
-                      className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                      className="p-1.5 lg:p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center"
                       title="Close"
                     >
-                      <X size={16} />
+                      <X size={16} className="lg:w-4 lg:h-4" />
                     </motion.button>
                   </div>
                 </div>
@@ -776,48 +776,53 @@ export default function TransferDetailsModal({
                     <LoadingSpinner />
                   </div>
                 ) : error ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="text-center">
-                      <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <div className="flex items-center justify-center py-8 lg:py-12">
+                    <div className="text-center px-4">
+                      <AlertTriangle className="w-10 h-10 lg:w-12 lg:h-12 text-red-500 mx-auto mb-4" />
+                      <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-2">
                         Error Loading Transfer
                       </h3>
-                      <p className="text-gray-600 mb-4">{error}</p>
+                      <p className="text-sm lg:text-base text-gray-600 mb-4">
+                        {error}
+                      </p>
                       <button
                         onClick={handleRefresh}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors min-h-[44px]"
                       >
                         Try Again
                       </button>
                     </div>
                   </div>
                 ) : transfer ? (
-                  <div className="space-y-6">
+                  <div className="space-y-4 lg:space-y-6">
                     {/* Transfer Overview */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm"
+                      className="bg-white rounded-2xl border border-gray-200 p-4 lg:p-6 shadow-sm"
                     >
                       {/* Transfer Information */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                         {/* Patient/Transfer Info */}
                         <div className="space-y-4">
-                          <h3 className="text-lg font-semibold text-gray-900">
+                          <h3 className="text-base lg:text-lg font-semibold text-gray-900">
                             Transfer Information
                           </h3>
 
                           {transfer.transferCategory === "patient" &&
                             transfer.patientInfo && (
                               <div className="space-y-3">
-                                <div className="flex items-center space-x-3">
-                                  <User size={20} className="text-blue-600" />
-                                  <div>
-                                    <p className="font-medium text-gray-900">
+                                <div className="flex items-center space-x-2 lg:space-x-3">
+                                  <User
+                                    size={18}
+                                    className="text-blue-600 lg:w-5 lg:h-5 flex-shrink-0"
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-medium text-gray-900 text-sm lg:text-base truncate">
                                       {transfer.patientInfo.firstName}{" "}
                                       {transfer.patientInfo.lastName}
                                     </p>
-                                    <p className="text-sm text-gray-600">
+                                    <p className="text-xs lg:text-sm text-gray-600 truncate">
                                       Age: {transfer.patientInfo.age} | Dossier:{" "}
                                       {transfer.patientInfo.dossierNumber ||
                                         "N/A"}
@@ -830,34 +835,34 @@ export default function TransferDetailsModal({
                           {transfer.transferCategory === "envelope" &&
                             transfer.transferData?.envelopeInfo && (
                               <div className="space-y-3">
-                                <div className="flex items-center space-x-3">
+                                <div className="flex items-center space-x-2 lg:space-x-3">
                                   {(() => {
                                     const categoryConfig =
                                       getTransferCategoryConfig("envelope");
                                     const CategoryIcon = categoryConfig.icon;
                                     return (
                                       <CategoryIcon
-                                        size={20}
-                                        className={categoryConfig.color}
+                                        size={18}
+                                        className={`${categoryConfig.color} lg:w-5 lg:h-5 flex-shrink-0`}
                                       />
                                     );
                                   })()}
-                                  <div>
-                                    <p className="font-medium text-gray-900">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-medium text-gray-900 text-sm lg:text-base truncate">
                                       Envelope #
                                       {
                                         transfer.transferData.envelopeInfo
                                           .envelopeNumber
                                       }
                                     </p>
-                                    <p className="text-sm text-gray-600">
+                                    <p className="text-xs lg:text-sm text-gray-600 truncate">
                                       From:{" "}
                                       {
                                         transfer.transferData.envelopeInfo
                                           .senderName
                                       }
                                     </p>
-                                    <p className="text-sm text-gray-600">
+                                    <p className="text-xs lg:text-sm text-gray-600 truncate">
                                       To:{" "}
                                       {
                                         transfer.transferData.envelopeInfo
@@ -873,7 +878,7 @@ export default function TransferDetailsModal({
                             "medical_instruments" &&
                             transfer.transferData?.equipmentInfo && (
                               <div className="space-y-3">
-                                <div className="flex items-center space-x-3">
+                                <div className="flex items-center space-x-2 lg:space-x-3">
                                   {(() => {
                                     const categoryConfig =
                                       getTransferCategoryConfig(
@@ -882,26 +887,26 @@ export default function TransferDetailsModal({
                                     const CategoryIcon = categoryConfig.icon;
                                     return (
                                       <CategoryIcon
-                                        size={20}
-                                        className={categoryConfig.color}
+                                        size={18}
+                                        className={`${categoryConfig.color} lg:w-5 lg:h-5 flex-shrink-0`}
                                       />
                                     );
                                   })()}
-                                  <div>
-                                    <p className="font-medium text-gray-900">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-medium text-gray-900 text-sm lg:text-base truncate">
                                       {
                                         transfer.transferData.equipmentInfo
                                           .equipmentName
                                       }
                                     </p>
-                                    <p className="text-sm text-gray-600">
+                                    <p className="text-xs lg:text-sm text-gray-600 truncate">
                                       Model:{" "}
                                       {
                                         transfer.transferData.equipmentInfo
                                           .model
                                       }
                                     </p>
-                                    <p className="text-sm text-gray-600">
+                                    <p className="text-xs lg:text-sm text-gray-600 truncate">
                                       Serial:{" "}
                                       {transfer.transferData.equipmentInfo
                                         .serialNumber || "N/A"}
@@ -914,43 +919,45 @@ export default function TransferDetailsModal({
 
                         {/* Hospital Information */}
                         <div className="space-y-4">
-                          <h3 className="text-lg font-semibold text-gray-900">
+                          <h3 className="text-base lg:text-lg font-semibold text-gray-900">
                             Route Information
                           </h3>
 
                           <div className="space-y-4">
-                            <div className="flex items-start space-x-3">
+                            <div className="flex items-start space-x-2 lg:space-x-3">
                               <MapPin
-                                size={18}
-                                className="text-red-600 flex-shrink-0 mt-0.5"
+                                size={16}
+                                className="text-red-600 flex-shrink-0 mt-0.5 lg:w-4 lg:h-4"
                               />
-                              <div>
-                                <p className="font-medium text-gray-900">
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-gray-900 text-sm lg:text-base">
                                   From
                                 </p>
-                                <p className="text-sm text-gray-600">
+                                <p className="text-xs lg:text-sm text-gray-600 truncate">
                                   {transfer.fromHospital?.name ||
                                     "Unknown Hospital"}
                                 </p>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-gray-500 truncate">
                                   {transfer.fromHospital?.address ||
                                     "Address not available"}
                                 </p>
                               </div>
                             </div>
 
-                            <div className="flex items-start space-x-3">
+                            <div className="flex items-start space-x-2 lg:space-x-3">
                               <MapPin
-                                size={18}
-                                className="text-green-600 flex-shrink-0 mt-0.5"
+                                size={16}
+                                className="text-green-600 flex-shrink-0 mt-0.5 lg:w-4 lg:h-4"
                               />
-                              <div>
-                                <p className="font-medium text-gray-900">To</p>
-                                <p className="text-sm text-gray-600">
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-gray-900 text-sm lg:text-base">
+                                  To
+                                </p>
+                                <p className="text-xs lg:text-sm text-gray-600 truncate">
                                   {transfer.toHospital?.name ||
                                     "Unknown Hospital"}
                                 </p>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-gray-500 truncate">
                                   {transfer.toHospital?.address ||
                                     "Address not available"}
                                 </p>
@@ -961,28 +968,34 @@ export default function TransferDetailsModal({
                       </div>
 
                       {/* Request Details */}
-                      <div className="mt-6 pt-6 border-t border-gray-200">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="flex items-center space-x-3">
-                            <User size={18} className="text-blue-600" />
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">
+                      <div className="mt-4 lg:mt-6 pt-4 lg:pt-6 border-t border-gray-200">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
+                          <div className="flex items-center space-x-2 lg:space-x-3">
+                            <User
+                              size={16}
+                              className="text-blue-600 lg:w-4 lg:h-4 flex-shrink-0"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs lg:text-sm font-medium text-gray-900">
                                 Requested By
                               </p>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-xs lg:text-sm text-gray-600 truncate">
                                 {transfer.requestedBy?.firstName || "Unknown"}{" "}
                                 {transfer.requestedBy?.lastName || "User"}
                               </p>
                             </div>
                           </div>
 
-                          <div className="flex items-center space-x-3">
-                            <Calendar size={18} className="text-purple-600" />
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">
+                          <div className="flex items-center space-x-2 lg:space-x-3">
+                            <Calendar
+                              size={16}
+                              className="text-purple-600 lg:w-4 lg:h-4 flex-shrink-0"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs lg:text-sm font-medium text-gray-900">
                                 Requested Date
                               </p>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-xs lg:text-sm text-gray-600">
                                 {new Date(
                                   transfer.requestedDate
                                 ).toLocaleDateString()}
@@ -991,13 +1004,16 @@ export default function TransferDetailsModal({
                           </div>
 
                           {transfer.assignedTo && (
-                            <div className="flex items-center space-x-3">
-                              <UserCheck size={18} className="text-green-600" />
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">
+                            <div className="flex items-center space-x-2 lg:space-x-3">
+                              <UserCheck
+                                size={16}
+                                className="text-green-600 lg:w-4 lg:h-4 flex-shrink-0"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs lg:text-sm font-medium text-gray-900">
                                   Assigned To
                                 </p>
-                                <p className="text-sm text-gray-600">
+                                <p className="text-xs lg:text-sm text-gray-600 truncate">
                                   {transfer.assignedTo?.firstName || "Not"}{" "}
                                   {transfer.assignedTo?.lastName || "Assigned"}
                                 </p>
@@ -1009,11 +1025,11 @@ export default function TransferDetailsModal({
 
                       {/* Reason */}
                       {transfer.reason && (
-                        <div className="mt-6 pt-6 border-t border-gray-200">
-                          <h4 className="text-sm font-medium text-gray-900 mb-2">
+                        <div className="mt-4 lg:mt-6 pt-4 lg:pt-6 border-t border-gray-200">
+                          <h4 className="text-xs lg:text-sm font-medium text-gray-900 mb-2">
                             Reason
                           </h4>
-                          <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                          <p className="text-xs lg:text-sm text-gray-600 bg-gray-50 p-3 rounded-lg break-words">
                             {transfer.reason}
                           </p>
                         </div>
@@ -1021,11 +1037,11 @@ export default function TransferDetailsModal({
 
                       {/* Notes */}
                       {transfer.notes && (
-                        <div className="mt-6 pt-6 border-t border-gray-200">
-                          <h4 className="text-sm font-medium text-gray-900 mb-2">
+                        <div className="mt-4 lg:mt-6 pt-4 lg:pt-6 border-t border-gray-200">
+                          <h4 className="text-xs lg:text-sm font-medium text-gray-900 mb-2">
                             Notes
                           </h4>
-                          <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                          <p className="text-xs lg:text-sm text-gray-600 bg-gray-50 p-3 rounded-lg break-words">
                             {transfer.notes}
                           </p>
                         </div>

@@ -429,16 +429,16 @@ export default function TransferRequestCard({
       ></div>
 
       {/* Header */}
-      <div className="p-5">
+      <div className="p-4 lg:p-5">
         <div className="flex justify-between items-start mb-3">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
             <div
-              className={`w-10 h-10 rounded-2xl ${displayInfo.bgColor} flex items-center justify-center`}
+              className={`w-10 h-10 rounded-2xl ${displayInfo.bgColor} flex items-center justify-center flex-shrink-0`}
             >
               <IconComponent size={20} className={displayInfo.iconColor} />
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-base lg:text-lg font-semibold text-gray-800 truncate">
                 {displayInfo.title}
               </h3>
               <div className="flex items-center text-xs text-gray-500">
@@ -452,7 +452,7 @@ export default function TransferRequestCard({
             </div>
           </div>
 
-          <div className="flex flex-col items-end space-y-1">
+          <div className="flex flex-col items-end space-y-1 flex-shrink-0 ml-2">
             <div
               className={`px-2.5 py-1 rounded-2xl text-xs font-semibold ${priorityColors.bg} ${priorityColors.text} border ${priorityColors.border} uppercase`}
             >
@@ -563,9 +563,9 @@ export default function TransferRequestCard({
       </div>
 
       {/* Transfer Route */}
-      <div className="px-5 py-3 bg-gray-50 border-y border-gray-100">
+      <div className="px-4 lg:px-5 py-3 bg-gray-50 border-y border-gray-100">
         <div className="flex items-center">
-          <div className="flex-1 min-w-0 pr-3">
+          <div className="flex-1 min-w-0 pr-2 lg:pr-3">
             <p className="text-xs text-gray-500 mb-1">From</p>
             <p
               className="text-sm font-medium text-gray-800 truncate"
@@ -575,13 +575,13 @@ export default function TransferRequestCard({
             </p>
           </div>
 
-          <div className="flex-shrink-0 px-2">
-            <div className="w-8 h-8 rounded-2xl bg-blue-100 flex items-center justify-center">
-              <ArrowRight size={16} className="text-blue-600" />
+          <div className="flex-shrink-0 px-1 lg:px-2">
+            <div className="w-6 h-6 lg:w-8 lg:h-8 rounded-2xl bg-blue-100 flex items-center justify-center">
+              <ArrowRight size={14} className="text-blue-600 lg:w-4 lg:h-4" />
             </div>
           </div>
 
-          <div className="flex-1 min-w-0 pl-3 text-right">
+          <div className="flex-1 min-w-0 pl-2 lg:pl-3 text-right">
             <p className="text-xs text-gray-500 mb-1">To</p>
             <p
               className="text-sm font-medium text-gray-800 truncate"
@@ -594,7 +594,7 @@ export default function TransferRequestCard({
       </div>
 
       {/* Transfer Details */}
-      <div className="px-5 py-3">
+      <div className="px-4 lg:px-5 py-3">
         {transfer.scheduledDate && (
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center text-sm">
@@ -612,13 +612,15 @@ export default function TransferRequestCard({
               size={14}
               className="mr-2 text-gray-400 mt-0.5 flex-shrink-0"
             />
-            <p className="text-sm text-gray-700">{transfer.reason}</p>
+            <p className="text-sm text-gray-700 break-words">
+              {transfer.reason}
+            </p>
           </div>
         </div>
 
         {/* Actions */}
         {transfer.status === "accepted" && currentUserType === "employee" ? (
-          <div className="mt-4 flex space-x-3">
+          <div className="mt-4 flex space-x-2 lg:space-x-3">
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={(e) => {
@@ -626,22 +628,22 @@ export default function TransferRequestCard({
                 handleAccept();
               }}
               disabled={isAccepting}
-              className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-2xl font-medium hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 lg:px-4 py-2 lg:py-2 rounded-2xl font-medium hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm min-h-[44px] flex items-center justify-center text-sm lg:text-base"
             >
               {isAccepting ? "Accepting..." : "Accept Transfer"}
             </motion.button>
 
             <motion.div
               whileHover={{ scale: 1.05 }}
-              className={`px-3 py-2 text-gray-700 rounded-2xl font-medium flex items-center justify-center ${
+              className={`px-3 py-2 text-gray-700 rounded-2xl font-medium flex items-center justify-center min-h-[44px] ${
                 isSelected
                   ? "bg-blue-100 border border-blue-300 text-blue-700"
                   : "border border-gray-200"
               }`}
             >
               <ArrowRight
-                size={18}
-                className="transform transition-transform"
+                size={16}
+                className="transform transition-transform lg:w-5 lg:h-5"
               />
             </motion.div>
           </div>
@@ -665,7 +667,7 @@ export default function TransferRequestCard({
           </div>
         ) : transfer.status === "in_progress" &&
           currentUserType === "employee" ? (
-          <div className="mt-4 flex space-x-3">
+          <div className="mt-4 flex space-x-2 lg:space-x-3">
             {isSelected ? (
               <div className="relative">
                 <motion.button
@@ -682,17 +684,17 @@ export default function TransferRequestCard({
                   }}
                   onMouseEnter={() => setIsHoveringCancel(true)}
                   onMouseLeave={() => setIsHoveringCancel(false)}
-                  className="bg-blue-500 text-white rounded-2xl font-medium hover:bg-blue-600 transition-all duration-300 shadow-sm overflow-hidden flex items-center justify-center"
+                  className="bg-blue-500 text-white rounded-2xl font-medium hover:bg-blue-600 transition-all duration-300 shadow-sm overflow-hidden flex items-center justify-center min-h-[44px]"
                   style={{
                     width: isHoveringCancel ? "200px" : "48px",
-                    height: "48px",
+                    height: "44px",
                     padding: isHoveringCancel ? "12px 16px" : "0px",
                     transition: "all 0.3s ease-in-out",
                   }}
                 >
                   <div className="flex items-center justify-center">
                     {!isHoveringCancel ? (
-                      <Phone size={20} />
+                      <Phone size={18} className="lg:w-5 lg:h-5" />
                     ) : (
                       <div
                         className="flex items-center"
@@ -711,7 +713,7 @@ export default function TransferRequestCard({
                 </motion.button>
               </div>
             ) : (
-              <div className="flex-1 px-4 py-2 bg-blue-100 text-blue-800 rounded-2xl font-medium text-sm border border-blue-200">
+              <div className="flex-1 px-3 lg:px-4 py-2 bg-blue-100 text-blue-800 rounded-2xl font-medium text-sm border border-blue-200 min-h-[44px] flex items-center">
                 <div className="flex items-center">
                   <ArrowRight size={16} className="mr-2" />
                   In Progress
@@ -723,15 +725,15 @@ export default function TransferRequestCard({
           <div className="mt-4 flex justify-end">
             <motion.div
               whileHover={{ scale: 1.05 }}
-              className={`px-3 py-2 text-gray-700 rounded-2xl font-medium flex items-center justify-center ${
+              className={`px-3 py-2 text-gray-700 rounded-2xl font-medium flex items-center justify-center min-h-[44px] ${
                 isSelected
                   ? "bg-blue-100 border border-blue-300 text-blue-700"
                   : "border border-gray-200"
               }`}
             >
               <ArrowRight
-                size={18}
-                className="transform transition-transform"
+                size={16}
+                className="transform transition-transform lg:w-5 lg:h-5"
               />
             </motion.div>
           </div>

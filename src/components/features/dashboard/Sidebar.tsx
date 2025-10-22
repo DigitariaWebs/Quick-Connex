@@ -9,6 +9,8 @@ import {
   LogOut,
   User as UserIcon,
   ArrowRightLeft,
+  Menu,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -19,6 +21,8 @@ interface SidebarProps {
   user: UserType;
   onLogout: () => void;
   onToggle?: (isCollapsed: boolean) => void;
+  onMobileToggle?: (isOpen: boolean) => void;
+  isMobileOpen?: boolean;
 }
 
 const navigation = [
@@ -52,10 +56,15 @@ const navigation = [
   },
 ];
 
-export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
+export default function Sidebar({
+  user,
+  onLogout,
+  onToggle,
+  onMobileToggle,
+  isMobileOpen = false,
+}: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(true); // Start collapsed by default
   const [isHovered, setIsHovered] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const pathname = usePathname();
 
@@ -87,8 +96,8 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
       {/* Mobile Overlay */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-          onClick={() => setIsMobileOpen(false)}
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 lg:hidden"
+          onClick={() => onMobileToggle?.(false)}
         />
       )}
 
@@ -207,10 +216,11 @@ export default function Sidebar({ user, onLogout, onToggle }: SidebarProps) {
 
       {/* Mobile Sidebar */}
       <motion.div
-        initial={{ x: -300 }}
-        animate={{ x: isMobileOpen ? 0 : -300 }}
-        transition={{ duration: 0.3 }}
-        className="lg:hidden fixed left-0 top-0 w-72 h-screen sidebar-container z-40 sidebar-shadow"
+        initial={{ x: -320 }}
+        animate={{ x: isMobileOpen ? 0 : -320 }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className="lg:hidden fixed left-0 top-0 w-80 h-screen bg-white z-40 shadow-2xl"
+        style={{ display: isMobileOpen ? "block" : "none" }}
       >
         {/* Mobile Header */}
         <div className="p-6 border-b border-gray-100">

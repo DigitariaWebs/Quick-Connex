@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Bell, Plus, Search } from "lucide-react";
+import { Bell, Plus, Search, Menu } from "lucide-react";
 import type { User } from "@/types/user";
 
 interface DashboardHeaderProps {
@@ -13,6 +13,8 @@ interface DashboardHeaderProps {
   showSearchButton?: boolean;
   searchValue?: string;
   onSearchChange?: (value: string) => void;
+  onMobileMenuToggle?: () => void;
+  hideMobileMenu?: boolean;
 }
 
 export default function DashboardHeader({
@@ -24,6 +26,8 @@ export default function DashboardHeader({
   showSearchButton = false,
   searchValue = "",
   onSearchChange,
+  onMobileMenuToggle,
+  hideMobileMenu = false,
 }: DashboardHeaderProps) {
   return (
     <motion.header
@@ -34,22 +38,39 @@ export default function DashboardHeader({
       <div className="px-4 py-4">
         {/* Top Navigation Bar - Mobile App Style */}
         <div className="flex items-center justify-between">
-          {/* Left Side - Welcome Message */}
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-black">
-              {pageTitle || `Hello ${user.firstName}`}
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {pageTitle ? "" : "Manage your patients today!"}
-            </p>
+          {/* Left Side - Mobile Menu + Welcome Message */}
+          <div className="flex items-center space-x-3 flex-1">
+            {/* Mobile Menu Button */}
+            {!hideMobileMenu && (
+              <button
+                onClick={() => {
+                  console.log("Button clicked in DashboardHeader!");
+                  onMobileMenuToggle?.();
+                }}
+                className="lg:hidden w-10 h-10 bg-white rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm relative z-[9999] touch-manipulation cursor-pointer"
+                aria-label="Open mobile menu"
+              >
+                <Menu size={18} className="text-gray-600" />
+              </button>
+            )}
+
+            {/* Welcome Message */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl lg:text-2xl font-bold text-black truncate">
+                {pageTitle || `Hello ${user.firstName}`}
+              </h1>
+              <p className="text-sm text-gray-500 mt-1 hidden lg:block">
+                {pageTitle ? "" : "Manage your patients today!"}
+              </p>
+            </div>
           </div>
 
           {/* Right Side - Actions */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 lg:space-x-3">
             {/* Search Button - Only show when showSearchButton is true */}
             {showSearchButton && (
               <motion.div
-                className="relative group"
+                className="relative group hidden lg:block"
                 whileHover={{ scale: 1.02 }}
                 transition={{ duration: 0.2 }}
               >
@@ -69,6 +90,13 @@ export default function DashboardHeader({
               </motion.div>
             )}
 
+            {/* Mobile Search Button */}
+            {showSearchButton && (
+              <button className="lg:hidden w-10 h-10 bg-white rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm">
+                <Search size={18} className="text-gray-600" />
+              </button>
+            )}
+
             {/* Plus Button - Only show when showPlusButton is true */}
             {showPlusButton && (
               <motion.button
@@ -86,8 +114,8 @@ export default function DashboardHeader({
               <Bell size={18} className="text-gray-600" />
             </button>
 
-            {/* User Profile Section */}
-            <div className="flex items-center space-x-3 bg-green-50 rounded-full px-3 py-2 border border-green-200 shadow-sm sidebar-nav-item">
+            {/* User Profile Section - Responsive */}
+            <div className="flex items-center space-x-2 lg:space-x-3 bg-green-50 rounded-full px-2 lg:px-3 py-2 border border-green-200 shadow-sm sidebar-nav-item">
               {/* Profile Picture */}
               <div className="w-8 h-8 bg-gradient-to-br from-pink-400 to-red-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-sm">
@@ -96,8 +124,8 @@ export default function DashboardHeader({
                 </span>
               </div>
 
-              {/* User Info */}
-              <div className="text-left">
+              {/* User Info - Hidden on mobile, shown on desktop */}
+              <div className="text-left hidden lg:block">
                 <p className="text-sm font-medium text-black">
                   {user.firstName} {user.lastName}
                 </p>

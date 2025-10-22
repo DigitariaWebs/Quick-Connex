@@ -14,6 +14,8 @@ import {
   FileText,
   Shield,
   LogOut,
+  Menu,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -24,6 +26,8 @@ interface AdminSidebarProps {
   user: User;
   onLogout: () => void;
   onToggle?: (isCollapsed: boolean) => void;
+  onMobileToggle?: (isOpen: boolean) => void;
+  isMobileOpen?: boolean;
 }
 
 interface NavigationSection {
@@ -127,6 +131,8 @@ export default function AdminSidebar({
   user,
   onLogout,
   onToggle,
+  onMobileToggle,
+  isMobileOpen = false,
 }: AdminSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
@@ -169,7 +175,15 @@ export default function AdminSidebar({
 
   return (
     <>
-      {/* Sidebar Container */}
+      {/* Mobile Overlay */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 lg:hidden"
+          onClick={() => onMobileToggle?.(false)}
+        />
+      )}
+
+      {/* Desktop Sidebar Container */}
       <div className="fixed left-4 top-4 bottom-4 z-40 lg:block hidden">
         <motion.div
           initial={{ x: -300, opacity: 0 }}
@@ -271,6 +285,108 @@ export default function AdminSidebar({
           </div>
         </motion.div>
       </div>
+
+      {/* Mobile Sidebar */}
+      <motion.div
+        initial={{ x: -320 }}
+        animate={{ x: isMobileOpen ? 0 : -320 }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className="lg:hidden fixed left-0 top-0 w-80 h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-800 z-40 shadow-2xl"
+        style={{ display: isMobileOpen ? "block" : "none" }}
+      >
+        {/* Mobile Header */}
+        <div className="p-6 border-b border-purple-700/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-white">
+                  Admin Panel
+                </h2>
+                <p className="text-purple-200 text-sm">
+                  {user.firstName} {user.lastName}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => onMobileToggle?.(false)}
+              className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
+            >
+              <X size={18} className="text-white" />
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Navigation */}
+        <nav
+          className="pt-6 px-4 pb-20 overflow-y-auto"
+          style={{ maxHeight: "calc(100% - 140px)" }}
+        >
+          {filteredNavigation.map((section) => (
+            <div key={section.section} className="mb-6">
+              {/* Section Header */}
+              <div className="w-full flex items-center justify-between px-3 py-2 text-purple-200 text-xs font-semibold uppercase tracking-wider mb-2">
+                <span>{section.section}</span>
+              </div>
+
+              {/* Section Items */}
+              <div className="space-y-1">
+                {section.items.map((item) => {
+                  const isActive =
+                    pathname === item.href ||
+                    pathname.startsWith(item.href + "/");
+                  const Icon = item.icon;
+
+                  return (
+                    <Link key={item.name} href={item.href}>
+                      <motion.div
+                        whileHover={{ x: 4, scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => onMobileToggle?.(false)}
+                        className={`flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all duration-200 relative group mb-1 ${
+                          isActive
+                            ? "bg-white/20 text-white shadow-lg border border-white/30 backdrop-blur-sm"
+                            : "text-purple-100 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        <div
+                          className={
+                            isActive ? "text-white" : "text-purple-200"
+                          }
+                        >
+                          <Icon size={20} />
+                        </div>
+                        <span className="font-medium text-sm whitespace-nowrap truncate">
+                          {item.name}
+                        </span>
+                      </motion.div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        {/* Mobile Bottom Actions */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-purple-700/50 bg-purple-900/50 backdrop-blur-sm">
+          <motion.button
+            whileHover={{ x: 4 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleLogoutClick}
+            className="flex items-center space-x-3 px-4 py-3 rounded-2xl text-red-300 hover:bg-red-500/20 hover:text-red-200 transition-all duration-200 w-full border border-red-500/30"
+          >
+            <div className="text-red-300">
+              <LogOut size={20} />
+            </div>
+            <span className="font-medium text-sm whitespace-nowrap truncate">
+              Sign Out
+            </span>
+          </motion.button>
+        </div>
+      </motion.div>
 
       {/* Logout Confirmation Modal */}
       <LogoutConfirmationModal

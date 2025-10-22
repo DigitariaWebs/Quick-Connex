@@ -201,13 +201,13 @@ export default function AdminDashboard() {
       </AnimatePresence>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6 lg:mb-8">
         {loading.isLoading && !data
           ? // Loading Skeletons
             Array.from({ length: 4 }).map((_, index) => (
               <div
                 key={index}
-                className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 animate-pulse"
+                className="bg-white rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100 animate-pulse"
               >
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 bg-gray-200 rounded-xl"></div>
@@ -225,7 +225,7 @@ export default function AdminDashboard() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
-                  className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden"
+                  className="bg-white rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden"
                 >
                   {/* Live Indicator */}
                   {stat.isLive && (
@@ -237,11 +237,13 @@ export default function AdminDashboard() {
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between mb-4">
-                    <div className={`p-3 rounded-xl ${stat.bgColor}`}>
-                      <StatIcon className={`w-6 h-6 ${stat.color}`} />
+                  <div className="flex items-center justify-between mb-3 lg:mb-4">
+                    <div className={`p-2 lg:p-3 rounded-xl ${stat.bgColor}`}>
+                      <StatIcon
+                        className={`w-5 h-5 lg:w-6 lg:h-6 ${stat.color}`}
+                      />
                     </div>
-                    <div className="flex items-center space-x-1 text-sm">
+                    <div className="flex items-center space-x-1 text-xs lg:text-sm">
                       {getTrendIcon(stat.trend)}
                       <span
                         className={`font-medium ${getTrendColor(stat.trend)}`}
@@ -250,10 +252,10 @@ export default function AdminDashboard() {
                       </span>
                     </div>
                   </div>
-                  <h3 className="text-gray-600 text-sm font-medium mb-1">
+                  <h3 className="text-gray-600 text-xs lg:text-sm font-medium mb-1">
                     {stat.name}
                   </h3>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-xl lg:text-3xl font-bold text-gray-900">
                     {stat.value}
                   </p>
                 </motion.div>
@@ -262,15 +264,15 @@ export default function AdminDashboard() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         {/* System Status */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4, delay: 0.4 }}
-          className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+          className="bg-white rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100"
         >
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">
             System Status
           </h2>
 
@@ -296,23 +298,25 @@ export default function AdminDashboard() {
                       key={key}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className={`flex items-center justify-between p-3 ${statusInfo.bg} rounded-xl`}
+                      className={`flex items-center justify-between p-2 lg:p-3 ${statusInfo.bg} rounded-xl`}
                     >
-                      <div className="flex items-center space-x-3">
-                        <StatusIcon className={`w-5 h-5 ${statusInfo.color}`} />
-                        <div>
-                          <span className="text-sm font-medium text-gray-700">
+                      <div className="flex items-center space-x-2 lg:space-x-3 min-w-0 flex-1">
+                        <StatusIcon
+                          className={`w-4 h-4 lg:w-5 lg:h-5 ${statusInfo.color} flex-shrink-0`}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <span className="text-xs lg:text-sm font-medium text-gray-700 truncate">
                             {service.name}
                           </span>
                           {service.metadata?.activeConnections !==
                             undefined && (
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 truncate">
                               {service.metadata.activeConnections} active
                             </p>
                           )}
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex-shrink-0">
                         <span
                           className={`text-xs font-semibold ${statusInfo.color} capitalize`}
                         >
@@ -337,9 +341,9 @@ export default function AdminDashboard() {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4, delay: 0.5 }}
-          className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+          className="bg-white rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100"
         >
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">
             Recent Activity
           </h2>
 
@@ -372,25 +376,27 @@ export default function AdminDashboard() {
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className={`flex items-start space-x-3 pb-3 ${
+                      className={`flex items-start space-x-2 lg:space-x-3 pb-3 ${
                         index < data.recentActivity.length - 1
                           ? "border-b border-gray-100"
                           : ""
                       }`}
                     >
                       <div
-                        className={`p-2 ${colors.bg} rounded-lg flex-shrink-0`}
+                        className={`p-1.5 lg:p-2 ${colors.bg} rounded-lg flex-shrink-0`}
                       >
-                        <ActivityIcon className={`w-4 h-4 ${colors.text}`} />
+                        <ActivityIcon
+                          className={`w-3 h-3 lg:w-4 lg:h-4 ${colors.text}`}
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
+                        <p className="text-xs lg:text-sm font-medium text-gray-900 truncate">
                           {activity.action}
                         </p>
                         <p className="text-xs text-gray-500 truncate">
                           {activity.description}
                         </p>
-                        <div className="flex items-center space-x-2 mt-1">
+                        <div className="flex items-center space-x-1 lg:space-x-2 mt-1">
                           <p className="text-xs text-gray-400">
                             {timeAgo(activity.timestamp)}
                           </p>
@@ -406,9 +412,9 @@ export default function AdminDashboard() {
               </AnimatePresence>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No recent activity</p>
+            <div className="text-center py-6 lg:py-8 text-gray-500">
+              <Activity className="w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-2 opacity-50" />
+              <p className="text-xs lg:text-sm">No recent activity</p>
             </div>
           )}
         </motion.div>
@@ -420,15 +426,15 @@ export default function AdminDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.6 }}
-          className="mt-6 bg-amber-50 border border-amber-200 rounded-2xl p-6"
+          className="mt-4 lg:mt-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 lg:p-6"
         >
-          <div className="flex items-start space-x-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
-            <div>
-              <h3 className="text-sm font-semibold text-amber-900 mb-1">
+          <div className="flex items-start space-x-2 lg:space-x-3">
+            <AlertCircle className="w-4 h-4 lg:w-5 lg:h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <h3 className="text-xs lg:text-sm font-semibold text-amber-900 mb-1">
                 System Alert
               </h3>
-              <p className="text-sm text-amber-700">
+              <p className="text-xs lg:text-sm text-amber-700">
                 Some services are experiencing degraded performance. Monitoring
                 the situation.
               </p>
