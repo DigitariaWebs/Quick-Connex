@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SessionManager } from '@/lib/session/SessionManager';
+import { AuthService } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await SessionManager.createSession(
+    const result = await AuthService.createSession(
       userId,
       deviceInfo,
       ipAddress,

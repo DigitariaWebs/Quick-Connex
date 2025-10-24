@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
 import User from '@/models/User';
 import Transfer from '@/models/Transfer';
-import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { AuthService } from '@/lib/auth';
+import { handleAuthError } from '@/lib/utils/error-handling';
 
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user using new session manager
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    // Fetch user profile
+    // DatabaseService handles connection automatically
+// Fetch user profile
     const userProfile = await User.findById(user._id).select('-password');
     if (!userProfile) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -23,10 +25,14 @@ export async function GET(request: NextRequest) {
     // Fetch recent activity
     const recentActivity = await getRecentActivity((user._id as any).toString(), user.userType);
 
-    return createSuccessResponse({
+    return NextResponse.json({
+      success: true,
+      data: {
       profile: userProfile,
       stats: transferStats,
       recentActivity: recentActivity
+    
+      }
     });
 
   } catch (error) {

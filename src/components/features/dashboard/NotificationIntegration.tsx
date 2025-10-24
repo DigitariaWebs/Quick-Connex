@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "@/contexts/SessionContext";
-import { useUnifiedSSE } from "@/contexts/UnifiedSSEContext";
-import NotificationManager from "@/components/features/notifications/NotificationManager";
-import { Bell, Settings } from "lucide-react";
+import { Bell } from "lucide-react";
 
 interface NotificationIntegrationProps {
   showToasts?: boolean;
@@ -20,9 +18,6 @@ export default function NotificationIntegration({
   const { user } = useSession();
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-
-  // Use global SSE connection for real-time notifications
-  const { connected, error: sseError, lastMessage } = useUnifiedSSE();
 
   // Fetch initial unread count
   useEffect(() => {
@@ -49,22 +44,6 @@ export default function NotificationIntegration({
 
     fetchUnreadCount();
   }, [user]);
-
-  // Handle SSE messages for real-time updates
-  useEffect(() => {
-    if (lastMessage) {
-      if (lastMessage.type === "notification_count_update") {
-        setUnreadCount(lastMessage.data?.unreadCount || 0);
-      } else if (
-        lastMessage.type === "transfer_status_change" ||
-        lastMessage.type === "new_transfer" ||
-        lastMessage.type === "urgent_transfer"
-      ) {
-        // Increment unread count for new notifications
-        setUnreadCount((prev) => prev + 1);
-      }
-    }
-  }, [lastMessage]);
 
   if (!user) {
     return null;
@@ -114,32 +93,16 @@ export default function NotificationIntegration({
               </div>
             </div>
 
-            <div className="max-h-96 overflow-y-auto">
-              <NotificationManager
-                userId={user._id}
-                userType={user.userType}
-                showToasts={false}
-                showPanel={true}
-                maxToasts={0}
-              />
+            <div className="max-h-96 overflow-y-auto p-4">
+              <p className="text-gray-500 text-center">
+                Real-time notifications are currently unavailable.
+                <br />
+                Please refresh the page to see new notifications.
+              </p>
             </div>
           </div>
         )}
       </div>
-
-      {/* Toast Notifications */}
-      {showToasts && (
-        <NotificationManager
-          userId={user._id}
-          userType={user.userType}
-          showToasts={true}
-          showPanel={false}
-          maxToasts={3}
-          toastAutoHide={true}
-          toastHideDelay={5000}
-          enableSound={true}
-        />
-      )}
     </>
   );
 }

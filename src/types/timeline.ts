@@ -4,12 +4,12 @@
  * Defines the structure for timeline data and related types
  */
 
-import { AuditAction, AuditCategory, ActorType, RiskLevel } from '@/models/UnifiedAuditLog';
+import { AuditAction, AuditCategory, ActorType, RiskLevel } from '@/models/AuditLog';
 
 // Timeline item interface for UI display
 export interface TimelineItem {
   // Identifiers
-  timelineItemId: string;        // UnifiedAuditLog._id
+  timelineItemId: string;        // AuditLog._id
   transferId: string;           // targetResource.id
   
   // Event Details
@@ -152,6 +152,13 @@ export const EVENT_KIND_MAPPING: Record<AuditAction, string> = {
   [AuditAction.REPORT_GENERATED]: 'report_generated',
   [AuditAction.BULK_DATA_ACCESS]: 'bulk_data_access',
   
+  // Patient Management
+  [AuditAction.PATIENT_CREATED]: 'patient_created',
+  [AuditAction.PATIENT_UPDATED]: 'patient_updated',
+  [AuditAction.PATIENT_DELETED]: 'patient_deleted',
+  [AuditAction.PATIENT_VIEWED]: 'patient_viewed',
+  [AuditAction.PATIENT_MERGED]: 'patient_merged',
+  
   // System Operations
   [AuditAction.SETTINGS_UPDATED]: 'settings_updated',
   [AuditAction.SYSTEM_MAINTENANCE]: 'system_maintenance',
@@ -162,6 +169,10 @@ export const EVENT_KIND_MAPPING: Record<AuditAction, string> = {
   // Notifications
   [AuditAction.NOTIFICATION_SENT]: 'notification_sent',
   [AuditAction.NOTIFICATION_BROADCAST]: 'notification_broadcast',
+  [AuditAction.EMAIL_SENT]: 'email_sent',
+  [AuditAction.EMAIL_FAILED]: 'email_failed',
+  [AuditAction.SMS_SENT]: 'sms_sent',
+  [AuditAction.SMS_FAILED]: 'sms_failed',
   
   // File Operations
   [AuditAction.FILE_UPLOADED]: 'document_added',

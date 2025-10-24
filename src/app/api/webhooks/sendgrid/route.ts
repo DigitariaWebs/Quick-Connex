@@ -6,8 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
-import NotificationIntegrationService from '@/lib/communication/integrations/notification-integration';
+import { AuthService } from '@/lib/auth';import NotificationIntegrationService from '@/lib/communication/integrations/notification-integration';
 
 // POST /api/webhooks/sendgrid - Handle SendGrid webhook events
 export async function POST(request: NextRequest) {
@@ -116,9 +115,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return createSuccessResponse({
+    return NextResponse.json({
+      success: true,
+      data: {
       message: 'Webhook processed successfully',
       eventsProcessed: body.length,
+    
+      }
     });
 
   } catch (error) {
@@ -141,9 +144,12 @@ export async function GET(request: NextRequest) {
       return new NextResponse(challenge, { status: 200 });
     }
 
-    return createSuccessResponse({
-      message: 'SendGrid webhook endpoint is active',
-      timestamp: new Date().toISOString(),
+    return NextResponse.json({
+      success: true,
+      data: {
+        message: 'SendGrid webhook endpoint is active',
+        timestamp: new Date().toISOString()
+      }
     });
 
   } catch (error) {

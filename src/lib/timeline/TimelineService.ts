@@ -1,11 +1,11 @@
 /**
  * Timeline Service
  * 
- * Provides timeline functionality by reading and formatting UnifiedAuditLog entries
+ * Provides timeline functionality by reading and formatting AuditLog entries
  * into timeline-friendly DTOs for UI display.
  */
 
-import UnifiedAuditLog, { AuditAction, AuditCategory, ActorType, RiskLevel } from '@/models/UnifiedAuditLog';
+import AuditLog, { AuditAction, AuditCategory, ActorType, RiskLevel } from '@/models/AuditLog';
 import { 
   TimelineItem, 
   TimelineQueryOptions, 
@@ -69,12 +69,12 @@ export class TimelineService {
     
     // Execute query
     const [auditLogs, total] = await Promise.all([
-      UnifiedAuditLog.find(query)
+      AuditLog.find(query)
         .sort({ timestamp: -1, _id: -1 }) // Sort by timestamp desc, then by _id for stable ordering
         .skip(skip)
         .limit(limit)
         .lean(),
-      UnifiedAuditLog.countDocuments(query)
+      AuditLog.countDocuments(query)
     ]);
     
     // Transform to timeline items
@@ -127,7 +127,7 @@ export class TimelineService {
     }
     
     // Execute query
-    const auditLogs = await UnifiedAuditLog.find(query)
+    const auditLogs = await AuditLog.find(query)
       .sort({ timestamp: -1, _id: -1 })
       .limit(limit)
       .lean();
@@ -147,8 +147,8 @@ export class TimelineService {
     
     // Get basic stats
     const [totalEvents, statusChanges, documentUploads, lastActivity, actors] = await Promise.all([
-      UnifiedAuditLog.countDocuments(query),
-      UnifiedAuditLog.countDocuments({
+      AuditLog.countDocuments(query),
+      AuditLog.countDocuments({
         ...query,
         action: { $in: [
           AuditAction.TRANSFER_APPROVED,
@@ -157,15 +157,15 @@ export class TimelineService {
           AuditAction.TRANSFER_CANCELLED
         ]}
       }),
-      UnifiedAuditLog.countDocuments({
+      AuditLog.countDocuments({
         ...query,
         action: AuditAction.FILE_UPLOADED
       }),
-      UnifiedAuditLog.findOne(query)
+      AuditLog.findOne(query)
         .sort({ timestamp: -1 })
         .select('timestamp')
         .lean(),
-      UnifiedAuditLog.aggregate([
+      AuditLog.aggregate([
         { $match: query },
         { $group: {
           _id: '$actorId',
@@ -191,7 +191,7 @@ export class TimelineService {
   }
   
   /**
-   * Format a UnifiedAuditLog entry into a TimelineItem
+   * Format a AuditLog entry into a TimelineItem
    */
   private static formatTimelineItem(auditLog: any, order: number): TimelineItem {
     const kind = EVENT_KIND_MAPPING[auditLog.action as AuditAction] || 'unknown';

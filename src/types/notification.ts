@@ -34,17 +34,6 @@ export type NotificationType =
   | 'urgent_transfer'
   | 'notification_count_update';
 
-/**
- * SSE Message Interface
- */
-export interface SSEMessage {
-  type: string;
-  data?: any;
-  message?: string;
-  userId?: string;
-  userType?: string;
-  timestamp?: string;
-}
 
 /**
  * Notification Data Interface
@@ -98,5 +87,4 @@ export interface UrgentTransfer {
   timestamp: string;
 }
 
-// Note: SSE Context Type has been moved to the unified SSE system
-// Use useUnifiedSSE() from @/contexts/UnifiedSSEContext instead
+// Note: SSE system has been removed

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { AuthService } from '@/lib/auth';
 
 /**
  * Error Logs Monitoring API Endpoint
@@ -294,7 +294,10 @@ function simulateNewErrors() {
 export async function GET(request: NextRequest) {
   try {
     // Check admin permissions
-    const { user } = await requireAdmin();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
 
     // Initialize mock data if needed
     initializeMockData();

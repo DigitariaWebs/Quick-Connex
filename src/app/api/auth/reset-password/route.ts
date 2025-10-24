@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
-import User from '@/models/User';
+import { DatabaseService, User } from '@/lib/database';
 import bcrypt from 'bcryptjs';
 import { rateLimit } from '@/lib/services/security';
 
@@ -30,8 +29,8 @@ export async function POST(request: NextRequest) {
 
     // Connect to MongoDB
     console.log('🔄 API: Attempting to connect to MongoDB...');
-    await dbConnect();
-    console.log('✅ API: MongoDB connection established');
+    // DatabaseService handles connection automatically
+console.log('✅ API: MongoDB connection established');
 
     // Parse the request body
     const { token, password } = await request.json();
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     // Find user with valid reset token
     console.log(`🔍 API: Looking up user with reset token`);
-    const user = await User.findOne({
+    const user = await DatabaseService.findOne(User, {
       resetPasswordToken: token,
       resetPasswordExpires: { $gt: Date.now() }
     });
@@ -84,7 +83,7 @@ export async function POST(request: NextRequest) {
     user.password = hashedPassword;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
-    await user.save();
+    await user;
 
     console.log('✅ API: Password reset successfully');
 

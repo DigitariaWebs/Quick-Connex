@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/database/mongoose";
-import User from "@/models/User";
-import { requireAdmin, handleAuthError, createSuccessResponse } from "@/lib/auth/auth-utils";
+import { DatabaseService, User } from "@/lib/database";
+import { AuthService } from "@/lib/auth";
 
 /**
  * GET /api/admin/users/stats
@@ -11,11 +10,13 @@ import { requireAdmin, handleAuthError, createSuccessResponse } from "@/lib/auth
 export async function GET(request: NextRequest) {
   try {
     // Verify admin authentication
-    const { user } = await requireAdmin();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    // Get current date for calculations
+    // DatabaseService handles connection automatically
+// Get current date for calculations
     const now = new Date();
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
@@ -45,44 +46,44 @@ export async function GET(request: NextRequest) {
       superAdminUsers,
     ] = await Promise.all([
       // Total users
-      User.countDocuments(),
+      DatabaseService.count(User, {}),
       
       // Status counts
-      User.countDocuments({ status: "approved" }),
-      User.countDocuments({ status: "pending" }),
-      User.countDocuments({ status: "suspended" }),
-      User.countDocuments({ status: "rejected" }),
+      DatabaseService.count(User, { status: "approved" }),
+      DatabaseService.count(User, { status: "pending" }),
+      DatabaseService.count(User, { status: "suspended" }),
+      DatabaseService.count(User, { status: "rejected" }),
       
       // New users this week
-      User.countDocuments({ createdAt: { $gte: startOfWeek } }),
+      DatabaseService.count(User, { createdAt: { $gte: startOfWeek } }),
       
       // New users this month
-      User.countDocuments({ createdAt: { $gte: startOfMonth } }),
+      DatabaseService.count(User, { createdAt: { $gte: startOfMonth } }),
       
       // Users by role
-      User.aggregate([
+      DatabaseService.aggregate(User, [
         { $group: { _id: "$userType", count: { $sum: 1 } } },
       ]),
       
       // Users by organization
-      User.aggregate([
+      DatabaseService.aggregate(User, [
         { $group: { _id: "$ciuss", count: { $sum: 1 } } },
       ]),
       
       // Login activity today
-      User.countDocuments({ lastLogin: { $gte: startOfToday } }),
+      DatabaseService.count(User, { lastLogin: { $gte: startOfToday } }),
       
       // Login activity this week
-      User.countDocuments({ lastLogin: { $gte: startOfWeek } }),
+      DatabaseService.count(User, { lastLogin: { $gte: startOfWeek } }),
       
       // Login activity this month
-      User.countDocuments({ lastLogin: { $gte: startOfMonth } }),
+      DatabaseService.count(User, { lastLogin: { $gte: startOfMonth } }),
       
       // Account status
-      User.countDocuments({ status: "approved" }),
-      User.countDocuments({ status: "pending" }),
-      User.countDocuments({ accountLockedUntil: { $gt: new Date() } }),
-      User.countDocuments({ userType: "super_admin" }),
+      DatabaseService.count(User, { status: "approved" }),
+      DatabaseService.count(User, { status: "pending" }),
+      DatabaseService.count(User, { accountLockedUntil: { $gt: new Date() } }),
+      DatabaseService.count(User, { userType: "super_admin" }),
     ]);
 
     // Process role statistics
@@ -114,7 +115,7 @@ export async function GET(request: NextRequest) {
     const organizationStats: Record<string, { name: string; count: number }> = {};
     
     // Get organization details for populated stats
-    const organizationDetails = await User.aggregate([
+    const organizationDetails = await DatabaseService.aggregate(User, [
       { $lookup: { from: "organizations", localField: "organization", foreignField: "_id", as: "orgDetails" } },
       { $unwind: "$orgDetails" },
       { $group: { _id: "$organization", name: { $first: "$orgDetails.name" }, count: { $sum: 1 } } },

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
-import Transfer from '@/models/Transfer';
-import User from '@/models/User';
+import { DatabaseService, Transfer, User } from '@/lib/database';
 import { TransferNotificationService } from '@/lib/communication/integrations/transfer-notification-service';
 
 // POST /api/transfers/[transferId]/notify - Trigger notifications for a transfer
@@ -11,17 +9,19 @@ export async function POST(
   { params }: { params: Promise<{ transferId: string }> }
 ) {
   try {
-    await dbConnect();
-    
-    const { transferId } = await params;
+    // DatabaseService handles connection automatically
+const { transferId } = await params;
     const body = await request.json();
     const { requestedBy } = body;
     
     // Find the transfer
-    const transfer = await Transfer.findById(transferId)
-      .populate('requestedBy', 'firstName lastName email userType phone')
-      .populate('fromHospital', 'name address organization')
-      .populate('toHospital', 'name address organization');
+    const transfer = await DatabaseService.findById(Transfer, transferId, {
+      populate: [
+        { path: 'requestedBy', select: 'firstName lastName email userType phone' },
+        { path: 'fromHospital', select: 'name address organization' },
+        { path: 'toHospital', select: 'name address organization' }
+      ]
+    });
     
     if (!transfer) {
       return NextResponse.json(

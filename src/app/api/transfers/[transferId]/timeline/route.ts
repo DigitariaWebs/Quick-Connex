@@ -6,12 +6,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
-import Transfer from '@/models/Transfer';
-import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { DatabaseService, Transfer } from '@/lib/database';
+import { AuthService } from '@/lib/auth';
 import TimelineService from '@/lib/services/timeline-service';
 import { TimelineQueryOptions } from '@/types/timeline';
 import { TimelineEventType } from '@/types/transfer';
+import { createSuccessResponse } from '@/lib/utils/api-responses';
 
 export async function GET(
   request: NextRequest,
@@ -26,12 +26,14 @@ export async function GET(
     }
 
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    // Find the transfer
-    const transfer = await Transfer.findOne({ transferId });
+    // DatabaseService handles connection automatically
+// Find the transfer
+    const transfer = await DatabaseService.findOne(Transfer, { transferId });
 
     if (!transfer) {
       return NextResponse.json({ error: 'Transfer not found' }, { status: 404 });
@@ -46,46 +48,70 @@ export async function GET(
     const options: TimelineQueryOptions = {
       page: parseInt(searchParams.get('page') || '1'),
       limit: parseInt(searchParams.get('limit') || '50'),
-      startDate: searchParams.get('startDate') ? new Date(searchParams.get('startDate')!) : undefined,
-      endDate: searchParams.get('endDate') ? new Date(searchParams.get('endDate')!) : undefined,
-      eventTypes: searchParams.get('eventTypes')?.split(',') as TimelineEventType[],
-      actorTypes: searchParams.get('actorTypes')?.split(','),
-      includeSystemEvents: searchParams.get('includeSystemEvents') !== 'false',
-      sortBy: searchParams.get('sortBy') as 'timestamp' | 'type' | 'actor' || 'timestamp',
-      sortOrder: searchParams.get('sortOrder') as 'asc' | 'desc' || 'desc'
+      filters: {
+        startDate: searchParams.get('startDate') ? new Date(searchParams.get('startDate')!) : undefined,
+        endDate: searchParams.get('endDate') ? new Date(searchParams.get('endDate')!) : undefined,
+        kind: searchParams.get('eventTypes') || undefined,
+        actorId: searchParams.get('actorId') || undefined,
+        isSensitive: searchParams.get('isSensitive') === 'true' ? true : 
+                     searchParams.get('isSensitive') === 'false' ? false : undefined,
+        requiresReview: searchParams.get('requiresReview') === 'true' ? true : 
+                        searchParams.get('requiresReview') === 'false' ? false : undefined
+      }
     };
 
     // Get enhanced timeline from audit logs
     const timelineItems = await TimelineService.getTimelineForTransfer(transferId, options);
 
-    return createSuccessResponse({
-      transfer: {
-        id: transfer._id,
-        transferId: transfer.transferId,
-        patientInfo: transfer.patientInfo,
-        fromHospitalName: transfer.fromHospitalName,
-        toHospitalName: transfer.toHospitalName,
-        status: transfer.status,
-        priority: transfer.priority,
-        requestedDate: transfer.requestedDate,
-        scheduledDate: transfer.scheduledDate,
-        completedDate: transfer.completedDate,
-        reason: transfer.reason,
-        notes: transfer.notes
-      },
-      timeline: timelineItems,
-      totalEvents: timelineItems.length,
-      pagination: {
-        page: options.page,
-        limit: options.limit,
-        hasMore: timelineItems.length === options.limit
-      },
-      lastUpdated: transfer.updatedAt
+    return NextResponse.json({
+      success: true,
+      data: {
+        transfer: {
+          id: transfer._id,
+          transferId: transfer.transferId,
+          patientInfo: transfer.patientInfo,
+          fromHospitalName: transfer.fromHospitalName,
+          toHospitalName: transfer.toHospitalName,
+          status: transfer.status,
+          priority: transfer.priority,
+          requestedDate: transfer.requestedDate,
+          scheduledDate: transfer.scheduledDate,
+          completedDate: transfer.completedDate,
+          reason: transfer.reason,
+          notes: transfer.notes
+        },
+        timeline: timelineItems,
+        totalEvents: timelineItems.length,
+        pagination: {
+          page: options.page,
+          limit: options.limit,
+          hasMore: timelineItems.length === options.limit
+        },
+        lastUpdated: transfer.updatedAt
+      }
     });
 
   } catch (error) {
     console.error('Error fetching transfer timeline:', error);
-    return handleAuthError(error);
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -111,12 +137,14 @@ export async function POST(
     }
 
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    // Find the transfer
-    const transfer = await Transfer.findOne({ transferId });
+    // DatabaseService handles connection automatically
+// Find the transfer
+    const transfer = await DatabaseService.findOne(Transfer, { transferId });
     if (!transfer) {
       return NextResponse.json({ error: 'Transfer not found' }, { status: 404 });
     }
@@ -135,7 +163,7 @@ export async function POST(
         id: user._id as any,
         name: `${user.firstName} ${user.lastName}`,
         email: user.email,
-        userType: user.userType
+        userType: user.userType === 'super_admin' ? 'admin' : user.userType as 'admin' | 'employee' | 'manager'
       },
       metadata: metadata || {},
       isSystemEvent: false,
@@ -164,7 +192,7 @@ export async function POST(
     transfer.timeline.push(newEvent);
     transfer.lastModifiedBy = user._id as any;
 
-    await transfer.save();
+    await transfer;
 
     return createSuccessResponse({
       event: newEvent,
@@ -173,6 +201,24 @@ export async function POST(
 
   } catch (error) {
     console.error('Error adding timeline event:', error);
-    return handleAuthError(error);
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

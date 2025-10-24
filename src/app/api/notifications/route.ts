@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
-import Notification from '@/models/Notification';
-import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
-
-// GET /api/notifications - Get notifications for the authenticated user
+import { DatabaseService, Notification } from '@/lib/database';
+import { AuthService } from '@/lib/auth';// GET /api/notifications - Get notifications for the authenticated user
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    const { searchParams } = new URL(request.url);
+    // DatabaseService handles connection automatically
+const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'all';
     const priority = searchParams.get('priority') || 'all';
     const status = searchParams.get('status') || 'unread'; // 'unread', 'read', 'all'
@@ -69,15 +68,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Get notifications
-    const notifications = await Notification.find(query)
-      .populate('transfer', 'transferId patient fromHospital toHospital status')
-      .populate('createdBy', 'firstName lastName email userType')
-      .sort({ createdAt: -1 })
-      .skip(offset)
-      .limit(limit);
+    const notifications = await DatabaseService.findMany(Notification, query, {
+      populate: [
+        { path: 'transfer', select: 'transferId patient fromHospital toHospital status' },
+        { path: 'createdBy', select: 'firstName lastName email userType' }
+      ],
+      sort: { createdAt: -1 },
+      skip: offset,
+      limit: limit
+    });
 
     // Get total count for pagination
-    const totalCount = await Notification.countDocuments(query);
+    const totalCount = await DatabaseService.count(Notification, query);
 
     // Transform notifications for response
     const transformedNotifications = notifications.map(notification => {
@@ -104,7 +106,7 @@ export async function GET(request: NextRequest) {
     // Calculate summary
     const summary = {
       total: totalCount,
-      unread: await Notification.countDocuments({
+      unread: await DatabaseService.count(Notification, {
         ...query,
         'deliveries': {
           $not: {
@@ -115,34 +117,55 @@ export async function GET(request: NextRequest) {
           }
         }
       }),
-      high: await Notification.countDocuments({
+      high: await DatabaseService.count(Notification, {
         ...query,
         priority: 'high'
       }),
-      medium: await Notification.countDocuments({
+      medium: await DatabaseService.count(Notification, {
         ...query,
         priority: 'medium'
       }),
-      low: await Notification.countDocuments({
+      low: await DatabaseService.count(Notification, {
         ...query,
         priority: 'low'
       })
     };
 
-    return createSuccessResponse({
-      notifications: transformedNotifications,
-      summary,
-      pagination: {
-        total: totalCount,
-        limit,
-        offset,
-        hasMore: offset + limit < totalCount
+    return NextResponse.json({
+      success: true,
+      data: {
+        notifications: transformedNotifications,
+        summary,
+        pagination: {
+          total: totalCount,
+          limit,
+          offset,
+          hasMore: offset + limit < totalCount
+        }
       }
     });
 
   } catch (error) {
     console.error('Error fetching notifications:', error);
-    return handleAuthError(error);
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -150,11 +173,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    const body = await request.json();
+    // DatabaseService handles connection automatically
+const body = await request.json();
     const { action, notificationIds, notificationId, all } = body;
 
     const userId = user._id;
@@ -201,9 +226,12 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        return createSuccessResponse({ 
-          message: 'Notifications marked as read',
-          notificationIds: notificationIds || [notificationId] || 'all'
+        return NextResponse.json({
+          success: true,
+          data: { 
+            message: 'Notifications marked as read',
+            notificationIds: notificationIds || [notificationId] || 'all'
+          }
         });
 
       case 'mark_dismissed':
@@ -247,9 +275,12 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        return createSuccessResponse({ 
-          message: 'Notifications dismissed',
-          notificationIds: notificationIds || [notificationId] || 'all'
+        return NextResponse.json({
+          success: true,
+          data: { 
+            message: 'Notifications dismissed',
+            notificationIds: notificationIds || [notificationId] || 'all'
+          }
         });
 
       case 'clear_all':
@@ -267,8 +298,11 @@ export async function POST(request: NextRequest) {
           }
         );
 
-        return createSuccessResponse({ 
-          message: 'All notifications cleared'
+        return NextResponse.json({
+          success: true,
+          data: { 
+            message: 'All notifications cleared'
+          }
         });
 
       default:
@@ -277,6 +311,24 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error processing notification action:', error);
-    return handleAuthError(error);
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

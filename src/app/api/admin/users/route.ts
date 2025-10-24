@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/database/mongoose";
-import User from "@/models/User";
-import { CIUSSS } from "@/models/CIUSSS";
-import Hospital from "@/models/Hospital";
+import { DatabaseService, User, Hospital, CIUSSS } from "@/lib/database";
+import HospitalModel from "@/models/Hospital";
+import { AuthService } from "@/lib/auth";
 import mongoose from "mongoose";
-import { requireAdmin, handleAuthError, createSuccessResponse } from "@/lib/auth/auth-utils";
 
 /**
  * GET /api/admin/users
@@ -15,7 +13,10 @@ export async function GET(request: NextRequest) {
   try {
     // Verify admin authentication
     console.log('🔍 Admin Users API: Starting authentication...');
-    const { user } = await requireAdmin();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
     console.log('🔍 Admin Users API: Authentication successful, user:', {
       hasUser: !!user,
       userType: user?.userType,
@@ -23,9 +24,8 @@ export async function GET(request: NextRequest) {
       idType: typeof user?._id
     });
 
-    await dbConnect();
-    
-    // Ensure models are registered
+    // DatabaseService handles connection automatically
+// Ensure models are registered
     const { CIUSSS } = await import("@/models/CIUSSS");
     const Hospital = await import("@/models/Hospital");
 
@@ -80,12 +80,12 @@ export async function GET(request: NextRequest) {
     // Fetch users without population first to avoid ObjectId casting errors
     console.log('🔍 Admin Users API: Fetching users without population...');
     const [rawUsers, total] = await Promise.all([
-      User.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      User.countDocuments(filter),
+      DatabaseService.findMany(User, filter, {
+        sort: { createdAt: -1 },
+        skip: skip,
+        limit: limit
+      }),
+      DatabaseService.count(User, filter),
     ]);
     
     console.log('🔍 Admin Users API: Found raw users:', rawUsers.length);
@@ -112,15 +112,15 @@ export async function GET(request: NextRequest) {
           // Check if ciusss is an ObjectId or string
           if (typeof user.ciusss === 'string') {
             // If it's a string, try to find by code
-            const ciusss = await CIUSSS.findOne({ code: user.ciusss });
+            const ciusss = await DatabaseService.findOne(CIUSSS, { code: user.ciusss });
             populatedUser.ciusss = ciusss;
           } else {
             // If it's an ObjectId, populate normally
-            const ciusss = await CIUSSS.findById(user.ciusss);
+            const ciusss = await DatabaseService.findById(CIUSSS, user.ciusss);
             populatedUser.ciusss = ciusss;
           }
         } catch (error) {
-          console.warn(`⚠️ Failed to populate CIUSSS for user ${user._id}:`, error.message);
+          console.warn(`⚠️ Failed to populate CIUSSS for user ${user._id}:`, error instanceof Error ? error.message : 'Unknown error');
           populatedUser.ciusss = null;
         }
       }
@@ -131,15 +131,15 @@ export async function GET(request: NextRequest) {
           // Check if hospital is an ObjectId or string
           if (typeof user.hospital === 'string') {
             // If it's a string, try to find by name
-            const hospital = await Hospital.default.findOne({ name: user.hospital });
+            const hospital = await DatabaseService.findOne(HospitalModel, { name: user.hospital });
             populatedUser.hospital = hospital;
           } else {
             // If it's an ObjectId, populate normally
-            const hospital = await Hospital.default.findById(user.hospital);
+            const hospital = await DatabaseService.findById(HospitalModel, user.hospital);
             populatedUser.hospital = hospital;
           }
         } catch (error) {
-          console.warn(`⚠️ Failed to populate Hospital for user ${user._id}:`, error.message);
+          console.warn(`⚠️ Failed to populate Hospital for user ${user._id}:`, error instanceof Error ? error.message : 'Unknown error');
           populatedUser.hospital = null;
         }
       }
@@ -202,11 +202,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verify admin authentication
-    const { user } = await requireAdmin();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-    
-    // Ensure models are registered
+    // DatabaseService handles connection automatically
+// Ensure models are registered
     const { CIUSSS } = await import("@/models/CIUSSS");
     const Hospital = await import("@/models/Hospital");
 
@@ -288,7 +290,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await DatabaseService.findOne(User, { email });
     if (existingUser) {
       return NextResponse.json(
         { success: false, message: "User with this email already exists" },
@@ -309,7 +311,7 @@ export async function POST(request: NextRequest) {
       status: "pending",
     });
 
-    await newUser.save();
+    await newUser;
 
     // Populate related data
     await newUser.populate("ciusss", "code name region isActive");

@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireEmployeeOrManager } from '@/lib/auth/auth-utils';
-import { sseManager } from '@/lib/sse';
-
-// GET /api/notifications/status - Get SSE connection status and statistics
+import { AuthService } from '@/lib/auth';// GET /api/notifications/status - Get SSE connection status and statistics
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    console.log('📊 Status API: Getting notification broadcaster stats...');
+    console.log('📊 Status API: Getting notification status...');
     const stats = { totalConnections: 0, activeConnections: 0 };
     console.log('📊 Status API: Stats retrieved:', stats);
 
     return NextResponse.json({
       success: true,
-      message: 'SSE connection status retrieved',
+      message: 'Notification status retrieved',
       stats,
       timestamp: new Date().toISOString()
     });

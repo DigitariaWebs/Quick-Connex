@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { AuthService } from '@/lib/auth';
 import os from 'os';
 import fs from 'fs/promises';
 
@@ -66,7 +66,7 @@ async function getSystemMetrics(): Promise<SystemMetrics> {
     // Get active users (simplified - in real implementation, this would come from session store)
     const activeUsers = await getActiveUsers();
 
-    // Get SSE connections (simplified - in real implementation, this would come from SSE manager)
+    // Note: SSE system has been removed
     const sseConnections = await getSSEConnections();
 
     // Get database connections (simplified)
@@ -228,7 +228,10 @@ async function getServiceStatus(): Promise<ServiceStatus[]> {
 export async function GET(request: NextRequest) {
   try {
     // Check super admin permissions
-    const { user } = await requireAdmin();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
 
     // Get system metrics
     const metrics = await getSystemMetrics();

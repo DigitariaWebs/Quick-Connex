@@ -6,7 +6,7 @@
  */
 
 import { Types } from 'mongoose';
-import connectDB from '../database/mongodb';
+import { DatabaseService } from '../database';
 import Notification from '@/models/Notification';
 // Note: Real-time notifications are now handled by SSE system
 import {
@@ -466,7 +466,7 @@ class TransferNotificationHandler implements TransferEventHandler {
     targetUsers?: string[]
   ): Promise<void> {
     try {
-      await connectDB;
+      // DatabaseService handles connection automatically
 
       const notification = new Notification({
         id: notificationData.id,

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/auth-utils';
-import dbConnect from '@/lib/database/mongoose';
-import UnifiedAuditLog from '@/models/UnifiedAuditLog';
+import { AuthService } from '@/lib/auth';
+import { DatabaseService, AuditLog } from '@/lib/database';
 import { RecentActivity } from '@/types/dashboard';
 
 /**
@@ -17,11 +16,13 @@ import { RecentActivity } from '@/types/dashboard';
 export async function GET(request: NextRequest) {
   try {
     // Check admin permissions
-    const { user } = await requireAdmin();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    // Get query parameters
+    // DatabaseService handles connection automatically
+// Get query parameters
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '10');
     const page = parseInt(searchParams.get('page') || '1');
@@ -34,14 +35,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total count
-    const total = await UnifiedAuditLog.countDocuments(query);
+    const total = await DatabaseService.count(AuditLog, query);
 
     // Get recent audit logs
-    const auditLogs = await UnifiedAuditLog.find(query)
-      .sort({ timestamp: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean();
+    const auditLogs = await DatabaseService.findMany(AuditLog, query, {
+      sort: { timestamp: -1 },
+      skip: (page - 1) * limit,
+      limit: limit
+    });
 
     // Format activity for dashboard
     const activities: RecentActivity[] = auditLogs.map((log: any) => ({

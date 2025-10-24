@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useSession } from '@/contexts/SessionContext';
-import { useUnifiedSSE } from '@/contexts/UnifiedSSEContext';
 
 interface UrgentTransfer {
   id: string;
@@ -22,7 +21,6 @@ interface UrgentAlertsData {
 
 export function useUrgentAlerts() {
   const { user, isAuthenticated } = useSession();
-  const { connected, error: sseError, lastMessage } = useUnifiedSSE();
   const [data, setData] = useState<UrgentAlertsData>({
     urgentTransfers: [],
     loading: true,
@@ -94,38 +92,8 @@ export function useUrgentAlerts() {
     }));
   };
 
-  // Handle SSE messages for real-time updates
-  useEffect(() => {
-    if (lastMessage) {
-      if (lastMessage.type === 'urgent_alerts_update') {
-        // Update urgent transfers from SSE
-        setData(prev => ({
-          ...prev,
-          urgentTransfers: lastMessage.data?.urgentTransfers || prev.urgentTransfers
-        }));
-      } else if (lastMessage.type === 'urgent_transfer') {
-        // Add new urgent transfer
-        const newUrgentTransfer: UrgentTransfer = {
-          id: lastMessage.data?.transfer?.id || lastMessage.data?.id || `urgent_${Date.now()}`,
-          transferId: lastMessage.data?.transferId || '',
-          patientName: lastMessage.data?.transfer?.patient ? 
-            `${lastMessage.data.transfer.patient.firstName} ${lastMessage.data.transfer.patient.lastName}` : 
-            'Unknown Patient',
-          fromHospital: lastMessage.data?.transfer?.fromHospital || '',
-          toHospital: lastMessage.data?.transfer?.toHospital || '',
-          priority: lastMessage.data?.transfer?.priority === 'stat' ? 'stat' : 'urgent',
-          requestedTime: new Date().toISOString(),
-          reason: lastMessage.data?.transfer?.reason || '',
-          timeElapsed: '0 min',
-        };
-        
-        setData(prev => ({
-          ...prev,
-          urgentTransfers: [newUrgentTransfer, ...prev.urgentTransfers].slice(0, 5)
-        }));
-      }
-    }
-  }, [lastMessage]);
+  // Note: Real-time updates via SSE have been removed
+  // Data will be refreshed on manual calls to refetch()
 
   useEffect(() => {
     // Initial load with loading state

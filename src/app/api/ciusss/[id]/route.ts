@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
-import { CIUSSS } from '@/models/CIUSSS';
+import { DatabaseService, CIUSSS } from '@/lib/database';
 import mongoose from 'mongoose';
 
 export async function GET(
@@ -8,9 +7,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await dbConnect();
-    
-    const { id } = await params;
+    // DatabaseService handles connection automatically
+const { id } = await params;
     
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -23,7 +21,7 @@ export async function GET(
       );
     }
     
-    const ciusss = await CIUSSS.findById(id);
+    const ciusss = await DatabaseService.findById(CIUSSS, id);
     
     if (!ciusss) {
       return NextResponse.json(
@@ -58,9 +56,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await dbConnect();
-    
-    const { id } = await params;
+    // DatabaseService handles connection automatically
+const { id } = await params;
     const body = await request.json();
     const { code, name, region, isActive } = body;
     
@@ -75,7 +72,7 @@ export async function PUT(
       );
     }
     
-    const ciusss = await CIUSSS.findById(id);
+    const ciusss = await DatabaseService.findById(CIUSSS, id);
     
     if (!ciusss) {
       return NextResponse.json(
@@ -93,7 +90,7 @@ export async function PUT(
     if (region !== undefined) ciusss.region = region;
     if (isActive !== undefined) ciusss.isActive = isActive;
     
-    await ciusss.save();
+    await ciusss;
     
     return NextResponse.json({
       success: true,
@@ -119,9 +116,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await dbConnect();
-    
-    const { id } = await params;
+    // DatabaseService handles connection automatically
+const { id } = await params;
     
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -134,7 +130,7 @@ export async function DELETE(
       );
     }
     
-    const ciusss = await CIUSSS.findById(id);
+    const ciusss = await DatabaseService.findById(CIUSSS, id);
     
     if (!ciusss) {
       return NextResponse.json(
@@ -148,7 +144,7 @@ export async function DELETE(
     
     // Instead of deleting, mark as inactive
     ciusss.isActive = false;
-    await ciusss.save();
+    await ciusss;
     
     return NextResponse.json({
       success: true,

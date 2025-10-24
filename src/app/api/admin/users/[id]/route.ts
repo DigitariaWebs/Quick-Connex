@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { logAdminAction, createUserAuditContext, extractRequestInfo } from '@/lib/security/admin-audit';
-import User from '@/models/User';
-import dbConnect from '@/lib/database/mongoose';
-
+import { AuditService } from '@/lib/services/audit-service';
+import { UserAuditContext } from '@/types/audit';
+import { DatabaseService, User } from '@/lib/database';
+import { ActorType, AuditAction, TargetResourceType } from '@/models/AuditLog';
 /**
  * GET /api/admin/users/[id]
  * Get detailed user information
@@ -15,9 +15,8 @@ export async function GET(
     const { id } = await params;
     
     // Connect to database
-    await dbConnect();
-    
-    // Get user details
+    // DatabaseService handles connection automatically
+// Get user details
     const user = await User.findById(id).select('-password');
     
     if (!user) {
@@ -31,29 +30,29 @@ export async function GET(
     const getLastLogin = () => {
       if (!user.loginHistory) return null;
       const successfulLogins = user.loginHistory
-        .filter(entry => entry.success)
-        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+        .filter((entry: any) => entry.success)
+        .sort((a: any, b: any) => b.timestamp.getTime() - a.timestamp.getTime());
       return successfulLogins.length > 0 ? successfulLogins[0].timestamp : null;
     };
     
     const getLastLoginIp = () => {
       if (!user.loginHistory) return null;
       const successfulLogins = user.loginHistory
-        .filter(entry => entry.success)
-        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+        .filter((entry: any) => entry.success)
+        .sort((a: any, b: any) => b.timestamp.getTime() - a.timestamp.getTime());
       return successfulLogins.length > 0 ? successfulLogins[0].ipAddress : null;
     };
     
     const getRecentFailedAttempts = (minutes = 15) => {
       if (!user.loginHistory) return 0;
       const cutoffTime = new Date(Date.now() - (minutes * 60 * 1000));
-      return user.loginHistory.filter(entry => 
+      return user.loginHistory.filter((entry: any) => 
         !entry.success && entry.timestamp >= cutoffTime
       ).length;
     };
     
     const getSanitizedLoginHistory = () => {
-      return user.loginHistory ? user.loginHistory.map(entry => ({
+      return user.loginHistory ? user.loginHistory.map((entry: any) => ({
         timestamp: entry.timestamp,
         success: entry.success,
         ipAddress: entry.ipAddress, // This is already hashed
@@ -67,20 +66,27 @@ export async function GET(
     const adminEmail = 'admin@example.com'; // Replace with actual admin email
     
     // Log admin access to user details
-    const auditContext = createUserAuditContext(
-      adminId,
-      adminEmail,
-      'view_user_details',
-      id,
-      user.email,
-      { 
+    const userContext: UserAuditContext = {
+      actorId: adminId,
+      actorType: ActorType.ADMIN,
+      actorEmail: adminEmail,
+      actorName: 'Admin User',
+      actorRole: 'admin',
+      action: AuditAction.USER_PROFILE_VIEWED,
+      description: `Admin viewed user profile for ${user.email}`,
+      targetResourceType: TargetResourceType.USER,
+      targetResourceId: id,
+      targetResourceName: `${user.firstName} ${user.lastName}`,
+      metadata: {
         userType: user.userType,
         status: user.status,
         loginHistoryCount: sanitizedLoginHistory.length
-      }
-    );
+      },
+      requestInfo: AuditService.extractRequestInfo(request),
+      success: true
+    };
     
-    await logAdminAction(request, auditContext, true);
+    await AuditService.logUserAction(userContext);
     
     return NextResponse.json({
       success: true,

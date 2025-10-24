@@ -2,7 +2,7 @@
  * Utility functions for converting user documents to email attachments
  */
 
-import { downloadFileFromGridFS } from '@/lib/database/gridfs';
+import { GridFSService } from '@/lib/database';
 import { CommunicationAttachment } from '@/types/communication';
 import { IUser, IDocumentReference } from '@/models/User';
 
@@ -22,7 +22,7 @@ export async function getUserDocumentsAsAttachments(
   for (const doc of user.documents) {
     try {
       // Download file from GridFS
-      const fileData = await downloadFileFromGridFS(doc.fileId);
+      const fileData = await GridFSService.downloadFile(doc.fileId);
       
       // Create attachment
       const attachment: CommunicationAttachment = {

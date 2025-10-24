@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
-import Transfer from '@/models/Transfer';
+import { DatabaseService, Transfer } from '@/lib/database';
 import mongoose from 'mongoose';
-import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
-
-// GET /api/calendar - Get calendar view of transfers
+import { AuthService } from '@/lib/auth';// GET /api/calendar - Get calendar view of transfers
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    const { searchParams } = new URL(request.url);
+    // DatabaseService handles connection automatically
+const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const view = searchParams.get('view') || 'month'; // month, week, day
@@ -33,10 +32,13 @@ export async function GET(request: NextRequest) {
     };
 
     // Get transfers with populated data
-    const transfers = await Transfer.find(query)
-      .populate('requestedBy', 'firstName lastName email userType')
-      .populate('assignedTo', 'firstName lastName email')
-      .sort({ scheduledDate: 1 });
+    const transfers = await DatabaseService.findMany(Transfer, query, {
+      populate: [
+        { path: 'requestedBy', select: 'firstName lastName email userType' },
+        { path: 'assignedTo', select: 'firstName lastName email' }
+      ],
+      sort: { scheduledDate: 1 }
+    });
 
     // Process transfers for calendar view
     const calendarEvents = transfers.map(transfer => {
@@ -79,13 +81,16 @@ export async function GET(request: NextRequest) {
 
     // If including recurring transfers, generate recurring instances
     if (includeRecurring) {
-      const recurringTransfers = await Transfer.find({
+      const recurringTransfers = await DatabaseService.findMany(Transfer, {
         'scheduling.isRecurring': true,
         'scheduling.recurrenceEndDate': { $gte: start },
         status: { $in: ['pending', 'accepted', 'in_progress'] }
-      })
-      .populate('requestedBy', 'firstName lastName email userType')
-      .populate('assignedTo', 'firstName lastName email');
+      }, {
+        populate: [
+          { path: 'requestedBy', select: 'firstName lastName email userType' },
+          { path: 'assignedTo', select: 'firstName lastName email' }
+        ]
+      });
 
       for (const transfer of recurringTransfers) {
         const recurringEvents = generateRecurringEvents(transfer, start, end);
@@ -96,17 +101,39 @@ export async function GET(request: NextRequest) {
     // Sort events by start time
     calendarEvents.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
 
-    return createSuccessResponse({
+    return NextResponse.json({
+      success: true,
+      data: {
       events: calendarEvents,
       view,
       startDate: start.toISOString(),
       endDate: end.toISOString(),
       totalEvents: calendarEvents.length
+    
+      }
     });
 
   } catch (error) {
     console.error('Error fetching calendar data:', error);
-    return handleAuthError(error);
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -114,11 +141,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user - only managers can create/update scheduling
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    const body = await request.json();
+    // DatabaseService handles connection automatically
+const body = await request.json();
     const {
       transferId,
       scheduledDate,
@@ -132,7 +161,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find the transfer
-    const transfer = await Transfer.findOne({ transferId });
+    const transfer = await DatabaseService.findOne(Transfer, { transferId });
     if (!transfer) {
       return NextResponse.json({ error: 'Transfer not found' }, { status: 404 });
     }
@@ -183,19 +212,38 @@ export async function POST(request: NextRequest) {
 
     updateData.statusHistory = transfer.statusHistory;
 
-    const updatedTransfer = await Transfer.findByIdAndUpdate(
-      transfer._id,
-      updateData,
-      { new: true, runValidators: true }
-    )
-    .populate('requestedBy', 'firstName lastName email userType')
-    .populate('assignedTo', 'firstName lastName email');
+    const updatedTransfer = await DatabaseService.updateById(Transfer,
+      (transfer._id as any).toString(),
+      updateData
+    );
 
-    return createSuccessResponse(updatedTransfer, 'Transfer scheduling updated successfully');
+    return NextResponse.json({
+      success: true,
+      data: updatedTransfer,
+      message: 'Transfer scheduling updated successfully'
+    });
 
   } catch (error) {
     console.error('Error updating transfer scheduling:', error);
-    return handleAuthError(error);
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -339,7 +387,7 @@ async function checkSchedulingConflicts(
   const endTime = new Date(scheduledEndDate);
 
   // Check for time conflicts with other transfers
-  const timeConflicts = await Transfer.find({
+  const timeConflicts = await DatabaseService.findMany(Transfer, {
     _id: { $ne: transferId },
     scheduledDate: { $lt: endTime },
     scheduledEndDate: { $gt: startTime },

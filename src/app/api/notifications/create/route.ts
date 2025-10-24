@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { VercelNotificationService } from '@/lib/sse/vercel/NotificationService';
 
 /**
  * Create Transfer Notification
@@ -42,28 +41,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create notification
-    const result = await VercelNotificationService.createTransferNotification(
-      transferId,
-      type,
-      title,
-      message,
-      priority,
-      targetUserTypes
-    );
-
-    if (!result.success) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: result.error || 'Failed to create notification' 
-        },
-        { status: 500 }
-      );
-    }
-
-    console.log('✅ Transfer notification created:', {
-      id: result.notificationId,
+    // Note: SSE notification system has been removed
+    // This endpoint now returns a placeholder response
+    
+    console.log('✅ Transfer notification request received:', {
       transferId,
       type,
       priority
@@ -71,8 +52,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      notificationId: result.notificationId,
-      message: 'Notification created successfully'
+      notificationId: `placeholder_${Date.now()}`,
+      message: 'Notification system is currently unavailable (SSE removed)'
     });
 
   } catch (error) {

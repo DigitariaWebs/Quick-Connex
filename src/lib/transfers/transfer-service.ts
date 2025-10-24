@@ -6,7 +6,7 @@
  */
 
 import { Types } from 'mongoose';
-import dbConnect from '../database/mongoose';
+import { DatabaseService } from '../database';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import {
@@ -39,7 +39,7 @@ export class TransferService {
     requestingUser: any
   ): Promise<{ success: boolean; transfer?: TransferResponse; error?: string }> {
     try {
-      await dbConnect();
+      // DatabaseService handles connection automatically
 
       // Validate that only managers can create transfers
       if (requestingUser.userType !== 'manager') {
@@ -118,7 +118,7 @@ export class TransferService {
    */
   static async getTransferById(transferId: string): Promise<TransferResponse | null> {
     try {
-      await dbConnect();
+      // DatabaseService handles connection automatically
 
       const transfer = await Transfer.findById(transferId)
         .populate('requestedBy', 'firstName lastName email userType')
@@ -140,7 +140,7 @@ export class TransferService {
     queryOptions: TransferQueryOptions = {}
   ): Promise<TransferListResponse> {
     try {
-      await dbConnect();
+      // DatabaseService handles connection automatically
 
       const {
         filter = {},
@@ -244,7 +244,7 @@ export class TransferService {
     notes?: string
   ): Promise<{ success: boolean; transfer?: TransferResponse; error?: string }> {
     try {
-      await dbConnect();
+      // DatabaseService handles connection automatically
 
       const transfer = await Transfer.findById(transferId);
       if (!transfer) {
@@ -288,7 +288,7 @@ export class TransferService {
     notes?: string
   ): Promise<{ success: boolean; transfer?: TransferResponse; error?: string }> {
     try {
-      await dbConnect();
+      // DatabaseService handles connection automatically
 
       const transfer = await Transfer.findById(transferId);
       if (!transfer) {
@@ -331,7 +331,7 @@ export class TransferService {
     notes?: string
   ): Promise<{ success: boolean; transfer?: TransferResponse; error?: string }> {
     try {
-      await dbConnect();
+      // DatabaseService handles connection automatically
 
       const transfer = await Transfer.findById(transferId);
       if (!transfer) {
@@ -382,7 +382,7 @@ export class TransferService {
     reason: string
   ): Promise<{ success: boolean; transfer?: TransferResponse; error?: string }> {
     try {
-      await dbConnect();
+      // DatabaseService handles connection automatically
 
       const transfer = await Transfer.findById(transferId);
       if (!transfer) {
@@ -421,7 +421,7 @@ export class TransferService {
     dateTo?: Date
   ): Promise<TransferStats> {
     try {
-      await dbConnect();
+      // DatabaseService handles connection automatically
 
       const query: any = {};
       if (dateFrom || dateTo) {

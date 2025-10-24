@@ -4,8 +4,6 @@ import {
   DashboardError, 
   DashboardLoadingState 
 } from '@/types/dashboard';
-import { useUnifiedSSE } from '@/contexts/UnifiedSSEContext';
-import { sseClient } from '@/lib/sse';
 
 /**
  * useAdminDashboard Hook
@@ -51,9 +49,6 @@ export function useAdminDashboard(
     lastUpdated: null
   });
   const [error, setError] = useState<DashboardError | null>(null);
-  const { connected } = useUnifiedSSE();
-  const pendingActiveUsers = useRef<number | null>(null); // Store SSE updates that arrive early
-  const lastSSEUpdate = useRef<number>(0); // Timestamp of last SSE update
 
   /**
    * Fetch dashboard statistics
@@ -86,26 +81,7 @@ export function useAdminDashboard(
       const result = await response.json();
 
       if (result.success) {
-        let finalData = result.data;
-        const apiTimestamp = Date.now();
-        
-        // Priority 1: Apply pending SSE updates that arrived before initial load
-        if (pendingActiveUsers.current !== null) {
-          console.log('📊 Dashboard: Applying pending activeUsers update:', pendingActiveUsers.current);
-          finalData = {
-            ...finalData,
-            activeUsers: pendingActiveUsers.current
-          };
-          pendingActiveUsers.current = null;
-        } 
-        // Priority 2: If we have a recent SSE update (within last 5 seconds), prefer it over API
-        else if (lastSSEUpdate.current > 0 && (apiTimestamp - lastSSEUpdate.current) < 5000 && data) {
-          console.log('📊 Dashboard: Using recent SSE activeUsers instead of API data:', data.activeUsers);
-          finalData = {
-            ...finalData,
-            activeUsers: data.activeUsers
-          };
-        }
+        const finalData = result.data;
         
         setData(finalData);
         setLoading({
@@ -154,58 +130,8 @@ export function useAdminDashboard(
     setError(null);
   }, []);
 
-  /**
-   * Set up real-time SSE connection for live updates using unified SSE system
-   */
-  useEffect(() => {
-    if (!connected) {
-      console.log('📊 Dashboard: SSE not connected, skipping subscription');
-      return;
-    }
-
-    // Subscribe to dashboard updates using unified SSE system
-    const handleDashboardUpdate = (eventData: any) => {
-      try {
-        // Handle dashboard updates (real-time active users count)
-        if (eventData.type === 'dashboard_update' && eventData.data) {
-          const newActiveUsers = eventData.data.activeUsers;
-          lastSSEUpdate.current = Date.now(); // Track when we received this update
-          
-          console.log('📊 Dashboard: Real-time SSE update received - Active users:', newActiveUsers);
-          
-          setData(prev => {
-            // If data hasn't loaded yet, store the update for later
-            if (!prev) {
-              console.log('📊 Dashboard: Data not loaded yet, storing pending update');
-              pendingActiveUsers.current = newActiveUsers;
-              return prev;
-            }
-            
-            // Update active users count in real-time
-            console.log('📊 Dashboard: Updating activeUsers from', prev.activeUsers, 'to', newActiveUsers);
-            return {
-              ...prev,
-              activeUsers: newActiveUsers,
-              timestamp: eventData.data.timestamp
-            };
-          });
-        }
-      } catch (err) {
-        console.error('📊 Dashboard: Error parsing SSE event:', err);
-      }
-    };
-
-    // Subscribe to dashboard updates using unifiedSSEClient
-    const unsubscribe = sseClient.subscribe(
-      'dashboard-update',
-      handleDashboardUpdate
-    );
-
-    // Cleanup on unmount
-    return () => {
-      unsubscribe();
-    };
-  }, [connected]);
+  // Note: Real-time SSE updates have been removed
+  // Dashboard will rely on polling for updates
 
   /**
    * Initial fetch on mount
@@ -215,8 +141,8 @@ export function useAdminDashboard(
   }, [fetchDashboardStats]);
 
   /**
-   * Set up polling for real-time updates
-   * Note: activeUsers is prioritized from SSE if recent update exists
+   * Set up polling for updates
+   * Note: Real-time SSE updates have been removed, using polling instead
    */
   useEffect(() => {
     if (!enablePolling || pollInterval <= 0) {

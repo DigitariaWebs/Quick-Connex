@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
-import Hospital from '@/models/Hospital';
+import { DatabaseService, Hospital } from '@/lib/database';
 
 // GET /api/hospitals - Get all hospitals with optional search and filtering
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
-
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
     const organizationType = searchParams.get('organizationType');
@@ -36,11 +33,12 @@ export async function GET(request: NextRequest) {
       query['organization.region'] = { $regex: region, $options: 'i' };
     }
 
-    // Execute query
-    const hospitals = await Hospital.find(query)
-      .select('name address organization specialties')
-      .sort({ 'organization.type': 1, 'organization.name': 1, name: 1 })
-      .limit(limit);
+    // Execute query using DatabaseService
+    const hospitals = await DatabaseService.findMany(Hospital, query, {
+      select: 'name address organization specialties',
+      sort: { 'organization.type': 1, 'organization.name': 1, name: 1 },
+      limit
+    });
 
     return NextResponse.json({
       success: true,
@@ -65,7 +63,7 @@ export async function GET(request: NextRequest) {
 // GET /api/hospitals/organizations - Get all organization types and regions
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect();
+    // DatabaseService handles connection automatically
 
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');

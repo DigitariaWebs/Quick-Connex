@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
 import User from '@/models/User';
 import { EmailService } from '@/lib/communication/channels/email/email-service';
 import { EmailMessage, EmailRecipient, EmailContent } from '@/types/communication';
@@ -10,9 +9,8 @@ import { getUserDocumentsAsAttachments, getDocumentSummary } from '@/lib/communi
  */
 export async function POST(request: Request) {
   try {
-    await dbConnect();
-    
-    const { userId } = await request.json();
+    // DatabaseService handles connection automatically
+const { userId } = await request.json();
     
     if (!userId) {
       return NextResponse.json(
@@ -58,7 +56,7 @@ export async function POST(request: Request) {
       userType: user.userType,
       post: user.post || 'N/A',
       ciusss: user.ciusss || 'N/A',
-      documents: user.documents?.map(doc => ({
+      documents: user.documents?.map((doc: any) => ({
         type: doc.documentType,
         name: doc.originalName,
         size: `${(doc.size / 1024 / 1024).toFixed(2)} MB`,

@@ -8,10 +8,8 @@
  */
 
 import { CommunicationService } from '../core/communication-service';
+import { DatabaseService, User, Transfer } from '@/lib/database';
 import { EmailMessage, SMSMessage } from '@/types/communication';
-// Removed AdminService - using simple manager role check instead
-import User from '@/models/User';
-import dbConnect from '@/lib/database/mongoose';
 import { TransferCategory } from '@/constants/transfer';
 import TemplateLoader from '@/lib/templates/template-loader';
 
@@ -314,17 +312,17 @@ export class TransferNotificationService {
     try {
       console.log('📧 Sending transfer approved notifications...');
 
-      await dbConnect();
+      // DatabaseService handles connection automatically
 
       // Get the manager who requested the transfer
-      const manager = await User.findById(transfer.requestedBy);
+      const manager = await DatabaseService.findById(User, transfer.requestedBy.toString());
       if (!manager) {
         console.error('Manager not found for transfer approval notification');
         return;
       }
 
       // Get all employees
-      const employees = await User.find({ userType: 'employee', status: 'approved' });
+      const employees = await DatabaseService.findMany(User, { userType: 'employee', status: 'approved' });
 
       const transferData = {
         transferId: transfer.transferId,
@@ -683,10 +681,10 @@ Please log into the system to view full details and take appropriate action.
     try {
       console.log('📧 Sending transfer accepted notifications...');
 
-      await dbConnect();
+      // DatabaseService handles connection automatically
 
       // Get the manager who requested the transfer
-      const manager = await User.findById(transfer.requestedBy);
+      const manager = await DatabaseService.findById(User, transfer.requestedBy.toString());
       if (!manager) {
         console.error('Manager not found for transfer acceptance notification');
         return;

@@ -25,8 +25,11 @@ import {
 import EmailService from '../channels/email/email-service';
 import SMSService from '../channels/sms/sms-service';
 import { getCommunicationConfig, isEmailEnabled, isSMSEnabled } from '@/lib/communication/core/communication-config';
-import Notification from '@/models/Notification';
+import { DatabaseService, Notification } from '@/lib/database';
 import { Types } from 'mongoose';
+import { AuditService } from '@/lib/services/audit-service';
+import { CommunicationAuditContext } from '@/types/audit';
+import { AuditAction, ActorType } from '@/models/AuditLog';
 
 /**
  * Main Communication Service Class
@@ -59,6 +62,33 @@ export class CommunicationService implements ICommunicationService {
 
     try {
       const response = await this.emailService.sendEmail(message);
+      
+      // Log email communication
+      const communicationContext: CommunicationAuditContext = {
+        actorId: 'system', // System-generated email
+        actorType: ActorType.SYSTEM,
+        actorEmail: 'system@patients-management.com',
+        actorName: 'Communication Service',
+        actorRole: 'system',
+        action: response.success ? AuditAction.EMAIL_SENT : AuditAction.EMAIL_FAILED,
+        description: response.success ? 
+          `Email sent to ${message.recipient.email}` : 
+          `Email failed to send to ${message.recipient.email}`,
+        targetResourceId: message.recipient.id || message.recipient.email,
+        targetResourceName: message.recipient.name || message.recipient.email,
+        metadata: {
+          recipientEmail: message.recipient.email,
+          messageType: (message as any).template || 'custom',
+          deliveryStatus: response.status,
+          failureReason: response.error,
+          channel: 'email'
+        },
+        success: response.success,
+        errorMessage: response.error
+      };
+      
+      await AuditService.logCommunication(communicationContext);
+      
       await this.handleCommunicationEvent({
         eventType: response.success ? CommunicationEventType.MESSAGE_SENT : CommunicationEventType.MESSAGE_FAILED,
         messageId: message.id,
@@ -70,6 +100,30 @@ export class CommunicationService implements ICommunicationService {
       });
       return response;
     } catch (error) {
+      // Log email failure
+      const communicationContext: CommunicationAuditContext = {
+        actorId: 'system',
+        actorType: ActorType.SYSTEM,
+        actorEmail: 'system@patients-management.com',
+        actorName: 'Communication Service',
+        actorRole: 'system',
+        action: AuditAction.EMAIL_FAILED,
+        description: `Email failed to send to ${message.recipient.email}`,
+        targetResourceId: message.recipient.id || message.recipient.email,
+        targetResourceName: message.recipient.name || message.recipient.email,
+        metadata: {
+          recipientEmail: message.recipient.email,
+          messageType: (message as any).template || 'custom',
+          deliveryStatus: 'failed',
+          failureReason: error instanceof Error ? error.message : 'Unknown error',
+          channel: 'email'
+        },
+        success: false,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error'
+      };
+      
+      await AuditService.logCommunication(communicationContext);
+      
       await this.handleCommunicationEvent({
         eventType: CommunicationEventType.MESSAGE_FAILED,
         messageId: message.id,
@@ -98,6 +152,33 @@ export class CommunicationService implements ICommunicationService {
 
     try {
       const response = await this.smsService.sendSMS(message);
+      
+      // Log SMS communication
+      const communicationContext: CommunicationAuditContext = {
+        actorId: 'system', // System-generated SMS
+        actorType: ActorType.SYSTEM,
+        actorEmail: 'system@patients-management.com',
+        actorName: 'Communication Service',
+        actorRole: 'system',
+        action: response.success ? AuditAction.SMS_SENT : AuditAction.SMS_FAILED,
+        description: response.success ? 
+          `SMS sent to ${message.recipient.phone}` : 
+          `SMS failed to send to ${message.recipient.phone}`,
+        targetResourceId: message.recipient.id || message.recipient.phone,
+        targetResourceName: message.recipient.name || message.recipient.phone,
+        metadata: {
+          recipientPhone: message.recipient.phone,
+          messageType: (message as any).template || 'custom',
+          deliveryStatus: response.status,
+          failureReason: response.error,
+          channel: 'sms'
+        },
+        success: response.success,
+        errorMessage: response.error
+      };
+      
+      await AuditService.logCommunication(communicationContext);
+      
       await this.handleCommunicationEvent({
         eventType: response.success ? CommunicationEventType.MESSAGE_SENT : CommunicationEventType.MESSAGE_FAILED,
         messageId: message.id,
@@ -109,6 +190,30 @@ export class CommunicationService implements ICommunicationService {
       });
       return response;
     } catch (error) {
+      // Log SMS failure
+      const communicationContext: CommunicationAuditContext = {
+        actorId: 'system',
+        actorType: ActorType.SYSTEM,
+        actorEmail: 'system@patients-management.com',
+        actorName: 'Communication Service',
+        actorRole: 'system',
+        action: AuditAction.SMS_FAILED,
+        description: `SMS failed to send to ${message.recipient.phone}`,
+        targetResourceId: message.recipient.id || message.recipient.phone,
+        targetResourceName: message.recipient.name || message.recipient.phone,
+        metadata: {
+          recipientPhone: message.recipient.phone,
+          messageType: (message as any).template || 'custom',
+          deliveryStatus: 'failed',
+          failureReason: error instanceof Error ? error.message : 'Unknown error',
+          channel: 'sms'
+        },
+        success: false,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error'
+      };
+      
+      await AuditService.logCommunication(communicationContext);
+      
       await this.handleCommunicationEvent({
         eventType: CommunicationEventType.MESSAGE_FAILED,
         messageId: message.id,

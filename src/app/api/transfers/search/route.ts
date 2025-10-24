@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from '@/lib/database/mongoose';
 import Transfer from "@/models/Transfer";
 import User from "@/models/User";
 import Hospital from "@/models/Hospital";
 
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
-
-    const { searchParams } = new URL(request.url);
+    // DatabaseService handles connection automatically
+const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "";
     const priority = searchParams.get("priority") || "";

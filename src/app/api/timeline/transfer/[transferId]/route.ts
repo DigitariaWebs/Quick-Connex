@@ -10,11 +10,11 @@ import { TimelineQueryOptions } from '@/types/timeline';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { transferId: string } }
+  { params }: { params: Promise<{ transferId: string }> }
 ) {
   try {
     const { searchParams } = new URL(request.url);
-    const transferId = params.transferId;
+    const { transferId } = await params;
     
     // Parse query parameters
     const page = parseInt(searchParams.get('page') || '1');

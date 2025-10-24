@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
 import Hospital from '@/models/Hospital';
 
 // GET /api/hospitals/organizations - Get all organization types and regions
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
-
-    // Get all organization types and regions
+    // DatabaseService handles connection automatically
+// Get all organization types and regions
     const organizations = await Hospital.aggregate([
       { $match: { isActive: true } },
       {

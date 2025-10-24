@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth/jwt';
-import { SessionManager } from '@/lib/session/SessionManager';
+import { AuthService } from '@/lib/auth';
 
 /**
  * Session Performance Monitoring API
@@ -12,27 +11,19 @@ import { SessionManager } from '@/lib/session/SessionManager';
 export async function GET(request: NextRequest) {
   try {
     // Check authentication
-    const tokenPayload = await getCurrentUser();
-    
-    if (!tokenPayload || !['admin', 'super_admin'].includes(tokenPayload.userType)) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Admin access required',
-          code: 'FORBIDDEN'
-        },
-        { status: 403 }
-      );
-    }
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
 
     // Get session pool statistics
-    const poolStats = await SessionManager.getSessionPoolStats();
+    const poolStats = await AuthService.getSessionStats();
     
     // Get performance analytics
-    const performanceAnalytics = SessionManager.getPerformanceAnalytics();
+    const performanceAnalytics = await AuthService.getPerformanceAnalytics();
     
     // Get session cleanup performance
-    const cleanupResult = await SessionManager.cleanupExpiredSessions();
+    const cleanupResult = await AuthService.cleanupExpiredSessions();
     
     const response = {
       success: true,
@@ -53,7 +44,7 @@ export async function GET(request: NextRequest) {
         slowQueries: performanceAnalytics.slowQueries,
         cacheSize: performanceAnalytics.cacheSize,
         memoryUsage: performanceAnalytics.memoryUsage,
-        queryDistribution: Object.fromEntries(performanceAnalytics.queryDistribution)
+        queryDistribution: performanceAnalytics.queryDistribution
       },
       cleanup: {
         sessionsCleaned: cleanupResult.cleaned,

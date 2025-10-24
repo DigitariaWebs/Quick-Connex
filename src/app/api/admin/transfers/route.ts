@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
-// import { logAdminAction } from '@/lib/auth/admin-middleware'; // Removed - using auth-utils instead
-import dbConnect from '@/lib/database/mongoose';
-import mongoose from 'mongoose';
-// Import all models through centralized initialization
-import { Hospital, User, Patient, Transfer } from '@/lib/database/models';
+import { AuthService } from '@/lib/auth';
+import { DatabaseService, Transfer, User, Hospital } from '@/lib/database';
+import { AuditAction, AuditCategory, ActorType, TargetResourceType } from '@/models/AuditLog';
 import { Permission } from '@/models/User';
-import { AuditAction, AuditCategory, TargetResourceType } from '@/models/UnifiedAuditLog';
-
 /**
  * Admin Transfers API Endpoint
  * 
@@ -48,7 +43,10 @@ export async function GET(request: NextRequest) {
   try {
     // Check admin permissions (now returns full user data)
     console.log('🔍 Admin Transfers API: Starting authentication...');
-    const { user: adminUser } = await requireAdmin();
+    const { user: adminUser } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
     console.log('🔍 Admin Transfers API: Authentication successful, admin user:', {
       hasUser: !!adminUser,
       userType: adminUser?.userType,
@@ -67,9 +65,8 @@ export async function GET(request: NextRequest) {
       }, { status: 403 });
     }
 
-    await dbConnect();
-
-    const { searchParams } = new URL(request.url);
+    // DatabaseService handles connection automatically
+const { searchParams } = new URL(request.url);
     
     // Parse filters
     const filters: TransferFilters = {
@@ -156,15 +153,18 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Admin Transfers API: Sort:', JSON.stringify(sort, null, 2));
     console.log('🔍 Admin Transfers API: Pagination:', { page, limit, skip });
     
-    const transfers = await Transfer.find(query)
-      .populate('requestedBy', 'firstName lastName email userType')
-      .populate('fromHospital', 'name address organization')
-      .populate('toHospital', 'name address organization')
-      .populate('assignedTo', 'firstName lastName email userType')
-      .populate('patient', 'firstName lastName age dossierNumber')
-      .sort(sort)
-      .skip(skip)
-      .limit(limit);
+    const transfers = await DatabaseService.findMany(Transfer, query, {
+      populate: [
+        { path: 'requestedBy', select: 'firstName lastName email userType' },
+        { path: 'fromHospital', select: 'name address organization' },
+        { path: 'toHospital', select: 'name address organization' },
+        { path: 'assignedTo', select: 'firstName lastName email userType' },
+        { path: 'patient', select: 'firstName lastName age dossierNumber' }
+      ],
+      sort: sort,
+      skip: skip,
+      limit: limit
+    });
     
     console.log('🔍 Admin Transfers API: Found transfers:', transfers.length);
     
@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total count for pagination
-    const totalCount = await Transfer.countDocuments(query);
+    const totalCount = await DatabaseService.count(Transfer, query);
 
     // Get statistics
     console.log('🔍 Admin Transfers API: Getting statistics...');
@@ -316,7 +316,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check admin permissions
-    const { user } = await requireAdmin();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
 
     const adminUser = user;
     const body = await request.json();
@@ -337,9 +340,8 @@ export async function POST(request: NextRequest) {
       }, { status: 403 });
     }
 
-    await dbConnect();
-
-    // Create transfer with admin privileges
+    // DatabaseService handles connection automatically
+// Create transfer with admin privileges
     const transferData = {
       ...body,
       requestedBy: adminUser._id,
@@ -347,7 +349,7 @@ export async function POST(request: NextRequest) {
     };
 
     const transfer = new Transfer(transferData);
-    await transfer.save();
+    await transfer;
 
     // Populate the created transfer
     await transfer.populate([
@@ -406,9 +408,8 @@ async function handleBulkOperation(
   operation: BulkOperation
 ) {
   try {
-    await dbConnect();
-
-    const { action, transferIds, reason, newStatus, newPriority, reassignTo } = operation;
+    // DatabaseService handles connection automatically
+const { action, transferIds, reason, newStatus, newPriority, reassignTo } = operation;
 
     // Validate permissions for each action
     switch (action) {

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/auth-utils';
-
-export async function GET(request: NextRequest) {
+import { AuthService } from '@/lib/auth';export async function GET(request: NextRequest) {
   try {
     // Verify admin access
     const userType = request.headers.get('x-user-type');

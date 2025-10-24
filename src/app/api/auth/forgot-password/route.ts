@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
-import User from '@/models/User';
+import { DatabaseService, User } from '@/lib/database';
 import crypto from 'crypto';
 import { rateLimit } from '@/lib/services/security';
 import { EmailService } from '@/lib/communication/channels/email/email-service';
@@ -32,8 +31,8 @@ export async function POST(request: NextRequest) {
 
     // Connect to MongoDB
     console.log('🔄 API: Attempting to connect to MongoDB...');
-    await dbConnect();
-    console.log('✅ API: MongoDB connection established');
+    // DatabaseService handles connection automatically
+console.log('✅ API: MongoDB connection established');
 
     // Parse the request body
     const { email } = await request.json();
@@ -48,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     // Find user by email
     console.log(`🔍 API: Looking up user with email: ${email}`);
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await DatabaseService.findOne(User, { email: email.toLowerCase() });
 
     if (!user) {
       console.log('❌ API: User not found');
@@ -74,7 +73,7 @@ export async function POST(request: NextRequest) {
     // Save reset token to user
     user.resetPasswordToken = resetToken;
     user.resetPasswordExpires = resetExpires;
-    await user.save();
+    await user;
 
     console.log('✅ API: Reset token generated and saved');
 

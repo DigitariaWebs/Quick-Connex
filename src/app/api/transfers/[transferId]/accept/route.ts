@@ -6,11 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
-import Transfer from '@/models/Transfer';
-import User from '@/models/User';
-import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
-import TimelineService from '@/lib/services/timeline-service';
+import { DatabaseService, Transfer, User } from '@/lib/database';
+import { AuthService } from '@/lib/auth';import TimelineService from '@/lib/services/timeline-service';
 import TransferNotificationService from '@/lib/communication/integrations/transfer-notification-service';
 
 export async function PUT(
@@ -31,19 +28,24 @@ export async function PUT(
     }
 
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
     // Only employees can accept transfers
     if (user.userType !== 'employee') {
       return NextResponse.json({ error: 'Only employees can accept transfers' }, { status: 403 });
     }
 
-    await dbConnect();
-
-    // Find the transfer
-    const transfer = await Transfer.findById(transferId)
-      .populate('requestedBy', 'firstName lastName email phone userType')
-      .populate('assignedTo', 'firstName lastName email phone userType') as any;
+    // DatabaseService handles connection automatically
+// Find the transfer
+    const transfer = await DatabaseService.findById(Transfer, transferId, {
+      populate: [
+        { path: 'requestedBy', select: 'firstName lastName email phone userType' },
+        { path: 'assignedTo', select: 'firstName lastName email phone userType' }
+      ]
+    }) as any;
 
     if (!transfer) {
       return NextResponse.json({ error: 'Transfer not found' }, { status: 404 });
@@ -126,7 +128,7 @@ export async function PUT(
     }
     transfer.timeline.push(acceptanceEvent, assignmentEvent, statusChangeEvent);
 
-    await transfer.save();
+    await transfer;
 
     // Send notifications
     try {
@@ -141,25 +143,45 @@ export async function PUT(
       // Don't fail the acceptance if notifications fail
     }
 
-    return createSuccessResponse({
+    return NextResponse.json({
       success: true,
-      message: 'Transfer accepted successfully',
-      transfer: {
-        id: transfer._id,
-        transferId: transfer.transferId,
-        status: transfer.status,
-        assignedTo: {
-          id: employee._id,
-          name: `${employee.firstName} ${employee.lastName}`,
-          email: employee.email
-        },
-        acceptedAt: new Date()
+      data: {
+        message: 'Transfer accepted successfully',
+        transfer: {
+          id: transfer._id,
+          transferId: transfer.transferId,
+          status: transfer.status,
+          assignedTo: {
+            id: employee._id,
+            name: `${employee.firstName} ${employee.lastName}`,
+            email: employee.email
+          },
+          acceptedAt: new Date()
+        }
       }
     });
 
   } catch (error) {
     console.error('Error accepting transfer:', error);
-    return handleAuthError(error);
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -175,14 +197,19 @@ export async function GET(
     }
 
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    // Find the transfer
-    const transfer = await Transfer.findById(transferId)
-      .populate('requestedBy', 'firstName lastName email phone userType')
-      .populate('assignedTo', 'firstName lastName email phone userType') as any;
+    // DatabaseService handles connection automatically
+// Find the transfer
+    const transfer = await DatabaseService.findById(Transfer, transferId, {
+      populate: [
+        { path: 'requestedBy', select: 'firstName lastName email phone userType' },
+        { path: 'assignedTo', select: 'firstName lastName email phone userType' }
+      ]
+    }) as any;
 
     if (!transfer) {
       return NextResponse.json({ error: 'Transfer not found' }, { status: 404 });
@@ -193,24 +220,45 @@ export async function GET(
       return NextResponse.json({ error: 'Access denied: Cannot view pending transfers' }, { status: 403 });
     }
 
-    return createSuccessResponse({
-      transfer: {
-        id: transfer._id,
-        transferId: transfer.transferId,
-        status: transfer.status,
-        assignedTo: transfer.assignedTo ? {
-          id: transfer.assignedTo._id,
-          name: transfer.assignedTo.firstName && transfer.assignedTo.lastName 
-            ? `${transfer.assignedTo.firstName} ${transfer.assignedTo.lastName}`
-            : 'Unknown User',
-          email: transfer.assignedTo.email || 'Unknown Email'
-        } : null,
-        canAccept: transfer.status === 'accepted' && user.userType === 'employee'
+    return NextResponse.json({
+      success: true,
+      data: {
+        transfer: {
+          id: transfer._id,
+          transferId: transfer.transferId,
+          status: transfer.status,
+          assignedTo: transfer.assignedTo ? {
+            id: transfer.assignedTo._id,
+            name: transfer.assignedTo.firstName && transfer.assignedTo.lastName 
+              ? `${transfer.assignedTo.firstName} ${transfer.assignedTo.lastName}`
+              : 'Unknown User',
+            email: transfer.assignedTo.email || 'Unknown Email'
+          } : null,
+          canAccept: transfer.status === 'accepted' && user.userType === 'employee'
+        }
       }
     });
 
   } catch (error) {
     console.error('Error fetching transfer acceptance info:', error);
-    return handleAuthError(error);
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

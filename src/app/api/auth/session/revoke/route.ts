@@ -1,24 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth/jwt';
-import { SessionManager } from '@/lib/session/SessionManager';
+import { AuthService } from '@/lib/auth';
 
 export async function DELETE(request: NextRequest) {
   try {
     // Get current user from JWT token
-    const tokenPayload = await getCurrentUser();
+    const { user, session } = await AuthService.requireAuth(request, {
+      requireSession: true
+    });
+
+    // Try to get sessionId from request body, fallback to current session
+    let sessionId: string;
+    try {
+      const body = await request.json();
+      sessionId = body.sessionId;
+    } catch (jsonError) {
+      // If JSON parsing fails, use current session ID
+      sessionId = session.sessionId;
+    }
     
-    if (!tokenPayload || !tokenPayload.sessionId) {
+    if (!sessionId) {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Not authenticated',
-          code: 'UNAUTHORIZED'
+          error: 'Session ID is required' 
         },
-        { status: 401 }
+        { status: 400 }
       );
     }
 
-    const success = await SessionManager.revokeSession(tokenPayload.sessionId);
+    const success = await AuthService.revokeSession(sessionId);
 
     if (!success) {
       return NextResponse.json(

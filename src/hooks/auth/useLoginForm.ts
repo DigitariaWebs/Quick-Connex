@@ -1,6 +1,19 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { getDashboardRoute } from '@/lib/auth/user-routing';
+// Dashboard routing logic moved to AuthService
+const getDashboardRoute = (userType: string) => {
+  switch (userType) {
+    case 'admin':
+    case 'super_admin':
+      return '/admin';
+    case 'manager':
+      return '/dashboard';
+    case 'employee':
+      return '/dashboard';
+    default:
+      return '/dashboard';
+  }
+};
 
 export function useLoginForm() {
   const [isLoading, setIsLoading] = useState(false);

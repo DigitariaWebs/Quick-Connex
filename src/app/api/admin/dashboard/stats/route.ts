@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthService } from '@/lib/auth';
 
 /**
  * Simple Admin Dashboard Statistics API Endpoint
@@ -10,54 +11,13 @@ export async function GET(request: NextRequest) {
   try {
     console.log('🔍 Admin Dashboard: Starting request');
     
-    // Get token from cookies
-    const token = request.cookies.get('auth-token')?.value;
-    console.log('🔍 Admin Dashboard: Token present:', !!token);
-    
-    if (!token) {
-      console.log('❌ Admin Dashboard: No token found');
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Authentication required',
-          code: 'UNAUTHORIZED'
-        },
-        { status: 401 }
-      );
-    }
+    // Authenticate user
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
 
-    // Verify token
-    const { verifyToken } = await import('@/lib/auth/jwt');
-    const payload = await verifyToken(token);
-    console.log('🔍 Admin Dashboard: Token verified:', !!payload);
-    
-    if (!payload) {
-      console.log('❌ Admin Dashboard: Invalid token');
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Invalid token',
-          code: 'INVALID_TOKEN'
-        },
-        { status: 401 }
-      );
-    }
-
-    console.log('🔍 Admin Dashboard: User type:', payload.userType);
-
-    // Check if user is admin or super_admin
-    if (payload.userType !== 'admin' && payload.userType !== 'super_admin') {
-      console.log('❌ Admin Dashboard: Not admin user');
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Admin access required',
-          code: 'ADMIN_REQUIRED'
-        },
-        { status: 403 }
-      );
-    }
-
+    console.log('🔍 Admin Dashboard: User type:', user.userType);
     console.log('✅ Admin Dashboard: Access granted');
 
     // Return simple dashboard data

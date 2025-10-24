@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import UnifiedAuditLog, { AuditCategory, ActorType, RiskLevel } from '@/models/UnifiedAuditLog';
+import AuditLog, { AuditCategory, ActorType, RiskLevel } from '@/models/AuditLog';
 
 /**
  * POST /api/admin/audit/export
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Get audit logs for export
-    const logs = await UnifiedAuditLog.find(query)
+    const logs = await AuditLog.find(query)
       .sort({ timestamp: -1 })
       .lean();
     

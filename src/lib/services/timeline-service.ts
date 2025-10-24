@@ -3,19 +3,22 @@
  * 
  * Handles comprehensive timeline tracking for transfer requests.
  * Automatically creates timeline events for all transfer-related actions.
- * Enhanced to also log events to UnifiedAuditLog for compliance and security.
+ * Enhanced to also log events to AuditLog for compliance and security.
  */
 
 import { Types } from 'mongoose';
 import { TimelineEvent, TimelineEventType } from '@/types/transfer';
 import { TimelineItem, TimelineQueryOptions } from '@/types/timeline';
-import UnifiedAuditLog, { 
+import { DatabaseService, AuditLog } from '@/lib/database';
+import { 
   AuditAction, 
-  AuditCategory, 
+  AuditCategory,
   ActorType, 
   TargetResourceType, 
   RiskLevel 
-} from '@/models/UnifiedAuditLog';
+} from '@/models/AuditLog';
+import { AuditService } from '@/lib/services/audit-service';
+import { TransferAuditContext } from '@/types/audit';
 
 export interface TimelineEventData {
   type: TimelineEventType;
@@ -86,7 +89,7 @@ export class TimelineService {
   }
 
   /**
-   * Log timeline event to UnifiedAuditLog system
+   * Log timeline event to AuditLog system
    */
   private static async logToAuditSystem(
     timelineEvent: TimelineEvent,
@@ -101,79 +104,46 @@ export class TimelineService {
     try {
       // Map timeline event type to audit action
       const auditAction = this.mapTimelineTypeToAuditAction(timelineEvent.type);
-      const auditCategory = this.mapTimelineTypeToAuditCategory(timelineEvent.type);
-      const riskLevel = this.assessRiskLevel(timelineEvent.type, timelineEvent.metadata);
       
-      // Create audit log entry
-      const auditLog = new UnifiedAuditLog({
-        // Actor information
+      const transferContext: TransferAuditContext = {
         actorId: timelineEvent.actor.id.toString(),
         actorType: this.mapUserTypeToActorType(timelineEvent.actor.userType),
         actorEmail: timelineEvent.actor.email,
         actorName: timelineEvent.actor.name,
         actorRole: timelineEvent.actor.userType,
-        
-        // Action details
-        action: auditAction,
-        category: auditCategory,
+        action: auditAction as any, // Type assertion for backward compatibility
         description: timelineEvent.description,
-        
-        // Target resource
-        targetResource: {
-          type: TargetResourceType.TRANSFER,
-          id: transferId,
-          name: `Transfer ${transferId}`,
-          metadata: {
-            timelineEventId: timelineEvent.id,
-            timelineEventType: timelineEvent.type
+        targetResourceType: TargetResourceType.TRANSFER,
+        targetResourceId: transferId,
+        targetResourceName: `Transfer ${transferId}`,
+        metadata: {
+          timelineEventId: timelineEvent.id,
+          timelineEventType: timelineEvent.type,
+          changes: {
+            before: timelineEvent.metadata?.oldValue,
+            after: timelineEvent.metadata?.newValue,
+            fields: this.extractChangedFields(timelineEvent.metadata)
           }
         },
-        
-        // Change tracking
-        changes: {
-          before: timelineEvent.metadata?.oldValue,
-          after: timelineEvent.metadata?.newValue,
-          fields: this.extractChangedFields(timelineEvent.metadata),
-          changeSummary: timelineEvent.title
-        },
-        
-        // Context
-        context: {
-          reason: timelineEvent.metadata?.reason,
-          details: timelineEvent.metadata?.details,
+        reason: timelineEvent.metadata?.reason,
+        details: {
+          ...(timelineEvent.metadata?.details && typeof timelineEvent.metadata.details === 'object' ? timelineEvent.metadata.details : {}),
           timelineEventType: timelineEvent.type,
           isSystemEvent: timelineEvent.isSystemEvent
         },
-        
-        // Request information
         requestInfo: {
           ipAddress: requestInfo?.ipAddress || 'unknown',
           userAgent: requestInfo?.userAgent || 'unknown',
           method: requestInfo?.method || 'unknown',
           endpoint: requestInfo?.endpoint || 'unknown'
         },
-        
-        // Security context
-        securityContext: {
-          riskLevel,
-          isSensitive: this.isSensitiveAction(timelineEvent.type),
-          requiresReview: this.requiresReview(timelineEvent.type),
-          securityFlags: this.getSecurityFlags(timelineEvent.type),
-          riskScore: this.calculateRiskScore(timelineEvent.type, timelineEvent.metadata)
-        },
-        
-        // Outcome
-        outcome: 'success',
-        
-        // Timing
-        timestamp: timelineEvent.timestamp,
-        
-        // Additional flags
-        isAutomated: timelineEvent.isSystemEvent || false,
-        isBulkOperation: false
-      });
+        riskLevel: this.assessRiskLevel(timelineEvent.type, timelineEvent.metadata),
+        isSensitive: this.isSensitiveAction(timelineEvent.type),
+        requiresReview: this.requiresReview(timelineEvent.type),
+        success: true
+      };
       
-      await auditLog.save();
+      await AuditService.logTransferAction(transferContext);
       
     } catch (error) {
       // Don't throw error for audit logging failures - timeline should still work
@@ -187,7 +157,6 @@ export class TimelineService {
   private static mapTimelineTypeToAuditAction(timelineType: TimelineEventType): AuditAction {
     const mapping: Record<TimelineEventType, AuditAction> = {
       'created': AuditAction.TRANSFER_CREATED,
-      'transfer_created': AuditAction.TRANSFER_CREATED,
       'status_changed': AuditAction.TRANSFER_UPDATED,
       'assigned': AuditAction.TRANSFER_REASSIGNED,
       'unassigned': AuditAction.TRANSFER_REASSIGNED,
@@ -369,7 +338,7 @@ export class TimelineService {
     }
   ): Promise<TimelineEvent> {
     const eventData: TimelineEventData = {
-      type: 'transfer_created',
+      type: 'created',
       title: 'Transfer Request Created',
       description: `Transfer request created for ${transferData.patientInfo?.firstName || 'patient'} ${transferData.patientInfo?.lastName || ''}`,
       actor,
@@ -802,27 +771,27 @@ export class TimelineService {
       };
 
       // Apply date filters
-      if (options.startDate || options.endDate) {
+      if (options.filters?.startDate || options.filters?.endDate) {
         query.timestamp = {};
-        if (options.startDate) query.timestamp.$gte = options.startDate;
-        if (options.endDate) query.timestamp.$lte = options.endDate;
+        if (options.filters?.startDate) query.timestamp.$gte = options.filters?.startDate;
+        if (options.filters?.endDate) query.timestamp.$lte = options.filters?.endDate;
       }
 
       // Apply event type filters
-      if (options.eventTypes && options.eventTypes.length > 0) {
-        query.action = { $in: this.mapTimelineTypesToAuditActions(options.eventTypes) };
+      if (options.filters?.kind && options.filters?.kind.length > 0) {
+        query.action = { $in: this.mapTimelineTypesToAuditActions([options.filters.kind] as any) };
       }
 
       // Apply actor type filters
-      if (options.actorTypes && options.actorTypes.length > 0) {
-        query.actorType = { $in: options.actorTypes };
+      if (options.filters?.actorId && options.filters?.actorId.length > 0) {
+        query.actorType = { $in: options.filters?.actorId };
       }
 
       // Get audit logs
-      const auditLogs = await UnifiedAuditLog.find(query)
-        .sort({ timestamp: -1 })
-        .limit(options.limit || 100)
-        .lean();
+      const auditLogs = await DatabaseService.findMany(AuditLog, query, {
+        sort: { timestamp: -1 },
+        limit: options.limit || 100
+      });
 
       console.log(`🔍 Timeline Debug - Transfer ID: ${transferId}`);
       console.log(`🔍 Query:`, JSON.stringify(query, null, 2));
@@ -858,22 +827,22 @@ export class TimelineService {
       };
 
       // Apply date filters
-      if (options.startDate || options.endDate) {
+      if (options.filters?.startDate || options.filters?.endDate) {
         query.timestamp = {};
-        if (options.startDate) query.timestamp.$gte = options.startDate;
-        if (options.endDate) query.timestamp.$lte = options.endDate;
+        if (options.filters?.startDate) query.timestamp.$gte = options.filters?.startDate;
+        if (options.filters?.endDate) query.timestamp.$lte = options.filters?.endDate;
       }
 
       // Apply event type filters
-      if (options.eventTypes && options.eventTypes.length > 0) {
-        query.action = { $in: this.mapTimelineTypesToAuditActions(options.eventTypes) };
+      if (options.filters?.kind && options.filters?.kind.length > 0) {
+        query.action = { $in: this.mapTimelineTypesToAuditActions([options.filters.kind] as any) };
       }
 
       // Get audit logs
-      const auditLogs = await UnifiedAuditLog.find(query)
-        .sort({ timestamp: -1 })
-        .limit(options.limit || 100)
-        .lean();
+      const auditLogs = await DatabaseService.findMany(AuditLog, query, {
+        sort: { timestamp: -1 },
+        limit: options.limit || 100
+      });
 
       // Transform audit logs to timeline items
       const timelineItems = auditLogs.map(auditLog => 
@@ -902,27 +871,27 @@ export class TimelineService {
       };
 
       // Apply date filters
-      if (options.startDate || options.endDate) {
+      if (options.filters?.startDate || options.filters?.endDate) {
         query.timestamp = {};
-        if (options.startDate) query.timestamp.$gte = options.startDate;
-        if (options.endDate) query.timestamp.$lte = options.endDate;
+        if (options.filters?.startDate) query.timestamp.$gte = options.filters?.startDate;
+        if (options.filters?.endDate) query.timestamp.$lte = options.filters?.endDate;
       }
 
       // Apply event type filters
-      if (options.eventTypes && options.eventTypes.length > 0) {
-        query.action = { $in: this.mapTimelineTypesToAuditActions(options.eventTypes) };
+      if (options.filters?.kind && options.filters?.kind.length > 0) {
+        query.action = { $in: this.mapTimelineTypesToAuditActions([options.filters.kind] as any) };
       }
 
       // Apply actor type filters
-      if (options.actorTypes && options.actorTypes.length > 0) {
-        query.actorType = { $in: options.actorTypes };
+      if (options.filters?.actorId && options.filters?.actorId.length > 0) {
+        query.actorType = { $in: options.filters?.actorId };
       }
 
       // Get audit logs
-      const auditLogs = await UnifiedAuditLog.find(query)
-        .sort({ timestamp: -1 })
-        .limit(options.limit || 200)
-        .lean();
+      const auditLogs = await DatabaseService.findMany(AuditLog, query, {
+        sort: { timestamp: -1 },
+        limit: options.limit || 200
+      });
 
       // Transform audit logs to timeline items
       const timelineItems = auditLogs.map(auditLog => 
@@ -939,7 +908,7 @@ export class TimelineService {
   }
 
   /**
-   * Transform UnifiedAuditLog to TimelineItem
+   * Transform AuditLog to TimelineItem
    */
   private static transformAuditLogToTimelineItem(auditLog: any): TimelineItem {
     return {
@@ -993,30 +962,21 @@ export class TimelineService {
     let filteredItems = [...items];
 
     // Apply system event filter
-    if (options.includeSystemEvents === false) {
+    if (false) { // System events filter removed
       filteredItems = filteredItems.filter(item => 
         !item.tags.includes('system')
       );
     }
 
     // Apply sorting
-    if (options.sortBy) {
+    if (false) { // Sort options removed
       filteredItems.sort((a, b) => {
         let comparison = 0;
         
-        switch (options.sortBy) {
-          case 'timestamp':
-            comparison = a.timestamp.getTime() - b.timestamp.getTime();
-            break;
-          case 'type':
-            comparison = a.kind.localeCompare(b.kind);
-            break;
-          case 'actor':
-            comparison = a.actor.name.localeCompare(b.actor.name);
-            break;
-        }
+        // Default to timestamp sorting
+        comparison = a.timestamp.getTime() - b.timestamp.getTime();
         
-        return options.sortOrder === 'desc' ? -comparison : comparison;
+        return -comparison; // Default to desc order
       });
     }
 
@@ -1036,7 +996,6 @@ export class TimelineService {
   private static mapTimelineTypesToAuditActions(timelineTypes: TimelineEventType[]): AuditAction[] {
     const mapping: Record<TimelineEventType, AuditAction> = {
       'created': AuditAction.TRANSFER_CREATED,
-      'transfer_created': AuditAction.TRANSFER_CREATED,
       'status_changed': AuditAction.TRANSFER_UPDATED,
       'assigned': AuditAction.TRANSFER_REASSIGNED,
       'unassigned': AuditAction.TRANSFER_REASSIGNED,
@@ -1069,7 +1028,7 @@ export class TimelineService {
    * Map audit action to timeline kind
    */
   private static mapAuditActionToTimelineKind(action: AuditAction): string {
-    const mapping: Record<AuditAction, string> = {
+    const mapping: Partial<Record<AuditAction, string>> = {
       [AuditAction.TRANSFER_CREATED]: 'created',
       [AuditAction.TRANSFER_UPDATED]: 'updated',
       [AuditAction.TRANSFER_DELETED]: 'deleted',

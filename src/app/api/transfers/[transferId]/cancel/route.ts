@@ -5,11 +5,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
-import Transfer from '@/models/Transfer';
-import User from '@/models/User';
-import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
-import TimelineService from '@/lib/services/timeline-service';
+import { DatabaseService, Transfer, User } from '@/lib/database';
+import { AuthService } from '@/lib/auth';import TimelineService from '@/lib/services/timeline-service';
 import TransferNotificationService from '@/lib/communication/integrations/transfer-notification-service';
 import { canCancelTransfer } from '@/lib/transfers/transfer-cancellation-utils';
 
@@ -27,14 +24,19 @@ export async function PUT(
     }
 
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    // Find the transfer
-    const transfer = await Transfer.findById(transferId)
-      .populate('requestedBy', 'firstName lastName email phone userType')
-      .populate('assignedTo', 'firstName lastName email phone userType');
+    // DatabaseService handles connection automatically
+// Find the transfer
+    const transfer = await DatabaseService.findById(Transfer, transferId, {
+      populate: [
+        { path: 'requestedBy', select: 'firstName lastName email phone userType' },
+        { path: 'assignedTo', select: 'firstName lastName email phone userType' }
+      ]
+    });
 
     if (!transfer) {
       return NextResponse.json({ error: 'Transfer not found' }, { status: 404 });
@@ -135,7 +137,7 @@ export async function PUT(
     }
     transfer.timeline.push(unassignmentEvent, statusChangeEvent);
 
-    await transfer.save();
+    await transfer;
 
     // Send notifications
     try {
@@ -149,27 +151,47 @@ export async function PUT(
       // Don't fail the operation if notifications fail
     }
 
-    return createSuccessResponse({
+    return NextResponse.json({
       success: true,
-      message: 'Transfer returned to available pool. Other employees can now accept it.',
-      transfer: {
-        id: transfer._id,
-        transferId: transfer.transferId,
-        status: transfer.status,
-        assignedTo: null,
-        unassignedAt: new Date(),
-        unassignedBy: {
-          id: user._id,
-          name: `${user.firstName} ${user.lastName}`,
-          email: user.email
-        },
-        availableForReassignment: true
+      data: {
+        message: 'Transfer returned to available pool. Other employees can now accept it.',
+        transfer: {
+          id: transfer._id,
+          transferId: transfer.transferId,
+          status: transfer.status,
+          assignedTo: null,
+          unassignedAt: new Date(),
+          unassignedBy: {
+            id: user._id,
+            name: `${user.firstName} ${user.lastName}`,
+            email: user.email
+          },
+          availableForReassignment: true
+        }
       }
     });
 
   } catch (error) {
     console.error('Error cancelling transfer:', error);
-    return handleAuthError(error);
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -185,14 +207,19 @@ export async function GET(
     }
 
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    // Find the transfer
-    const transfer = await Transfer.findById(transferId)
-      .populate('requestedBy', 'firstName lastName email phone userType')
-      .populate('assignedTo', 'firstName lastName email phone userType') as any;
+    // DatabaseService handles connection automatically
+// Find the transfer
+    const transfer = await DatabaseService.findById(Transfer, transferId, {
+      populate: [
+        { path: 'requestedBy', select: 'firstName lastName email phone userType' },
+        { path: 'assignedTo', select: 'firstName lastName email phone userType' }
+      ]
+    }) as any;
 
     if (!transfer) {
       return NextResponse.json({ error: 'Transfer not found' }, { status: 404 });
@@ -200,25 +227,46 @@ export async function GET(
 
     const canCancel = canCancelTransfer(transfer);
 
-    return createSuccessResponse({
-      transfer: {
-        id: transfer._id,
-        transferId: transfer.transferId,
-        status: transfer.status,
-        acceptedAt: transfer.acceptedAt,
-        canCancel: canCancel,
-        assignedTo: transfer.assignedTo ? {
-          id: transfer.assignedTo._id,
-          name: transfer.assignedTo.firstName && transfer.assignedTo.lastName 
-            ? `${transfer.assignedTo.firstName} ${transfer.assignedTo.lastName}`
-            : 'Unknown User',
-          email: transfer.assignedTo.email || 'Unknown Email'
-        } : null
+    return NextResponse.json({
+      success: true,
+      data: {
+        transfer: {
+          id: transfer._id,
+          transferId: transfer.transferId,
+          status: transfer.status,
+          acceptedAt: transfer.acceptedAt,
+          canCancel: canCancel,
+          assignedTo: transfer.assignedTo ? {
+            id: transfer.assignedTo._id,
+            name: transfer.assignedTo.firstName && transfer.assignedTo.lastName 
+              ? `${transfer.assignedTo.firstName} ${transfer.assignedTo.lastName}`
+              : 'Unknown User',
+            email: transfer.assignedTo.email || 'Unknown Email'
+          } : null
+        }
       }
     });
 
   } catch (error) {
     console.error('Error fetching transfer cancellation info:', error);
-    return handleAuthError(error);
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

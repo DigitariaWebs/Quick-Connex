@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
 import User from '@/models/User';
-import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
-
-// GET /api/notifications/preferences - Get user's notification preferences
+import { AuthService } from '@/lib/auth';// GET /api/notifications/preferences - Get user's notification preferences
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    const userDoc = await User.findById(user._id).select('notificationPreferences');
+    // DatabaseService handles connection automatically
+const userDoc = await User.findById(user._id).select('notificationPreferences');
     
     const defaultPreferences = {
       realtime: {
@@ -76,14 +75,36 @@ export async function GET(request: NextRequest) {
 
     const preferences = defaultPreferences;
 
-    return createSuccessResponse({
-      preferences,
-      userType: user.userType
+    return NextResponse.json({
+      success: true,
+      data: {
+        preferences,
+        userType: user.userType
+      },
+      message: 'Notification preferences retrieved successfully'
     });
 
   } catch (error) {
     console.error('Error fetching notification preferences:', error);
-    return handleAuthError(error);
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -91,11 +112,13 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    const body = await request.json();
+    // DatabaseService handles connection automatically
+const body = await request.json();
     const { preferences } = body;
 
     if (!preferences || typeof preferences !== 'object') {
@@ -151,14 +174,35 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    return createSuccessResponse({
-      preferences: preferences,
+    return NextResponse.json({
+      success: true,
+      data: {
+        preferences: preferences
+      },
       message: 'Notification preferences updated successfully'
     });
 
   } catch (error) {
     console.error('Error updating notification preferences:', error);
-    return handleAuthError(error);
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -166,11 +210,13 @@ export async function PUT(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    const defaultPreferences = {
+    // DatabaseService handles connection automatically
+const defaultPreferences = {
       realtime: {
         enabled: true,
         sound: true,
@@ -244,13 +290,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    return createSuccessResponse({
-      preferences: defaultPreferences,
+    return NextResponse.json({
+      success: true,
+      data: {
+        preferences: defaultPreferences
+      },
       message: 'Notification preferences reset to defaults'
     });
 
   } catch (error) {
     console.error('Error resetting notification preferences:', error);
-    return handleAuthError(error);
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

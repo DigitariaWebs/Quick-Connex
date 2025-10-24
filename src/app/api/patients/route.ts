@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
-import Patient from '@/models/Patient';
-import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
-import mongoose from 'mongoose';
+import { DatabaseService, Patient } from '@/lib/database';
+import { AuthService } from '@/lib/auth';
+import { AuditService } from '@/lib/services/audit-service';
+import { PatientAuditContext } from '@/types/audit';
+import { AuditAction, ActorType, TargetResourceType } from '@/models/AuditLog';
 
 // GET /api/patients - Get patients (search and list)
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
-
-    await dbConnect();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
     const limit = parseInt(searchParams.get('limit') || '20');
     const page = parseInt(searchParams.get('page') || '1');
-    const skip = (page - 1) * limit;
 
     let query: any = { isActive: true };
 
@@ -31,30 +32,76 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // Get patients with pagination
-    const patients = await Patient.find(query)
-      .populate('createdBy', 'firstName lastName email')
-      .populate('lastModifiedBy', 'firstName lastName email')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    // Get patients with pagination using DatabaseService
+    const result = await DatabaseService.findWithPagination(Patient, query, {
+      page,
+      limit,
+      sort: { createdAt: -1 }
+    }, {
+      populate: [
+        { path: 'createdBy', select: 'firstName lastName email' },
+        { path: 'lastModifiedBy', select: 'firstName lastName email' }
+      ]
+    });
 
-    // Get total count for pagination
-    const totalCount = await Patient.countDocuments(query);
+    const patients = result.data;
+    const totalCount = result.pagination.total;
 
-    return createSuccessResponse({
-      patients,
-      pagination: {
+    // Log patient data access (viewing patient list)
+    const patientContext: PatientAuditContext = {
+      actorId: user._id.toString(),
+      actorType: ActorType.USER,
+      actorEmail: user.email,
+      actorName: `${user.firstName} ${user.lastName}`,
+      actorRole: user.userType,
+      action: AuditAction.PATIENT_VIEWED,
+      description: `Patient list accessed (${totalCount} patients)`,
+      targetResourceType: TargetResourceType.PATIENT,
+      targetResourceId: 'multiple', // Multiple patients
+      targetResourceName: 'Patient List',
+      metadata: {
+        searchQuery: search || undefined,
+        resultCount: totalCount,
         page,
-        limit,
-        total: totalCount,
-        pages: Math.ceil(totalCount / limit)
-      }
-    }, 'Patients retrieved successfully');
+        limit
+      },
+      requestInfo: AuditService.extractRequestInfo(request),
+      success: true
+    };
+    
+    await AuditService.logPatientAction(patientContext);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        patients,
+        pagination: result.pagination
+      },
+      message: 'Patients retrieved successfully'
+    });
 
   } catch (error) {
     console.error('Error fetching patients:', error);
-    return handleAuthError(error);
+    
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -62,9 +109,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user - only managers can create patients
-    const { user } = await requireEmployeeOrManager();
-
-    await dbConnect();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
     const body = await request.json();
     const {
@@ -80,7 +128,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if patient with dossier number already exists
-    const existingPatient = await Patient.findOne({ 
+    const existingPatient = await DatabaseService.findOne(Patient, { 
       dossierNumber: dossierNumber.toUpperCase(),
       isActive: true 
     });
@@ -89,28 +137,83 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Patient with this dossier number already exists' }, { status: 409 });
     }
 
-    // Create new patient
-    const patient = new Patient({
+    // Create new patient using DatabaseService
+    const patient = await DatabaseService.create(Patient, {
       firstName,
       lastName,
       age,
       dossierNumber: dossierNumber.toUpperCase(),
-      createdBy: new mongoose.Types.ObjectId(user._id),
-      lastModifiedBy: new mongoose.Types.ObjectId(user._id),
+      createdBy: user._id,
+      lastModifiedBy: user._id,
       isActive: true
     });
 
-    await patient.save();
+    // Log patient creation
+    const patientContext: PatientAuditContext = {
+      actorId: user._id.toString(),
+      actorType: ActorType.USER,
+      actorEmail: user.email,
+      actorName: `${user.firstName} ${user.lastName}`,
+      actorRole: user.userType,
+      action: AuditAction.PATIENT_CREATED,
+      description: `Patient created: ${firstName} ${lastName} (${dossierNumber})`,
+      targetResourceType: TargetResourceType.PATIENT,
+      targetResourceId: patient._id.toString(),
+      targetResourceName: `${firstName} ${lastName}`,
+      metadata: {
+        dossierNumber: dossierNumber.toUpperCase(),
+        age,
+        changes: {
+          after: {
+            firstName,
+            lastName,
+            age,
+            dossierNumber: dossierNumber.toUpperCase()
+          },
+          fields: ['firstName', 'lastName', 'age', 'dossierNumber']
+        }
+      },
+      requestInfo: AuditService.extractRequestInfo(request),
+      success: true
+    };
+    
+    await AuditService.logPatientAction(patientContext);
 
-    // Populate the response
-    const populatedPatient = await Patient.findById(patient._id)
-      .populate('createdBy', 'firstName lastName email')
-      .populate('lastModifiedBy', 'firstName lastName email');
+    // Get populated patient for response
+    const populatedPatient = await DatabaseService.findById(Patient, patient._id.toString(), {
+      populate: [
+        { path: 'createdBy', select: 'firstName lastName email' },
+        { path: 'lastModifiedBy', select: 'firstName lastName email' }
+      ]
+    });
 
-    return createSuccessResponse(populatedPatient, 'Patient created successfully', 201);
+    return NextResponse.json({
+      success: true,
+      data: populatedPatient,
+      message: 'Patient created successfully'
+    }, { status: 201 });
 
   } catch (error) {
     console.error('Error creating patient:', error);
-    return handleAuthError(error);
+    
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

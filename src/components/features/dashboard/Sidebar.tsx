@@ -247,7 +247,7 @@ export default function Sidebar({
               <Link
                 key={item.name}
                 href={item.href}
-                onClick={() => setIsMobileOpen(false)}
+                onClick={() => onMobileToggle?.(false)}
               >
                 <div
                   className={`sidebar-nav-item flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all duration-200 mb-4 ${

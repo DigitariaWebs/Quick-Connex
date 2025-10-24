@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
 import User from '@/models/User';
-import { requireAdmin } from '@/lib/auth/auth-utils';
+import { AuthService } from '@/lib/auth';
 import { EmailService } from '@/lib/communication/channels/email/email-service';
 import { EmailMessage } from '@/types/communication';
 
@@ -20,10 +19,12 @@ export async function POST(
     const { reason = 'Approved by administrator' } = body;
 
     // Verify admin authentication
-    const { user: admin } = await requireAdmin();
-    await dbConnect();
-
-    // Get user details
+    const { user: admin } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
+    // DatabaseService handles connection automatically
+// Get user details
     const user = await User.findById(id);
     if (!user) {
       return NextResponse.json(

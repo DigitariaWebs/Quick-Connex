@@ -6,8 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
-import NotificationIntegrationService from '@/lib/communication/integrations/notification-integration';
+import { AuthService } from '@/lib/auth';import NotificationIntegrationService from '@/lib/communication/integrations/notification-integration';
 
 // POST /api/webhooks/twilio - Handle Twilio webhook events
 export async function POST(request: NextRequest) {
@@ -62,10 +61,14 @@ export async function POST(request: NextRequest) {
     // 2. Update the delivery status in your database
     // 3. Trigger any follow-up actions if needed
 
-    return createSuccessResponse({
+    return NextResponse.json({
+      success: true,
+      data: {
       message: 'Webhook processed successfully',
       messageSid,
       status: communicationStatus,
+    
+      }
     });
 
   } catch (error) {
@@ -88,9 +91,12 @@ export async function GET(request: NextRequest) {
       return new NextResponse(challenge, { status: 200 });
     }
 
-    return createSuccessResponse({
-      message: 'Twilio webhook endpoint is active',
-      timestamp: new Date().toISOString(),
+    return NextResponse.json({
+      success: true,
+      data: {
+        message: 'Twilio webhook endpoint is active',
+        timestamp: new Date().toISOString()
+      }
     });
 
   } catch (error) {

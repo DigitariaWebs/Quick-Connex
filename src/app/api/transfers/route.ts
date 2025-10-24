@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { DatabaseService, Transfer, User, Hospital, Patient } from '@/lib/database';
+import { AuthService } from '@/lib/auth';
 import { Types } from 'mongoose';
-import dbConnect from '@/lib/database/mongoose';
-import { Transfer, User, Hospital, Patient } from '@/lib/database/models';
-import { requireEmployeeOrManager, requireManager, handleAuthError, createErrorResponse, createSuccessResponse } from '@/lib/auth/auth-utils';
 import { validateTransferData } from '@/lib/transfers/transfer-validation';
 import TimelineService from '@/lib/services/timeline-service';
+import { createSuccessResponse } from '@/lib/utils/api-responses';
 
 // GET /api/transfers - Get transfer requests for employees
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user with full session validation
-    const { user } = await requireEmployeeOrManager();
-
-    await dbConnect();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
@@ -40,10 +41,14 @@ export async function GET(request: NextRequest) {
       if (status && status !== 'all') {
         if (status === 'pending') {
           // Employees cannot see pending transfers
-          return createSuccessResponse({
+          return NextResponse.json({
+      success: true,
+      data: {
             transfers: [],
             count: 0
-          });
+          
+      }
+    });
         }
         query.status = status;
       } else {
@@ -58,22 +63,47 @@ export async function GET(request: NextRequest) {
       // If no status specified, get all transfers for managers
     }
 
-    // Get transfers with populated data
-    const transfers = await Transfer.find(query)
-      .populate('requestedBy', 'firstName lastName email userType')
-      .populate('fromHospital', 'name address organization')
-      .populate('toHospital', 'name address organization')
-      .sort({ requestedDate: -1 })
-      .limit(50);
+    // Get transfers with populated data using DatabaseService
+    const transfers = await DatabaseService.findMany(Transfer, query, {
+      populate: [
+        { path: 'requestedBy', select: 'firstName lastName email userType' },
+        { path: 'fromHospital', select: 'name address organization' },
+        { path: 'toHospital', select: 'name address organization' }
+      ],
+      sort: { requestedDate: -1 },
+      limit: 50
+    });
 
-    return createSuccessResponse({
-      transfers,
-      count: transfers.length
+    return NextResponse.json({
+      success: true,
+      data: {
+        transfers,
+        count: transfers.length
+      }
     });
 
   } catch (error) {
     console.error('Error fetching transfers:', error);
-    return handleAuthError(error);
+    
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -81,9 +111,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user - only managers can create transfers
-    const { user } = await requireManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
+    // DatabaseService handles connection automatically
 
     const body = await request.json();
     const {
@@ -346,7 +379,7 @@ export async function POST(request: NextRequest) {
       // Fetch the full user data from database for notifications
       let fullUserData;
       try {
-        fullUserData = await User.findById(new Types.ObjectId(requestingUser.userId)).select('firstName lastName email phone userType');
+        fullUserData = await User.findById(new Types.ObjectId(requestingUser._id)).select('firstName lastName email phone userType');
       } catch (dbError) {
         console.error('❌ Database error fetching user data:', dbError);
         return createSuccessResponse(populatedTransfer, 'Transfer request created successfully', 201);
@@ -364,13 +397,17 @@ export async function POST(request: NextRequest) {
     } catch (notificationError) {
       console.error('❌ Error sending transfer request notifications:', notificationError);
       console.error('❌ Notification error details:', {
-        message: notificationError.message,
-        stack: notificationError.stack,
-        name: notificationError.name
+        message: notificationError instanceof Error ? notificationError.message : 'Unknown error',
+        stack: notificationError instanceof Error ? notificationError.stack : undefined,
+        name: notificationError instanceof Error ? notificationError.name : 'Unknown'
       });
     }
 
-    return createSuccessResponse(populatedTransfer, 'Transfer request created successfully', 201);
+    return NextResponse.json({
+      success: true,
+      data: populatedTransfer,
+      message: 'Transfer request created successfully'
+    }, { status: 201 });
 
   } catch (error) {
     console.error('Error creating transfer:', error);
@@ -379,6 +416,25 @@ export async function POST(request: NextRequest) {
       stack: (error as Error).stack,
       name: (error as Error).name
     });
-    return handleAuthError(error);
+    
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

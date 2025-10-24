@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/auth-utils';
+import { AuthService } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
     // Verify admin access
-    const { user } = await requireAdmin();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
     
     // Parse query parameters
     const url = new URL(request.url);

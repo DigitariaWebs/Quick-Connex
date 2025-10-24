@@ -1,24 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth/jwt';
-import { SessionManager } from '@/lib/session/SessionManager';
+import { AuthService } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    // Get current user from JWT token
-    const tokenPayload = await getCurrentUser();
-    
-    if (!tokenPayload || !tokenPayload.userId) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Not authenticated',
-          code: 'UNAUTHORIZED'
-        },
-        { status: 401 }
-      );
-    }
+    // Authenticate user
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    const sessions = await SessionManager.getUserSessions(tokenPayload.userId);
+    const sessions = await AuthService.getUserSessions(user._id);
 
     return NextResponse.json({
       success: true,
@@ -28,12 +19,24 @@ export async function GET(request: NextRequest) {
     
   } catch (error) {
     console.error('❌ Failed to retrieve sessions:', error);
+    
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to retrieve sessions',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }

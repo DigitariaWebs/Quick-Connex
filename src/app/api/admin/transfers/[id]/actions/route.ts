@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
-// import { logAdminAction } from '@/lib/auth/admin-middleware'; // Removed - using auth-utils instead
-import dbConnect from '@/lib/database/mongoose';
-import Transfer from '@/models/Transfer';
-import User from '@/models/User';
+import { AuthService } from '@/lib/auth';
+import { DatabaseService, Transfer, User } from '@/lib/database';
+import { AuditService } from '@/lib/services/audit-service';
+import { TransferAuditContext } from '@/types/audit';
+import { AuditAction, ActorType, TargetResourceType } from '@/models/AuditLog';
 import { Permission } from '@/models/User';
-import { AuditAction, AuditCategory, TargetResourceType } from '@/models/UnifiedAuditLog';
 import TransferNotificationService from '@/lib/communication/integrations/transfer-notification-service';
 
 /**
@@ -33,7 +32,10 @@ export async function POST(
 ) {
   try {
     // Check admin permissions
-    const { user } = await requireAdmin();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
 
     const adminUser = user;
     const { id } = await params;
@@ -41,9 +43,8 @@ export async function POST(
 
     const { action, reason, newStatus, newPriority, reassignTo, adminNote } = body;
 
-    await dbConnect();
-
-    const transfer = await Transfer.findById(id);
+    // DatabaseService handles connection automatically
+const transfer = await Transfer.findById(id);
     if (!transfer) {
       return NextResponse.json({
         success: false,
@@ -110,7 +111,7 @@ export async function POST(
         updateData.status = 'completed';
         updateData.completedDate = new Date();
         actionDescription = 'Force completed by admin';
-        auditAction = AuditAction.TRANSFER_FORCE_COMPLETED;
+        auditAction = AuditAction.TRANSFER_COMPLETED;
         
         // Add admin note
         const forceCompleteNote = `[ADMIN FORCE COMPLETED - ${new Date().toISOString()}] ${reason || 'No reason provided'}`;
@@ -284,18 +285,47 @@ export async function POST(
     // Only the transfer state is updated, no email/SMS notifications are sent
     console.log('✅ Admin action completed - state updated without notifications');
 
-    // Log admin action (simplified implementation)
-    console.log('Admin action logged:', {
-      adminId: adminUser._id.toString(),
-      adminName: `${adminUser.firstName} ${adminUser.lastName}`,
-      adminEmail: adminUser.email,
-      action,
+    // Log admin action using AuditService
+    const transferContext: TransferAuditContext = {
+      actorId: adminUser._id.toString(),
+      actorType: ActorType.ADMIN,
+      actorEmail: adminUser.email,
+      actorName: `${adminUser.firstName} ${adminUser.lastName}`,
+      actorRole: adminUser.userType,
+      action: auditAction,
+      description: actionDescription,
+      targetResourceType: TargetResourceType.TRANSFER,
+      targetResourceId: id,
+      targetResourceName: `Transfer ${id}`,
+      metadata: {
+        transferStatus: newStatus || updatedTransfer.status,
+        priority: newPriority || updatedTransfer.priority,
+        assignedTo: reassignTo || updatedTransfer.assignedTo,
+        changes: {
+          before: originalValues,
+          after: {
+            status: updatedTransfer.status,
+            priority: updatedTransfer.priority,
+            assignedTo: updatedTransfer.assignedTo,
+            notes: updatedTransfer.notes
+          },
+          fields: Object.keys(originalValues)
+        }
+      },
       reason,
-      newStatus,
-      newPriority,
-      reassignTo,
-      adminNote
-    });
+      details: {
+        action,
+        reason,
+        newStatus,
+        newPriority,
+        reassignTo,
+        adminNote
+      },
+      requestInfo: AuditService.extractRequestInfo(request),
+      success: true
+    };
+    
+    await AuditService.logTransferAction(transferContext);
 
     return NextResponse.json({
       success: true,

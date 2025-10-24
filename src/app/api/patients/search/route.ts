@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
 import Patient from '@/models/Patient';
-import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
-
-// GET /api/patients/search - Search patients
+import { AuthService } from '@/lib/auth';// GET /api/patients/search - Search patients
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    const { searchParams } = new URL(request.url);
+    // DatabaseService handles connection automatically
+const { searchParams } = new URL(request.url);
     const query = searchParams.get('q');
     const limit = parseInt(searchParams.get('limit') || '10');
 
@@ -33,10 +32,32 @@ export async function GET(request: NextRequest) {
     .limit(limit)
     .sort({ lastName: 1, firstName: 1 });
 
-    return createSuccessResponse(patients, 'Patient search completed');
+    return NextResponse.json({
+      success: true,
+      data: patients,
+      message: 'Patient search completed'
+    });
 
   } catch (error) {
     console.error('Error searching patients:', error);
-    return handleAuthError(error);
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

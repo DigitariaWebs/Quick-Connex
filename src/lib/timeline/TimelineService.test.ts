@@ -6,7 +6,7 @@
 
 import { TimelineService } from './TimelineService';
 import { TimelineUtils } from './TimelineUtils';
-import { AuditAction, ActorType, RiskLevel } from '@/models/UnifiedAuditLog';
+import { AuditAction, ActorType, RiskLevel } from '@/models/AuditLog';
 
 /**
  * Test timeline service functionality

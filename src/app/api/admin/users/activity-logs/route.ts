@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import UnifiedAuditLog, { AuditCategory, ActorType } from '@/models/UnifiedAuditLog';
+import { DatabaseService, AuditLog } from '@/lib/database';
+import { AuditCategory, ActorType } from '@/models/AuditLog';
 
 /**
  * GET /api/admin/users/activity-logs
@@ -44,12 +45,12 @@ export async function GET(request: NextRequest) {
     
     // Execute query with pagination
     const [logs, total] = await Promise.all([
-      UnifiedAuditLog.find(query)
-        .sort({ timestamp: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      UnifiedAuditLog.countDocuments(query)
+      DatabaseService.findMany(AuditLog, query, {
+        sort: { timestamp: -1 },
+        skip: skip,
+        limit: limit
+      }),
+      DatabaseService.count(AuditLog, query)
     ]);
     
     // Calculate pagination info

@@ -19,7 +19,7 @@ import {
 interface DocumentPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  document: {
+  documentData: {
     fileId: string;
     documentType: string;
     originalName: string;
@@ -41,7 +41,7 @@ interface DocumentPreviewModalProps {
 export default function DocumentPreviewModal({
   isOpen,
   onClose,
-  document,
+  documentData,
 }: DocumentPreviewModalProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -56,16 +56,16 @@ export default function DocumentPreviewModal({
 
   // Generate secure document URL
   useEffect(() => {
-    if (isOpen && document) {
+    if (isOpen && documentData) {
       setLoading(true);
       setError(null);
 
       // Create a secure URL with timestamp to prevent caching
-      const secureUrl = `${document.downloadUrl}?t=${Date.now()}`;
+      const secureUrl = `${documentData.downloadUrl}?t=${Date.now()}`;
       setDocumentUrl(secureUrl);
       setLoading(false);
     }
-  }, [isOpen, document]);
+  }, [isOpen, documentData]);
 
   // Handle fullscreen toggle
   const toggleFullscreen = () => {
@@ -74,10 +74,10 @@ export default function DocumentPreviewModal({
 
   // Handle download
   const handleDownload = () => {
-    if (document) {
+    if (documentData) {
       const link = document.createElement("a");
-      link.href = document.downloadUrl;
-      link.download = document.originalName;
+      link.href = documentData.downloadUrl;
+      link.download = documentData.originalName;
       link.target = "_blank";
       document.body.appendChild(link);
       link.click();
@@ -121,7 +121,7 @@ export default function DocumentPreviewModal({
     return extension === "pdf";
   };
 
-  if (!isOpen || !document || !isMounted) return null;
+  if (!isOpen || !documentData || !isMounted) return null;
 
   return createPortal(
     <AnimatePresence>
@@ -149,18 +149,18 @@ export default function DocumentPreviewModal({
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
             <div className="flex items-center space-x-3">
-              {getFileIcon(document.originalName)}
+              {getFileIcon(documentData.originalName)}
               <div>
                 <h3 className="font-semibold text-gray-900 truncate max-w-md">
-                  {document.originalName}
+                  {documentData.originalName}
                 </h3>
                 <div className="flex items-center space-x-4 text-sm text-gray-500">
-                  <span>{document.documentType}</span>
+                  <span>{documentData.documentType}</span>
                   <span>•</span>
-                  <span>{formatFileSize(document.size)}</span>
+                  <span>{formatFileSize(documentData.size)}</span>
                   <span>•</span>
                   <span>
-                    {new Date(document.uploadedAt).toLocaleDateString()}
+                    {new Date(documentData.uploadedAt).toLocaleDateString()}
                   </span>
                 </div>
               </div>
@@ -230,18 +230,18 @@ export default function DocumentPreviewModal({
               </div>
             ) : (
               <div className="h-full">
-                {isPDF(document.originalName) ? (
+                {isPDF(documentData.originalName) ? (
                   <iframe
                     src={documentUrl || ""}
                     className="w-full h-full border-0"
-                    title={document.originalName}
+                    title={documentData.originalName}
                     onError={() => setError("Failed to load PDF document")}
                   />
-                ) : isImage(document.originalName) ? (
+                ) : isImage(documentData.originalName) ? (
                   <div className="flex items-center justify-center h-full bg-gray-100">
                     <img
                       src={documentUrl || ""}
-                      alt={document.originalName}
+                      alt={documentData.originalName}
                       className="max-w-full max-h-full object-contain"
                       onError={() => setError("Failed to load image")}
                     />

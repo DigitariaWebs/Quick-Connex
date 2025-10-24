@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { DatabaseService } from '@/lib/database';
 import { TimelineService } from '@/lib/timeline/TimelineService';
 import { RecentActivityOptions } from '@/types/timeline';
-import { AuditCategory } from '@/models/UnifiedAuditLog';
-
+import { AuditCategory } from '@/models/AuditLog';
 /**
  * GET /api/timeline/recent
  * 

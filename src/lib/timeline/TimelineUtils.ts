@@ -4,7 +4,7 @@
  * Helper functions for timeline operations, formatting, and content generation
  */
 
-import { AuditAction, AuditCategory, ActorType, RiskLevel } from '@/models/UnifiedAuditLog';
+import { AuditAction, AuditCategory, ActorType, RiskLevel } from '@/models/AuditLog';
 import { TimelineItem, EVENT_KIND_MAPPING, BADGE_MAPPING, TAG_MAPPING } from '@/types/timeline';
 
 export class TimelineUtils {
@@ -55,9 +55,9 @@ export class TimelineUtils {
         return `Document downloaded by ${actor}`;
       case AuditAction.FILE_DELETED:
         return `Document deleted by ${actor}`;
-      case AuditAction.USER_LOGIN_SUCCESS:
+      case AuditAction.LOGIN_SUCCESS:
         return `User logged in`;
-      case AuditAction.USER_LOGOUT:
+      case AuditAction.LOGOUT:
         return `User logged out`;
       case AuditAction.NOTIFICATION_SENT:
         return `Notification sent by ${actor}`;
@@ -103,9 +103,9 @@ export class TimelineUtils {
       case AuditAction.FILE_DELETED:
         const deletedFile = changes?.before?.fileName || 'Unknown file';
         return `Document deleted: ${deletedFile}`;
-      case AuditAction.USER_LOGIN_SUCCESS:
+      case AuditAction.LOGIN_SUCCESS:
         return `${actor} logged into the system`;
-      case AuditAction.USER_LOGOUT:
+      case AuditAction.LOGOUT:
         return `${actor} logged out of the system`;
       case AuditAction.NOTIFICATION_SENT:
         return `Notification sent to relevant parties`;
@@ -125,7 +125,7 @@ export class TimelineUtils {
     }
     
     // Map action to status
-    const statusMap: Record<AuditAction, string> = {
+    const statusMap: Partial<Record<AuditAction, string>> = {
       [AuditAction.TRANSFER_APPROVED]: 'approved',
       [AuditAction.TRANSFER_REJECTED]: 'rejected',
       [AuditAction.TRANSFER_COMPLETED]: 'completed',
@@ -133,7 +133,7 @@ export class TimelineUtils {
       [AuditAction.TRANSFER_CREATED]: 'pending'
     };
     
-    return statusMap[action];
+    return statusMap[action] || 'unknown';
   }
   
   /**

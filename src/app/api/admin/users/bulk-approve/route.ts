@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
 import User from '@/models/User';
-import { requireAdmin } from '@/lib/auth/auth-utils';
-import { sendUserNotificationEmail } from '@/app/api/auth/approve-user/route';
+import { AuthService } from '@/lib/auth';
+import { sendUserNotificationEmail } from '@/lib/communication/user-notifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,11 +15,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify admin authentication
-    const { user: adminUser } = await requireAdmin();
+    const { user: adminUser } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    // Find all users to approve
+    // DatabaseService handles connection automatically
+// Find all users to approve
     const usersToApprove = await User.find({
       _id: { $in: userIds },
       status: 'pending'

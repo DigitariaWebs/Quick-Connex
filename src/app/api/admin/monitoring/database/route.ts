@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
+import { AuthService } from '@/lib/auth';
 import {
   getDatabaseMetrics,
   getDatabaseStats,
@@ -41,7 +41,10 @@ const CACHE_DURATION = 5000; // 5 seconds cache
 export async function GET(request: NextRequest) {
   try {
     // Check super admin permissions
-    const { user } = await requireAdmin();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
 
     // Get time range from query params
     const { searchParams } = new URL(request.url);

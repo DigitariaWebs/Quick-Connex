@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
-import Transfer from '@/models/Transfer';
-import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
-
-// GET /api/calendar/conflicts - Check for scheduling conflicts
+import { DatabaseService, Transfer } from '@/lib/database';
+import { AuthService } from '@/lib/auth';// GET /api/calendar/conflicts - Check for scheduling conflicts
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    const { searchParams } = new URL(request.url);
+    // DatabaseService handles connection automatically
+const { searchParams } = new URL(request.url);
     const transferId = searchParams.get('transferId');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
@@ -37,11 +36,14 @@ export async function GET(request: NextRequest) {
     }
 
 
-    const conflictingTransfers = await Transfer.find(query)
-      .populate('patient', 'patientId firstName lastName')
-      .populate('requestedBy', 'firstName lastName email')
-      .populate('assignedTo', 'firstName lastName email')
-      .sort({ scheduledDate: 1 });
+    const conflictingTransfers = await DatabaseService.findMany(Transfer, query, {
+      populate: [
+        { path: 'patient', select: 'patientId firstName lastName' },
+        { path: 'requestedBy', select: 'firstName lastName email' },
+        { path: 'assignedTo', select: 'firstName lastName email' }
+      ],
+      sort: { scheduledDate: 1 }
+    });
 
     // Analyze conflicts
     const conflicts = conflictingTransfers.map(transfer => {
@@ -93,13 +95,16 @@ export async function GET(request: NextRequest) {
       recommendedAction: getRecommendedAction(conflicts)
     };
 
-    return createSuccessResponse({
-      conflicts,
-      conflictsByType,
-      summary,
-      timeRange: {
-        start: startTime.toISOString(),
-        end: endTime.toISOString()
+    return NextResponse.json({
+      success: true,
+      data: {
+        conflicts,
+        conflictsByType,
+        summary,
+        timeRange: {
+          start: startTime.toISOString(),
+          end: endTime.toISOString()
+        }
       }
     });
 
@@ -113,11 +118,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user - only managers can resolve conflicts
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    const body = await request.json();
+    // DatabaseService handles connection automatically
+const body = await request.json();
     const {
       transferId,
       resolutionStrategy, // 'auto_reschedule', 'manual_override', 'resource_reassignment'
@@ -129,7 +136,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Transfer ID and resolution strategy are required' }, { status: 400 });
     }
 
-    const transfer = await Transfer.findOne({ transferId });
+    const transfer = await DatabaseService.findOne(Transfer, { transferId });
     if (!transfer) {
       return NextResponse.json({ error: 'Transfer not found' }, { status: 404 });
     }
@@ -143,8 +150,8 @@ export async function POST(request: NextRequest) {
         }
         
         // Update the transfer with new schedule
-        const updatedTransfer = await Transfer.findByIdAndUpdate(
-          transfer._id,
+        const updatedTransfer = await DatabaseService.updateById(Transfer,
+          (transfer._id as any).toString(),
           {
             scheduledDate: new Date(newSchedule.startDate),
             scheduledEndDate: new Date(newSchedule.endDate),
@@ -157,8 +164,7 @@ export async function POST(request: NextRequest) {
                 reason: 'Auto-rescheduled due to conflict resolution'
               }
             }
-          },
-          { new: true }
+          }
         );
 
         results.push({
@@ -174,11 +180,11 @@ export async function POST(request: NextRequest) {
       case 'resource_reassignment':
         // Reassign resources to resolve conflicts
         for (const affectedTransferId of affectedTransfers) {
-          const affectedTransfer = await Transfer.findOne({ transferId: affectedTransferId });
+          const affectedTransfer = await DatabaseService.findOne(Transfer, { transferId: affectedTransferId });
           if (affectedTransfer) {
             // Clear conflicting resources
-            await Transfer.findByIdAndUpdate(
-              affectedTransfer._id,
+            await DatabaseService.updateById(Transfer,
+              (affectedTransfer._id as any).toString(),
               {
                 lastModifiedBy: user._id,
                 $push: {
@@ -202,8 +208,8 @@ export async function POST(request: NextRequest) {
 
       case 'manual_override':
         // Log the manual override
-        await Transfer.findByIdAndUpdate(
-          transfer._id,
+        await DatabaseService.updateById(Transfer,
+          (transfer._id as any).toString(),
           {
             lastModifiedBy: user._id,
             $push: {
@@ -228,13 +234,16 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid resolution strategy' }, { status: 400 });
     }
 
-    return createSuccessResponse({
-      resolutionStrategy,
-      results,
-      resolvedAt: new Date().toISOString(),
-      resolvedBy: {
-        userId: user._id,
-        name: `${user.firstName} ${user.lastName}`
+    return NextResponse.json({
+      success: true,
+      data: {
+        resolutionStrategy,
+        results,
+        resolvedAt: new Date().toISOString(),
+        resolvedBy: {
+          userId: user._id,
+          name: `${user.firstName} ${user.lastName}`
+        }
       }
     });
 

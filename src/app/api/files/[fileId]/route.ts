@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { downloadFileFromGridFS } from '@/lib/database/gridfs';
+import { GridFSService } from '@/lib/database';
 import { ObjectId } from 'mongodb';
 
 /**
@@ -21,7 +21,7 @@ export async function GET(
     }
 
     // Download file from GridFS
-    const fileData = await downloadFileFromGridFS(fileId);
+    const fileData = await GridFSService.downloadFile(fileId);
 
     // Set appropriate headers for file download
     const headers = new Headers();

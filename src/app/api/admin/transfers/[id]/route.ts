@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
-// import { logAdminAction } from '@/lib/auth/admin-middleware'; // Removed - using auth-utils instead
-import dbConnect from '@/lib/database/mongoose';
-import { Transfer, User } from '@/lib/database/models';
+import { AuthService } from '@/lib/auth';
+import { DatabaseService, Transfer } from '@/lib/database';
+import { AuditAction, AuditCategory, ActorType, TargetResourceType } from '@/models/AuditLog';
 import { Permission } from '@/models/User';
-import { AuditAction, AuditCategory, TargetResourceType } from '@/models/UnifiedAuditLog';
-
 /**
  * Individual Transfer Admin API Endpoint
  * 
@@ -31,7 +28,10 @@ export async function GET(
 ) {
   try {
     // Check admin permissions
-    const { user } = await requireAdmin();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
 
     const adminUser = user;
     const { id } = await params;
@@ -48,16 +48,18 @@ export async function GET(
       }, { status: 403 });
     }
 
-    await dbConnect();
-
-    // Get transfer with all populated data
-    const transfer = await Transfer.findById(id)
-      .populate('requestedBy', 'firstName lastName email userType phone')
-      .populate('fromHospital', 'name address organization phone')
-      .populate('toHospital', 'name address organization phone')
-      .populate('assignedTo', 'firstName lastName email userType phone')
-      .populate('patient', 'firstName lastName age dossierNumber')
-      .populate('lastModifiedBy', 'firstName lastName email userType');
+    // DatabaseService handles connection automatically
+// Get transfer with all populated data
+    const transfer = await DatabaseService.findById(Transfer, id, {
+      populate: [
+        { path: 'requestedBy', select: 'firstName lastName email userType phone' },
+        { path: 'fromHospital', select: 'name address organization phone' },
+        { path: 'toHospital', select: 'name address organization phone' },
+        { path: 'assignedTo', select: 'firstName lastName email userType phone' },
+        { path: 'patient', select: 'firstName lastName age dossierNumber' },
+        { path: 'lastModifiedBy', select: 'firstName lastName email userType' }
+      ]
+    });
 
     if (!transfer) {
       return NextResponse.json({
@@ -154,7 +156,10 @@ export async function PUT(
 ) {
   try {
     // Check admin permissions
-    const { user } = await requireAdmin();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
 
     const adminUser = user;
     const { id } = await params;
@@ -171,9 +176,8 @@ export async function PUT(
       }, { status: 403 });
     }
 
-    await dbConnect();
-
-    const transfer = await Transfer.findById(id);
+    // DatabaseService handles connection automatically
+const transfer = await Transfer.findById(id);
     if (!transfer) {
       return NextResponse.json({
         success: false,
@@ -284,7 +288,10 @@ export async function DELETE(
 ) {
   try {
     // Check admin permissions
-    const { user } = await requireAdmin();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
 
     const adminUser = user;
     const { id } = await params;
@@ -300,9 +307,8 @@ export async function DELETE(
       }, { status: 403 });
     }
 
-    await dbConnect();
-
-    const transfer = await Transfer.findById(id);
+    // DatabaseService handles connection automatically
+const transfer = await Transfer.findById(id);
     if (!transfer) {
       return NextResponse.json({
         success: false,

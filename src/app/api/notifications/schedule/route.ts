@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
-import Transfer from '@/models/Transfer';
-import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
-
-// GET /api/notifications/schedule - Get scheduling notifications
+import { DatabaseService, Transfer } from '@/lib/database';
+import { AuthService } from '@/lib/auth';// GET /api/notifications/schedule - Get scheduling notifications
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    const { searchParams } = new URL(request.url);
+    // DatabaseService handles connection automatically
+const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'all'; // 'conflicts', 'reminders', 'upcoming', 'all'
     const limit = parseInt(searchParams.get('limit') || '20');
 
@@ -75,17 +74,20 @@ export async function GET(request: NextRequest) {
       const now = new Date();
       const next7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-      const transfersWithConflicts = await Transfer.find({
+      const transfersWithConflicts = await DatabaseService.findMany(Transfer, {
         scheduledDate: {
           $gte: now,
           $lte: next7Days
         },
         'scheduling.conflicts': { $exists: true, $ne: [] },
         status: { $in: ['pending', 'accepted', 'in_progress'] }
-      })
-      .populate('requestedBy', 'firstName lastName email')
-      .sort({ scheduledDate: 1 })
-      .limit(10);
+      }, {
+        populate: [
+          { path: 'requestedBy', select: 'firstName lastName email' }
+        ],
+        sort: { scheduledDate: 1 },
+        limit: 10
+      });
 
       for (const transfer of transfersWithConflicts) {
         const highSeverityConflicts: any[] = [];
@@ -126,13 +128,16 @@ export async function GET(request: NextRequest) {
     // Get overdue transfers
     if (type === 'all' || type === 'overdue') {
       const now = new Date();
-      const overdueTransfers = await Transfer.find({
+      const overdueTransfers = await DatabaseService.findMany(Transfer, {
         scheduledDate: { $lt: now },
         status: { $in: ['pending', 'accepted'] }
-      })
-      .populate('requestedBy', 'firstName lastName email')
-      .sort({ scheduledDate: 1 })
-      .limit(10);
+      }, {
+        populate: [
+          { path: 'requestedBy', select: 'firstName lastName email' }
+        ],
+        sort: { scheduledDate: 1 },
+        limit: 10
+      });
 
       for (const transfer of overdueTransfers) {
         const overdueMinutes = Math.floor((now.getTime() - transfer.scheduledDate!.getTime()) / (1000 * 60));
@@ -189,16 +194,38 @@ export async function GET(request: NextRequest) {
       unread: notifications.filter(n => !n.read).length
     };
 
-    return createSuccessResponse({
+    return NextResponse.json({
+      success: true,
+      data: {
       notifications: limitedNotifications,
       summary,
       type,
       limit
+    
+      }
     });
 
   } catch (error) {
     console.error('Error fetching scheduling notifications:', error);
-    return handleAuthError(error);
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -206,20 +233,25 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
-    await dbConnect();
-
-    const body = await request.json();
+    // DatabaseService handles connection automatically
+const body = await request.json();
     const { action, notificationIds, transferId, message, type } = body;
 
     switch (action) {
       case 'mark_read':
         // In a real implementation, you would store notification read status in a database
         // For now, we'll just return success
-        return createSuccessResponse({ 
-          message: 'Notifications marked as read',
-          notificationIds 
+        return NextResponse.json({
+          success: true,
+          data: { 
+            message: 'Notifications marked as read',
+            notificationIds: notificationIds
+          }
         });
 
       case 'create_reminder':
@@ -240,7 +272,11 @@ export async function POST(request: NextRequest) {
           read: false
         };
 
-        return createSuccessResponse(reminder, 'Reminder created successfully');
+        return NextResponse.json({
+      success: true,
+      data: reminder,
+      message: 'Reminder created successfully'
+    });
 
       case 'dismiss_conflict':
         if (!transferId) {
@@ -248,10 +284,10 @@ export async function POST(request: NextRequest) {
         }
 
         // Update transfer to acknowledge conflicts
-        const transfer = await Transfer.findOne({ transferId });
+        const transfer = await DatabaseService.findOne(Transfer, { transferId });
         if (transfer) {
-          await Transfer.findByIdAndUpdate(
-            transfer._id,
+          await DatabaseService.updateById(Transfer,
+            (transfer._id as any).toString(),
             {
               $set: { 'scheduling.conflicts': [] },
               lastModifiedBy: user._id,
@@ -267,9 +303,12 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        return createSuccessResponse({ 
-          message: 'Conflicts dismissed',
-          transferId 
+        return NextResponse.json({
+          success: true,
+          data: { 
+            message: 'Conflicts dismissed',
+            transferId: transferId 
+          }
         });
 
       default:
@@ -278,6 +317,24 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error processing notification action:', error);
-    return handleAuthError(error);
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

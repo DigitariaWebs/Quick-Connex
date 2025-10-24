@@ -5,8 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireEmployeeOrManager, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
-import CommunicationService from '@/lib/communication/core/communication-service';
+import { AuthService } from '@/lib/auth';import CommunicationService from '@/lib/communication/core/communication-service';
 import {
   EmailMessage,
   SMSMessage,
@@ -17,7 +16,10 @@ import {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
     const body = await request.json();
     const { channel, recipient, content, metadata, priority = 'medium' } = body;
@@ -103,18 +105,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create communication message' }, { status: 500 });
     }
 
-    return createSuccessResponse({
+    return NextResponse.json({
+      success: true,
+      data: {
       messageId: response.messageId,
       success: response.success,
       status: response.status,
       providerId: response.providerId,
       cost: response.cost,
       currency: response.currency,
+    
+      }
     });
 
   } catch (error) {
     console.error('Error sending communication:', error);
-    return handleAuthError(error);
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -122,7 +146,10 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const { user } = await requireEmployeeOrManager();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['employee', 'manager', 'admin', 'super_admin'],
+      requireSession: true
+    });
 
     const { searchParams } = new URL(request.url);
     const channel = searchParams.get('channel') as CommunicationChannel;
@@ -130,26 +157,47 @@ export async function GET(request: NextRequest) {
     const communicationService = new CommunicationService();
     const templates = await communicationService.getTemplates(channel);
 
-    return createSuccessResponse({
-      templates: templates.map(template => ({
-        id: template.id,
-        name: template.name,
-        channel: template.channel,
-        category: template.category,
-        subject: template.subject,
-        variables: template.variables,
-        isActive: template.isActive,
-      })),
-      channels: ['email', 'sms'],
-      maxSMSLength: 160,
-      supportedProviders: {
-        email: ['sendgrid', 'ses', 'mailgun', 'resend', 'nodemailer'],
-        sms: ['twilio', 'aws-sns', 'messagebird', 'vonage', 'plivo'],
-      },
+    return NextResponse.json({
+      success: true,
+      data: {
+        templates: templates.map(template => ({
+          id: template.id,
+          name: template.name,
+          channel: template.channel,
+          category: template.category,
+          subject: template.subject,
+          variables: template.variables,
+          isActive: template.isActive
+        })),
+        channels: ['email', 'sms'],
+        maxSMSLength: 160,
+        supportedProviders: {
+          email: ['sendgrid', 'ses', 'mailgun', 'resend', 'nodemailer'],
+          sms: ['twilio', 'aws-sns', 'messagebird', 'vonage', 'plivo'],
+        }
+      }
     });
 
   } catch (error) {
     console.error('Error getting communication configuration:', error);
-    return handleAuthError(error);
+    if (error instanceof Error) {
+      if (error.message === 'Authentication required') {
+        return NextResponse.json(
+          { success: false, error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('Access denied')) {
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 403 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

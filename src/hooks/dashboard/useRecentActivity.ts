@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useSession } from '@/contexts/SessionContext';
-import { useUnifiedSSE } from '@/contexts/UnifiedSSEContext';
 
 interface ActivityItem {
   id: string;
@@ -23,7 +22,6 @@ interface RecentActivityData {
 
 export function useRecentActivity(maxItems: number = 5) {
   const { user, isAuthenticated } = useSession();
-  const { lastMessage } = useUnifiedSSE();
   const [data, setData] = useState<RecentActivityData>({
     activities: [],
     loading: true,
@@ -120,36 +118,8 @@ export function useRecentActivity(maxItems: number = 5) {
     }
   };
 
-  // Handle SSE messages for real-time updates
-  useEffect(() => {
-    if (lastMessage) {
-      if (lastMessage.type === 'activity_update') {
-        // Update recent activity from SSE
-        setData(prev => ({
-          ...prev,
-          activities: lastMessage.data?.activities || prev.activities
-        }));
-      } else if (lastMessage.type === 'transfer_status_change' || 
-                 lastMessage.type === 'new_transfer') {
-        // Add new activity item for transfer events
-        const newActivity: ActivityItem = {
-          id: lastMessage.data?.id || `activity_${Date.now()}`,
-          type: lastMessage.type === 'new_transfer' ? 'transfer_requested' : 'transfer_accepted',
-          transferId: lastMessage.data?.transferId || '',
-          patientName: lastMessage.data?.transfer?.patient?.name || lastMessage.data?.patientName || 'Unknown Patient',
-          description: lastMessage.message || lastMessage.data?.message || 'Activity update',
-          timestamp: lastMessage.timestamp || new Date().toISOString(),
-          user: lastMessage.data?.changedBy?.name || 'System',
-          // transfer: lastMessage.data?.transfer // Removed - not in ActivityItem interface
-        };
-        
-        setData(prev => ({
-          ...prev,
-          activities: [newActivity, ...prev.activities].slice(0, maxItems)
-        }));
-      }
-    }
-  }, [lastMessage, maxItems]);
+  // Note: Real-time updates via SSE have been removed
+  // Data will be refreshed on manual calls to refetch()
 
   useEffect(() => {
     // Initial load with loading state

@@ -8,10 +8,10 @@ import { TimelineService } from '@/lib/timeline/TimelineService';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { transferId: string } }
+  { params }: { params: Promise<{ transferId: string }> }
 ) {
   try {
-    const transferId = params.transferId;
+    const { transferId } = await params;
     
     // Validate transferId
     if (!transferId) {

@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
-import { CIUSSS } from '@/models/CIUSSS';
-
+import { DatabaseService, CIUSSS } from '@/lib/database';
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
-    
-    const { searchParams } = new URL(request.url);
+    // DatabaseService handles connection automatically
+const { searchParams } = new URL(request.url);
     const isActive = searchParams.get('isActive');
     const limit = searchParams.get('limit');
     
@@ -25,7 +22,7 @@ export async function GET(request: NextRequest) {
       options.limit = parseInt(limit);
     }
     
-    const ciusssList = await CIUSSS.find(query, null, options);
+    const ciusssList = await DatabaseService.findMany(CIUSSS, query, options);
     
     return NextResponse.json({
       success: true,
@@ -48,9 +45,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect();
-    
-    const body = await request.json();
+    // DatabaseService handles connection automatically
+const body = await request.json();
     const { code, name, region, isActive = true } = body;
     
     // Validate required fields
@@ -65,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Check if CIUSSS with this code already exists
-    const existingCIUSSS = await CIUSSS.findOne({ code: code.toUpperCase() });
+    const existingCIUSSS = await DatabaseService.findOne(CIUSSS, { code: code.toUpperCase() });
     if (existingCIUSSS) {
       return NextResponse.json(
         { 
@@ -83,7 +79,7 @@ export async function POST(request: NextRequest) {
       isActive
     });
     
-    await newCIUSSS.save();
+    await newCIUSSS;
     
     return NextResponse.json({
       success: true,

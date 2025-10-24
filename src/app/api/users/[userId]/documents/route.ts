@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { listUserFiles } from '@/lib/database/gridfs';
-import dbConnect from '@/lib/database/mongoose';
+import { GridFSService } from '@/lib/database';
 import User from '@/models/User';
 import { ObjectId } from 'mongodb';
 
@@ -20,9 +19,8 @@ export async function GET(
     }
 
     // Connect to database
-    await dbConnect();
-
-    // Verify user exists
+    // DatabaseService handles connection automatically
+// Verify user exists
     const user = await User.findById(userId);
     if (!user) {
       return NextResponse.json(
@@ -32,16 +30,16 @@ export async function GET(
     }
 
     // Get user documents from GridFS
-    const documents = await listUserFiles(userId);
+    const documents = await GridFSService.listUserFiles(userId);
 
     // Format response
     const formattedDocuments = documents.map(doc => ({
-      fileId: doc.fileId,
-      documentType: doc.documentType,
-      originalName: doc.originalName,
-      size: doc.size,
-      uploadedAt: doc.uploadedAt,
-      downloadUrl: `/api/files/${doc.fileId}`
+      fileId: doc._id,
+      documentType: doc.metadata?.documentType || 'unknown',
+      originalName: doc.metadata?.originalName || doc.filename,
+      size: doc.length,
+      uploadedAt: doc.uploadDate,
+      downloadUrl: `/api/files/${doc._id}`
     }));
 
     return NextResponse.json({

@@ -6,10 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/database/mongoose';
-import Transfer from '@/models/Transfer';
-import User from '@/models/User';
-import Hospital from '@/models/Hospital';
+import { DatabaseService, Transfer, User, Hospital } from '@/lib/database';
 // Removed AdminService - using simple manager role check instead
 import { CommunicationService } from '@/lib/communication/core/communication-service';
 import { EmailMessage } from '@/types/communication';
@@ -38,11 +35,13 @@ export async function POST(
       );
     }
 
-    await dbConnect();
-
-    // Find the transfer
-    const transfer = await Transfer.findById(transferId)
-      .populate('requestedBy', 'firstName lastName email phone userType')
+    // DatabaseService handles connection automatically
+// Find the transfer
+    const transfer = await DatabaseService.findById(Transfer, transferId, {
+      populate: [
+        { path: 'requestedBy', select: 'firstName lastName email phone userType' }
+      ]
+    });
 
     if (!transfer) {
       return NextResponse.json(
@@ -59,7 +58,7 @@ export async function POST(
     }
 
     // Find the admin user
-    const admin = await User.findOne({ email: adminEmail });
+    const admin = await DatabaseService.findOne(User, { email: adminEmail });
     if (!admin) {
       return NextResponse.json(
         { error: 'Admin user not found' },
@@ -85,7 +84,7 @@ export async function POST(
       reason: reason
     });
 
-    await transfer.save();
+    await transfer;
 
     // Note: Notifications are disabled for in-app rejections
     // Only the transfer state is updated, no email/SMS notifications are sent

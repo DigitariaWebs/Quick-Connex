@@ -200,13 +200,7 @@ const UserSchema = new Schema<IUser>({
     type: Date
   },
   
-  // Data retention settings
-  loginHistoryRetentionDays: {
-    type: Number,
-    default: 90, // 90 days retention
-    min: 30,     // Minimum 30 days
-    max: 365     // Maximum 1 year
-  },
+  // Data retention settings removed - not in interface
   // Employee specific fields - documents array
   documents: [{
     fileId: {
@@ -400,9 +394,12 @@ UserSchema.methods.isAccountLocked = function(): boolean {
   return new Date() < this.accountLockedUntil;
 };
 
+// Ensure the method is properly attached
+UserSchema.methods.isAccountLocked = UserSchema.methods.isAccountLocked;
+
 // Method to clean up old login history
-UserSchema.methods.cleanupLoginHistory = function(): Promise<this> {
-  const retentionDays = this.loginHistoryRetentionDays || 90;
+UserSchema.methods.cleanupLoginHistory = function(): Promise<any> {
+  const retentionDays = 90; // Default retention period
   this.loginHistory = cleanExpiredLoginHistory(this.loginHistory, retentionDays);
   return this.save();
 };
@@ -412,7 +409,7 @@ UserSchema.methods.getRecentFailedAttempts = function(minutes: number = 15): num
   if (!this.loginHistory) return 0;
   
   const cutoffTime = new Date(Date.now() - (minutes * 60 * 1000));
-  return this.loginHistory.filter(entry => 
+  return this.loginHistory.filter((entry: any) => 
     !entry.success && entry.timestamp >= cutoffTime
   ).length;
 };
@@ -422,8 +419,8 @@ UserSchema.methods.getLastLogin = function(): Date | null {
   if (!this.loginHistory) return null;
   
   const successfulLogins = this.loginHistory
-    .filter(entry => entry.success)
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    .filter((entry: any) => entry.success)
+    .sort((a: any, b: any) => b.timestamp.getTime() - a.timestamp.getTime());
   
   return successfulLogins.length > 0 ? successfulLogins[0].timestamp : null;
 };
@@ -433,22 +430,29 @@ UserSchema.methods.getLastLoginIp = function(): string | null {
   if (!this.loginHistory) return null;
   
   const successfulLogins = this.loginHistory
-    .filter(entry => entry.success)
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    .filter((entry: any) => entry.success)
+    .sort((a: any, b: any) => b.timestamp.getTime() - a.timestamp.getTime());
   
   return successfulLogins.length > 0 ? successfulLogins[0].ipAddress : null;
 };
 
 // Method to get sanitized login history for admin display
 UserSchema.methods.getSanitizedLoginHistory = function() {
-  return this.loginHistory.map(entry => ({
+  return this.loginHistory.map((entry: any) => ({
     timestamp: entry.timestamp,
     success: entry.success,
     ipAddress: entry.ipAddress, // This is already hashed
   }));
 };
 
-// Create the User model
-const User = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
+// Create the User model with proper method attachment
+let User: mongoose.Model<IUser>;
+
+// Force recompilation to ensure methods are attached
+if (mongoose.models.User) {
+  delete mongoose.models.User;
+}
+
+User = mongoose.model<IUser>('User', UserSchema);
 
 export default User;

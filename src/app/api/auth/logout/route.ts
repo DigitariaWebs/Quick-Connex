@@ -1,35 +1,34 @@
 import { NextResponse } from 'next/server';
-import { clearAuthCookie, getCurrentUser } from '@/lib/auth/jwt';
-import dbConnect from '@/lib/database/mongoose';
+import { AuthService } from '@/lib/auth';
+import { clearAuthCookie, getTokenFromCookies } from '@/lib/auth/jwt-utils';
+import { handleAuthError } from '@/lib/auth/auth-error-handler';
 
 export async function POST() {
   try {
     console.log('🚪 Logout: Starting logout process');
     
-    // Get current user to find session
-    const tokenPayload = await getCurrentUser();
+    // Get token to find session ID
+    const token = await getTokenFromCookies();
+    let sessionId: string | undefined;
     
-    if (tokenPayload && tokenPayload.sessionId) {
-      console.log('🚪 Logout: Found session ID:', tokenPayload.sessionId);
+    if (token) {
+      // Verify token to get session ID
+      const { verifyToken } = await import('@/lib/auth/jwt-utils');
+      const payload = await verifyToken(token);
+      sessionId = payload?.sessionId;
+    }
+    
+    if (sessionId) {
+      console.log('🚪 Logout: Found session ID:', sessionId);
       
-      // Connect to database
-      await dbConnect();
+      // Use AuthService for logout
+      const logoutResult = await AuthService.logout(sessionId);
       
-      // Import Session model
-      const { default: Session } = await import('@/models/Session');
-      
-      // Invalidate the session
-      await Session.updateOne(
-        { sessionId: tokenPayload.sessionId },
-        { 
-          isActive: false,
-          revoked: true,
-          revokedAt: new Date(),
-          revokedReason: 'User logout'
-        }
-      );
-      
-      console.log('🚪 Logout: Session invalidated in database');
+      if (!logoutResult.success) {
+        console.log('⚠️ Logout: Session revocation failed:', logoutResult.error);
+      } else {
+        console.log('✅ Logout: Session revoked successfully');
+      }
     }
     
     // Clear the authentication cookie
@@ -41,10 +40,6 @@ export async function POST() {
       success: true
     });
   } catch (error) {
-    console.error('❌ API: Logout failed:', error);
-    return NextResponse.json(
-      { message: 'An error occurred during logout' },
-      { status: 500 }
-    );
+    return handleAuthError(error);
   }
 }

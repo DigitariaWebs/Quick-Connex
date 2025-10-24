@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin, handleAuthError, createSuccessResponse } from '@/lib/auth/auth-utils';
-// import { logAdminAction } from '@/lib/auth/admin-middleware'; // Removed - using auth-utils instead
-import dbConnect from '@/lib/database/mongoose';
-import Transfer from '@/models/Transfer';
-import User from '@/models/User';
-import Hospital from '@/models/Hospital';
-import { Permission } from '@/models/User';
-import { AuditAction, AuditCategory, TargetResourceType } from '@/models/UnifiedAuditLog';
-
+import { AuthService } from '@/lib/auth';
+import { DatabaseService, Transfer, User, Hospital } from '@/lib/database';
+import { AuditAction, AuditCategory, ActorType, TargetResourceType } from '@/models/AuditLog';
 /**
  * Admin Transfer Analytics API Endpoint
  * 
@@ -23,7 +17,10 @@ import { AuditAction, AuditCategory, TargetResourceType } from '@/models/Unified
 export async function GET(request: NextRequest) {
   try {
     // Check admin permissions
-    const { user } = await requireAdmin();
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
 
     const adminUser = user;
 
@@ -38,9 +35,8 @@ export async function GET(request: NextRequest) {
       }, { status: 403 });
     }
 
-    await dbConnect();
-
-    const { searchParams } = new URL(request.url);
+    // DatabaseService handles connection automatically
+const { searchParams } = new URL(request.url);
     const dateRange = searchParams.get('dateRange') || '30d'; // 7d, 30d, 90d, 1y, all
     const hospitalId = searchParams.get('hospitalId');
     const userId = searchParams.get('userId');
