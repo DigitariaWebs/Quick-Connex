@@ -26,11 +26,9 @@ import { DeviceInfo } from '@/lib/auth/auth-types';
 import { AUTH_CONFIG } from '@/lib/auth/auth-config';
 import { 
   AppError,
-  NotFoundError,
-  logErrorWithContext,
-  logInfo,
-  logDebug
+  NotFoundError
 } from '@/lib/utils/error-handling';
+import { log } from '@/lib/services';
 import { maskEmail, truncate } from '@/lib/utils/string-helpers';
 
 export class SessionService {

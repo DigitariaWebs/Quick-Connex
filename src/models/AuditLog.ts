@@ -408,8 +408,7 @@ const AuditLogSchema = new Schema<IAuditLog>({
   timestamp: {
     type: Date,
     required: true,
-    default: Date.now,
-    index: true
+    default: Date.now
   },
   duration: {
     type: Number,

@@ -13,11 +13,28 @@ import {
   AuthError,
   ValidationError,
   NotFoundError,
-  logErrorWithContext,
-  logInfo,
-  logDebug,
   formatErrorForClient,
 } from "@/lib/utils/error-handling";
+
+// Client-side logging helpers (using console directly since LogService is server-only)
+const log = {
+  info: (message: string, context?: any) => {
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[INFO] ${message}`, context);
+    }
+  },
+  debug: (message: string, context?: any) => {
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[DEBUG] ${message}`, context);
+    }
+  },
+  error: (message: string, error?: any, context?: any) => {
+    console.error(`[ERROR] ${message}`, error, context);
+  },
+  warn: (message: string, context?: any) => {
+    console.warn(`[WARN] ${message}`, context);
+  },
+};
 
 // Simple session types
 export interface SessionInfo {
@@ -79,7 +96,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
 
-      logDebug("Authentication check started", {
+      log.debug("Authentication check started", {
         operation: "auth_check_start",
         timestamp: new Date(),
       });
@@ -93,7 +110,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const data = await response.json();
 
         if (data.success && data.user) {
-          logInfo("User authenticated successfully", {
+          log.info("User authenticated successfully", {
             operation: "auth_check_success",
             email: data.user.email,
             userType: data.user.userType,
@@ -109,7 +126,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             scheduleSessionRefresh(data.session.remainingTime);
           }
         } else {
-          logDebug("Authentication failed - no user data", {
+          log.debug("Authentication failed - no user data", {
             operation: "auth_check_failed",
             reason: "no_user_data",
             timestamp: new Date(),
@@ -120,7 +137,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           setIsAuthenticated(false);
         }
       } else {
-        logDebug("Authentication failed - server error", {
+        log.debug("Authentication failed - server error", {
           operation: "auth_check_failed",
           status: response.status,
           statusText: response.statusText,
@@ -132,7 +149,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setIsAuthenticated(false);
       }
     } catch (error) {
-      logErrorWithContext(error, {
+      log.error("Authentication check error", error, {
         operation: "auth_check_error",
         timestamp: new Date(),
       });
@@ -156,7 +173,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
       // Don't refresh if session is brand new (within first 2 minutes)
       if (session && session.sessionAge < 2) {
-        logDebug("Skipping refresh for new session", {
+        log.debug("Skipping refresh for new session", {
           operation: "session_refresh_skipped",
           sessionAge: session.sessionAge,
           timestamp: new Date(),
@@ -164,7 +181,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         return true; // Return success without refreshing
       }
 
-      logDebug("Session refresh started", {
+      log.debug("Session refresh started", {
         operation: "session_refresh_start",
         timestamp: new Date(),
       });
@@ -178,7 +195,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const data = await response.json();
 
         if (data.success && data.session) {
-          logInfo("Session refreshed successfully", {
+          log.info("Session refreshed successfully", {
             operation: "session_refresh_success",
             sessionId: data.session.sessionId,
             timestamp: new Date(),
@@ -190,7 +207,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         }
       } else if (response.status === 401) {
         // Session is invalid, clear state and redirect
-        logDebug("Session invalid, clearing state", {
+        log.debug("Session invalid, clearing state", {
           operation: "session_refresh_failed",
           reason: "session_invalid",
           timestamp: new Date(),
@@ -205,7 +222,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
       return false;
     } catch (error) {
-      logErrorWithContext(error, {
+      log.error("Session refresh error", error, {
         operation: "session_refresh_error",
         timestamp: new Date(),
       });
@@ -218,7 +235,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   // Logout current session
   const logout = useCallback(async () => {
     try {
-      logInfo("Logout process started", {
+      log.info("Logout process started", {
         operation: "logout_start",
         timestamp: new Date(),
       });
@@ -235,12 +252,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         credentials: "include",
       });
 
-      logInfo("Logout successful", {
+      log.info("Logout successful", {
         operation: "logout_success",
         timestamp: new Date(),
       });
     } catch (error) {
-      logErrorWithContext(error, {
+      log.error("Logout error", error, {
         operation: "logout_error",
         timestamp: new Date(),
       });
@@ -258,7 +275,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   // Logout all sessions
   const logoutAllSessions = useCallback(async () => {
     try {
-      logInfo("Logout all sessions started", {
+      log.info("Logout all sessions started", {
         operation: "logout_all_start",
         timestamp: new Date(),
       });
@@ -275,12 +292,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         credentials: "include",
       });
 
-      logInfo("All sessions revoked successfully", {
+      log.info("All sessions revoked successfully", {
         operation: "logout_all_success",
         timestamp: new Date(),
       });
     } catch (error) {
-      logErrorWithContext(error, {
+      log.error("Logout all sessions error", error, {
         operation: "logout_all_error",
         timestamp: new Date(),
       });
@@ -298,7 +315,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   // Get user's active sessions
   const getSessions = useCallback(async (): Promise<any[]> => {
     try {
-      logDebug("Fetching user sessions", {
+      log.debug("Fetching user sessions", {
         operation: "get_sessions_start",
         timestamp: new Date(),
       });
@@ -312,7 +329,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const data = await response.json();
 
         if (data.success) {
-          logInfo("Sessions retrieved successfully", {
+          log.info("Sessions retrieved successfully", {
             operation: "get_sessions_success",
             sessionCount: data.sessions?.length || 0,
             timestamp: new Date(),
@@ -322,7 +339,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      logDebug("Failed to get sessions", {
+      log.debug("Failed to get sessions", {
         operation: "get_sessions_failed",
         status: response.status,
         timestamp: new Date(),
@@ -330,7 +347,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
       return [];
     } catch (error) {
-      logErrorWithContext(error, {
+      log.error("Get sessions error", error, {
         operation: "get_sessions_error",
         timestamp: new Date(),
       });
@@ -344,7 +361,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const revokeSession = useCallback(
     async (sessionId: string): Promise<boolean> => {
       try {
-        logDebug("Revoking session", {
+        log.debug("Revoking session", {
           operation: "revoke_session_start",
           sessionId,
           timestamp: new Date(),
@@ -356,7 +373,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         });
 
         if (response.ok) {
-          logInfo("Session revoked successfully", {
+          log.info("Session revoked successfully", {
             operation: "revoke_session_success",
             sessionId,
             timestamp: new Date(),
@@ -365,7 +382,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           return true;
         }
 
-        logDebug("Failed to revoke session", {
+        log.debug("Failed to revoke session", {
           operation: "revoke_session_failed",
           sessionId,
           status: response.status,
@@ -374,7 +391,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
         return false;
       } catch (error) {
-        logErrorWithContext(error, {
+        log.error("Revoke session error", error, {
           operation: "revoke_session_error",
           sessionId,
           timestamp: new Date(),
@@ -393,7 +410,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       // Refresh session 5 minutes before expiration
       const refreshTime = Math.max(remainingMinutes - 5, 1) * 60 * 1000;
 
-      logDebug("Scheduling session refresh", {
+      log.debug("Scheduling session refresh", {
         operation: "schedule_refresh",
         remainingMinutes,
         refreshTimeMs: refreshTime,
@@ -401,7 +418,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       });
 
       setTimeout(async () => {
-        logDebug("Auto-refreshing session", {
+        log.debug("Auto-refreshing session", {
           operation: "auto_refresh_start",
           timestamp: new Date(),
         });
@@ -409,7 +426,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const success = await refreshSession();
 
         if (!success) {
-          logDebug("Auto-refresh failed", {
+          log.debug("Auto-refresh failed", {
             operation: "auto_refresh_failed",
             timestamp: new Date(),
           });
@@ -417,14 +434,17 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           // Only logout if this isn't a brand new session (grace period)
           // This prevents immediate logout after login
           if (session && session.sessionAge > 1) {
-            logDebug("Session refresh failed after grace period, logging out", {
-              operation: "auto_refresh_failed_logout",
-              sessionAge: session.sessionAge,
-              timestamp: new Date(),
-            });
+            log.debug(
+              "Session refresh failed after grace period, logging out",
+              {
+                operation: "auto_refresh_failed_logout",
+                sessionAge: session.sessionAge,
+                timestamp: new Date(),
+              }
+            );
             await logout();
           } else {
-            logDebug(
+            log.debug(
               "Session refresh failed but within grace period, not logging out",
               {
                 operation: "auto_refresh_failed_grace",
@@ -445,7 +465,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
     const remainingMinutes = session.remainingTime;
 
-    logDebug("Setting up session timeout warnings", {
+    log.debug("Setting up session timeout warnings", {
       operation: "timeout_warnings_setup",
       remainingMinutes,
       timestamp: new Date(),
@@ -456,7 +476,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       const warningTime = (remainingMinutes - 10) * 60 * 1000;
 
       setTimeout(() => {
-        logDebug("Session warning - expires in 10 minutes", {
+        log.debug("Session warning - expires in 10 minutes", {
           operation: "session_warning_10min",
           timestamp: new Date(),
         });
@@ -469,7 +489,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       const finalWarningTime = (remainingMinutes - 2) * 60 * 1000;
 
       setTimeout(() => {
-        logDebug("Session final warning - expires in 2 minutes", {
+        log.debug("Session final warning - expires in 2 minutes", {
           operation: "session_warning_2min",
           timestamp: new Date(),
         });

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import mongoose from 'mongoose';
+import { log } from '@/lib/services/log-service';
 
 /**
  * Error Handling Utilities
@@ -98,7 +99,7 @@ export class DatabaseError extends AppError {
  * Handle database errors (MongoDB/Mongoose)
  */
 export function handleDatabaseError(error: any): NextResponse {
-  console.error('Database error:', error);
+  log.error('Database error occurred', error, { category: 'database' });
 
   // Mongoose validation error
   if (error.name === 'ValidationError') {
@@ -163,7 +164,7 @@ export function handleValidationError(error: ZodError): NextResponse {
  * Handle authentication errors
  */
 export function handleAuthError(error: any): NextResponse {
-  console.error('Auth error:', error);
+  log.error('Authentication error occurred', error, { category: 'auth' });
 
   if (error instanceof AuthError) {
     return NextResponse.json({
@@ -207,7 +208,7 @@ export function handleRateLimitError(): NextResponse {
  * Handle generic errors
  */
 export function handleGenericError(error: any): NextResponse {
-  console.error('Generic error:', error);
+  log.error('Generic error occurred', error, { category: 'system' });
 
   // Check if it's already an AppError
   if (error instanceof AppError) {
@@ -351,55 +352,9 @@ export function formatMongooseErrors(error: any): {
 }
 
 // ===== ERROR LOGGING =====
-
-/**
- * Log error with context
- */
-export function logErrorWithContext(
-  error: any,
-  context: {
-    userId?: string;
-    requestId?: string;
-    endpoint?: string;
-    method?: string;
-    [key: string]: any;
-  }
-): void {
-  const errorInfo = {
-    message: error.message,
-    stack: error.stack,
-    code: error.code || 'UNKNOWN',
-    statusCode: error.statusCode || 500,
-    context,
-    timestamp: new Date().toISOString()
-  };
-
-  console.error('Error with context:', JSON.stringify(errorInfo, null, 2));
-}
-
-/**
- * Log error for monitoring
- */
-export function logErrorForMonitoring(
-  error: any,
-  metadata: Record<string, any> = {}
-): void {
-  const errorData = {
-    error: {
-      message: error.message,
-      code: error.code || 'UNKNOWN',
-      stack: error.stack
-    },
-    metadata: {
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV,
-      ...metadata
-    }
-  };
-
-  // In a real application, you would send this to your monitoring service
-  console.error('Error for monitoring:', JSON.stringify(errorData, null, 2));
-}
+// Note: Logging functions have been moved to LogService
+// Import LogService for logging needs:
+// import { log } from '@/lib/services/log-service';
 
 // ===== ERROR RECOVERY =====
 
@@ -554,54 +509,6 @@ export function transformDatabaseError(error: any): DatabaseError {
 }
 
 // ===== GENERAL LOGGING UTILITIES =====
-
-/**
- * Log info level message with context
- */
-export function logInfo(
-  message: string,
-  context: Record<string, any> = {}
-): void {
-  const logData = {
-    level: 'INFO',
-    message,
-    context,
-    timestamp: new Date().toISOString()
-  };
-
-  console.log('ℹ️', JSON.stringify(logData, null, 2));
-}
-
-/**
- * Log debug level message with context
- */
-export function logDebug(
-  message: string,
-  context: Record<string, any> = {}
-): void {
-  const logData = {
-    level: 'DEBUG',
-    message,
-    context,
-    timestamp: new Date().toISOString()
-  };
-
-  console.log('🐛', JSON.stringify(logData, null, 2));
-}
-
-/**
- * Log warning level message with context
- */
-export function logWarn(
-  message: string,
-  context: Record<string, any> = {}
-): void {
-  const logData = {
-    level: 'WARN',
-    message,
-    context,
-    timestamp: new Date().toISOString()
-  };
-
-  console.warn('⚠️', JSON.stringify(logData, null, 2));
-}
+// Note: Logging functions have been moved to LogService
+// Use LogService for all logging needs:
+// import { log } from '@/lib/services/log-service';

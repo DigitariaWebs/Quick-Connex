@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { DatabaseService, AuditLog } from '@/lib/database';
+import { log } from '@/lib/services';
 import { 
   AuditAction, 
   AuditCategory, 
@@ -79,7 +80,11 @@ export class AuditService {
       
       await DatabaseService.create(AuditLog, auditLog.toObject());
     } catch (error) {
-      console.error('Failed to save audit log:', error);
+      log.error('Failed to save audit log', error, {
+        operation: 'save_audit_log',
+        actorId: data.actorId,
+        action: data.action
+      });
       // Could implement retry queue here
       throw error;
     }
@@ -136,7 +141,11 @@ export class AuditService {
 
     // Fire and forget with error handling
     this.logAudit(auditData).catch(err => {
-      console.error('Failed to log user action:', err);
+      log.error('Failed to log user action', err, {
+        operation: 'log_user_action',
+        actorId: context.actorId,
+        action: context.action
+      });
     });
   }
 
@@ -190,7 +199,11 @@ export class AuditService {
     };
 
     this.logAudit(auditData).catch(err => {
-      console.error('Failed to log transfer action:', err);
+      log.error('Failed to log transfer action', err, {
+        operation: 'log_transfer_action',
+        actorId: context.actorId,
+        action: context.action
+      });
     });
   }
 
@@ -244,7 +257,11 @@ export class AuditService {
     };
 
     this.logAudit(auditData).catch(err => {
-      console.error('Failed to log patient action:', err);
+      log.error('Failed to log patient action', err, {
+        operation: 'log_patient_action',
+        actorId: context.actorId,
+        action: context.action
+      });
     });
   }
 
@@ -296,7 +313,11 @@ export class AuditService {
     };
 
     this.logAudit(auditData).catch(err => {
-      console.error('Failed to log auth action:', err);
+      log.error('Failed to log auth action', err, {
+        operation: 'log_auth_action',
+        actorId: context.actorId,
+        action: context.action
+      });
     });
   }
 
@@ -348,7 +369,11 @@ export class AuditService {
     };
 
     this.logAudit(auditData).catch(err => {
-      console.error('Failed to log communication:', err);
+      log.error('Failed to log communication', err, {
+        operation: 'log_communication',
+        actorId: context.actorId,
+        action: context.action
+      });
     });
   }
 
@@ -401,7 +426,11 @@ export class AuditService {
     };
 
     this.logAudit(auditData).catch(err => {
-      console.error('Failed to log file operation:', err);
+      log.error('Failed to log file operation', err, {
+        operation: 'log_file_operation',
+        actorId: context.actorId,
+        action: context.action
+      });
     });
   }
 
@@ -453,7 +482,11 @@ export class AuditService {
     };
 
     this.logAudit(auditData).catch(err => {
-      console.error('Failed to log data access:', err);
+      log.error('Failed to log data access', err, {
+        operation: 'log_data_access',
+        actorId: context.actorId,
+        action: context.action
+      });
     });
   }
 
@@ -505,7 +538,11 @@ export class AuditService {
     };
 
     this.logAudit(auditData).catch(err => {
-      console.error('Failed to log system event:', err);
+      log.error('Failed to log system event', err, {
+        operation: 'log_system_event',
+        actorId: context.actorId,
+        action: context.action
+      });
     });
   }
 

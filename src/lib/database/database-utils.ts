@@ -36,9 +36,9 @@ import {
   ValidationError, 
   NotFoundError,
   formatMongooseError,
-  formatMongooseErrors,
-  logErrorWithContext 
+  formatMongooseErrors
 } from '../utils/error-handling';
+import { log } from '@/lib/services';
 import { 
   groupBy, 
   sortBy, 
@@ -607,7 +607,7 @@ export function logDatabaseOperation(
     console.log(`📊 Database: ${operation} on ${model} completed in ${executionTime}ms`);
   } else {
     console.error(`❌ Database: ${operation} on ${model} failed after ${executionTime}ms:`, error);
-    logErrorWithContext(error, {
+    log.error(`Database ${operation} on ${model} failed`, error, {
       operation,
       model,
       query: sanitizeQueryInput(query),

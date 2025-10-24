@@ -33,9 +33,9 @@ import {
 import { 
   DatabaseError, 
   ValidationError, 
-  NotFoundError,
-  logErrorWithContext 
+  NotFoundError
 } from '../utils/error-handling';
+import { log } from '@/lib/services';
 import { 
   formatDate, 
   getCurrentTimestamp 
@@ -131,7 +131,7 @@ export class GridFSService {
     } catch (error) {
       const executionTime = Date.now() - startTime;
       console.error(`❌ GridFS: Upload error after ${executionTime}ms:`, error);
-      logErrorWithContext(error, {
+      log.error('GridFS upload error', error, {
         operation: 'gridfs_upload',
         filename: maskSensitiveData(filename),
         metadata: {
@@ -203,7 +203,7 @@ export class GridFSService {
     } catch (error) {
       const executionTime = Date.now() - startTime;
       console.error(`❌ GridFS: Download error after ${executionTime}ms:`, error);
-      logErrorWithContext(error, {
+      log.error('GridFS download error', error, {
         operation: 'gridfs_download',
         fileId: maskSensitiveData(fileId),
         executionTime
@@ -234,7 +234,7 @@ export class GridFSService {
         end: options.end
       });
     } catch (error) {
-      logErrorWithContext(error, {
+      log.error('GridFS stream error', error, {
         operation: 'gridfs_stream',
         fileId: maskSensitiveData(fileId)
       });
@@ -260,7 +260,7 @@ export class GridFSService {
     } catch (error) {
       const executionTime = Date.now() - startTime;
       console.error(`❌ GridFS: Delete error after ${executionTime}ms:`, error);
-      logErrorWithContext(error, {
+      log.error('GridFS delete error', error, {
         operation: 'gridfs_delete',
         fileId: maskSensitiveData(fileId),
         executionTime
@@ -284,7 +284,7 @@ export class GridFSService {
       
       return files[0].metadata as GridFSFileMetadata;
     } catch (error) {
-      logErrorWithContext(error, {
+      log.error('GridFS get metadata error', error, {
         operation: 'gridfs_get_metadata',
         fileId: maskSensitiveData(fileId)
       });
@@ -326,7 +326,7 @@ export class GridFSService {
       
       console.log(`✅ GridFS: Metadata updated for file ${fileId}`);
     } catch (error) {
-      logErrorWithContext(error, {
+      log.error('GridFS update metadata error', error, {
         operation: 'gridfs_update_metadata',
         fileId: maskSensitiveData(fileId),
         updates: maskSensitiveData(JSON.stringify(updates))
@@ -357,7 +357,7 @@ export class GridFSService {
         metadata: file.metadata as GridFSFileMetadata
       }));
     } catch (error) {
-      logErrorWithContext(error, {
+      log.error('GridFS list files error', error, {
         operation: 'gridfs_list_files',
         userId: maskSensitiveData(userId)
       });
@@ -398,7 +398,7 @@ export class GridFSService {
         metadata: file.metadata as GridFSFileMetadata
       }));
     } catch (error) {
-      logErrorWithContext(error, {
+      log.error('GridFS search files error', error, {
         operation: 'gridfs_search_files',
         query: maskSensitiveData(JSON.stringify(query))
       });
@@ -439,7 +439,7 @@ export class GridFSService {
       
       return stats;
     } catch (error) {
-      logErrorWithContext(error, {
+      log.error('GridFS get stats error', error, {
         operation: 'gridfs_get_stats'
       });
       throw transformGridFSError(error);
@@ -474,7 +474,7 @@ export class GridFSService {
       console.log(`📊 GridFS: Cleanup completed - deleted ${deletedCount} expired files`);
       return { deletedCount };
     } catch (error) {
-      logErrorWithContext(error, {
+      log.error('GridFS cleanup expired error', error, {
         operation: 'gridfs_cleanup_expired'
       });
       throw transformGridFSError(error);

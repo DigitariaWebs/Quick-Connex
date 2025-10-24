@@ -2,10 +2,18 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { AuthService } from '@/lib/auth';
 import { handleAuthError } from '@/lib/auth/auth-error-handler';
+import { log } from '@/lib/services/log-service';
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const requestId = request.headers.get('x-request-id') || 'unknown';
+  
   try {
-    console.log('🔐 Login: Starting login process');
+    log.info('Login API request started', {
+      operation: 'login_api',
+      requestId,
+      ipAddress: request.headers.get('x-forwarded-for') || 'unknown'
+    });
 
     const body = await request.json();
     const loginResult = await AuthService.login(body, request);
@@ -25,8 +33,23 @@ export async function POST(request: NextRequest) {
       });
     }
     
+    const duration = Date.now() - startTime;
+    log.info('Login API request completed successfully', {
+      operation: 'login_api',
+      requestId,
+      duration,
+      userId: loginResult.user._id
+    });
+    
     return response;
   } catch (error) {
+    const duration = Date.now() - startTime;
+    log.error('Login API request failed', error, {
+      operation: 'login_api',
+      requestId,
+      duration
+    });
+    
     return handleAuthError(error);
   }
 }

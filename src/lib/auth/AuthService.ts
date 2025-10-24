@@ -42,11 +42,14 @@ import {
   ValidationError, 
   RateLimitError, 
   NotFoundError,
-  logErrorWithContext,
-  logInfo,
-  logDebug,
   formatErrorForClient 
 } from '@/lib/utils/error-handling';
+import { log } from '@/lib/services';
+
+// Helper function to handle error type conversion
+const logError = (message: string, error: any, context?: any) => {
+  log.error(message, error, context);
+};
 import { 
   maskEmail, 
   truncate 
@@ -268,7 +271,7 @@ export class AuthService {
         })
       };
     } catch (error) {
-      logErrorWithContext(error, {
+      logError('Signup failed', error, {
         operation: 'signup',
         timestamp: new Date()
       });
@@ -301,7 +304,7 @@ export class AuthService {
     const userAgent = request.headers.get('user-agent') || 'Unknown';
     
     try {
-      logInfo('Login process started', {
+      log.info('Login process started', {
         operation: 'login_start',
         email: maskEmail(validatedCredentials.email),
         ipAddress,
@@ -440,7 +443,7 @@ export class AuthService {
       });
       
       const duration = Date.now() - startTime;
-      logErrorWithContext(new Error('Login successful'), {
+      log.info('Login successful', {
         operation: 'login_success',
         email: maskEmail(user.email),
         duration,
@@ -475,7 +478,7 @@ export class AuthService {
       };
       
     } catch (error) {
-      logErrorWithContext(error, {
+      logError('Login failed', error, {
         operation: 'login',
         email: validatedCredentials.email,
         ipAddress,
@@ -501,7 +504,7 @@ export class AuthService {
    */
   static async logout(sessionId: string, request?: NextRequest): Promise<AuthResult> {
     try {
-      logInfo('Logout started', {
+      log.info('Logout started', {
         operation: 'logout_start',
         sessionId,
         timestamp: new Date()
@@ -527,7 +530,7 @@ export class AuthService {
         });
       }
       
-      logInfo('Logout successful', {
+      log.info('Logout successful', {
         operation: 'logout_success',
         sessionId,
         timestamp: new Date()
@@ -535,7 +538,7 @@ export class AuthService {
       return { success: true };
       
     } catch (error) {
-      logErrorWithContext(error, {
+      logError('Logout failed', error, {
         operation: 'logout',
         sessionId,
         timestamp: new Date()
@@ -567,7 +570,7 @@ export class AuthService {
     // Validate input
     const validatedOptions = authOptionsSchema.parse(options);
     try {
-      logDebug('Authentication validation started', {
+      log.debug('Authentication validation started', {
         operation: 'auth_validation_start',
         timestamp: new Date()
       });
@@ -648,7 +651,7 @@ export class AuthService {
       };
       
     } catch (error) {
-      logErrorWithContext(error, {
+      logError('Authentication validation failed', error, {
         operation: 'auth_validation_failed',
         timestamp: new Date()
       });
@@ -680,7 +683,7 @@ export class AuthService {
     // Validate input
     const validatedDeviceInfo = deviceInfoSchema.parse(deviceInfo);
     try {
-      logInfo('Session creation started', {
+      log.info('Session creation started', {
         operation: 'session_creation_start',
         userId,
         timestamp: new Date()
@@ -769,7 +772,7 @@ export class AuthService {
         { maxAttempts: 3, baseDelay: 100 }
       );
       
-      logErrorWithContext(new Error('Session created successfully'), {
+      log.info('Session created successfully', {
         operation: 'session_creation_success',
         userId,
         sessionId,
@@ -804,7 +807,7 @@ export class AuthService {
       };
       
     } catch (error) {
-      logErrorWithContext(error, {
+      logError('Session creation failed', error, {
         operation: 'createSession',
         userId,
         ipAddress,
@@ -835,7 +838,7 @@ export class AuthService {
     // Validate input
     const validatedInput = sessionValidationSchema.parse({ sessionId, ipAddress });
     try {
-      logDebug('Session validation started', {
+      log.debug('Session validation started', {
         operation: 'session_validation_start',
         sessionId,
         timestamp: new Date()
@@ -867,7 +870,12 @@ export class AuthService {
       // IP binding validation
       if (ipAddress && AUTH_CONFIG.requireIpBinding) {
         if (session.ipAddress !== ipAddress) {
-          console.warn(`🚨 AuthService: IP mismatch for session ${sessionId}. Expected: ${session.ipAddress}, Got: ${ipAddress}`);
+          log.warn('IP address mismatch detected', {
+            operation: 'session_validation',
+            sessionId,
+            expectedIp: session.ipAddress,
+            actualIp: ipAddress
+          });
           throw new AppError('IP address mismatch', 403, 'IP_MISMATCH');
         }
       }
@@ -910,7 +918,7 @@ export class AuthService {
       };
       
     } catch (error) {
-      logErrorWithContext(error, {
+      logError('Session validation failed', error, {
         operation: 'validateSession',
         sessionId,
         ipAddress,
@@ -960,7 +968,7 @@ export class AuthService {
       };
       
     } catch (error) {
-      logErrorWithContext(error, {
+      logError('Session refresh failed', error, {
         operation: 'refreshSession',
         sessionId,
         timestamp: new Date()
@@ -989,7 +997,10 @@ export class AuthService {
       return await SessionService.revokeSession(sessionId, reason);
       
     } catch (error) {
-      console.error('❌ AuthService: Session revocation failed:', error);
+      logError('Session revocation failed', error, {
+        operation: 'revokeSession',
+        sessionId
+      });
       return false;
     }
   }
@@ -1012,7 +1023,10 @@ export class AuthService {
       return true;
       
     } catch (error) {
-      console.error('❌ AuthService: Revoke all sessions failed:', error);
+      logError('Revoke all sessions failed', error, {
+        operation: 'revokeAllUserSessions',
+        userId
+      });
       return false;
     }
   }
@@ -1082,7 +1096,12 @@ export class AuthService {
     
     failedAttempts.set(key, current);
     
-    console.warn(`🚨 AuthService: Failed attempt for ${identifier} from ${ipAddress} (${current.count} attempts)`);
+    log.warn('Failed authentication attempt', {
+      operation: 'record_failed_attempt',
+      identifier,
+      ipAddress,
+      attemptCount: current.count
+    });
   }
   
   // ===== UTILITY METHODS =====
@@ -1127,7 +1146,9 @@ export class AuthService {
     try {
       await AuditService.logAuthAction(context);
     } catch (error) {
-      console.error('Failed to log auth event:', error);
+      logError('Failed to log auth event', error, {
+        operation: 'logAuthEvent'
+      });
     }
   }
 
@@ -1161,7 +1182,12 @@ export class AuthService {
       
       await this.logAuthEvent(context);
     } catch (error) {
-      console.error('Failed to log session event:', error);
+      logError('Failed to log session event', error, {
+        operation: 'logSessionEvent',
+        action,
+        userId,
+        sessionId
+      });
     }
   }
 
@@ -1192,7 +1218,11 @@ export class AuthService {
       
       await this.logAuthEvent(context);
     } catch (error) {
-      console.error('Failed to log security event:', error);
+      logError('Failed to log security event', error, {
+        operation: 'logSecurityEvent',
+        event,
+        userId
+      });
     }
   }
   
@@ -1316,7 +1346,9 @@ export class AuthService {
         }
       };
     } catch (error) {
-      console.error('Error getting session stats:', error);
+      logError('Error getting session stats', error, {
+        operation: 'getSessionStats'
+      });
       throw new Error('Failed to retrieve session statistics');
     }
   }
@@ -1352,7 +1384,9 @@ export class AuthService {
         }
       };
     } catch (error) {
-      console.error('Error getting performance analytics:', error);
+      logError('Error getting performance analytics', error, {
+        operation: 'getPerformanceAnalytics'
+      });
       throw new Error('Failed to retrieve performance analytics');
     }
   }
@@ -1390,7 +1424,10 @@ export class AuthService {
         ]);
       });
     } catch (error) {
-      console.error('Error getting user sessions:', error);
+      logError('Error getting user sessions', error, {
+        operation: 'getUserSessions',
+        userId
+      });
       throw new Error('Failed to retrieve user sessions');
     }
   }
@@ -1451,7 +1488,9 @@ export class AuthService {
         performance
       };
     } catch (error) {
-      console.error('Error during session cleanup:', error);
+      logError('Error during session cleanup', error, {
+        operation: 'cleanupExpiredSessions'
+      });
       throw new Error('Failed to clean up expired sessions');
     }
   }

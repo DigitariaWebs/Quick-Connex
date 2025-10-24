@@ -18,9 +18,9 @@ import {
   DatabaseError, 
   ValidationError, 
   NotFoundError,
-  transformDatabaseError,
-  logErrorWithContext 
+  transformDatabaseError
 } from '../utils/error-handling';
+import { log } from '@/lib/services';
 import { 
   sanitizeString, 
   sanitizeQueryInput 
@@ -152,14 +152,14 @@ export class DatabaseService {
     try {
       // Only initialize if not already connected
       if (!this.connection || this.connection.readyState !== 1) {
-        console.log('🔄 Database: Auto-initializing connection...');
+        log.database('Auto-initializing connection', { operation: 'auto_initialize' });
         await this.performConnection();
-        console.log('✅ Database: Auto-initialized successfully');
+        log.database('Auto-initialized successfully', { operation: 'auto_initialize' });
       } else {
-        console.log('✅ Database: Already connected');
+        log.database('Already connected', { operation: 'auto_initialize' });
       }
     } catch (error) {
-      console.warn('⚠️ Database: Auto-initialization failed:', error);
+      log.warn('Auto-initialization failed', { operation: 'auto_initialize' });
       // Don't throw error - let individual operations handle connection
     }
   }
@@ -181,11 +181,11 @@ export class DatabaseService {
     
     if (!instance.connection || instance.connection.readyState !== 1) {
       try {
-        console.log('🔄 Database: Ensuring connection...');
+        log.database('Ensuring connection', { operation: 'ensure_connection' });
         await instance.performConnection();
-        console.log('✅ Database: Connection ensured');
+        log.database('Connection ensured', { operation: 'ensure_connection' });
       } catch (error) {
-        console.error('❌ Database: Failed to ensure connection:', error);
+        log.error('Failed to ensure connection', error, { operation: 'ensure_connection' });
         throw new DatabaseError(`Database connection failed: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
@@ -1023,16 +1023,20 @@ export class DatabaseService {
       throw new DatabaseError('MongoDB URI is required');
     }
 
-    console.log('🔄 Database: Connecting to MongoDB...');
-    console.log(`📊 Database: URI: ${uri.replace(/\/\/.*@/, '//***@')}`);
+    log.database('Connecting to MongoDB', { 
+      operation: 'connect',
+      uri: uri.replace(/\/\/.*@/, '//***@')
+    });
 
     try {
       const connection = await retry(
         async () => {
           const conn = await mongoose.connect(uri, options);
-          console.log('✅ Database: Successfully connected to MongoDB');
-          console.log(`📊 Database: Connected to database: ${conn.connection.name}`);
-          console.log(`🌐 Database: Host: ${conn.connection.host}:${conn.connection.port}`);
+          log.database('Successfully connected to MongoDB', {
+            operation: 'connect',
+            database: conn.connection.name,
+            host: `${conn.connection.host}:${conn.connection.port}`
+          });
           
           this.setupConnectionEvents(conn.connection);
           this.startHealthMonitoring();
@@ -1050,10 +1054,18 @@ export class DatabaseService {
 
     } catch (error) {
       this.connectionAttempts++;
-      console.error('❌ Database: Connection failed:', error);
+      log.error('Connection failed', error, { 
+        operation: 'connect',
+        attempt: this.connectionAttempts,
+        maxAttempts: this.maxReconnectAttempts
+      });
       
       if (this.connectionAttempts < this.maxReconnectAttempts) {
-        console.log(`🔄 Database: Retrying connection (${this.connectionAttempts}/${this.maxReconnectAttempts})...`);
+        log.database(`Retrying connection (${this.connectionAttempts}/${this.maxReconnectAttempts})`, {
+          operation: 'connect_retry',
+          attempt: this.connectionAttempts,
+          delay: this.reconnectDelay
+        });
         await sleep(this.reconnectDelay);
         this.reconnectDelay = Math.min(this.reconnectDelay * 2, 30000);
         return this.establishConnection();
@@ -1072,9 +1084,9 @@ export class DatabaseService {
     if (this.connection) {
       try {
         await this.connection.close();
-        console.log('✅ Database: Disconnected from MongoDB');
+        log.database('Disconnected from MongoDB', { operation: 'disconnect' });
       } catch (error) {
-        console.error('❌ Database: Error during disconnect:', error);
+        log.error('Error during disconnect', error, { operation: 'disconnect' });
       }
       this.connection = null;
     }
@@ -1082,12 +1094,12 @@ export class DatabaseService {
     try {
       await mongoose.disconnect();
     } catch (error) {
-      console.error('❌ Database: Error during mongoose disconnect:', error);
+      log.error('Error during mongoose disconnect', error, { operation: 'mongoose_disconnect' });
     }
   }
 
   private async performReconnect(): Promise<Connection> {
-    console.log('🔄 Database: Forcing reconnection...');
+    log.database('Forcing reconnection', { operation: 'reconnect' });
     await this.performDisconnect();
     await sleep(1000);
     return this.performConnection();
@@ -1095,21 +1107,22 @@ export class DatabaseService {
 
   private setupConnectionEvents(connection: Connection): void {
     connection.on('connected', () => {
-      console.log('✅ Database: Connected to MongoDB');
-      console.log(`📊 Database: Connected to database: ${connection.name}`);
-      console.log(`🌐 Database: Host: ${connection.host}:${connection.port}`);
+      log.database('Connected to MongoDB', {
+        operation: 'connection_event',
+        database: connection.name,
+        host: `${connection.host}:${connection.port}`
+      });
       this.connectionAttempts = 0;
       this.reconnectDelay = 1000;
     });
 
     connection.on('disconnected', () => {
-      console.warn('⚠️ Database: Disconnected from MongoDB');
+      log.warn('Disconnected from MongoDB', { operation: 'connection_event' });
       this.connection = null;
     });
 
     connection.on('error', (error) => {
-      console.error('❌ Database: Connection error:', error);
-      logErrorWithContext(error, {
+      log.error('Connection error', error, {
         operation: 'database_connection',
         connectionState: connection.readyState,
         host: connection.host,
@@ -1118,11 +1131,11 @@ export class DatabaseService {
     });
 
     connection.on('reconnected', () => {
-      console.log('🔄 Database: Reconnected to MongoDB');
+      log.database('Reconnected to MongoDB', { operation: 'connection_event' });
     });
 
     connection.on('close', () => {
-      console.warn('⚠️ Database: Connection closed');
+      log.warn('Connection closed', { operation: 'connection_event' });
       this.connection = null;
     });
   }

@@ -36,7 +36,7 @@ const CIUSSSSchema = new Schema<ICIUSSS>({
 });
 
 // Index for efficient queries
-CIUSSSSchema.index({ code: 1 });
+// Note: code index is already created by unique: true constraint
 CIUSSSSchema.index({ isActive: 1 });
 
 // Create or get the CIUSSS model with defensive checks

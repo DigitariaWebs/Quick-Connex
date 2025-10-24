@@ -1,9 +1,12 @@
 /**
- * Services Module
+ * Services Index
  * 
- * This module exports all general business services including admin,
- * timeline, and security services.
+ * Centralized exports for all services to provide convenient access patterns.
  */
 
-export * from './timeline-service';
-export * from './security';
+// Core services
+export { AuditService } from './audit-service';
+export { LogService, logService, log } from './log-service';
+
+// Re-export types for convenience
+export type { LogLevel, LogCategory, LogContext, LogEntry, LogConfig } from './log-types';
