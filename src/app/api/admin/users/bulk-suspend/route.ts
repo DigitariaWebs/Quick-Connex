@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import User from '@/models/User';
 import { AuthService } from '@/lib/auth';
-import { EmailService } from '@/lib/communication/channels/email/email-service';
-import { EmailMessage } from '@/types/communication';
+import { CommunicationService } from '@/lib/communication';
+import { EmailMessage } from '@/lib/communication/core/types';
 
 export async function POST(request: NextRequest) {
   try {
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 
 async function sendBulkSuspensionEmail(user: any, reason: string) {
   try {
-    const emailService = new EmailService();
+    const communicationService = CommunicationService.getInstance();
     
     const emailMessage: EmailMessage = {
       id: `bulk-suspension-${user._id}-${Date.now()}`,
@@ -165,7 +165,7 @@ async function sendBulkSuspensionEmail(user: any, reason: string) {
       updatedAt: new Date()
     };
 
-    await emailService.sendEmail(emailMessage);
+    await communicationService.sendEmail(emailMessage);
     console.log(`📧 Bulk suspension notification sent to ${user.email}`);
     
   } catch (error) {

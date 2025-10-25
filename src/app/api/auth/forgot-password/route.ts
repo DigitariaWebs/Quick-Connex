@@ -4,8 +4,8 @@ import { DatabaseService } from '@/lib/database';
 import User from '@/models/User';
 import crypto from 'crypto';
 import { rateLimit } from '@/lib/services/security';
-import { EmailService } from '@/lib/communication/channels/email/email-service';
-import { EmailMessage } from '@/types/communication';
+import { CommunicationService } from '@/lib/communication';
+import { EmailMessage } from '@/lib/communication';
 
 export async function POST(request: NextRequest) {
   try {
@@ -81,7 +81,7 @@ console.log('✅ API: MongoDB connection established');
     // Send password reset email
     try {
       console.log('📧 API: Creating EmailService instance...');
-      const emailService = new EmailService();
+      const communicationService = CommunicationService.getInstance();
       console.log('✅ API: EmailService created successfully');
       
       const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
@@ -163,7 +163,7 @@ This is an automated message from the Patient Management System.`
       console.log('📧 API: Sending email with template:', emailMessage.content.template);
       console.log('📧 API: Email recipient:', emailMessage.recipient.email);
       
-      const emailResponse = await emailService.sendEmail(emailMessage);
+      const emailResponse = await communicationService.sendEmail(emailMessage);
       
       console.log('📊 API: Email response:', {
         success: emailResponse.success,

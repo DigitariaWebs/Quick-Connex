@@ -14,8 +14,6 @@ export * from './database';
 // Communication
 export * from './communication';
 
-// Notifications
-export * from './notifications';
 
 // Templates
 export * from './templates';

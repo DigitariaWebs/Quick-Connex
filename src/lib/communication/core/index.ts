@@ -1,8 +1,17 @@
 /**
- * Communication Core Module
+ * Core Communication Module Exports
  * 
- * This module exports the core communication services and configuration.
+ * Central exports for core communication functionality.
  */
 
-export * from './communication-service';
-export * from './communication-config';
+// ===== MAIN SERVICE =====
+export { CommunicationService } from './CommunicationService';
+
+// ===== TYPES =====
+export type * from './types';
+
+// ===== CONSTANTS =====
+export * from './constants';
+
+// ===== CONFIGURATION =====
+export * from './config';

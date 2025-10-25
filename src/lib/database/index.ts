@@ -1,24 +1,15 @@
 /**
  * Database Module Exports
  * 
- * Clean exports for all database-related functionality.
- * Provides organized access to DatabaseService, types, utilities, and configurations.
+ * Clean, centralized exports for the database system.
+ * Single import point for all database-related functionality.
  */
 
-// Main service
-export { DatabaseService } from './DatabaseService';
+// ===== CORE =====
+export * from './core';
 
-// Types
-export * from './database-types';
+// ===== UTILITIES =====
+export * from './utils';
 
-// Utilities
-export * from './database-utils';
-
-// Configuration
-export * from './database-config';
-
-// GridFS service
-export { GridFSService } from './GridFSService';
-
-// Query monitor
-export { QueryMonitor } from './query-monitor';
+// ===== MONITORING =====
+export * from './monitoring';

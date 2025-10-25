@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import User from '@/models/User';
-import { sendUserNotificationEmail } from '@/lib/communication/user-notifications';
+import { sendUserNotificationEmail } from '@/lib/communication/integrations/UserNotificationService';
 
 /**
  * Approve or reject a user registration

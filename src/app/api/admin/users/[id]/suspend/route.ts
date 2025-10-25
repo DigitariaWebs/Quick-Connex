@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import User from '@/models/User';
 import { AuthService } from '@/lib/auth';
-import { EmailService } from '@/lib/communication/channels/email/email-service';
-import { EmailMessage } from '@/types/communication';
+import { CommunicationService } from '@/lib/communication';
+import { EmailMessage } from '@/lib/communication/core/types';
 
 /**
  * POST /api/admin/users/[id]/suspend
@@ -88,7 +88,7 @@ export async function POST(
  */
 async function sendUserNotificationEmail(user: any, action: string, reason: string) {
   try {
-    const emailService = new EmailService();
+    const communicationService = CommunicationService.getInstance();
     
     const emailMessage: EmailMessage = {
       id: `suspension-${user._id}-${Date.now()}`,
@@ -161,7 +161,7 @@ async function sendUserNotificationEmail(user: any, action: string, reason: stri
       updatedAt: new Date()
     };
 
-    await emailService.sendEmail(emailMessage);
+    await communicationService.sendEmail(emailMessage);
     console.log(`📧 Suspension notification sent to ${user.email}`);
     
   } catch (error) {

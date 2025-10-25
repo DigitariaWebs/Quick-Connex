@@ -5,8 +5,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { AuthService } from '@/lib/auth';import CommunicationService from '@/lib/communication/core/communication-service';
-import { CommunicationChannel } from '@/types/communication';
+import { AuthService } from '@/lib/auth';
+import { CommunicationService } from '@/lib/communication';
+import { CommunicationChannel } from '@/lib/communication';
 
 // GET /api/communication/templates - Get communication templates
 export async function GET(request: NextRequest) {
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     const channel = searchParams.get('channel') as CommunicationChannel;
     const category = searchParams.get('category');
 
-    const communicationService = new CommunicationService();
+    const communicationService = CommunicationService.getInstance();
     let templates = await communicationService.getTemplates(channel);
 
     // Filter by category if specified
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields: templateId, data' }, { status: 400 });
     }
 
-    const communicationService = new CommunicationService();
+    const communicationService = CommunicationService.getInstance();
     const renderedContent = await communicationService.renderTemplate(templateId, data);
 
     return NextResponse.json({

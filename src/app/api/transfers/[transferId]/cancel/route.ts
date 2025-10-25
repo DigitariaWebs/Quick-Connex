@@ -9,7 +9,7 @@ import { DatabaseService } from '@/lib/database';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import { AuthService } from '@/lib/auth';import TimelineService from '@/lib/services/timeline-service';
-import TransferNotificationService from '@/lib/communication/integrations/transfer-notification-service';
+import TransferNotificationService from '@/lib/communication/integrations/TransferNotificationService';
 import { canCancelTransfer } from '@/lib/transfers/transfer-cancellation-utils';
 
 export async function PUT(

@@ -1,7 +1,20 @@
 /**
- * Communication Utils Module
+ * Communication Utils Exports
  * 
- * This module exports communication utility functions.
+ * Central exports for all communication utility functions.
  */
 
-export * from './user-document-attachments';
+// ===== VALIDATION =====
+export * from './validation';
+
+// ===== FORMATTERS =====
+export * from './formatters';
+
+// ===== COST CALCULATOR =====
+export * from './cost-calculator';
+
+// ===== RATE LIMITER =====
+export * from './rate-limiter';
+
+// ===== HELPERS =====
+export * from './helpers';

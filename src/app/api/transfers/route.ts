@@ -395,7 +395,7 @@ export async function POST(request: NextRequest) {
       }
       
       console.log('📧 Starting notification service...');
-      const TransferNotificationService = (await import('@/lib/communication/integrations/transfer-notification-service')).default;
+      const TransferNotificationService = (await import('@/lib/communication/integrations/TransferNotificationService')).default;
       await TransferNotificationService.sendNewTransferRequestNotification(populatedTransfer, fullUserData);
       console.log('✅ Notifications sent successfully');
     } catch (notificationError) {

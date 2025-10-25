@@ -1,9 +1,10 @@
 /**
  * Communication Integrations Module
  * 
- * This module exports all system integrations.
+ * This module exports all communication integration services.
  */
 
-export * from './transfer-notification-service';
-export * from './transfer-sms-service';
-export * from './notification-integration';
+export { TransferNotificationService } from './TransferNotificationService';
+export { TransferSMSService } from './TransferSMSService';
+export { NotificationIntegrationService } from './NotificationIntegrationService';
+export { sendUserNotificationEmail } from './UserNotificationService';

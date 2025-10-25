@@ -7,7 +7,7 @@ import { AuditService } from '@/lib/services/audit';
 import { TransferAuditContext } from '@/lib/services/audit';
 import { AuditAction, ActorType, TargetResourceType } from '@/models/AuditLog';
 import { Permission } from '@/models/User';
-import TransferNotificationService from '@/lib/communication/integrations/transfer-notification-service';
+import TransferNotificationService from '@/lib/communication/integrations/TransferNotificationService';
 
 /**
  * Admin Transfer Actions API Endpoint

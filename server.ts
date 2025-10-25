@@ -1,7 +1,7 @@
 import next from 'next';
 import os from 'os';
 import dotenv from 'dotenv';
-import { DatabaseService } from './src/lib/database/DatabaseService';
+import { DatabaseService } from './src/lib/database';
 
 // Load environment variables from .env.local
 dotenv.config({ path: '.env.local' });

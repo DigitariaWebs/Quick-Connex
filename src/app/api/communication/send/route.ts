@@ -5,12 +5,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { AuthService } from '@/lib/auth';import CommunicationService from '@/lib/communication/core/communication-service';
+import { AuthService } from '@/lib/auth';
+import { CommunicationService } from '@/lib/communication';
 import {
   EmailMessage,
   SMSMessage,
   CommunicationChannel,
-} from '@/types/communication';
+} from '@/lib/communication';
 
 // POST /api/communication/send - Send communication message
 export async function POST(request: NextRequest) {
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid channel. Must be "email" or "sms"' }, { status: 400 });
     }
 
-    const communicationService = new CommunicationService();
+    const communicationService = CommunicationService.getInstance();
     const messageId = `${channel}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     let response;
@@ -154,7 +155,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const channel = searchParams.get('channel') as CommunicationChannel;
 
-    const communicationService = new CommunicationService();
+    const communicationService = CommunicationService.getInstance();
     const templates = await communicationService.getTemplates(channel);
 
     return NextResponse.json({

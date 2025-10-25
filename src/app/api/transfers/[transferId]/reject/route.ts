@@ -11,8 +11,8 @@ import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import Hospital from '@/models/Hospital';
 // Removed AdminService - using simple manager role check instead
-import { CommunicationService } from '@/lib/communication/core/communication-service';
-import { EmailMessage } from '@/types/communication';
+import { CommunicationService } from '@/lib/communication';
+import { EmailMessage } from '@/lib/communication';
 
 
 export async function POST(
@@ -120,7 +120,7 @@ export async function POST(
  */
 async function sendTransferRejectionNotification(transfer: any, admin: any, reason: string): Promise<void> {
   try {
-    const communicationService = new CommunicationService();
+    const communicationService = CommunicationService.getInstance();
     
     const transferData = {
       transferId: transfer.transferId,

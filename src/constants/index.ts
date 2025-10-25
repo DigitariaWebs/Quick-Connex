@@ -10,8 +10,7 @@ export * from './auth';
 // Transfer Constants
 export * from './transfer';
 
-// Communication Constants
-export * from './communication';
+// Communication Constants are now in @/lib/communication
 
 // Theme Constants
 export * from './theme';

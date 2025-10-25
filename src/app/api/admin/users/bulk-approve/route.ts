@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import User from '@/models/User';
 import { AuthService } from '@/lib/auth';
-import { sendUserNotificationEmail } from '@/lib/communication/user-notifications';
+import { sendUserNotificationEmail } from '@/lib/communication/integrations/UserNotificationService';
 
 export async function POST(request: NextRequest) {
   try {

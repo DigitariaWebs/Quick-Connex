@@ -1,17 +1,27 @@
 /**
- * Communication Module
+ * Communication Module Exports
  * 
- * This module exports all communication services organized by functionality.
+ * Clean, centralized exports for the communication system.
+ * Single import point for all communication-related functionality.
  */
 
-// Core services
+// ===== CORE =====
 export * from './core';
 
-// Communication channels
-export * from './channels';
-
-// System integrations
-export * from './integrations';
-
-// Utilities
+// ===== UTILITIES =====
 export * from './utils';
+
+// ===== ERRORS =====
+export * from './errors';
+
+// ===== PROVIDERS =====
+export * from './providers';
+
+// ===== EVENTS =====
+export * from './events';
+
+// ===== TEMPLATES =====
+export * from './templates';
+
+// ===== INTEGRATIONS =====
+export * from './integrations';
