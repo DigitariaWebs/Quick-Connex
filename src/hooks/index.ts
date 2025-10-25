@@ -16,5 +16,3 @@ export * from './auth';
 // Dashboard hooks - Thin adapters for dashboard data
 export * from './dashboard';
 
-// Notification hooks - Thin adapters for notifications
-export * from './notifications';

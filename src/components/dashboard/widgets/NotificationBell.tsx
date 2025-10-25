@@ -4,45 +4,28 @@ import { useState, useEffect } from "react";
 import { useSession } from "@/contexts/SessionContext";
 import { Bell } from "lucide-react";
 
-interface NotificationIntegrationProps {
+interface NotificationBellProps {
   showToasts?: boolean;
   showPanel?: boolean;
   position?: "top-right" | "top-left" | "bottom-right" | "bottom-left";
 }
 
-export default function NotificationIntegration({
+export default function NotificationBell({
   showToasts = true,
   showPanel = false,
   position = "top-right",
-}: NotificationIntegrationProps) {
+}: NotificationBellProps) {
   const { user } = useSession();
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Fetch initial unread count
+  // TODO: Connect to notification system when backend is implemented
+  // Currently displays bell icon without active notifications
   useEffect(() => {
     if (!user) return;
 
-    const fetchUnreadCount = async () => {
-      try {
-        const response = await fetch(
-          "/api/notifications?status=unread&limit=1",
-          {
-            credentials: "include",
-          }
-        );
-
-        const data = await response.json();
-
-        if (data.success) {
-          setUnreadCount(data.data.summary.unread);
-        }
-      } catch (error) {
-        console.error("Error fetching unread count:", error);
-      }
-    };
-
-    fetchUnreadCount();
+    // Set unread count to 0 for now - ready for backend integration
+    setUnreadCount(0);
   }, [user]);
 
   if (!user) {
@@ -95,9 +78,9 @@ export default function NotificationIntegration({
 
             <div className="max-h-96 overflow-y-auto p-4">
               <p className="text-gray-500 text-center">
-                Real-time notifications are currently unavailable.
+                Notification system is not yet configured.
                 <br />
-                Please refresh the page to see new notifications.
+                This component is ready for backend integration.
               </p>
             </div>
           </div>

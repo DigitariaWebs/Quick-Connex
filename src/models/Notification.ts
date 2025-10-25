@@ -1,3 +1,14 @@
+/**
+ * Notification Model
+ * 
+ * ⚠️ RESERVED FOR FUTURE IMPLEMENTATION
+ * 
+ * This MongoDB model is for the in-app notification system.
+ * Currently unused but preserved for future implementation.
+ * 
+ * Note: This is separate from the communication module's email/SMS notification system.
+ */
+
 import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 
 // Define the interface for Notification document

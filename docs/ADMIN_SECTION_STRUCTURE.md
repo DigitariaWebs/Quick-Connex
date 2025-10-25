@@ -152,9 +152,9 @@ src/app/api/admin/
 
 | Route | Description | Status |
 |-------|-------------|--------|
-| `/admin/notifications` | All notifications | ✅ Created |
-| `/admin/notifications/broadcast` | Broadcast notifications | ✅ Created |
-| `/admin/notifications/history` | Notification history | ✅ Created |
+| ~~`/admin/notifications`~~ | ~~All notifications~~ | ❌ **REMOVED** |
+| ~~`/admin/notifications/broadcast`~~ | ~~Broadcast notifications~~ | ❌ **REMOVED** |
+| ~~`/admin/notifications/history`~~ | ~~Notification history~~ | ❌ **REMOVED** |
 
 ### System Routes
 
@@ -208,9 +208,9 @@ src/app/api/admin/
 
 | Endpoint | Method | Description | Status |
 |----------|--------|-------------|--------|
-| `/api/admin/notifications/broadcast` | POST | Broadcast notification | ✅ Created |
-| `/api/admin/notifications/history` | GET | Notification history | ✅ Created |
-| `/api/admin/notifications/metrics` | GET | Notification metrics | ✅ Created |
+| ~~`/api/admin/notifications/broadcast`~~ | ~~POST~~ | ~~Broadcast notification~~ | ❌ **REMOVED** |
+| ~~`/api/admin/notifications/history`~~ | ~~GET~~ | ~~Notification history~~ | ❌ **REMOVED** |
+| ~~`/api/admin/notifications/metrics`~~ | ~~GET~~ | ~~Notification metrics~~ | ❌ **REMOVED** |
 
 ### Audit APIs
 

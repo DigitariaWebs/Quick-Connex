@@ -30,7 +30,6 @@ export { DashboardClient, dashboardClient } from './dashboard';
 export type {
   DashboardClientOptions,
   TransferFilters,
-  NotificationFilters,
   SystemHealthOptions,
   DashboardClientResult,
   DashboardStatsResult,
@@ -39,6 +38,5 @@ export type {
   SystemHealthResult,
   DashboardDataResult,
   ProcessedTransfer,
-  ProcessedActivity,
-  ProcessedNotification
+  ProcessedActivity
 } from './dashboard';

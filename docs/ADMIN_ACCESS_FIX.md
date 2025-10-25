@@ -55,7 +55,7 @@ if (!["manager", "admin", "super_admin"].includes(data.user.userType)) {
 - `/admin/analytics` - ✅ Correctly restricted
 - `/admin/audit-logs` - ✅ Correctly restricted
 - `/admin/monitoring` - ✅ Correctly restricted
-- `/admin/notifications` - ✅ Correctly restricted
+- ~~`/admin/notifications`~~ - ❌ **REMOVED**
 - `/admin/sessions` - ✅ Correctly restricted
 - `/admin/system` - ✅ Correctly restricted
 - `/admin/template-manager` - ✅ Correctly restricted

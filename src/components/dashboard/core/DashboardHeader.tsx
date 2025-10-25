@@ -1,8 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Bell, Plus, Search, Menu } from "lucide-react";
+import { Plus, Search, Menu } from "lucide-react";
 import type { User } from "@/types/user";
+import NotificationBell from "@/components/dashboard/widgets/NotificationBell";
 
 interface DashboardHeaderProps {
   user: User;
@@ -109,10 +110,8 @@ export default function DashboardHeader({
               </motion.button>
             )}
 
-            {/* Notification Bell */}
-            <button className="w-10 h-10 bg-white rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm">
-              <Bell size={18} className="text-gray-600" />
-            </button>
+            {/* Notification Bell - Ready for future backend */}
+            <NotificationBell position="top-right" />
 
             {/* User Profile Section - Responsive */}
             <div className="flex items-center space-x-2 lg:space-x-3 bg-green-50 rounded-full px-2 lg:px-3 py-2 border border-green-200 shadow-sm sidebar-nav-item">

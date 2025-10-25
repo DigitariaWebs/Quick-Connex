@@ -307,13 +307,30 @@ export class AuthService {
         throw new AppError(message, 403, 'ACCOUNT_NOT_APPROVED');
       }
       
+      // Extract existing sessionId from cookie if present
+      let existingSessionId: string | undefined;
+      
+      const existingToken = request.cookies.get('auth-token')?.value;
+      if (existingToken) {
+        try {
+          const decoded = await verifyToken(existingToken);
+          if (decoded && decoded.sessionId) {
+            existingSessionId = decoded.sessionId;
+          }
+        } catch (error) {
+          // Token invalid/expired, ignore
+          log.debug('Existing token invalid, will create new session', { error });
+        }
+      }
+      
       // Create session using SessionService
       const deviceInfo = parseUserAgent(userAgent);
       const session = await SessionService.createSession({
         userId: (user._id as any).toString(),
         deviceInfo,
         ipAddress,
-        userAgent
+        userAgent,
+        existingSessionId // NEW: Pass existing sessionId
       });
       
       // Create JWT token

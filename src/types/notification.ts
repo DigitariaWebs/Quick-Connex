@@ -1,7 +1,12 @@
 /**
  * Notification System Types
  * 
- * This file contains all TypeScript interfaces and types for the notification system.
+ * ⚠️ RESERVED FOR FUTURE IMPLEMENTATION
+ * 
+ * This file contains TypeScript interfaces and types for the in-app notification system.
+ * These types are currently unused but preserved for future implementation.
+ * 
+ * Note: This is separate from the communication module's email/SMS notification system.
  */
 
 import { Types } from 'mongoose';

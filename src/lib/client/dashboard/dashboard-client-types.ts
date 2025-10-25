@@ -45,12 +45,6 @@ export interface Transfer {
   updatedAt: string;
 }
 
-export interface NotificationFilters {
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
-  type?: string;
-  read?: boolean;
-  limit?: number;
-}
 
 export interface TransferFilters {
   status?: string;
@@ -102,7 +96,3 @@ export interface ProcessedActivity extends ActivityItem {
   priority: 'low' | 'medium' | 'high' | 'urgent';
 }
 
-export interface ProcessedNotification extends Notification {
-  formattedTimestamp: string;
-  isUrgent: boolean;
-}

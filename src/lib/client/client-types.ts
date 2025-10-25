@@ -140,6 +140,7 @@ export interface Transfer {
   updatedAt: string;
 }
 
+// Notification interface preserved for future implementation
 export interface Notification {
   id: string;
   type: string;

@@ -90,17 +90,72 @@ export class SessionService {
    * @returns Promise<SessionDocument> - Created session with Mongoose methods
    */
   static async createSession(data: SessionCreationData): Promise<any> {
-    // 1. Check session limit FIRST
-    const activeSessions = await getUserSessions(data.userId);
-    if (activeSessions.length >= AUTH_CONFIG.maxSessionsPerUser) {
-      throw new AppError(
-        `Maximum ${AUTH_CONFIG.maxSessionsPerUser} concurrent sessions allowed`,
-        429,
-        'TOO_MANY_SESSIONS'
-      );
+    // 1. Check if there's an existing session cookie
+    const existingSessionId = data.existingSessionId;
+    
+    if (existingSessionId) {
+      const existingSession = await this.validateSession(existingSessionId);
+      
+      if (existingSession.valid && existingSession.session) {
+        // Reuse existing session - just extend it
+        log.info('Reusing existing session from cookie', {
+          sessionId: existingSessionId,
+          userId: data.userId
+        });
+        
+        await existingSession.session.extendSession(AUTH_CONFIG.sessionTimeoutMinutes / 60);
+        return existingSession.session;
+      } else {
+        // Session exists but invalid - will be replaced
+        log.info('Replacing invalid session from cookie', {
+          sessionId: existingSessionId,
+          userId: data.userId,
+          reason: existingSession.error
+        });
+        
+        await this.revokeSession(existingSessionId, 'Replacing with new login');
+      }
     }
     
-    // 2. Build security context
+    // 2. Check for existing session from same device/fingerprint
+    const fingerprint = generateFingerprint(data.deviceInfo, data.userAgent);
+    const userSessions = await getUserSessions(data.userId);
+    
+    const sameDeviceSession = userSessions.find(s => 
+      s.securityContext?.fingerprint === fingerprint
+    );
+    
+    if (sameDeviceSession) {
+      log.info('Found existing session from same device, replacing it', {
+        oldSessionId: sameDeviceSession.sessionId,
+        userId: data.userId
+      });
+      
+      await this.revokeSession(sameDeviceSession.sessionId, 'New login from same device');
+    }
+    
+    // 3. Check session limit (after cleanup)
+    const remainingSessions = await getUserSessions(data.userId);
+    if (remainingSessions.length >= AUTH_CONFIG.maxSessionsPerUser) {
+      // Try to auto-cleanup stale sessions
+      const staleSessionsRemoved = await this.cleanupStaleSessions(data.userId);
+      
+      if (staleSessionsRemoved > 0) {
+        log.info('Removed stale sessions to make room', {
+          userId: data.userId,
+          removedCount: staleSessionsRemoved
+        });
+      } else {
+        // Still at limit - revoke oldest
+        await this.revokeOldestSession(data.userId);
+        log.warn('Revoked oldest session due to limit', {
+          userId: data.userId,
+          maxSessions: AUTH_CONFIG.maxSessionsPerUser
+        });
+      }
+    }
+    
+    // 4. Build security context
     const securityContext = await buildSecurityContext(
       data.userId,
       data.deviceInfo,
@@ -108,7 +163,7 @@ export class SessionService {
       data.userAgent
     );
     
-    // 3. Create session object (in memory only)
+    // 5. Create session object (in memory only)
     const sessionId = uuidv4();
     const refreshToken = uuidv4();
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 12);
@@ -122,19 +177,19 @@ export class SessionService {
       securityContext,
       refreshToken: hashedRefreshToken,
       sessionType: 'web',
-      concurrentSessions: activeSessions.length + 1,
-      isPrimary: activeSessions.length === 0,
+      concurrentSessions: remainingSessions.length + 1,
+      isPrimary: remainingSessions.length === 0,
       isActive: true,
       revoked: false
     });
     
-    // 4. Validate user exists (BEFORE saving)
+    // 6. Validate user exists (BEFORE saving)
     const user = await DatabaseService.findById(User, data.userId);
     if (!user) {
       throw new NotFoundError('User not found');
     }
     
-    // 5. Save to database (ONLY after all validations)
+    // 7. Save to database (ONLY after all validations)
     await session.save();
     
     return session; // Returns Mongoose document
@@ -669,5 +724,62 @@ export class SessionService {
       userType: user.userType,
       sessionId: session.sessionId
     });
+  }
+
+  /**
+   * Clean up stale sessions (not accessed in 7 days)
+   * Returns number of sessions removed
+   */
+  static async cleanupStaleSessions(userId: string): Promise<number> {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    
+    const staleSessions = await DatabaseService.findMany(
+      Session,
+      {
+        userId,
+        isActive: true,
+        revoked: false,
+        lastAccessedAt: { $lt: sevenDaysAgo }
+      },
+      { lean: false }
+    );
+    
+    for (const session of staleSessions) {
+      await session.revokeSession(undefined, 'Stale session cleanup');
+    }
+    
+    return staleSessions.length;
+  }
+
+  /**
+   * Revoke the oldest session for a user
+   */
+  static async revokeOldestSession(userId: string): Promise<boolean> {
+    const sessions = await getUserSessions(userId);
+    
+    if (sessions.length === 0) {
+      return false;
+    }
+    
+    // Sort by lastAccessedAt, oldest first
+    sessions.sort((a, b) => 
+      a.lastAccessedAt.getTime() - b.lastAccessedAt.getTime()
+    );
+    
+    const oldestSession = sessions[0];
+    await oldestSession.revokeSession(undefined, 'Auto-revoked to make room for new session');
+    
+    return true;
+  }
+
+  /**
+   * Get session by cookie/token
+   */
+  static async getSessionFromCookie(sessionId: string): Promise<any | null> {
+    return DatabaseService.findOne(
+      Session,
+      { sessionId },
+      { lean: false }
+    );
   }
 }

@@ -80,7 +80,6 @@ function initializeMockData() {
       { endpoint: '/api/transfers', method: 'GET', baseResponseTime: 100 },
       { endpoint: '/api/transfers', method: 'POST', baseResponseTime: 300 },
       { endpoint: '/api/users', method: 'GET', baseResponseTime: 120 },
-      { endpoint: '/api/notifications', method: 'GET', baseResponseTime: 80 },
       { endpoint: '/api/admin/monitoring/system', method: 'GET', baseResponseTime: 250 },
       { endpoint: '/api/admin/monitoring/sse', method: 'GET', baseResponseTime: 180 },
       { endpoint: '/api/admin/monitoring/database', method: 'GET', baseResponseTime: 400 },

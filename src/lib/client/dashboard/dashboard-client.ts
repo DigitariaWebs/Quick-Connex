@@ -12,7 +12,6 @@ import {
   ActivityItem,
   DashboardData,
   SystemHealth,
-  Notification,
   UserProfile,
   Transfer,
   FetchOptions,
@@ -21,10 +20,8 @@ import {
 import {
   DashboardClientOptions,
   TransferFilters,
-  NotificationFilters,
   ProcessedTransfer,
   ProcessedActivity,
-  ProcessedNotification,
 } from './dashboard-client-types';
 
 export class DashboardClient {
@@ -64,28 +61,6 @@ export class DashboardClient {
     }
   }
 
-  /**
-   * Fetch notifications with optional filters
-   */
-  async fetchNotifications(filters: NotificationFilters = {}): Promise<Notification[]> {
-    try {
-      const params = new URLSearchParams();
-      
-      if (filters.priority) params.append('priority', filters.priority);
-      if (filters.type) params.append('type', filters.type);
-      if (filters.read !== undefined) params.append('read', filters.read.toString());
-      if (filters.limit) params.append('limit', filters.limit.toString());
-
-      const queryString = params.toString();
-      const url = `/api/notifications${queryString ? `?${queryString}` : ''}`;
-      
-      const result = await this.apiClient.get<{ notifications: Notification[] }>(url);
-      return result.notifications || [];
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
-      return [];
-    }
-  }
 
   /**
    * Fetch user profile
@@ -234,15 +209,13 @@ export class DashboardClient {
   async fetchDashboardData(userType?: string, userId?: string): Promise<DashboardData> {
     try {
       // Fetch all data in parallel
-      const [transfersResult, notificationsResult, profileResult] = await Promise.allSettled([
+      const [transfersResult, profileResult] = await Promise.allSettled([
         this.fetchTransfers({ status: 'all' }),
-        this.fetchNotifications({ priority: 'high', limit: 10 }),
         this.fetchProfile().catch(() => ({ stats: this.getDefaultStats(), recentActivity: [] }))
       ]);
 
       // Process results with fallbacks
       const transfers = transfersResult.status === 'fulfilled' ? transfersResult.value : [];
-      const notifications = notificationsResult.status === 'fulfilled' ? notificationsResult.value : [];
       const profile = profileResult.status === 'fulfilled' ? profileResult.value : { stats: this.getDefaultStats(), recentActivity: [] };
 
       // Calculate stats
@@ -314,18 +287,6 @@ export class DashboardClient {
     }
   }
 
-  /**
-   * Fetch urgent alerts
-   */
-  async fetchUrgentAlerts(): Promise<Notification[]> {
-    try {
-      const result = await this.apiClient.get<{ notifications: Notification[] }>('/api/notifications?priority=urgent&limit=5');
-      return result.notifications || [];
-    } catch (error) {
-      console.error('Failed to fetch urgent alerts:', error);
-      return [];
-    }
-  }
 }
 
 // Default instance

@@ -8,4 +8,4 @@ export * from './DashboardStats';
 export * from './TransferOverview';
 export * from './RecentActivity';
 export * from './UrgentAlerts';
-export * from './NotificationIntegration';
+export * from './NotificationBell';

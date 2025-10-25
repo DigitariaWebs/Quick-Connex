@@ -13,6 +13,7 @@ export interface SessionCreationData {
   deviceInfo: DeviceInfo;
   ipAddress: string;
   userAgent: string;
+  existingSessionId?: string; // NEW: Optional existing session to reuse/replace
 }
 
 export interface SessionValidationResult {
