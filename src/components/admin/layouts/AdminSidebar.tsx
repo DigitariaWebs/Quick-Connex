@@ -1,0 +1,399 @@
+"use client";
+
+import { useState } from "react";
+import { motion } from "framer-motion";
+import {
+  LayoutDashboard,
+  Activity,
+  Radio,
+  Database,
+  Zap,
+  AlertTriangle,
+  ArrowRightLeft,
+  Users,
+  FileText,
+  Shield,
+  LogOut,
+  Menu,
+  X,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import LogoutConfirmationModal from "@/components/shared/modals/LogoutConfirmationModal";
+import type { User } from "@/types/user";
+
+interface AdminSidebarProps {
+  user: User;
+  onLogout: () => void;
+  onToggle?: (isCollapsed: boolean) => void;
+  onMobileToggle?: (isOpen: boolean) => void;
+  isMobileOpen?: boolean;
+}
+
+interface NavigationSection {
+  section: string;
+  items: NavigationItem[];
+  superAdminOnly?: boolean;
+}
+
+interface NavigationItem {
+  name: string;
+  href: string;
+  icon: any;
+  color: string;
+  bgColor: string;
+  superAdminOnly?: boolean;
+}
+
+const navigation: NavigationSection[] = [
+  {
+    section: "Dashboard",
+    items: [
+      {
+        name: "Overview",
+        href: "/admin/dashboard",
+        icon: LayoutDashboard,
+        color: "text-purple-600",
+        bgColor: "bg-purple-50",
+      },
+    ],
+  },
+  {
+    section: "Monitoring",
+    items: [
+      {
+        name: "SSE Connections",
+        href: "/admin/monitoring/sse",
+        icon: Radio,
+        color: "text-blue-600",
+        bgColor: "bg-blue-50",
+      },
+      {
+        name: "Sessions",
+        href: "/admin/sessions",
+        icon: Shield,
+        color: "text-green-600",
+        bgColor: "bg-green-50",
+      },
+      {
+        name: "Database",
+        href: "/admin/monitoring/database",
+        icon: Database,
+        color: "text-indigo-600",
+        bgColor: "bg-indigo-50",
+      },
+      {
+        name: "API Performance",
+        href: "/admin/monitoring/api",
+        icon: Zap,
+        color: "text-yellow-600",
+        bgColor: "bg-yellow-50",
+      },
+      {
+        name: "Error Logs",
+        href: "/admin/monitoring/errors",
+        icon: AlertTriangle,
+        color: "text-red-600",
+        bgColor: "bg-red-50",
+      },
+    ],
+    superAdminOnly: true,
+  },
+  {
+    section: "Management",
+    items: [
+      {
+        name: "Transfers",
+        href: "/admin/transfers",
+        icon: ArrowRightLeft,
+        color: "text-emerald-600",
+        bgColor: "bg-emerald-50",
+      },
+      {
+        name: "Users",
+        href: "/admin/users",
+        icon: Users,
+        color: "text-pink-600",
+        bgColor: "bg-pink-50",
+      },
+      {
+        name: "Reports",
+        href: "/admin/analytics",
+        icon: FileText,
+        color: "text-cyan-600",
+        bgColor: "bg-cyan-50",
+      },
+    ],
+  },
+];
+
+export default function AdminSidebar({
+  user,
+  onLogout,
+  onToggle,
+  onMobileToggle,
+  isMobileOpen = false,
+}: AdminSidebarProps) {
+  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const pathname = usePathname();
+
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    if (onToggle) {
+      onToggle(false);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    if (onToggle) {
+      onToggle(true);
+    }
+  };
+
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    onLogout();
+  };
+
+  // Filter out super admin only items and sections if user is not super admin
+  const isSuperAdmin = user.userType === "super_admin";
+  const filteredNavigation = navigation
+    .filter((section) => !section.superAdminOnly || isSuperAdmin)
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(
+        (item) => !item.superAdminOnly || isSuperAdmin
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
+
+  return (
+    <>
+      {/* Mobile Overlay */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 lg:hidden"
+          onClick={() => onMobileToggle?.(false)}
+        />
+      )}
+
+      {/* Desktop Sidebar Container */}
+      <div className="fixed left-4 top-4 bottom-4 z-40 lg:block hidden">
+        <motion.div
+          initial={{ x: -300, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          className={`${
+            isHovered ? "w-72" : "w-20"
+          } h-full bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-800 rounded-3xl shadow-2xl transition-all duration-500 ease-in-out overflow-hidden`}
+        >
+          {/* Navigation */}
+          <nav
+            className="pt-6 px-4 pb-20 overflow-y-auto"
+            style={{ maxHeight: "calc(100% - 100px)" }}
+          >
+            {filteredNavigation.map((section) => (
+              <div key={section.section} className="mb-6">
+                {/* Section Header - Always Visible */}
+                {isHovered && (
+                  <div className="w-full flex items-center justify-between px-3 py-2 text-purple-200 text-xs font-semibold uppercase tracking-wider mb-2">
+                    <span>{section.section}</span>
+                  </div>
+                )}
+
+                {/* Section Items - Always Visible */}
+                <div className="space-y-1">
+                  {section.items.map((item) => {
+                    const isActive =
+                      pathname === item.href ||
+                      pathname.startsWith(item.href + "/");
+                    const Icon = item.icon;
+
+                    return (
+                      <Link key={item.name} href={item.href}>
+                        <motion.div
+                          whileHover={{
+                            x: isHovered ? 4 : 0,
+                            scale: isHovered ? 1.02 : 1,
+                          }}
+                          whileTap={{ scale: 0.98 }}
+                          title={!isHovered ? item.name : undefined}
+                          className={`flex items-center space-x-3 ${
+                            isHovered ? "px-4" : "px-2"
+                          } py-3 rounded-2xl transition-all duration-200 relative group mb-1 ${
+                            isActive
+                              ? "bg-white/20 text-white shadow-lg border border-white/30 backdrop-blur-sm"
+                              : "text-purple-100 hover:bg-white/10 hover:text-white"
+                          }`}
+                        >
+                          <div
+                            className={
+                              isActive ? "text-white" : "text-purple-200"
+                            }
+                          >
+                            <Icon size={20} />
+                          </div>
+
+                          {isHovered && (
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              className="flex items-center justify-between flex-1 min-w-0"
+                            >
+                              <span className="font-medium text-sm whitespace-nowrap truncate">
+                                {item.name}
+                              </span>
+                            </motion.div>
+                          )}
+                        </motion.div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </nav>
+
+          {/* Bottom Actions */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-purple-700/50 bg-purple-900/50 backdrop-blur-sm rounded-b-3xl">
+            <motion.button
+              whileHover={{ x: isHovered ? 4 : 0 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleLogoutClick}
+              title={!isHovered ? "Sign Out" : undefined}
+              className={`flex items-center space-x-3 ${
+                isHovered ? "px-4" : "px-2"
+              } py-3 rounded-2xl text-red-300 hover:bg-red-500/20 hover:text-red-200 transition-all duration-200 w-full border border-red-500/30`}
+            >
+              <div className="text-red-300">
+                <LogOut size={20} />
+              </div>
+              {isHovered && (
+                <span className="font-medium text-sm whitespace-nowrap truncate">
+                  Sign Out
+                </span>
+              )}
+            </motion.button>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Mobile Sidebar */}
+      <motion.div
+        initial={{ x: -320 }}
+        animate={{ x: isMobileOpen ? 0 : -320 }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className="lg:hidden fixed left-0 top-0 w-80 h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-800 z-40 shadow-2xl"
+        style={{ display: isMobileOpen ? "block" : "none" }}
+      >
+        {/* Mobile Header */}
+        <div className="p-6 border-b border-purple-700/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-white">
+                  Admin Panel
+                </h2>
+                <p className="text-purple-200 text-sm">
+                  {user.firstName} {user.lastName}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => onMobileToggle?.(false)}
+              className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
+            >
+              <X size={18} className="text-white" />
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Navigation */}
+        <nav
+          className="pt-6 px-4 pb-20 overflow-y-auto"
+          style={{ maxHeight: "calc(100% - 140px)" }}
+        >
+          {filteredNavigation.map((section) => (
+            <div key={section.section} className="mb-6">
+              {/* Section Header */}
+              <div className="w-full flex items-center justify-between px-3 py-2 text-purple-200 text-xs font-semibold uppercase tracking-wider mb-2">
+                <span>{section.section}</span>
+              </div>
+
+              {/* Section Items */}
+              <div className="space-y-1">
+                {section.items.map((item) => {
+                  const isActive =
+                    pathname === item.href ||
+                    pathname.startsWith(item.href + "/");
+                  const Icon = item.icon;
+
+                  return (
+                    <Link key={item.name} href={item.href}>
+                      <motion.div
+                        whileHover={{ x: 4, scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => onMobileToggle?.(false)}
+                        className={`flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all duration-200 relative group mb-1 ${
+                          isActive
+                            ? "bg-white/20 text-white shadow-lg border border-white/30 backdrop-blur-sm"
+                            : "text-purple-100 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        <div
+                          className={
+                            isActive ? "text-white" : "text-purple-200"
+                          }
+                        >
+                          <Icon size={20} />
+                        </div>
+                        <span className="font-medium text-sm whitespace-nowrap truncate">
+                          {item.name}
+                        </span>
+                      </motion.div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        {/* Mobile Bottom Actions */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-purple-700/50 bg-purple-900/50 backdrop-blur-sm">
+          <motion.button
+            whileHover={{ x: 4 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleLogoutClick}
+            className="flex items-center space-x-3 px-4 py-3 rounded-2xl text-red-300 hover:bg-red-500/20 hover:text-red-200 transition-all duration-200 w-full border border-red-500/30"
+          >
+            <div className="text-red-300">
+              <LogOut size={20} />
+            </div>
+            <span className="font-medium text-sm whitespace-nowrap truncate">
+              Sign Out
+            </span>
+          </motion.button>
+        </div>
+      </motion.div>
+
+      {/* Logout Confirmation Modal */}
+      <LogoutConfirmationModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogoutConfirm}
+      />
+    </>
+  );
+}

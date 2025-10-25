@@ -1,6 +1,6 @@
 "use client";
 
-import { AdminLayout } from "@/components/features/admin";
+import { AdminLayout } from "@/components/admin/layouts";
 import {
   AlertTriangle,
   Activity,

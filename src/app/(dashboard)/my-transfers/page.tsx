@@ -22,11 +22,11 @@ import {
   Calendar,
   FileText,
 } from "lucide-react";
-import TransferRequestCard from "@/components/features/dashboard/TransferRequestCard";
-import Sidebar from "@/components/features/dashboard/Sidebar";
-import DashboardHeader from "@/components/features/dashboard/DashboardHeader";
-import LoadingSpinner from "@/components/features/dashboard/LoadingSpinner";
-import TransferTimeline from "@/components/features/transfers/TransferTimeline";
+import TransferRequestCard from "@/components/dashboard/actions/TransferRequestCard";
+import Sidebar from "@/components/dashboard/core/Sidebar";
+import DashboardHeader from "@/components/dashboard/core/DashboardHeader";
+import LoadingSpinner from "@/components/dashboard/core/LoadingSpinner";
+import TransferTimeline from "@/components/transfers/timeline/TransferTimeline";
 import { BORDER_RADIUS, getTransferStatusConfig } from "@/constants";
 
 interface TransferRequest {

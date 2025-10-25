@@ -27,10 +27,10 @@ import {
   Package,
   Stethoscope,
 } from "lucide-react";
-import { AdminLayout } from "@/components/features/admin";
-import LoadingSpinner from "@/components/features/dashboard/LoadingSpinner";
-import { TransferDetailsModal } from "@/components/ui/modals";
-import ExpandableSearchBar from "@/components/ui/expandable-search-bar";
+import { AdminLayout } from "@/components/admin/layouts";
+import LoadingSpinner from "@/components/dashboard/core/LoadingSpinner";
+import { TransferDetailsModal } from "@/components/transfers/modals";
+import ExpandableSearchBar from "@/components/shared/ui/expandable-search-bar";
 import {
   BORDER_RADIUS,
   CARD_STYLES,

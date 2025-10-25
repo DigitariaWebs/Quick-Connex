@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSession } from "@/contexts/SessionContext";
-import Sidebar from "@/components/features/dashboard/Sidebar";
+import Sidebar from "@/components/dashboard/core/Sidebar";
 import { User, Phone, Mail, MapPin, Calendar, Award } from "lucide-react";
 
 interface UserProfile {

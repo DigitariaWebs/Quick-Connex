@@ -5,20 +5,17 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/contexts/SessionContext";
 import { useDashboardData } from "@/hooks/dashboard/useDashboardData";
 import { motion } from "framer-motion";
-import Sidebar from "@/components/features/dashboard/Sidebar";
-import DashboardHeader from "@/components/features/dashboard/DashboardHeader";
-import TransferOverview from "@/components/features/dashboard/TransferOverview";
-import UrgentAlerts from "@/components/features/dashboard/UrgentAlerts";
-import RecentActivity from "@/components/features/dashboard/RecentActivity";
-import QuickActions from "@/components/features/dashboard/QuickActions";
-// import SchedulingNotifications from "@/components/features/notifications/SchedulingNotifications"; // TEMPORARILY DISABLED
-// import NotificationPopupManager from "@/components/features/notifications/NotificationPopupManager"; // Disabled - using GlobalNotificationSystem instead
-// import ToastNotificationTester from "@/components/features/notifications/ToastNotificationTester"; // Removed - no longer needed
-import TransferFormModal from "@/components/ui/modals/TransferFormModal";
-import MyAcceptedTransfersModal from "@/components/ui/modals/MyAcceptedTransfersModal";
-import SearchTransfersModal from "@/components/ui/modals/SearchTransfersModal";
-import PendingTransfersModal from "@/components/ui/modals/PendingTransfersModal";
-import TodayScheduleModal from "@/components/ui/modals/TodayScheduleModal";
+import Sidebar from "@/components/dashboard/core/Sidebar";
+import DashboardHeader from "@/components/dashboard/core/DashboardHeader";
+import TransferOverview from "@/components/dashboard/widgets/TransferOverview";
+import UrgentAlerts from "@/components/dashboard/widgets/UrgentAlerts";
+import RecentActivity from "@/components/dashboard/widgets/RecentActivity";
+import QuickActions from "@/components/dashboard/actions/QuickActions";
+import TransferFormModal from "@/components/transfers/modals/TransferFormModal";
+import MyAcceptedTransfersModal from "@/components/transfers/modals/MyAcceptedTransfersModal";
+import SearchTransfersModal from "@/components/transfers/modals/SearchTransfersModal";
+import PendingTransfersModal from "@/components/transfers/modals/PendingTransfersModal";
+import TodayScheduleModal from "@/components/transfers/modals/TodayScheduleModal";
 
 interface User {
   _id: string;
@@ -224,13 +221,6 @@ export default function EmployeeDashboard() {
               </div>
             )}
           </div>
-
-          {/* Scheduling Notifications - TEMPORARILY DISABLED */}
-          {/* <div className="mb-8">
-            <SchedulingNotifications limit={5} showSummary={true} />
-          </div> */}
-
-          {/* Toast Notification Tester - Removed */}
 
           {/* Recent Activity */}
           <div className="mb-8">

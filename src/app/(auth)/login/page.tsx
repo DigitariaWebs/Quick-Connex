@@ -5,9 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useLoginForm } from "@/hooks/auth/useLoginForm";
-import { FormInput } from "@/components/ui/forms/FormInput";
-import { SubmitButton } from "@/components/ui/forms/SubmitButton";
-import { Icon } from "@/components/ui/icons/Icon";
+import { FormInput } from "@/components/shared/forms/FormInput";
+import { SubmitButton } from "@/components/shared/forms/SubmitButton";
+import { Icon } from "@/components/shared/ui/icons/Icon";
 
 function LoginForm() {
   const router = useRouter();

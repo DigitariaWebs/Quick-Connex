@@ -23,12 +23,12 @@ import {
   Plus,
   Eye,
 } from "lucide-react";
-import TransferRequestCard from "@/components/features/dashboard/TransferRequestCard";
-import Sidebar from "@/components/features/dashboard/Sidebar";
-import DashboardHeader from "@/components/features/dashboard/DashboardHeader";
-import LoadingSpinner from "@/components/features/dashboard/LoadingSpinner";
-import TransferTimeline from "@/components/features/transfers/TransferTimeline";
-import TransferFormModal from "@/components/ui/modals/TransferFormModal";
+import TransferRequestCard from "@/components/dashboard/actions/TransferRequestCard";
+import Sidebar from "@/components/dashboard/core/Sidebar";
+import DashboardHeader from "@/components/dashboard/core/DashboardHeader";
+import LoadingSpinner from "@/components/dashboard/core/LoadingSpinner";
+import TransferTimeline from "@/components/transfers/timeline/TransferTimeline";
+import TransferFormModal from "@/components/transfers/modals/TransferFormModal";
 import { BORDER_RADIUS, getTransferStatusConfig } from "@/constants";
 
 interface TransferRequest {
@@ -396,7 +396,7 @@ export default function TransfersPage() {
               className={`bg-white ${BORDER_RADIUS["3xl"]} p-4 lg:p-6 sidebar-shadow border border-gray-100`}
             >
               <div className="flex items-center">
-                <div className={`p-2 bg-blue-100 ${BORDER_RADIUS.lg}`}>
+                <div className={`p-2 ${BORDER_RADIUS.lg}`}>
                   <Users className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600" />
                 </div>
                 <div className="ml-3 lg:ml-4">
@@ -415,11 +415,7 @@ export default function TransfersPage() {
               className={`bg-white ${BORDER_RADIUS["3xl"]} p-4 lg:p-6 sidebar-shadow border border-gray-100`}
             >
               <div className="flex items-center">
-                <div
-                  className={`p-2 ${
-                    getTransferStatusConfig("pending").bgColor
-                  } ${BORDER_RADIUS.lg}`}
-                >
+                <div className={`p-2 ${BORDER_RADIUS.lg}`}>
                   <Clock
                     className={`w-5 h-5 lg:w-6 lg:h-6 ${
                       getTransferStatusConfig("pending").color
@@ -442,11 +438,7 @@ export default function TransfersPage() {
               className={`bg-white ${BORDER_RADIUS["3xl"]} p-4 lg:p-6 sidebar-shadow border border-gray-100`}
             >
               <div className="flex items-center">
-                <div
-                  className={`p-2 ${
-                    getTransferStatusConfig("accepted").bgColor
-                  } ${BORDER_RADIUS.lg}`}
-                >
+                <div className={`p-2 ${BORDER_RADIUS.lg}`}>
                   <CheckCircle2
                     className={`w-5 h-5 lg:w-6 lg:h-6 ${
                       getTransferStatusConfig("accepted").color
@@ -469,11 +461,7 @@ export default function TransfersPage() {
               className={`bg-white ${BORDER_RADIUS["3xl"]} p-4 lg:p-6 sidebar-shadow border border-gray-100`}
             >
               <div className="flex items-center">
-                <div
-                  className={`p-2 ${
-                    getTransferStatusConfig("in_progress").bgColor
-                  } ${BORDER_RADIUS.lg}`}
-                >
+                <div className={`p-2 ${BORDER_RADIUS.lg}`}>
                   <Clock
                     className={`w-5 h-5 lg:w-6 lg:h-6 ${
                       getTransferStatusConfig("in_progress").color
@@ -496,7 +484,7 @@ export default function TransfersPage() {
               className={`bg-white ${BORDER_RADIUS["3xl"]} p-4 lg:p-6 sidebar-shadow border border-gray-100`}
             >
               <div className="flex items-center">
-                <div className={`p-2 bg-red-100 ${BORDER_RADIUS.lg}`}>
+                <div className={`p-2 ${BORDER_RADIUS.lg}`}>
                   <AlertTriangle className="w-5 h-5 lg:w-6 lg:h-6 text-red-600" />
                 </div>
                 <div className="ml-3 lg:ml-4">
@@ -515,11 +503,7 @@ export default function TransfersPage() {
               className={`bg-white ${BORDER_RADIUS["3xl"]} p-4 lg:p-6 sidebar-shadow border border-gray-100`}
             >
               <div className="flex items-center">
-                <div
-                  className={`p-2 ${
-                    getTransferStatusConfig("completed").bgColor
-                  } ${BORDER_RADIUS.lg}`}
-                >
+                <div className={`p-2 ${BORDER_RADIUS.lg}`}>
                   <CheckCircle2
                     className={`w-5 h-5 lg:w-6 lg:h-6 ${
                       getTransferStatusConfig("completed").color

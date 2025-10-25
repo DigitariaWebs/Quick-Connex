@@ -4,15 +4,15 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useSignUpForm } from "@/hooks/auth/useSignUpForm";
-import { FormInput } from "@/components/ui/forms/FormInput";
-import { FileUpload } from "@/components/ui/forms/FileUpload";
-import { SelectInput } from "@/components/ui/forms/SelectInput";
-import { UserTypeButton } from "@/components/ui/forms/UserTypeButton";
-import { RoleSpecificFields } from "@/components/ui/forms/RoleSpecificFields";
-import { SubmitButton } from "@/components/ui/forms/SubmitButton";
-import { Icon } from "@/components/ui/icons/Icon";
+import { FormInput } from "@/components/shared/forms/FormInput";
+import { FileUpload } from "@/components/shared/forms/FileUpload";
+import { SelectInput } from "@/components/shared/forms/SelectInput";
+import { UserTypeButton } from "@/components/shared/forms/UserTypeButton";
+import { RoleSpecificFields } from "@/components/transfers/forms/RoleSpecificFields";
+import { SubmitButton } from "@/components/shared/forms/SubmitButton";
+import { Icon } from "@/components/shared/ui/icons/Icon";
 // Remove CIUSSS_OPTIONS import as we'll fetch from API
-import { TermsModal } from "@/components/ui/modals/TermsModal";
+import { TermsModal } from "@/components/shared/modals/TermsModal";
 
 export default function SignUpPage() {
   const {

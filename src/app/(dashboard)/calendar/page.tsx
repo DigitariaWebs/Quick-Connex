@@ -18,9 +18,9 @@ import {
   FileText,
   ArrowRight,
 } from "lucide-react";
-import CalendarView from "@/components/features/calendar/CalendarView";
-import Sidebar from "@/components/features/dashboard/Sidebar";
-import DashboardHeader from "@/components/features/dashboard/DashboardHeader";
+import CalendarView from "@/components/calendar/CalendarView";
+import Sidebar from "@/components/dashboard/core/Sidebar";
+import DashboardHeader from "@/components/dashboard/core/DashboardHeader";
 
 interface CalendarEvent {
   id: string;

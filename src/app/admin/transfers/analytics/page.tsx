@@ -23,8 +23,8 @@ import {
   Target,
   Zap,
 } from "lucide-react";
-import { AdminLayout } from "@/components/features/admin";
-import LoadingSpinner from "@/components/features/dashboard/LoadingSpinner";
+import { AdminLayout } from "@/components/admin/layouts";
+import LoadingSpinner from "@/components/dashboard/core/LoadingSpinner";
 
 /**
  * Transfer Analytics Page

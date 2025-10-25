@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { NotificationProvider } from "@/contexts/NotificationContext";
 import { SessionProvider } from "@/contexts/SessionContext";
 // Remove startup logging from layout - not compatible with Vercel
 // import { logApplicationStartup } from "@/lib/utils/startup-logger";
@@ -38,9 +37,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SessionProvider>
-          <NotificationProvider>{children}</NotificationProvider>
-        </SessionProvider>
+        <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
   );

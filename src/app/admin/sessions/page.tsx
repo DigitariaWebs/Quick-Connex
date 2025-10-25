@@ -2,24 +2,24 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "@/contexts/SessionContext";
-import AdminLayout from "@/components/features/admin/AdminLayout";
+import AdminLayout from "@/components/admin/layouts/AdminLayout";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+} from "@/components/shared/ui/card";
+import { Button } from "@/components/shared/ui/button";
+import { Badge } from "@/components/shared/ui/badge";
+import { Input } from "@/components/shared/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/shared/ui/select";
 import {
   Table,
   TableBody,
@@ -27,8 +27,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+} from "@/components/shared/ui/table";
+import { Alert, AlertDescription } from "@/components/shared/ui/alert";
 import {
   Shield,
   ShieldAlert,

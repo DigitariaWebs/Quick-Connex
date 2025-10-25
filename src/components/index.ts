@@ -1,14 +1,15 @@
 /**
  * Components Module
  * 
- * This module exports all React components organized by type and feature.
+ * Clean, centralized exports for all application components.
+ * Organized by domain following clean architecture principles.
  */
 
-// Base UI components
-export * from './ui';
+// ===== DOMAIN COMPONENTS =====
+export * from './dashboard';
+export * from './transfers';
+export * from './admin';
+export * from './calendar';
 
-// Feature-specific components
-export * from './features';
-
-// Debug components
-export * from './debug';
+// ===== SHARED COMPONENTS =====
+export * from './shared';
