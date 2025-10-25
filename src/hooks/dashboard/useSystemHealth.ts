@@ -1,16 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { SystemHealth } from '@/types/dashboard';
+import { dashboardClient } from '@/lib/client';
+import { SystemHealth } from '@/lib/client';
 
 /**
  * useSystemHealth Hook
  * 
- * Custom hook for monitoring system health status
- * 
- * Features:
- * - Real-time health monitoring
- * - Service-level status tracking
- * - Automatic polling
- * - Health score calculation
+ * Thin React hook that manages system health state and delegates business logic to DashboardClient.
+ * Follows Clean Architecture by separating UI concerns from business logic.
  */
 
 interface UseSystemHealthOptions {
@@ -39,26 +35,13 @@ export function useSystemHealth(
   const [lastCheck, setLastCheck] = useState<string | null>(null);
 
   /**
-   * Fetch system health from dashboard stats
+   * Fetch system health using DashboardClient
    */
   const fetchSystemHealth = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/dashboard/stats', {
-        method: 'GET',
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch system health');
-      }
-
-      const result = await response.json();
-
-      if (result.success && result.data.systemHealth) {
-        setHealth(result.data.systemHealth);
-        setLastCheck(new Date().toISOString());
-      }
-
+      const healthData = await dashboardClient.fetchSystemHealth();
+      setHealth(healthData);
+      setLastCheck(new Date().toISOString());
     } catch (err) {
       console.error('❌ System health fetch error:', err);
       // Set degraded state on error
