@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseService, CIUSSS } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import { CIUSSS } from '@/models/CIUSSS';
 import mongoose from 'mongoose';
 
 export async function GET(

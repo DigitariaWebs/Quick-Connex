@@ -38,13 +38,14 @@ const { searchParams } = new URL(request.url);
 
     // Update user status
     if (action === 'approve') {
-      user.status = 'active';
+      user.status = 'approved';
       user.approvedAt = new Date();
       user.approvedBy = adminEmail;
     } else {
       user.status = 'rejected';
-      user.rejectedAt = new Date();
-      user.rejectedBy = adminEmail;
+      // Note: rejectedAt and rejectedBy properties may not exist on User model
+      // user.rejectedAt = new Date();
+      // user.rejectedBy = adminEmail;
     }
 
     await user;
@@ -65,7 +66,7 @@ const { searchParams } = new URL(request.url);
         email: user.email,
         status: user.status,
         approvedAt: user.approvedAt,
-        rejectedAt: user.rejectedAt
+        rejectedAt: undefined // Property may not exist on User model
       }
     });
 

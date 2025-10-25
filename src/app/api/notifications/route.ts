@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseService, Notification } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import Notification from '@/models/Notification';
 import { AuthService } from '@/lib/auth';// GET /api/notifications - Get notifications for the authenticated user
 export async function GET(request: NextRequest) {
   try {

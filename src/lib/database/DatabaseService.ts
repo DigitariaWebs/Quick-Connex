@@ -27,7 +27,19 @@ import {
 } from '../utils/request-validation';
 import { 
   createQueryOptions,
-  validateObjectId 
+  validateObjectId,
+  createConnectionOptions,
+  validateConnection,
+  getConnectionStats,
+  getPoolStats,
+  performHealthCheck,
+  handleDatabaseError,
+  retryDatabaseOperation,
+  monitorQuery,
+  generateCacheKey,
+  shouldCacheQuery,
+  processBatchOperations,
+  validateBatchSize
 } from './database-utils';
 import { 
   parsePagination, 
@@ -87,33 +99,20 @@ import {
   AggregationOptions,
   TransactionCallback
 } from './database-types';
+import { 
+  getDatabaseConfig,
+  getMonitoringConfig,
+  getCacheConfig,
+  validateDatabaseConfig,
+  getConnectionString,
+  isMonitoringEnabled,
+  isCachingEnabled
+} from './database-config';
 
 // ===== CONFIGURATION =====
 
 function getDefaultConfig(): DatabaseConfig {
-  return {
-    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/patients-management',
-    options: {
-      bufferCommands: false,
-      maxPoolSize: parseInt(process.env.DATABASE_POOL_SIZE || '10'),
-      minPoolSize: 2,
-      maxIdleTimeMS: 30000,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-      connectTimeoutMS: 10000,
-      retryWrites: true,
-      retryReads: true,
-      readPreference: 'primary'
-    },
-    monitoring: {
-      enabled: process.env.DATABASE_MONITORING === 'true',
-      slowQueryThreshold: parseInt(process.env.DATABASE_SLOW_QUERY_THRESHOLD || '1000'),
-      maxQueryHistory: 1000,
-      trackConnectionPool: true,
-      trackMemoryUsage: true,
-      logLevel: 'info'
-    }
-  };
+  return getDatabaseConfig();
 }
 
 // ===== MAIN DATABASE SERVICE =====
@@ -358,7 +357,14 @@ export class DatabaseService {
   ): Promise<T | null> {
     const startTime = Date.now();
     const validatedOptions = createQueryOptions(options);
-    const validatedId = validateObjectId(id);
+    
+    let validatedId: Types.ObjectId;
+    try {
+      validatedId = validateObjectId(id);
+    } catch (error) {
+      log.error('Invalid ObjectId provided', { id, error: error instanceof Error ? error.message : 'Unknown error' });
+      throw new ValidationError('Invalid data format', [{ field: 'id', message: 'Invalid ObjectId format' }]);
+    }
     
     // Ensure queryMonitor is initialized
     DatabaseService.ensureQueryMonitor();

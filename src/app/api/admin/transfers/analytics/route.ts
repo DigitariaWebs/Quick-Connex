@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/lib/auth';
-import { DatabaseService, Transfer, User, Hospital } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import Transfer from '@/models/Transfer';
+import User from '@/models/User';
+import Hospital from '@/models/Hospital';
 import { AuditAction, AuditCategory, ActorType, TargetResourceType } from '@/models/AuditLog';
 /**
  * Admin Transfer Analytics API Endpoint

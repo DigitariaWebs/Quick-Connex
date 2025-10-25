@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseService, CIUSSS } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import { CIUSSS } from '@/models/CIUSSS';
 export async function GET(request: NextRequest) {
   try {
     // DatabaseService handles connection automatically

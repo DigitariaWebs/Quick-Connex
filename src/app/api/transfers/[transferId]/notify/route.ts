@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseService, Transfer, User } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import Transfer from '@/models/Transfer';
+import User from '@/models/User';
 import { TransferNotificationService } from '@/lib/communication/integrations/transfer-notification-service';
 
 // POST /api/transfers/[transferId]/notify - Trigger notifications for a transfer

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { DatabaseService, User } from "@/lib/database";
+import { DatabaseService } from "@/lib/database";
+import User from "@/models/User";
 import { AuthService } from "@/lib/auth";
 
 /**

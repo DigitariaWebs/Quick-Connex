@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
-import { DatabaseService, AuditLog } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import AuditLog from '@/models/AuditLog';
 import { log } from '@/lib/services';
 import { 
   AuditAction, 
@@ -20,7 +21,42 @@ import {
   SystemAuditContext,
   RequestInfo,
   AuditLogData
-} from '@/types/audit';
+} from './audit-types';
+import {
+  extractRequestInfo,
+  extractIpAddress,
+  enrichAuditContext,
+  formatChangesForAudit,
+  assessRiskLevel,
+  generateAuditDescription,
+  sanitizeAuditData,
+  formatErrorForAudit,
+  calculateAuditDuration,
+  validateAuditContext,
+  generateAuditId,
+  formatAuditTimestamp,
+  getAuditCategoryFromAction,
+  requiresHighSecurity,
+  getSensitiveFieldsForResource
+} from './audit-utils';
+import {
+  AUDIT_RETENTION_POLICIES,
+  RISK_LEVEL_MAPPINGS,
+  AUDIT_CATEGORIES,
+  HIGH_RISK_ACTIONS,
+  IMMEDIATE_REVIEW_ACTIONS,
+  ADMIN_APPROVAL_ACTIONS,
+  SENSITIVE_FIELDS_BY_RESOURCE,
+  AUDIT_LOG_LEVELS,
+  MONITORING_THRESHOLDS,
+  ALERT_CONFIGURATIONS,
+  SANITIZATION_RULES,
+  EXPORT_CONFIGURATIONS,
+  BACKUP_CONFIGURATIONS,
+  DEFAULT_AUDIT_SETTINGS,
+  PERFORMANCE_SETTINGS,
+  SECURITY_SETTINGS
+} from './audit-config';
 
 /**
  * Centralized Audit Service

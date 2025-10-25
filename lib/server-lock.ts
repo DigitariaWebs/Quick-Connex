@@ -362,7 +362,7 @@ export class ServerLock {
   /**
    * Check if lock is currently held
    */
-  isLocked(): boolean {
+  isLockHeld(): boolean {
     return this.isLocked;
   }
 

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseService, Transfer, User, Hospital, Patient } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import Transfer from '@/models/Transfer';
+import User from '@/models/User';
+import Hospital from '@/models/Hospital';
+import Patient from '@/models/Patient';
 import { AuthService } from '@/lib/auth';
 import { Types } from 'mongoose';
 import { validateTransferData } from '@/lib/transfers/transfer-validation';

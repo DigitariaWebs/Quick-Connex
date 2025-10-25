@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AuditService } from '@/lib/services/audit-service';
-import { UserAuditContext } from '@/types/audit';
-import { DatabaseService, User } from '@/lib/database';
+import { AuditService } from '@/lib/services/audit';
+import { UserAuditContext } from '@/lib/services/audit';
+import { DatabaseService } from '@/lib/database';
+import User from '@/models/User';
 import { ActorType, AuditAction, TargetResourceType } from '@/models/AuditLog';
 /**
  * GET /api/admin/users/[id]

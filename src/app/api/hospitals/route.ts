@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseService, Hospital } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import Hospital from '@/models/Hospital';
 
 // GET /api/hospitals - Get all hospitals with optional search and filtering
 export async function GET(request: NextRequest) {

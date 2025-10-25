@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseService, AuditLog } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import AuditLog from '@/models/AuditLog';
 import { AuditCategory, ActorType } from '@/models/AuditLog';
 
 /**

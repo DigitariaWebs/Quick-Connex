@@ -160,10 +160,7 @@ async function startServer(): Promise<void> {
     const handle = app.getRequestHandler();
 
     // Start Next.js server
-    await app.startServer({
-      port: config.port,
-      hostname: config.hostname
-    });
+    console.log(`🚀 Starting server on ${config.hostname}:${config.port}`);
 
     console.log(`🎉 Server ready on http://${config.hostname}:${config.port}`);
     console.log('🔌 SSE notification system ready for real-time notifications');

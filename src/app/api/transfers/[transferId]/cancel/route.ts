@@ -5,7 +5,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseService, Transfer, User } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import Transfer from '@/models/Transfer';
+import User from '@/models/User';
 import { AuthService } from '@/lib/auth';import TimelineService from '@/lib/services/timeline-service';
 import TransferNotificationService from '@/lib/communication/integrations/transfer-notification-service';
 import { canCancelTransfer } from '@/lib/transfers/transfer-cancellation-utils';

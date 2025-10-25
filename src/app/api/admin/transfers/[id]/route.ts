@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/lib/auth';
-import { DatabaseService, Transfer } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import Transfer from '@/models/Transfer';
 import { AuditAction, AuditCategory, ActorType, TargetResourceType } from '@/models/AuditLog';
 import { Permission } from '@/models/User';
 /**

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       operation: 'login_api',
       requestId,
       duration,
-      userId: loginResult.user._id
+      userId: loginResult.user?._id
     });
     
     return response;

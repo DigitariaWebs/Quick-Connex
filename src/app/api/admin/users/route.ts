@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { DatabaseService, User, Hospital, CIUSSS } from "@/lib/database";
+import { DatabaseService } from "@/lib/database";
+import User from "@/models/User";
+import Hospital from "@/models/Hospital";
+import { CIUSSS } from "@/models/CIUSSS";
 import HospitalModel from "@/models/Hospital";
 import { AuthService } from "@/lib/auth";
 import mongoose from "mongoose";
@@ -113,15 +116,15 @@ export async function GET(request: NextRequest) {
           if (typeof user.ciusss === 'string') {
             // If it's a string, try to find by code
             const ciusss = await DatabaseService.findOne(CIUSSS, { code: user.ciusss });
-            populatedUser.ciusss = ciusss;
+            populatedUser.ciusss = ciusss?._id as any;
           } else {
             // If it's an ObjectId, populate normally
-            const ciusss = await DatabaseService.findById(CIUSSS, user.ciusss);
-            populatedUser.ciusss = ciusss;
+            const ciusss = await DatabaseService.findById(CIUSSS, user.ciusss.toString());
+            populatedUser.ciusss = ciusss?._id as any;
           }
         } catch (error) {
           console.warn(`⚠️ Failed to populate CIUSSS for user ${user._id}:`, error instanceof Error ? error.message : 'Unknown error');
-          populatedUser.ciusss = null;
+          populatedUser.ciusss = undefined;
         }
       }
       
@@ -132,15 +135,15 @@ export async function GET(request: NextRequest) {
           if (typeof user.hospital === 'string') {
             // If it's a string, try to find by name
             const hospital = await DatabaseService.findOne(HospitalModel, { name: user.hospital });
-            populatedUser.hospital = hospital;
+            populatedUser.hospital = hospital?._id as any;
           } else {
             // If it's an ObjectId, populate normally
-            const hospital = await DatabaseService.findById(HospitalModel, user.hospital);
-            populatedUser.hospital = hospital;
+            const hospital = await DatabaseService.findById(HospitalModel, user.hospital.toString());
+            populatedUser.hospital = hospital?._id as any;
           }
         } catch (error) {
           console.warn(`⚠️ Failed to populate Hospital for user ${user._id}:`, error instanceof Error ? error.message : 'Unknown error');
-          populatedUser.hospital = null;
+          populatedUser.hospital = undefined;
         }
       }
       

@@ -9,7 +9,8 @@
 import { Types } from 'mongoose';
 import { TimelineEvent, TimelineEventType } from '@/types/transfer';
 import { TimelineItem, TimelineQueryOptions } from '@/types/timeline';
-import { DatabaseService, AuditLog } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import AuditLog from '@/models/AuditLog';
 import { 
   AuditAction, 
   AuditCategory,
@@ -17,8 +18,8 @@ import {
   TargetResourceType, 
   RiskLevel 
 } from '@/models/AuditLog';
-import { AuditService } from '@/lib/services/audit-service';
-import { TransferAuditContext } from '@/types/audit';
+import { AuditService } from '@/lib/services/audit';
+import { TransferAuditContext } from '@/lib/services/audit';
 
 export interface TimelineEventData {
   type: TimelineEventType;

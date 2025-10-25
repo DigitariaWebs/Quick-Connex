@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { DatabaseService, User } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 import { rateLimit } from '@/lib/services/security';
 

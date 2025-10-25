@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/lib/auth';
-import { DatabaseService, Transfer, User } from '@/lib/database';
-import { AuditService } from '@/lib/services/audit-service';
-import { TransferAuditContext } from '@/types/audit';
+import { DatabaseService } from '@/lib/database';
+import Transfer from '@/models/Transfer';
+import User from '@/models/User';
+import { AuditService } from '@/lib/services/audit';
+import { TransferAuditContext } from '@/lib/services/audit';
 import { AuditAction, ActorType, TargetResourceType } from '@/models/AuditLog';
 import { Permission } from '@/models/User';
 import TransferNotificationService from '@/lib/communication/integrations/transfer-notification-service';

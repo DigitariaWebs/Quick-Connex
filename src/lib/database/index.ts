@@ -1,27 +1,24 @@
 /**
- * Centralized Database Module
+ * Database Module Exports
  * 
- * Single source of truth for all database operations.
- * Provides clean, consistent API for database and file operations.
+ * Clean exports for all database-related functionality.
+ * Provides organized access to DatabaseService, types, utilities, and configurations.
  */
 
-// ===== MAIN SERVICES =====
+// Main service
 export { DatabaseService } from './DatabaseService';
-export { GridFSService } from './GridFSService';
 
-// ===== TYPES =====
+// Types
 export * from './database-types';
 
-// ===== UTILITIES =====
+// Utilities
 export * from './database-utils';
-export { QueryMonitor } from './query-monitor';
 
-// ===== MODELS (CONVENIENCE EXPORTS) =====
-export { default as User } from '@/models/User';
-export { default as Patient } from '@/models/Patient';
-export { default as Transfer } from '@/models/Transfer';
-export { default as Hospital } from '@/models/Hospital';
-export { default as AuditLog } from '@/models/AuditLog';
-export { default as Notification } from '@/models/Notification';
-export { CIUSSS } from '@/models/CIUSSS';
-export { default as Session } from '@/models/Session';
+// Configuration
+export * from './database-config';
+
+// GridFS service
+export { GridFSService } from './GridFSService';
+
+// Query monitor
+export { QueryMonitor } from './query-monitor';

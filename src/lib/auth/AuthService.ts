@@ -8,10 +8,11 @@
 import { NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
-import { DatabaseService, Session } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import Session from '@/models/Session';
 import User from '@/models/User';
-import { AuditService } from '@/lib/services/audit-service';
-import { SessionService } from '@/lib/services/SessionService';
+import { AuditService } from '@/lib/services/audit';
+import { SessionService } from '@/lib/services/session';
 import { AUTH_CONFIG } from './auth-config';
 import { 
   AuthContext, 
@@ -34,7 +35,7 @@ import {
   UserRole
 } from './auth-types';
 import { RiskLevel, AuditAction, ActorType, TargetResourceType } from '@/models/AuditLog';
-import { AuthAuditContext as AuditAuthContext } from '@/types/audit';
+import { AuthAuditContext as AuditAuthContext } from '@/lib/services/audit';
 import { signToken, verifyToken, getTokenFromCookies } from './jwt-utils';
 import { 
   AppError,
@@ -86,128 +87,37 @@ import {
   deviceInfoSchema,
   signupSchema
 } from './auth-types';
-// Device fingerprinting and security utilities are now inline
-
-// ===== UTILITY FUNCTIONS =====
-
-/**
- * Parse user agent string into device info
- */
-function parseUserAgent(userAgent: string): DeviceInfo {
-  const sanitizedUA = sanitizeString(userAgent);
-  const ua = sanitizedUA.toLowerCase();
-  
-  return {
-    userAgent: truncate(sanitizedUA, { maxLength: 500, preserveWords: false }),
-    platform: ua.includes('windows') ? 'Windows' : 
-              ua.includes('mac') ? 'macOS' : 
-              ua.includes('linux') ? 'Linux' : 'Unknown',
-    browser: ua.includes('chrome') ? 'Chrome' : 
-             ua.includes('firefox') ? 'Firefox' : 
-             ua.includes('safari') ? 'Safari' : 'Unknown',
-    browserVersion: 'Unknown', // Would need more sophisticated parsing
-    os: ua.includes('windows') ? 'Windows' : 
-        ua.includes('mac') ? 'macOS' : 
-        ua.includes('linux') ? 'Linux' : 'Unknown',
-    osVersion: 'Unknown', // Would need more sophisticated parsing
-    deviceType: ua.includes('mobile') ? 'mobile' : 'desktop',
-    screenResolution: 'Unknown', // Would need client-side data
-    timezone: 'Unknown', // Would need client-side data
-    language: 'Unknown' // Would need client-side data
-  };
-}
-
-/**
- * Generate device fingerprint
- */
-function generateDeviceFingerprint(
-  userAgent: string, 
-  ipAddress: string, 
-  screenResolution?: string
-): string {
-  const components = [
-    userAgent,
-    ipAddress,
-    screenResolution || 'unknown',
-    new Date().getTimezoneOffset().toString()
-  ];
-  
-  return components.join('|');
-}
-
-/**
- * Assess security risk
- */
-function assessSecurityRisk(
-  isNewDevice: boolean,
-  isNewLocation: boolean,
-  suspiciousFlags: string[],
-  userType: string
-): RiskAssessment {
-  let score = 0;
-  
-  if (isNewDevice) score += 20;
-  if (isNewLocation) score += 15;
-  score += suspiciousFlags.length * 10;
-  
-  if (userType === 'admin' || userType === 'super_admin') {
-    score += 10;
-  }
-  
-  const riskLevel = score >= 70 ? RiskLevel.HIGH : score >= 40 ? RiskLevel.MEDIUM : RiskLevel.LOW;
-  
-  return {
-    riskScore: Math.min(score, 100),
-    riskLevel: riskLevel,
-    flags: suspiciousFlags,
-    recommendations: riskLevel === RiskLevel.HIGH ? ['Enable 2FA', 'Review login history'] : 
-                     riskLevel === RiskLevel.MEDIUM ? ['Monitor account activity'] : []
-  };
-}
-
-/**
- * Check for suspicious activity
- */
-async function checkSuspiciousActivity(
-  userId: string,
-  ipAddress: string,
-  userAgent: string
-): Promise<SecurityCheck> {
-  const flags: string[] = [];
-  
-  // Check for multiple failed attempts
-  const userFailedAttempts = failedAttempts.get(userId) || { count: 0, lastAttempt: 0 };
-  if (userFailedAttempts.count > AUTH_CONFIG.suspiciousActivityThreshold) {
-    flags.push('multiple_failed_logins');
-  }
-  
-  // Check for unusual IP
-  const recentSessions = await DatabaseService.findMany(Session, { 
-    userId, 
-    createdAt: { $gte: addHoursToDate(new Date(), -24) } 
-  });
-  
-  const hasRecentIp = recentSessions.some(s => s.ipAddress === ipAddress);
-  if (!hasRecentIp) {
-    flags.push('unusual_ip_address');
-  }
-  
-  return {
-    suspicious: flags.length > 0,
-    flags,
-    riskScore: flags.length > 2 ? 80 : flags.length > 0 ? 50 : 20,
-    recommendations: flags.length > 2 ? ['Enable 2FA', 'Review account activity'] : 
-                     flags.length > 0 ? ['Monitor account activity'] : []
-  };
-}
-
-// ===== CONFIGURATION =====
-// AUTH_CONFIG is now imported from './auth-config'
-
-// ===== RATE LIMITING STORAGE =====
-
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
-const failedAttempts = new Map<string, { count: number; lastAttempt: number }>();
+import {
+  parseUserAgent,
+  generateDeviceFingerprint,
+  assessSecurityRisk,
+  checkSuspiciousActivity,
+  extractIpAddress,
+  isNewDevice,
+  isNewLocation,
+  generateSessionId,
+  isValidSessionToken,
+  calculateSessionAge,
+  isSessionExpiringSoon,
+  formatDeviceInfoForLogging,
+  isSuspiciousUserAgent,
+  generateRateLimitKey,
+  isRateLimitExceeded,
+  updateRateLimit
+} from './auth-utils';
+import {
+  rateLimitStore,
+  failedAttempts,
+  activeSessions,
+  SECURITY_FLAGS,
+  RISK_THRESHOLDS,
+  SESSION_LIMITS,
+  RATE_LIMITS,
+  SECURITY_RECOMMENDATIONS,
+  AUTH_ERROR_CODES,
+  CLEANUP_INTERVALS,
+  TIMEOUTS
+} from './auth-constants';
 
 // ===== MAIN AUTH SERVICE =====
 
@@ -246,7 +156,7 @@ export class AuthService {
       
       // 5. If approved, create session
       if (user.status === 'approved') {
-        const ipAddress = this.extractIpAddress(request);
+        const ipAddress = extractIpAddress(request);
         const userAgent = request.headers.get('user-agent') || 'Unknown';
         const deviceInfo = parseUserAgent(userAgent);
         
@@ -300,7 +210,7 @@ export class AuthService {
     // Validate input
     const validatedCredentials = loginCredentialsSchema.parse(credentials);
     const startTime = Date.now();
-    const ipAddress = this.extractIpAddress(request);
+    const ipAddress = extractIpAddress(request);
     const userAgent = request.headers.get('user-agent') || 'Unknown';
     
     try {
@@ -589,7 +499,7 @@ export class AuthService {
       
       // Validate session if required
       if (validatedOptions.requireSession !== false && payload.sessionId) {
-        const validation = await SessionService.validateSession(payload.sessionId, this.extractIpAddress(request));
+        const validation = await SessionService.validateSession(payload.sessionId, extractIpAddress(request));
         if (!validation.valid) {
           throw new Error(validation.error || 'Session validation failed');
         }
@@ -714,7 +624,7 @@ export class AuthService {
       const isNewLocation = !existingSessions.some(s => s.ipAddress === ipAddress);
       
       // Check for suspicious activity
-      const suspiciousCheck = await checkSuspiciousActivity(userId, ipAddress, validatedDeviceInfo.userAgent);
+      const suspiciousCheck = await checkSuspiciousActivity(userId, ipAddress, validatedDeviceInfo.userAgent, failedAttempts);
       
       // Calculate risk score
       const riskScore = this.calculateRiskScore(
@@ -1109,17 +1019,6 @@ export class AuthService {
   /**
    * Extract IP address from request
    */
-  static extractIpAddress(request: NextRequest): string {
-    const forwardedFor = request.headers.get('x-forwarded-for')?.split(',')[0].trim();
-    const realIp = request.headers.get('x-real-ip');
-    const remoteAddr = request.headers.get('x-remote-addr');
-    
-    // Return the first available IP, with fallback to localhost
-    const ip = forwardedFor || realIp || remoteAddr || '127.0.0.1';
-    
-    // Normalize IPv6 localhost to IPv4 for consistency
-    return ip === '::1' ? '127.0.0.1' : ip;
-  }
   
   /**
    * Extract request information
@@ -1129,7 +1028,7 @@ export class AuthService {
     const sanitizedUserAgent = sanitizeString(rawUserAgent);
     
     return {
-      ipAddress: this.extractIpAddress(request),
+      ipAddress: extractIpAddress(request),
       userAgent: truncate(sanitizedUserAgent, { maxLength: 200, preserveWords: false }),
       method: request.method,
       endpoint: new URL(request.url).pathname,

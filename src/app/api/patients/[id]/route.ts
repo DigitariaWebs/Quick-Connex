@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseService, Patient } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import Patient from '@/models/Patient';
 import { AuthService } from '@/lib/auth';
 import { ActorType, AuditAction, TargetResourceType } from '@/models/AuditLog';import mongoose from 'mongoose';
-import { AuditService } from '@/lib/services/audit-service';
-import { PatientAuditContext } from '@/types/audit';
+import { AuditService } from '@/lib/services/audit';
+import { PatientAuditContext } from '@/lib/services/audit';
 // GET /api/patients/[id] - Get a specific patient
 export async function GET(
   request: NextRequest,

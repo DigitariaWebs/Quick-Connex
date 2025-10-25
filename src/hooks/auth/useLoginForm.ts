@@ -5,7 +5,7 @@ const getDashboardRoute = (userType: string) => {
   switch (userType) {
     case 'admin':
     case 'super_admin':
-      return '/admin';
+      return '/admin/dashboard';
     case 'manager':
       return '/dashboard';
     case 'employee':

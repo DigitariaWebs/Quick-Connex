@@ -25,10 +25,11 @@ import {
 import EmailService from '../channels/email/email-service';
 import SMSService from '../channels/sms/sms-service';
 import { getCommunicationConfig, isEmailEnabled, isSMSEnabled } from '@/lib/communication/core/communication-config';
-import { DatabaseService, Notification } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import Notification from '@/models/Notification';
 import { Types } from 'mongoose';
-import { AuditService } from '@/lib/services/audit-service';
-import { CommunicationAuditContext } from '@/types/audit';
+import { AuditService } from '@/lib/services/audit';
+import { CommunicationAuditContext } from '@/lib/services/audit';
 import { AuditAction, ActorType } from '@/models/AuditLog';
 
 /**

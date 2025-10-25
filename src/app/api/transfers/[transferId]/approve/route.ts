@@ -6,7 +6,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseService, Transfer, User, Hospital } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import Transfer from '@/models/Transfer';
+import User from '@/models/User';
+import Hospital from '@/models/Hospital';
 // Removed AdminService - using simple manager role check instead
 import TransferNotificationService from '@/lib/communication/integrations/transfer-notification-service';
 import TimelineService from '@/lib/services/timeline-service';

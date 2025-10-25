@@ -4,8 +4,9 @@ import { handleAuthError } from '@/lib/auth/auth-error-handler';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  context: { params: Promise<{ sessionId: string }> }
 ) {
+  const { sessionId } = await context.params;
   try {
     // Authenticate user first
     const { user } = await AuthService.requireAuth(request, {
@@ -13,7 +14,7 @@ export async function DELETE(
     });
 
     // Revoke the specified session
-    const success = await AuthService.revokeSession(params.sessionId);
+    const success = await AuthService.revokeSession(sessionId);
 
     if (!success) {
       return NextResponse.json(

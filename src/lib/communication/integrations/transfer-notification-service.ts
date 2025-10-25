@@ -8,7 +8,9 @@
  */
 
 import { CommunicationService } from '../core/communication-service';
-import { DatabaseService, User, Transfer } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import User from '@/models/User';
+import Transfer from '@/models/Transfer';
 import { EmailMessage, SMSMessage } from '@/types/communication';
 import { TransferCategory } from '@/constants/transfer';
 import TemplateLoader from '@/lib/templates/template-loader';

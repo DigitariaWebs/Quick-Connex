@@ -9,7 +9,8 @@
 import { NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
-import { DatabaseService, Session } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import Session from '@/models/Session';
 import User from '@/models/User';
 import { 
   SessionCreationData,
@@ -22,6 +23,52 @@ import {
   SuspiciousActivityCheck,
   SessionLimitCheck
 } from './session-types';
+import {
+  checkSessionLimit,
+  calculateRiskScore,
+  generateFingerprint,
+  isNewDeviceForUser,
+  isNewLocationForUser,
+  assessRiskLevel,
+  getSecurityFlags,
+  buildSecurityContext,
+  checkSuspiciousActivityForUser,
+  getSessionLimitInfo,
+  getUserSessions,
+  generateJWTToken,
+  isSessionExpired,
+  isSessionExpiringSoon,
+  calculateSessionAge,
+  formatSessionForLogging,
+  requiresSecurityReview,
+  getSessionSecuritySummary,
+  isValidSessionToken,
+  generateSessionId,
+  generateRefreshToken,
+  hashRefreshToken,
+  verifyRefreshToken
+} from './session-utils';
+import {
+  SESSION_LIMITS,
+  SECURITY_THRESHOLDS,
+  SESSION_TIMEOUTS,
+  CLEANUP_INTERVALS,
+  SECURITY_FLAGS,
+  RISK_LEVELS,
+  SESSION_STATUS,
+  SESSION_TYPES,
+  DEVICE_TYPES,
+  PLATFORM_TYPES,
+  BROWSER_TYPES,
+  SECURITY_RECOMMENDATIONS,
+  SESSION_ERROR_CODES,
+  VALIDATION_RULES,
+  MONITORING_THRESHOLDS,
+  CLEANUP_POLICIES,
+  REFRESH_POLICIES,
+  SECURITY_POLICIES,
+  DEFAULT_SESSION_CONFIG
+} from './session-config';
 import { DeviceInfo } from '@/lib/auth/auth-types';
 import { AUTH_CONFIG } from '@/lib/auth/auth-config';
 import { 
@@ -44,7 +91,7 @@ export class SessionService {
    */
   static async createSession(data: SessionCreationData): Promise<any> {
     // 1. Check session limit FIRST
-    const activeSessions = await this.getUserSessions(data.userId);
+    const activeSessions = await getUserSessions(data.userId);
     if (activeSessions.length >= AUTH_CONFIG.maxSessionsPerUser) {
       throw new AppError(
         `Maximum ${AUTH_CONFIG.maxSessionsPerUser} concurrent sessions allowed`,
@@ -54,7 +101,7 @@ export class SessionService {
     }
     
     // 2. Build security context
-    const securityContext = await this.buildSecurityContext(
+    const securityContext = await buildSecurityContext(
       data.userId,
       data.deviceInfo,
       data.ipAddress,
@@ -155,7 +202,7 @@ export class SessionService {
     return {
       valid: true,
       session,
-      securityRisk: this.assessRiskLevel(session.securityContext?.riskScore || 0)
+      securityRisk: assessRiskLevel(session.securityContext?.riskScore || 0)
     };
   }
   
@@ -228,7 +275,7 @@ export class SessionService {
     exceptSessionId?: string,
     reason?: string
   ): Promise<number> {
-    const sessions = await this.getUserSessions(userId);
+    const sessions = await getUserSessions(userId);
     
     let revokedCount = 0;
     for (const session of sessions) {
@@ -369,7 +416,7 @@ export class SessionService {
    * @returns Promise<boolean> - True if within limit, false if exceeded
    */
   static async checkSessionLimit(userId: string): Promise<boolean> {
-    const activeSessions = await this.getUserSessions(userId);
+    const activeSessions = await getUserSessions(userId);
     return activeSessions.length < AUTH_CONFIG.maxSessionsPerUser;
   }
   
@@ -389,11 +436,11 @@ export class SessionService {
     let riskScore = 10; // Base risk
     
     // Check if new device
-    const isNewDevice = await this.isNewDevice(userId, fingerprint);
+    const isNewDevice = await isNewDeviceForUser(userId, fingerprint);
     if (isNewDevice) riskScore += 20;
     
     // Check if new location
-    const isNewLocation = await this.isNewLocation(userId, ipAddress);
+    const isNewLocation = await isNewLocationForUser(userId, ipAddress);
     if (isNewLocation) riskScore += 15;
     
     // Check for suspicious activity
@@ -401,7 +448,7 @@ export class SessionService {
     riskScore += suspiciousCheck.flags.length * 10;
     
     // Check session count
-    const activeSessions = await this.getUserSessions(userId);
+    const activeSessions = await getUserSessions(userId);
     if (activeSessions.length > 2) riskScore += 10;
     
     return Math.min(riskScore, 100);
@@ -440,7 +487,7 @@ export class SessionService {
     userId: string,
     fingerprint: string
   ): Promise<boolean> {
-    const existingSessions = await this.getUserSessions(userId);
+    const existingSessions = await getUserSessions(userId);
     return !existingSessions.some(s => 
       s.securityContext?.fingerprint === fingerprint
     );
@@ -457,7 +504,7 @@ export class SessionService {
     userId: string,
     ipAddress: string
   ): Promise<boolean> {
-    const existingSessions = await this.getUserSessions(userId);
+    const existingSessions = await getUserSessions(userId);
     return !existingSessions.some(s => s.ipAddress === ipAddress);
   }
   
@@ -510,14 +557,14 @@ export class SessionService {
     userAgent: string
   ): Promise<SecurityContext> {
     // Generate fingerprint
-    const fingerprint = this.generateFingerprint(deviceInfo, userAgent);
+    const fingerprint = generateFingerprint(deviceInfo, userAgent);
     
     // Calculate risk score
-    const riskScore = await this.calculateRiskScore(userId, ipAddress, fingerprint);
+    const riskScore = await calculateRiskScore(userId, ipAddress, fingerprint);
     
     // Check for new device/location
-    const isNewDevice = await this.isNewDevice(userId, fingerprint);
-    const isNewLocation = await this.isNewLocation(userId, ipAddress);
+    const isNewDevice = await isNewDeviceForUser(userId, fingerprint);
+    const isNewLocation = await isNewLocationForUser(userId, ipAddress);
     
     // Check for suspicious activity
     const suspiciousCheck = await this.checkSuspiciousActivity(userId, ipAddress, fingerprint);
@@ -590,7 +637,7 @@ export class SessionService {
    * @returns Promise<SessionLimitCheck> - Session limit check result
    */
   private static async getSessionLimitInfo(userId: string): Promise<SessionLimitCheck> {
-    const activeSessions = await this.getUserSessions(userId);
+    const activeSessions = await getUserSessions(userId);
     const currentCount = activeSessions.length;
     const maxAllowed = AUTH_CONFIG.maxSessionsPerUser;
     

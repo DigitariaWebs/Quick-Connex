@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseService, Transfer } from '@/lib/database';
+import { DatabaseService } from '@/lib/database';
+import Transfer from '@/models/Transfer';
 import { AuthService } from '@/lib/auth';// GET /api/notifications/schedule - Get scheduling notifications
 export async function GET(request: NextRequest) {
   try {
