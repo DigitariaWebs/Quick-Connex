@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AuditService } from '@/lib/services/audit';
-import { UserAuditContext } from '@/lib/services/audit';
+import { AuditService } from '@/lib/audit';
+import { UserAuditContext } from '@/lib/audit';
 import { DatabaseService } from '@/lib/database';
 import User from '@/models/User';
 import { ActorType, AuditAction, TargetResourceType } from '@/models/AuditLog';

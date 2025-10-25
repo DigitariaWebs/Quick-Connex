@@ -5,7 +5,7 @@
  * Extracted from CommunicationService for better provider management.
  */
 
-import { log } from '@/lib/services';
+import { log } from '@/lib/logging';
 import { CommunicationConfig, EmailProvider, SMSProvider } from '../core/types';
 
 /**

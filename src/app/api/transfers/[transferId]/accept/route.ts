@@ -9,7 +9,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/database';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
-import { AuthService } from '@/lib/auth';import TimelineService from '@/lib/services/timeline-service';
+import { AuthService } from '@/lib/auth';
+import { TimelineService } from '@/lib/transfers';
 import TransferNotificationService from '@/lib/communication/integrations/TransferNotificationService';
 
 export async function PUT(

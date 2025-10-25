@@ -12,7 +12,7 @@ import {
   TransferType,
   TransferCategory,
   UserRole
-} from '@/constants/transfer';
+} from '@/lib/transfers';
 
 // Note: Conflict types removed as hospitals handle their own logistics
 

@@ -35,7 +35,7 @@ import {
   ValidationError, 
   NotFoundError
 } from '../../utils/error-handling';
-import { log } from '@/lib/services';
+import { log } from '@/lib/logging';
 import { 
   formatDate, 
   getCurrentTimestamp 

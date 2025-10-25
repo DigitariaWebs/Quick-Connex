@@ -20,7 +20,7 @@ import PatientTransferForm from "./PatientTransferForm";
 import EnvelopeTransferForm from "./EnvelopeTransferForm";
 import MedicalInstrumentsTransferForm from "./MedicalInstrumentsTransferForm";
 import TransferTypeDropdown from "./TransferTypeDropdown";
-import { TransferCategory } from "@/constants/transfer";
+import { TransferCategory } from "@/lib/transfers/constants";
 import AnimatedStatusIcon from "@/components/ui/notifications/AnimatedStatusIcon";
 import { createPortal } from "react-dom";
 

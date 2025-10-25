@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TimelineService } from '@/lib/timeline/TimelineService';
+import { TimelineService } from '@/lib/transfers';
 
 /**
  * GET /api/timeline/transfer/[transferId]/stats

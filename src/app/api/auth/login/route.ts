@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { AuthService } from '@/lib/auth';
-import { handleAuthError } from '@/lib/auth/auth-error-handler';
-import { log } from '@/lib/services/log-service';
+import { handleAuthError } from '@/lib/auth';
+import { log } from '@/lib/logging';
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();

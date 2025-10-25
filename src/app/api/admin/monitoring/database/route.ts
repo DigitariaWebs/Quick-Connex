@@ -8,11 +8,11 @@ import {
   getRecentQueries,
   getConnectionInfo,
   getDatabaseHealth,
-  DatabaseMetrics,
   QueryPerformance,
   ConnectionInfo,
   IndexPerformance
-} from '@/lib/monitoring/database-monitoring-service';
+} from '@/lib/database';
+import type { DatabaseMetrics } from '@/lib/database/core/types';
 
 /**
  * Database Performance Monitoring API Endpoint

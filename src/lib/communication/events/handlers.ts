@@ -5,7 +5,7 @@
  * Extracted from CommunicationService for better event management.
  */
 
-import { log } from '@/lib/services';
+import { log } from '@/lib/logging';
 import {
   CommunicationEventType,
   CommunicationEventData,

@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { DatabaseService } from '@/lib/database';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
-import { rateLimit } from '@/lib/services/security';
+import { rateLimit } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {

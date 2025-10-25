@@ -4,13 +4,8 @@
  * This module exports all application constants organized by domain.
  */
 
-// Authentication Constants
-export * from './auth';
-
-// Transfer Constants
-export * from './transfer';
-
 // Communication Constants are now in @/lib/communication
+// Transfer Constants are now in @/lib/transfers
 
 // Theme Constants
 export * from './theme';

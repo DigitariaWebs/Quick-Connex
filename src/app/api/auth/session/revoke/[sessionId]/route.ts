@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/lib/auth';
-import { handleAuthError } from '@/lib/auth/auth-error-handler';
+import { handleAuthError } from '@/lib/auth';
 
 export async function DELETE(
   request: NextRequest,

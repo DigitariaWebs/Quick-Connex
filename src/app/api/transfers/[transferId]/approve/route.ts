@@ -12,7 +12,7 @@ import User from '@/models/User';
 import Hospital from '@/models/Hospital';
 // Removed AdminService - using simple manager role check instead
 import TransferNotificationService from '@/lib/communication/integrations/TransferNotificationService';
-import TimelineService from '@/lib/services/timeline-service';
+import { TimelineService } from '@/lib/transfers';
 
 
 export async function POST(

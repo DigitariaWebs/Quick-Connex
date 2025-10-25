@@ -4,7 +4,7 @@ import { AuthService } from '@/lib/auth';
 export async function POST(request: NextRequest) {
   try {
     // Check if user is already logged out by checking for auth token
-    const { getTokenFromCookies } = await import('@/lib/auth/jwt-utils');
+    const { getTokenFromCookies } = await import('@/lib/auth');
     const token = await getTokenFromCookies();
     
     if (!token) {

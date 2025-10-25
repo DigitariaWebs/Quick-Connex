@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/database';
 import Transfer from '@/models/Transfer';
 import { AuthService } from '@/lib/auth';
-import TimelineService from '@/lib/services/timeline-service';
+import { TimelineService } from '@/lib/transfers';
 import { TimelineQueryOptions } from '@/types/timeline';
 import { TimelineEventType } from '@/types/transfer';
 import { createSuccessResponse } from '@/lib/utils/api-responses';
@@ -62,7 +62,7 @@ export async function GET(
     };
 
     // Get enhanced timeline from audit logs
-    const timelineItems = await TimelineService.getTimelineForTransfer(transferId, options);
+    const timelineResponse = await TimelineService.getTimelineForTransfer(transferId, options);
 
     return NextResponse.json({
       success: true,
@@ -81,13 +81,9 @@ export async function GET(
           reason: transfer.reason,
           notes: transfer.notes
         },
-        timeline: timelineItems,
-        totalEvents: timelineItems.length,
-        pagination: {
-          page: options.page,
-          limit: options.limit,
-          hasMore: timelineItems.length === options.limit
-        },
+        timeline: timelineResponse.items,
+        totalEvents: timelineResponse.pagination.total,
+        pagination: timelineResponse.pagination,
         lastUpdated: transfer.updatedAt
       }
     });

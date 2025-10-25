@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TemplateValidator } from '@/lib/templates/template-validator';
+import { TemplateValidator } from '@/lib/communication';
 
 // Note: Template validation endpoints are for development use and don't require authentication
 

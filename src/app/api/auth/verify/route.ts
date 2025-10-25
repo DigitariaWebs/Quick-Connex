@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/lib/auth';
-import { getTokenFromCookies } from '@/lib/auth/jwt-utils';
-import { handleAuthError } from '@/lib/auth/auth-error-handler';
+import { getTokenFromCookies, handleAuthError } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/database';
-import { TimelineService } from '@/lib/timeline/TimelineService';
+import { TimelineService } from '@/lib/transfers';
 import { RecentActivityOptions } from '@/types/timeline';
 import { AuditCategory } from '@/models/AuditLog';
 /**

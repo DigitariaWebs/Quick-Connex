@@ -8,8 +8,8 @@
 
 import { Types } from 'mongoose';
 import { DatabaseService } from '@/lib/database';
-import { AuditService } from '@/lib/services/audit';
-import { log } from '@/lib/services';
+import { AuditService } from '@/lib/audit';
+import { log } from '@/lib/logging';
 import User from '@/models/User';
 import Notification from '@/models/Notification';
 import { AuditAction, ActorType } from '@/models/AuditLog';

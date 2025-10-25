@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { AuthService } from '@/lib/auth';
-import { clearAuthCookie, getTokenFromCookies } from '@/lib/auth/jwt-utils';
-import { handleAuthError } from '@/lib/auth/auth-error-handler';
+import { clearAuthCookie, getTokenFromCookies, handleAuthError } from '@/lib/auth';
 
 export async function POST() {
   try {
@@ -13,7 +12,7 @@ export async function POST() {
     
     if (token) {
       // Verify token to get session ID
-      const { verifyToken } = await import('@/lib/auth/jwt-utils');
+      const { verifyToken } = await import('@/lib/auth');
       const payload = await verifyToken(token);
       sessionId = payload?.sessionId;
     }

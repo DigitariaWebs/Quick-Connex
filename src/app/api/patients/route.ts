@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/database';
 import Patient from '@/models/Patient';
 import { AuthService } from '@/lib/auth';
-import { AuditService } from '@/lib/services/audit';
-import { PatientAuditContext } from '@/lib/services/audit';
+import { AuditService } from '@/lib/audit';
+import { PatientAuditContext } from '@/lib/audit';
 import { AuditAction, ActorType, TargetResourceType } from '@/models/AuditLog';
 
 // GET /api/patients - Get patients (search and list)

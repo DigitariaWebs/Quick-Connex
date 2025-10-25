@@ -20,7 +20,7 @@ import {
   NotFoundError,
   transformDatabaseError
 } from '../../utils/error-handling';
-import { log } from '@/lib/services';
+import { log } from '@/lib/logging';
 import { 
   sanitizeString, 
   sanitizeQueryInput 

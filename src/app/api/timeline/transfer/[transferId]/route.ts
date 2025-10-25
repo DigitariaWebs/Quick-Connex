@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TimelineService } from '@/lib/timeline/TimelineService';
+import { TimelineService } from '@/lib/transfers';
 import { TimelineQueryOptions } from '@/types/timeline';
 
 /**
@@ -51,7 +51,7 @@ export async function GET(
     };
     
     // Get timeline data
-    const timeline = await TimelineService.getTransferTimeline(transferId, options);
+    const timeline = await TimelineService.getTimelineForTransfer(transferId, options);
     
     return NextResponse.json({
       success: true,

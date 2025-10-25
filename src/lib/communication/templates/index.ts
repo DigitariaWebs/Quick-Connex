@@ -4,6 +4,9 @@
  * Central exports for template functionality.
  */
 
+// ===== CORE TEMPLATE UTILITIES =====
+export * from './core';
+
 // ===== FORMATTERS =====
 export * from './formatters';
 

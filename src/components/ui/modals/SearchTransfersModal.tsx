@@ -18,7 +18,7 @@ import {
   ArrowRight,
   ChevronDown,
 } from "lucide-react";
-import { TransferCategory } from "@/constants/transfer";
+import { TransferCategory } from "@/lib/transfers/constants";
 
 interface TransferRequest {
   _id: string;

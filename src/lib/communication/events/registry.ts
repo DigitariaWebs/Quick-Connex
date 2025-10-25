@@ -4,7 +4,7 @@
  * Registry for managing communication event handlers.
  */
 
-import { log } from '@/lib/services';
+import { log } from '@/lib/logging';
 import {
   CommunicationEventType,
   CommunicationEventData,

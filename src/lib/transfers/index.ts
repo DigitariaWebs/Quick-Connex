@@ -1,13 +1,40 @@
 /**
- * Transfers Module
+ * Transfer Module Exports
  * 
- * This module exports all transfer-related business logic, services,
- * utilities, and event handlers.
+ * Clean, centralized exports for the transfer system.
+ * Single import point for all transfer-related functionality.
  */
 
-export * from './transfer-service';
-export * from './transfer-events';
-export * from './transfer-utils';
-export * from './transfer-validation';
-export * from './transfer-errors';
-export * from './transfer-cancellation-utils';
+// ===== CORE COMPONENTS =====
+export * from './core';
+
+// ===== UTILITIES =====
+export * from './utils';
+
+// ===== SERVICES =====
+export * from './services';
+
+// ===== ERRORS =====
+export * from './errors';
+
+// ===== TIMELINE TYPES =====
+export type { TimelineResponse, TimelineStats } from '@/types/timeline';
+
+// ===== CONSTANTS ONLY EXPORT =====
+// For client components that only need constants/enums
+export {
+  TransferStatus,
+  TransferPriority,
+  TransferType,
+  TransferCategory,
+  UserRole,
+  STATUS_DISPLAY_INFO,
+  PRIORITY_DISPLAY_INFO,
+  TRANSFER_CATEGORY_DISPLAY_INFO,
+  TRANSFER_ERRORS,
+  TRANSFER_SUCCESS,
+  TRANSFER_ENDPOINTS,
+  NOTIFICATION_TYPES,
+  CACHE_KEYS,
+  DB_INDEXES
+} from './core/constants';

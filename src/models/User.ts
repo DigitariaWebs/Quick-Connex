@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
-import { hashIpAddress, truncateIpAddress, cleanExpiredLoginHistory, sanitizeUserAgent } from '@/lib/security/data-privacy';
+import { hashIpAddress, truncateIpAddress, cleanExpiredLoginHistory } from '@/lib/auth';
 
 // Define the interface for document references
 export interface IDocumentReference {

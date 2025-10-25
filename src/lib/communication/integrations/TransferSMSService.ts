@@ -12,7 +12,7 @@ import { CommunicationService } from '../core/CommunicationService';
 import { SMSMessage } from '../core/types';
 import User from '@/models/User';
 import { Types } from 'mongoose';
-import { TransferCategory } from '@/constants/transfer';
+import { TransferCategory } from '@/lib/transfers';
 
 export class TransferSMSService {
   private communicationService: CommunicationService;

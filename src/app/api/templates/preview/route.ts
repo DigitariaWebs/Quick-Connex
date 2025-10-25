@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TemplatePreviewService } from '@/lib/templates/template-preview';
+import { TemplatePreviewService } from '@/lib/communication';
 
 // Note: Template preview endpoints are for development use and don't require authentication
 

@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { DatabaseService } from '@/lib/database';
 import User from '@/models/User';
 import crypto from 'crypto';
-import { rateLimit } from '@/lib/services/security';
+import { rateLimit } from '@/lib/auth';
 import { CommunicationService } from '@/lib/communication';
 import { EmailMessage } from '@/lib/communication';
 

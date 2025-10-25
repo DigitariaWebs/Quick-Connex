@@ -6,8 +6,8 @@ import Hospital from '@/models/Hospital';
 import Patient from '@/models/Patient';
 import { AuthService } from '@/lib/auth';
 import { Types } from 'mongoose';
-import { validateTransferData } from '@/lib/transfers/transfer-validation';
-import TimelineService from '@/lib/services/timeline-service';
+import { validateTransferData } from '@/lib/transfers';
+import { TimelineService } from '@/lib/transfers';
 import { createSuccessResponse } from '@/lib/utils/api-responses';
 
 // GET /api/transfers - Get transfer requests for employees

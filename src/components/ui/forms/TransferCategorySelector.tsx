@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { User, Package, Stethoscope, CheckCircle } from "lucide-react";
-import { TransferCategory } from "@/constants/transfer";
+import { TransferCategory } from "@/lib/transfers/constants";
 
 interface TransferCategorySelectorProps {
   selectedCategory: TransferCategory | null;

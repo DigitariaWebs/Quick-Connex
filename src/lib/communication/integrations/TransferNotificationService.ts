@@ -12,8 +12,8 @@ import { DatabaseService } from '@/lib/database';
 import User from '@/models/User';
 import Transfer from '@/models/Transfer';
 import { EmailMessage, SMSMessage } from '../core/types';
-import { TransferCategory } from '@/constants/transfer';
-import TemplateLoader from '@/lib/templates/template-loader';
+import { TransferCategory } from '@/lib/transfers';
+import { TemplateLoader } from '../templates/core/TemplateLoader';
 
 export class TransferNotificationService {
   private communicationService: CommunicationService;

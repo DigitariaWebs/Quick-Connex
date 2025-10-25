@@ -5,7 +5,7 @@
  */
 
 import { ClientSession, Types } from 'mongoose';
-import { log } from '@/lib/services';
+import { log } from '@/lib/logging';
 import { DatabaseError } from '../../utils/error-handling';
 import { TransactionOptions } from '../core/types';
 

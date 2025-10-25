@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import mongoose from 'mongoose';
-import { log } from '@/lib/services/log-service';
+import { log } from '@/lib/logging';
 
 /**
  * Error Handling Utilities
@@ -354,7 +354,7 @@ export function formatMongooseErrors(error: any): {
 // ===== ERROR LOGGING =====
 // Note: Logging functions have been moved to LogService
 // Import LogService for logging needs:
-// import { log } from '@/lib/services/log-service';
+// import { log } from '@/lib/logging';
 
 // ===== ERROR RECOVERY =====
 
@@ -511,4 +511,4 @@ export function transformDatabaseError(error: any): DatabaseError {
 // ===== GENERAL LOGGING UTILITIES =====
 // Note: Logging functions have been moved to LogService
 // Use LogService for all logging needs:
-// import { log } from '@/lib/services/log-service';
+// import { log } from '@/lib/logging';

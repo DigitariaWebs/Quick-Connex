@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { AuthService } from '@/lib/auth';
-import { handleAuthError } from '@/lib/auth/auth-error-handler';
+import { handleAuthError } from '@/lib/auth';
 import { 
   GridFSService,
   type GridFSFileMetadata 

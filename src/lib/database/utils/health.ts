@@ -5,7 +5,7 @@
  */
 
 import { Connection } from 'mongoose';
-import { log } from '@/lib/services';
+import { log } from '@/lib/logging';
 import { DatabaseError } from '../../utils/error-handling';
 import { DatabaseHealth } from '../core/types';
 

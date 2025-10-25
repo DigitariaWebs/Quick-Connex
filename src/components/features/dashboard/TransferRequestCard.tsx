@@ -16,12 +16,12 @@ import {
   Stethoscope,
   X,
 } from "lucide-react";
-import { TransferCategory } from "@/constants/transfer";
+import { TransferCategory } from "@/lib/transfers/constants";
 import { useNotification } from "@/contexts/NotificationContext";
 import {
   canCancelTransfer,
   getRemainingCancellationTimeString,
-} from "@/lib/transfers/transfer-cancellation-utils";
+} from "@/lib/transfers";
 
 interface TransferRequest {
   _id: string;
