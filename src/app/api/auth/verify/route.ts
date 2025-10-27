@@ -30,7 +30,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       user: authContext.user,
-      session: authContext.session
+      session: authContext.session,
+      token: token // Include token for Socket.io authentication
     });
     
   } catch (error) {

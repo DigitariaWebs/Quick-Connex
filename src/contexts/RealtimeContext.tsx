@@ -114,22 +114,110 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // For now, always use localhost:3001 for Socket.io connection
+    // This ensures Socket.io works in development regardless of hostname
+
+    // Prevent multiple connection attempts
+    if (reconnectAttemptsRef.current >= 5) {
+      log.warn(
+        "Max reconnection attempts reached, stopping connection attempts",
+        {
+          userId: user?._id,
+          attempts: reconnectAttemptsRef.current,
+        }
+      );
+      setConnectionError("Connection failed after multiple attempts");
+      return;
+    }
+
     try {
       setIsConnecting(true);
       setConnectionError(null);
 
-      // Get authentication token
-      const token = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith("token="))
-        ?.split("=")[1];
+      // Initialize Socket.io server if needed
+      try {
+        log.info("Ensuring Socket.io server is initialized...");
+        const initResponse = await fetch("/api/socket/io", {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
 
-      if (!token) {
+        if (!initResponse.ok) {
+          throw new Error(
+            `Socket.io initialization failed: ${initResponse.status}`
+          );
+        }
+
+        const initData = await initResponse.json();
+        if (!initData.success) {
+          throw new Error(
+            `Socket.io initialization failed: ${initData.message}`
+          );
+        }
+
+        log.info("Socket.io server initialization confirmed", {
+          initialized: initData.initialized,
+          status: initData.status,
+        });
+      } catch (error) {
+        log.error("Failed to initialize Socket.io server:", error);
+        throw new Error("Socket.io server initialization failed");
+      }
+
+      // Get authentication token from server
+      const tokenResponse = await fetch("/api/auth/verify", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!tokenResponse.ok) {
+        log.warn("Authentication token request failed", {
+          status: tokenResponse.status,
+          statusText: tokenResponse.statusText,
+          userId: user?._id,
+        });
+        throw new Error("Failed to get authentication token");
+      }
+
+      const tokenData = await tokenResponse.json();
+      if (!tokenData.success || !tokenData.token) {
+        log.warn("Authentication token not found or invalid", {
+          success: tokenData.success,
+          hasToken: !!tokenData.token,
+          userId: user?._id,
+        });
         throw new Error("Authentication token not found");
       }
 
+      const token = tokenData.token;
+
+      // Get socket server URL - always use localhost:3001 for now
+      const getSocketUrl = () => {
+        // Use environment variable if set
+        if (process.env.NEXT_PUBLIC_SOCKET_URL) {
+          return process.env.NEXT_PUBLIC_SOCKET_URL;
+        }
+
+        // Always use localhost:3001 for Socket.io server
+        return "http://localhost:3001";
+      };
+
       // Create socket connection
-      const socket = io(REALTIME_CONFIG.socket.cors.origin as string, {
+      const socketUrl = getSocketUrl();
+      log.info("Creating Socket.io connection", {
+        url: socketUrl,
+        path: REALTIME_CONFIG.socket.path,
+        transports: REALTIME_CONFIG.socket.transports,
+        userId: user?._id,
+      });
+
+      const socket = io(socketUrl, {
         path: REALTIME_CONFIG.socket.path,
         transports: REALTIME_CONFIG.socket.transports,
         auth: {
@@ -146,7 +234,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
       // Connection event handlers
       socket.on("connect", () => {
-        console.log("🔌 Socket connected");
+        log.info("Socket connected", { userId: user?._id });
         setIsConnected(true);
         setIsConnecting(false);
         setConnectionError(null);
@@ -154,7 +242,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       });
 
       socket.on("disconnect", (reason) => {
-        console.log("🔌 Socket disconnected:", reason);
+        log.info("Socket disconnected", { reason, userId: user?._id });
         setIsConnected(false);
         setIsConnecting(false);
 
@@ -169,10 +257,40 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       });
 
       socket.on("connect_error", (error) => {
-        console.error("🔌 Socket connection error:", error);
+        log.error("Socket connection error", error, {
+          userId: user?._id,
+          errorMessage: error.message,
+          errorName: error.name,
+          socketUrl: socketUrl,
+          socketPath: REALTIME_CONFIG.socket.path,
+        });
         setIsConnecting(false);
-        setConnectionError(error.message);
-        scheduleReconnect();
+
+        // Handle specific error types
+        if (
+          error.message?.includes("Authentication") ||
+          error.message?.includes("Invalid authentication token")
+        ) {
+          setConnectionError("Authentication failed - please log in again");
+          // Don't attempt reconnection for auth errors
+          return;
+        } else if (error.message?.includes("Session expired")) {
+          setConnectionError("Session expired - please log in again");
+          // Don't attempt reconnection for session errors
+          return;
+        } else {
+          setConnectionError(error.message);
+          scheduleReconnect();
+        }
+      });
+
+      // Connection confirmation from server
+      socket.on(SOCKET_EVENTS.CONNECTION, (data: any) => {
+        log.info("Connection confirmed by server", {
+          userId: data.userId,
+          userType: data.userType,
+          timestamp: data.timestamp,
+        });
       });
 
       // Notification event handlers
@@ -252,9 +370,11 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
     if (reconnectAttemptsRef.current < maxAttempts) {
       reconnectAttemptsRef.current++;
-      console.log(
-        `🔄 Scheduling reconnection attempt ${reconnectAttemptsRef.current} in ${delay}ms`
-      );
+      log.info("Scheduling reconnection attempt", {
+        attempt: reconnectAttemptsRef.current,
+        delay,
+        userId: user?._id,
+      });
 
       reconnectTimeoutRef.current = setTimeout(() => {
         if (isAuthenticated && user) {

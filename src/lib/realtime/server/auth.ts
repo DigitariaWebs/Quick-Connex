@@ -25,9 +25,22 @@ class AppError extends Error {
  */
 export async function authenticateSocket(socket: Socket, next: (err?: Error) => void): Promise<void> {
   try {
+    log.debug('Socket authentication attempt', {
+      socketId: socket.id,
+      headers: socket.handshake.headers,
+      query: socket.handshake.query,
+      auth: socket.handshake.auth
+    });
+
     const token = extractToken(socket);
     
     if (!token) {
+      log.warn('No authentication token found', {
+        socketId: socket.id,
+        authHeader: socket.handshake.headers.authorization,
+        queryToken: socket.handshake.query.token,
+        authToken: socket.handshake.auth?.token
+      });
       return next(new AppError('Authentication token required', 401, ERROR_CODES.AUTHENTICATION_FAILED));
     }
 

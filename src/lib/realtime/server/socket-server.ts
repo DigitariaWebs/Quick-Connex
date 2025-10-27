@@ -9,7 +9,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import { RealtimeService } from '../core';
 import { log } from '@/lib/logging';
 import { REALTIME_CONFIG } from '../core/config';
-import { SOCKET_EVENTS, ERROR_CODES } from '../core/constants';
+import { SOCKET_EVENTS, ERROR_CODES, ROOM_PATTERNS } from '../core/constants';
 import { AuthService } from '@/lib/auth';
 import { AuthenticatedSocket } from '../core/types';
 import { authenticateSocket } from './auth';
@@ -20,9 +20,17 @@ import { AppError } from '@/lib/utils/error-handling';
 export class SocketServer {
   private io: SocketIOServer | null = null;
   private realtimeService: RealtimeService;
+  private eventTracking: Map<string, { events: number[]; lastCleanup: number }> = new Map();
+  private socketConnections: Map<string, Set<string>> = new Map();
+  private cleanupInterval: NodeJS.Timeout | null = null; // userId -> Set of socketIds
 
   constructor() {
     this.realtimeService = RealtimeService.getInstance();
+    
+    // Set up periodic cleanup every 5 minutes
+    this.cleanupInterval = setInterval(() => {
+      this.performPeriodicCleanup();
+    }, 5 * 60 * 1000);
   }
 
   /**
@@ -55,11 +63,14 @@ export class SocketServer {
 
       // Initialize RealtimeService with Socket.io instance
       await this.realtimeService.initializeSocketIO(server);
+      this.realtimeService.initialize(this.io);
 
       log.info('Socket.io server initialized successfully', {
         path: REALTIME_CONFIG.socket.path,
         transports: REALTIME_CONFIG.socket.transports,
-        cors: REALTIME_CONFIG.socket.cors
+        cors: REALTIME_CONFIG.socket.cors,
+        pingInterval: REALTIME_CONFIG.socket.pingInterval,
+        pingTimeout: REALTIME_CONFIG.socket.pingTimeout
       });
 
       return this.io;
@@ -79,6 +90,67 @@ export class SocketServer {
    */
   public getIO(): SocketIOServer | null {
     return this.io;
+  }
+
+  /**
+   * Get connection metrics
+   */
+  public getMetrics(): {
+    totalConnections: number;
+    connectionsPerUser: Record<string, number>;
+    activeRooms: string[];
+    eventTrackingSize: number;
+  } {
+    const totalConnections = this.io?.sockets.sockets.size || 0;
+    const connectionsPerUser: Record<string, number> = {};
+    const activeRooms: string[] = [];
+
+    // Count connections per user
+    this.socketConnections.forEach((socketIds, userId) => {
+      connectionsPerUser[userId] = socketIds.size;
+    });
+
+    // Get active rooms (excluding socket IDs)
+    if (this.io) {
+      const rooms = Array.from(this.io.sockets.adapter.rooms.keys());
+      activeRooms.push(...rooms.filter(room => !this.io?.sockets.sockets.has(room)));
+    }
+
+    return {
+      totalConnections,
+      connectionsPerUser,
+      activeRooms,
+      eventTrackingSize: this.eventTracking.size
+    };
+  }
+
+  /**
+   * Graceful shutdown
+   */
+  public async shutdown(): Promise<void> {
+    if (!this.io) return;
+
+    log.info('Shutting down Socket.io server...');
+    
+    // Clear cleanup interval
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
+
+    // Close all socket connections
+    this.io.sockets.sockets.forEach(socket => {
+      socket.disconnect(true);
+    });
+
+    // Close the server
+    this.io.close();
+
+    // Clear tracking data
+    this.eventTracking.clear();
+    this.socketConnections.clear();
+
+    log.info('Socket.io server shutdown completed');
   }
 
   /**
@@ -142,15 +214,68 @@ export class SocketServer {
   private async setupRoomManagement(): Promise<void> {
     if (!this.io) return;
 
-    // Room management will be handled by RealtimeService
+    // Track active rooms and their members
+    this.io.sockets.adapter.on('create-room', (room: string) => {
+      log.debug('Room created', { room });
+    });
+
+    this.io.sockets.adapter.on('delete-room', (room: string) => {
+      log.debug('Room deleted', { room });
+    });
+
+    this.io.sockets.adapter.on('join-room', (room: string, id: string) => {
+      log.debug('Socket joined room', { room, socketId: id });
+    });
+
+    this.io.sockets.adapter.on('leave-room', (room: string, id: string) => {
+      log.debug('Socket left room', { room, socketId: id });
+    });
+
     log.debug('Room management setup completed');
   }
 
 
   private async handleRateLimit(socket: AuthenticatedSocket): Promise<void> {
-    // Rate limiting will be implemented here
-    // For now, just pass through
-    return Promise.resolve();
+    // Track events per socket per time window
+    const socketId = socket.id;
+    const now = Date.now();
+    const windowMs = 60000; // 1 minute
+    const maxEvents = 100; // 100 events per minute
+
+    // Initialize tracking if not exists
+    if (!this.eventTracking.has(socketId)) {
+      this.eventTracking.set(socketId, {
+        events: [],
+        lastCleanup: now
+      });
+    }
+
+    const tracking = this.eventTracking.get(socketId)!;
+    
+    // Clean up old events
+    if (now - tracking.lastCleanup > windowMs) {
+      tracking.events = tracking.events.filter(time => now - time < windowMs);
+      tracking.lastCleanup = now;
+    }
+
+    // Check if rate limit exceeded
+    if (tracking.events.length >= maxEvents) {
+      log.warn('Rate limit exceeded for socket', {
+        socketId,
+        userId: socket.userId,
+        eventCount: tracking.events.length,
+        maxEvents
+      });
+      
+      throw new AppError(
+        'Rate limit exceeded',
+        429,
+        ERROR_CODES.RATE_LIMITED
+      );
+    }
+
+    // Add current event
+    tracking.events.push(now);
   }
 
   private handleConnection(socket: AuthenticatedSocket): void {
@@ -166,30 +291,60 @@ export class SocketServer {
 
     log.info('User connected to Socket.io', connectionInfo);
 
+    // Track socket connections per user
+    if (socket.userId) {
+      if (!this.socketConnections.has(socket.userId)) {
+        this.socketConnections.set(socket.userId, new Set());
+      }
+      
+      const userSockets = this.socketConnections.get(socket.userId)!;
+      const maxConnections = 5;
+      
+      if (userSockets.size >= maxConnections) {
+        log.warn('User has too many connections, disconnecting oldest', {
+          userId: socket.userId,
+          currentConnections: userSockets.size,
+          maxConnections
+        });
+        
+        // Disconnect oldest socket (first in set)
+        const oldestSocketId = userSockets.values().next().value;
+        if (oldestSocketId) {
+          const oldestSocket = this.io?.sockets.sockets.get(oldestSocketId);
+          if (oldestSocket) {
+            oldestSocket.disconnect(true);
+          }
+          userSockets.delete(oldestSocketId);
+        }
+      }
+      
+      userSockets.add(socket.id);
+    }
+
     // Join user-specific room
     if (socket.userId) {
-      socket.join(`user:${socket.userId}`);
+      socket.join(ROOM_PATTERNS.USER(socket.userId));
       log.debug('User joined personal room', {
         socketId: socket.id,
         userId: socket.userId,
-        room: `user:${socket.userId}`
+        room: ROOM_PATTERNS.USER(socket.userId)
       });
     }
 
     // Join role-specific room
     if (socket.userType) {
-      socket.join(`role:${socket.userType}`);
+      socket.join(ROOM_PATTERNS.ROLE(socket.userType));
       log.debug('User joined role room', {
         socketId: socket.id,
         userId: socket.userId,
         userType: socket.userType,
-        room: `role:${socket.userType}`
+        room: ROOM_PATTERNS.ROLE(socket.userType)
       });
     }
 
     // Join admin room if user is admin
     if (socket.userType === 'admin' || socket.userType === 'super_admin') {
-      socket.join('admin:all');
+      socket.join(ROOM_PATTERNS.ADMIN);
       log.debug('Admin user joined admin room', {
         socketId: socket.id,
         userId: socket.userId,
@@ -225,6 +380,20 @@ export class SocketServer {
     };
 
     log.info('User disconnected from Socket.io', disconnectionInfo);
+
+    // Clean up socket tracking
+    if (socket.userId) {
+      const userSockets = this.socketConnections.get(socket.userId);
+      if (userSockets) {
+        userSockets.delete(socket.id);
+        if (userSockets.size === 0) {
+          this.socketConnections.delete(socket.userId);
+        }
+      }
+    }
+
+    // Clean up event tracking
+    this.eventTracking.delete(socket.id);
 
     // Leave all rooms (iterate through rooms)
     const rooms = Array.from(socket.rooms);
@@ -343,6 +512,51 @@ export class SocketServer {
       userId: socket.userId,
       status,
       timestamp: new Date()
+    });
+  }
+
+  /**
+   * Perform periodic cleanup of stale tracking data
+   */
+  private performPeriodicCleanup(): void {
+    const now = Date.now();
+    const staleThreshold = 15 * 60 * 1000; // 15 minutes
+    
+    // Clean up event tracking for disconnected sockets
+    for (const [socketId, tracking] of this.eventTracking.entries()) {
+      if (now - tracking.lastCleanup > staleThreshold) {
+        // Check if socket still exists
+        if (!this.io?.sockets.sockets.has(socketId)) {
+          this.eventTracking.delete(socketId);
+          log.debug('Cleaned up stale event tracking', { socketId });
+        }
+      }
+    }
+    
+    // Clean up socket connections with no active sockets
+    for (const [userId, socketIds] of this.socketConnections.entries()) {
+      // Remove socketIds that don't exist anymore
+      const validSocketIds = Array.from(socketIds).filter(id => 
+        this.io?.sockets.sockets.has(id)
+      );
+      
+      if (validSocketIds.length === 0) {
+        this.socketConnections.delete(userId);
+        log.debug('Cleaned up user with no active sockets', { userId });
+      } else if (validSocketIds.length !== socketIds.size) {
+        // Update with only valid socket IDs
+        this.socketConnections.set(userId, new Set(validSocketIds));
+        log.debug('Cleaned up orphaned socket IDs', { 
+          userId, 
+          removed: socketIds.size - validSocketIds.length 
+        });
+      }
+    }
+    
+    log.info('Periodic cleanup completed', {
+      eventTrackingSize: this.eventTracking.size,
+      connectedUsers: this.socketConnections.size,
+      totalSockets: this.io?.sockets.sockets.size || 0
     });
   }
 }

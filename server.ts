@@ -157,21 +157,27 @@ async function startServer(): Promise<void> {
     console.log('✅ Next.js app prepared successfully');
     console.log('🎉 Turbopack: First compilation completed - app is ready!');
 
-    // Create HTTP server
-    const httpServer = createServer();
-    
-    // TODO: Initialize Socket.io server when realtime module is ready
-    // const socketServer = new SocketServer();
-    // await socketServer.initialize(httpServer);
-    // console.log('🔌 Socket.io server initialized successfully');
-
-    // Use Next.js built-in server
+    // Create HTTP server with Next.js handler
     const handle = app.getRequestHandler();
-
-    // Set up request handling
-    httpServer.on('request', (req, res) => {
+    const httpServer = createServer((req, res) => {
       handle(req, res);
     });
+    
+    // Initialize Socket.io server
+    let socketServer: any = null;
+    try {
+      console.log('🔄 Socket.io: Initializing server...');
+      const { SocketServer } = await import('./src/lib/realtime/server');
+      socketServer = new SocketServer();
+      await socketServer.initialize(httpServer);
+      console.log('✅ Socket.io server initialized successfully');
+    } catch (error) {
+      console.error('❌ Failed to initialize Socket.io server:', error);
+      console.error('❌ Socket.io error details:', error instanceof Error ? error.message : String(error));
+      console.error('❌ Socket.io stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+      // Continue without Socket.io - server will still work for HTTP requests
+      console.log('⚠️  Server will continue without Socket.io functionality');
+    }
 
     // Start HTTP server
     httpServer.listen(config.port, config.hostname, () => {
@@ -179,7 +185,11 @@ async function startServer(): Promise<void> {
     });
 
     console.log(`🎉 Server ready on http://${config.hostname}:${config.port}`);
-    console.log('🔌 Real-time notifications system ready with Socket.io');
+    if (socketServer) {
+      console.log('🔌 Real-time notifications system ready with Socket.io');
+    } else {
+      console.log('⚠️  Real-time notifications system DISABLED (Socket.io failed to initialize)');
+    }
 
     // Display network access information
     const networkIP = getLocalNetworkIP();

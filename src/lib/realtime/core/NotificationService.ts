@@ -26,6 +26,7 @@ import {
 } from './types';
 import { toObjectId, toObjectIds } from '../utils/converters';
 import { log } from '@/lib/logging';
+import { RealtimeService } from './RealtimeService';
 
 export class NotificationService {
   private static instance: NotificationService;
@@ -97,6 +98,9 @@ export class NotificationService {
         targetUsers: targetUsers.length,
         targetRoles: input.targetRoles?.length || 0,
       });
+
+      // Broadcast notification via Socket.io
+      await this.broadcastNotification(notification, input);
 
       return notification as unknown as NotificationDocument;
     } catch (error) {
@@ -426,5 +430,61 @@ export class NotificationService {
     });
     
     return grouped;
+  }
+
+  /**
+   * Broadcast notification via Socket.io
+   */
+  private async broadcastNotification(
+    notification: any,
+    input: CreateNotificationInput
+  ): Promise<void> {
+    try {
+      const realtimeService = RealtimeService.getInstance();
+      const notificationData = {
+        id: (notification as any)._id.toString(),
+        type: notification.type,
+        priority: notification.priority,
+        title: notification.title,
+        message: notification.message,
+        data: notification.data,
+        createdAt: notification.createdAt,
+        status: notification.status
+      };
+
+      // Broadcast to specific users
+      if (input.targetUsers && input.targetUsers.length > 0) {
+        for (const userId of input.targetUsers) {
+          const userIdStr = typeof userId === 'string' ? userId : userId.toString();
+          realtimeService.broadcastToUser(userIdStr, 'notification:new', notificationData);
+        }
+      }
+
+      // Broadcast to roles
+      if (input.targetRoles && input.targetRoles.length > 0) {
+        for (const role of input.targetRoles) {
+          realtimeService.broadcastToRole(role, 'notification:new', notificationData);
+        }
+      }
+
+      // If no specific targets, broadcast to all (system-wide notifications)
+      if ((!input.targetUsers || input.targetUsers.length === 0) && 
+          (!input.targetRoles || input.targetRoles.length === 0)) {
+        realtimeService.broadcastToAll('notification:new', notificationData);
+      }
+
+      log.debug('Notification broadcasted via Socket.io', {
+        notificationId: (notification as any)._id.toString(),
+        targetUsers: input.targetUsers?.length || 0,
+        targetRoles: input.targetRoles?.length || 0
+      });
+
+    } catch (error) {
+      log.error('Failed to broadcast notification via Socket.io', {
+        notificationId: (notification as any)._id.toString(),
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      // Don't throw - notification was created successfully, broadcasting failure shouldn't fail the whole operation
+    }
   }
 }

@@ -4,6 +4,9 @@
  * Server-side components for Socket.io and authentication.
  */
 
+// Socket Server
+export { SocketServer } from './socket-server';
+
 // Authentication middleware
 export {
   authenticateSocket,

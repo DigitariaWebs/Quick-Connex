@@ -7,6 +7,15 @@
 
 import { SocketTransport } from './types';
 
+// ===== ROOM PATTERNS =====
+
+export const ROOM_PATTERNS = {
+  USER: (userId: string) => `user:${userId}`,
+  ROLE: (role: string) => `role:${role}`,
+  ADMIN: 'admin:all',
+  BROADCAST: 'broadcast:all'
+} as const;
+
 // ===== SOCKET EVENTS =====
 
 export const SOCKET_EVENTS = {
