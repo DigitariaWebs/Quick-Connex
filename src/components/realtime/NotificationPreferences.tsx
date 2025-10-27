@@ -135,22 +135,30 @@ export default function NotificationPreferencesComponent({
   // Get notification type label
   const getTypeLabel = (type: NotificationType): string => {
     switch (type) {
-      case NOTIFICATION_TYPES.TRANSFER_STATUS_CHANGE:
-        return "Transfer Status Changes";
-      case NOTIFICATION_TYPES.NEW_TRANSFER:
+      case NOTIFICATION_TYPES.TRANSFER_CREATED:
         return "New Transfers";
-      case NOTIFICATION_TYPES.URGENT_TRANSFER:
+      case NOTIFICATION_TYPES.TRANSFER_UPDATED:
+        return "Transfer Updates";
+      case NOTIFICATION_TYPES.TRANSFER_ASSIGNED:
+        return "Transfer Assignments";
+      case NOTIFICATION_TYPES.TRANSFER_COMPLETED:
+        return "Transfer Completions";
+      case NOTIFICATION_TYPES.TRANSFER_CANCELLED:
+        return "Transfer Cancellations";
+      case NOTIFICATION_TYPES.TRANSFER_URGENT:
         return "Urgent Transfers";
-      case NOTIFICATION_TYPES.TRANSFER_REMINDER:
-        return "Transfer Reminders";
-      case NOTIFICATION_TYPES.SYSTEM:
-        return "System Notifications";
-      case NOTIFICATION_TYPES.SCHEDULING:
-        return "Scheduling Updates";
-      case NOTIFICATION_TYPES.USER_APPROVAL:
+      case NOTIFICATION_TYPES.USER_APPROVED:
         return "User Approvals";
-      case NOTIFICATION_TYPES.DASHBOARD_UPDATE:
-        return "Dashboard Updates";
+      case NOTIFICATION_TYPES.USER_REJECTED:
+        return "User Rejections";
+      case NOTIFICATION_TYPES.USER_SUSPENDED:
+        return "User Suspensions";
+      case NOTIFICATION_TYPES.SYSTEM_ANNOUNCEMENT:
+        return "System Announcements";
+      case NOTIFICATION_TYPES.SYSTEM_MAINTENANCE:
+        return "System Maintenance";
+      case NOTIFICATION_TYPES.SYSTEM_ALERT:
+        return "System Alerts";
       default:
         return type;
     }

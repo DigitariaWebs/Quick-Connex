@@ -9,9 +9,8 @@
 
 import { useState, useEffect } from "react";
 import { useNotifications } from "@/hooks/realtime";
-import { toStringId } from "@/lib/utils/object-id";
 import {
-  RealtimeNotification,
+  NotificationAPI,
   NotificationType,
   NotificationPriority,
 } from "@/lib/realtime/core/types";
@@ -32,7 +31,7 @@ import {
 } from "lucide-react";
 
 interface NotificationPanelProps {
-  notifications: RealtimeNotification[];
+  notifications: NotificationAPI[];
   unreadCount: number;
   isLoading: boolean;
   error: string | null;
@@ -90,13 +89,13 @@ export default function NotificationPanel({
       return <AlertCircle className="h-4 w-4 text-orange-500" />;
 
     switch (type) {
-      case NOTIFICATION_TYPES.TRANSFER_STATUS_CHANGE:
-        return <CheckCircle className="h-4 w-4 text-blue-500" />;
-      case NOTIFICATION_TYPES.NEW_TRANSFER:
+      case NOTIFICATION_TYPES.TRANSFER_CREATED:
         return <Bell className="h-4 w-4 text-green-500" />;
-      case NOTIFICATION_TYPES.URGENT_TRANSFER:
+      case NOTIFICATION_TYPES.TRANSFER_UPDATED:
+        return <CheckCircle className="h-4 w-4 text-blue-500" />;
+      case NOTIFICATION_TYPES.TRANSFER_URGENT:
         return <AlertCircle className="h-4 w-4 text-red-500" />;
-      case NOTIFICATION_TYPES.SYSTEM:
+      case NOTIFICATION_TYPES.SYSTEM_ANNOUNCEMENT:
         return <Settings className="h-4 w-4 text-gray-500" />;
       default:
         return <Info className="h-4 w-4 text-blue-500" />;
@@ -198,10 +197,12 @@ export default function NotificationPanel({
           >
             <option value="all">All</option>
             <option value="unread">Unread</option>
-            <option value={NOTIFICATION_TYPES.TRANSFER_STATUS_CHANGE}>
+            <option value={NOTIFICATION_TYPES.TRANSFER_CREATED}>
               Transfers
             </option>
-            <option value={NOTIFICATION_TYPES.SYSTEM}>System</option>
+            <option value={NOTIFICATION_TYPES.SYSTEM_ANNOUNCEMENT}>
+              System
+            </option>
           </select>
 
           <select
@@ -252,7 +253,7 @@ export default function NotificationPanel({
 
               return (
                 <div
-                  key={toStringId(notification.id)!}
+                  key={notification.id}
                   className={`p-4 border-l-4 ${getPriorityColor(
                     notification.priority
                   )} ${isRead ? "opacity-60" : ""} ${
@@ -317,9 +318,7 @@ export default function NotificationPanel({
                       <div className="mt-2 flex items-center space-x-2">
                         {!isRead && (
                           <button
-                            onClick={() =>
-                              handleMarkAsRead(toStringId(notification.id)!)
-                            }
+                            onClick={() => handleMarkAsRead(notification.id)}
                             className="text-xs text-blue-600 hover:text-blue-800 flex items-center space-x-1"
                           >
                             <Check size={12} />
@@ -327,9 +326,7 @@ export default function NotificationPanel({
                           </button>
                         )}
                         <button
-                          onClick={() =>
-                            handleDismiss(toStringId(notification.id)!)
-                          }
+                          onClick={() => handleDismiss(notification.id)}
                           className="text-xs text-gray-500 hover:text-gray-700 flex items-center space-x-1"
                         >
                           <X size={12} />

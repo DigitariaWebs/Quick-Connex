@@ -3,7 +3,6 @@ import os from 'os';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { DatabaseService } from './src/lib/database';
-import { SocketServer } from './src/lib/realtime/server';
 
 // Load environment variables from .env.local
 dotenv.config({ path: '.env.local' });
@@ -161,10 +160,10 @@ async function startServer(): Promise<void> {
     // Create HTTP server
     const httpServer = createServer();
     
-    // Initialize Socket.io server
-    const socketServer = new SocketServer();
-    await socketServer.initialize(httpServer);
-    console.log('🔌 Socket.io server initialized successfully');
+    // TODO: Initialize Socket.io server when realtime module is ready
+    // const socketServer = new SocketServer();
+    // await socketServer.initialize(httpServer);
+    // console.log('🔌 Socket.io server initialized successfully');
 
     // Use Next.js built-in server
     const handle = app.getRequestHandler();

@@ -11,7 +11,8 @@ import { log } from '@/lib/logging';
 import { REALTIME_CONFIG } from '../core/config';
 import { SOCKET_EVENTS, ERROR_CODES } from '../core/constants';
 import { AuthService } from '@/lib/auth';
-import { verifyToken } from '@/lib/auth/jwt-standalone';
+import { AuthenticatedSocket } from '../core/types';
+import { authenticateSocket } from './auth';
 import { AppError } from '@/lib/utils/error-handling';
 
 // ===== SOCKET SERVER SETUP =====
@@ -39,7 +40,7 @@ export class SocketServer {
       // Create Socket.io server
       this.io = new SocketIOServer(server, {
         path: REALTIME_CONFIG.socket.path,
-        transports: REALTIME_CONFIG.socket.transports as any,
+        transports: REALTIME_CONFIG.socket.transports,
         pingInterval: REALTIME_CONFIG.socket.pingInterval,
         pingTimeout: REALTIME_CONFIG.socket.pingTimeout,
         maxHttpBufferSize: REALTIME_CONFIG.socket.maxHttpBufferSize,
@@ -101,20 +102,12 @@ export class SocketServer {
     if (!this.io) return;
 
     // Authentication middleware
-    this.io.use(async (socket, next) => {
-      try {
-        await this.handleAuthentication(socket);
-        next();
-      } catch (error) {
-        log.error('Socket authentication failed:', error);
-        next(new Error('Authentication failed'));
-      }
-    });
+    this.io.use(authenticateSocket);
 
     // Rate limiting middleware
     this.io.use(async (socket, next) => {
       try {
-        await this.handleRateLimit(socket);
+        await this.handleRateLimit(socket as AuthenticatedSocket);
         next();
       } catch (error) {
         log.error('Socket rate limit exceeded:', error);
@@ -137,7 +130,7 @@ export class SocketServer {
     if (!this.io) return;
 
     this.io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
-      this.handleConnection(socket);
+      this.handleConnection(socket as AuthenticatedSocket);
     });
 
     // Handle server errors
@@ -153,55 +146,19 @@ export class SocketServer {
     log.debug('Room management setup completed');
   }
 
-  private async handleAuthentication(socket: any): Promise<void> {
-    try {
-      // Get token from auth header or handshake
-      const token = socket.handshake.auth.token || 
-                   socket.handshake.headers.authorization?.replace('Bearer ', '') ||
-                   socket.handshake.headers.cookie?.match(/token=([^;]+)/)?.[1];
 
-      if (!token) {
-        throw new AppError('Authentication token required', 401, ERROR_CODES.AUTHENTICATION_FAILED);
-      }
-
-      // Verify token using JWT standalone
-      const payload = await verifyToken(token);
-      
-      if (!payload) {
-        throw new AppError('Invalid authentication token', 401, ERROR_CODES.AUTHENTICATION_FAILED);
-      }
-
-      // Attach user info to socket
-      socket.userId = payload.userId;
-      socket.userType = payload.userType;
-      socket.userEmail = payload.email;
-      // userName not available in JWT payload
-
-      log.debug('Socket authenticated successfully', {
-        socketId: socket.id,
-        userId: socket.userId,
-        userType: socket.userType
-      });
-
-    } catch (error) {
-      log.error('Socket authentication error:', error);
-      throw error;
-    }
-  }
-
-  private async handleRateLimit(socket: any): Promise<void> {
+  private async handleRateLimit(socket: AuthenticatedSocket): Promise<void> {
     // Rate limiting will be implemented here
     // For now, just pass through
     return Promise.resolve();
   }
 
-  private handleConnection(socket: any): void {
+  private handleConnection(socket: AuthenticatedSocket): void {
     const connectionInfo = {
       id: socket.id,
       userId: socket.userId,
       userType: socket.userType,
       userEmail: socket.userEmail,
-      userName: socket.userName,
       ipAddress: socket.handshake.address,
       userAgent: socket.handshake.headers['user-agent'],
       connectedAt: new Date()
@@ -242,11 +199,11 @@ export class SocketServer {
 
     // Handle disconnection
     socket.on(SOCKET_EVENTS.DISCONNECT, (reason: string) => {
-      this.handleDisconnection(socket, reason);
+      this.handleDisconnection(socket as AuthenticatedSocket, reason);
     });
 
     // Handle custom events
-    this.setupCustomEventHandlers(socket);
+    this.setupCustomEventHandlers(socket as AuthenticatedSocket);
 
     // Send connection confirmation
     socket.emit(SOCKET_EVENTS.CONNECTION, {
@@ -258,7 +215,7 @@ export class SocketServer {
     });
   }
 
-  private handleDisconnection(socket: any, reason: string): void {
+  private handleDisconnection(socket: AuthenticatedSocket, reason: string): void {
     const disconnectionInfo = {
       id: socket.id,
       userId: socket.userId,
@@ -269,21 +226,26 @@ export class SocketServer {
 
     log.info('User disconnected from Socket.io', disconnectionInfo);
 
-    // Leave all rooms
-    socket.leaveAll();
+    // Leave all rooms (iterate through rooms)
+    const rooms = Array.from(socket.rooms);
+    rooms.forEach(room => {
+      if (room !== socket.id) { // Don't leave the socket's own room
+        socket.leave(room);
+      }
+    });
 
     // Clean up any user-specific data
     // This will be handled by RealtimeService
   }
 
-  private setupCustomEventHandlers(socket: any): void {
+  private setupCustomEventHandlers(socket: AuthenticatedSocket): void {
     // Handle notification events
     socket.on(SOCKET_EVENTS.NOTIFICATION_READ, async (data: any) => {
       try {
         await this.handleNotificationRead(socket, data);
       } catch (error) {
         log.error('Error handling notification read:', error);
-        socket.emit(SOCKET_EVENTS.ERROR, {
+        socket.emit('error', {
           type: 'notification_read_error',
           message: error instanceof Error ? error.message : 'Unknown error'
         });
@@ -295,7 +257,7 @@ export class SocketServer {
         await this.handleNotificationDismissed(socket, data);
       } catch (error) {
         log.error('Error handling notification dismissed:', error);
-        socket.emit(SOCKET_EVENTS.ERROR, {
+        socket.emit('error', {
           type: 'notification_dismissed_error',
           message: error instanceof Error ? error.message : 'Unknown error'
         });
@@ -313,11 +275,11 @@ export class SocketServer {
     });
   }
 
-  private async handleNotificationRead(socket: any, data: any): Promise<void> {
+  private async handleNotificationRead(socket: AuthenticatedSocket, data: any): Promise<void> {
     const { notificationId } = data;
     
     if (!notificationId) {
-      throw new AppError('Notification ID is required', 400, ERROR_CODES.VALIDATION_ERROR);
+      throw new AppError('Notification ID is required', 400, ERROR_CODES.INVALID_INPUT);
     }
 
     // Update notification as read
@@ -336,11 +298,11 @@ export class SocketServer {
     });
   }
 
-  private async handleNotificationDismissed(socket: any, data: any): Promise<void> {
+  private async handleNotificationDismissed(socket: AuthenticatedSocket, data: any): Promise<void> {
     const { notificationId } = data;
     
     if (!notificationId) {
-      throw new AppError('Notification ID is required', 400, ERROR_CODES.VALIDATION_ERROR);
+      throw new AppError('Notification ID is required', 400, ERROR_CODES.INVALID_INPUT);
     }
 
     // Update notification as dismissed
@@ -359,11 +321,11 @@ export class SocketServer {
     });
   }
 
-  private handleUserPresence(socket: any, data: any): void {
+  private handleUserPresence(socket: AuthenticatedSocket, data: any): void {
     const { status } = data;
     
     if (!status || !['online', 'offline'].includes(status)) {
-      socket.emit(SOCKET_EVENTS.ERROR, {
+      socket.emit('error', {
         type: 'invalid_presence_status',
         message: 'Status must be "online" or "offline"'
       });

@@ -104,12 +104,12 @@ export function useDashboardData() {
     };
 
     // Register event listeners
-    emitEvent('dashboard:subscribe', { userId: user._id });
+    emitEvent(SOCKET_EVENTS.DASHBOARD_SUBSCRIBE, { userId: user._id });
 
     // Return cleanup function
     return () => {
       console.log('🔌 Cleaning up dashboard real-time listeners');
-      emitEvent('dashboard:unsubscribe', { userId: user._id });
+      emitEvent(SOCKET_EVENTS.DASHBOARD_UNSUBSCRIBE, { userId: user._id });
     };
   }, [isConnected, user, emitEvent, handleStatsUpdate, handleActivityUpdate, handleUrgentAlert]);
 

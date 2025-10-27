@@ -1,25 +1,17 @@
 /**
- * Server Components
+ * Realtime Server Module
  * 
- * Exports all server-side Socket.io components including
- * the main server setup, authentication middleware, and room management.
+ * Server-side components for Socket.io and authentication.
  */
 
-// Main server setup
-export { SocketServer } from './socket-server';
-
 // Authentication middleware
-export { 
-  authenticateSocket, 
-  validateSocketPermission, 
-  SocketRateLimiter 
-} from './auth-middleware';
-
-// Room management
-export { 
-  RoomManager, 
-  setupRoomEventHandlers 
-} from './room-manager';
+export {
+  authenticateSocket,
+  createRateLimitMiddleware,
+  validateConnection,
+  requireRole,
+  trackActivity
+} from './auth';
 
 // Types
-export type { AuthenticatedSocket } from './auth-middleware';
+export type { AuthenticatedSocket } from '../core/types';

@@ -1,39 +1,35 @@
 /**
- * Core Real-time Components
+ * Realtime Core Module
  * 
- * Exports all core real-time service components including
- * the main service, types, constants, and configuration.
+ * Main exports for the realtime notification system core functionality.
  */
 
-// Main Service
-export { RealtimeService } from './RealtimeService';
+// Services
 export { NotificationService } from './NotificationService';
+export { RealtimeService } from './RealtimeService';
 
 // Types
 export type {
-  RealtimeNotification,
-  SocketEvent,
-  SocketEventType,
+  AuthenticatedSocket,
+  SocketTransport,
+  NotificationDocument,
+  NotificationAPI,
+  NotificationDeliveryDocument,
+  NotificationDeliveryAPI,
   NotificationType,
   NotificationPriority,
   NotificationStatus,
-  UserRole,
-  NotificationData,
-  NotificationDelivery,
   DeliveryMethod,
-  NotificationSettings,
-  NotificationEventPayload,
-  TransferEventPayload,
-  DashboardEventPayload,
-  UserPresencePayload,
+  CreateNotificationInput,
+  GetNotificationsOptions,
+  SocketEventType,
+  RoomType,
+  RoomInfo,
+  RealtimeServiceConfig,
   RealtimeContextType,
   NotificationToast,
   NotificationPreferences,
   SocketConnection,
-  RoomInfo,
-  RealtimeServiceConfig,
-  DeliveryResult,
-  RealtimeAnalytics,
   RealtimeError,
   RealtimeErrorCode,
   RealtimeApiResponse,
@@ -47,36 +43,17 @@ export type {
 // Constants
 export {
   SOCKET_EVENTS,
-  ROOM_PREFIXES,
-  ROOM_TYPES,
   NOTIFICATION_TYPES,
   NOTIFICATION_PRIORITIES,
   NOTIFICATION_STATUSES,
   DELIVERY_METHODS,
-  USER_ROLES,
+  ROOM_PREFIXES,
   ERROR_CODES,
   TIMING,
+  DEFAULTS,
   RETRY_POLICIES,
-  VALIDATION,
-  WEB_PUSH,
-  ANALYTICS,
-  SECURITY,
-  FEATURES,
-  DEFAULTS
+  DEFAULT_CONFIG
 } from './constants';
 
 // Configuration
-export {
-  getRealtimeConfig,
-  validateRealtimeConfig,
-  getEnvironmentConfig,
-  getPlatformConfig,
-  mergeConfigurations,
-  REALTIME_CONFIG
-} from './config';
-
-// Notification Service Types
-export type {
-  CreateNotificationData,
-  GetNotificationsOptions
-} from './NotificationService';
+export { REALTIME_CONFIG } from './config';

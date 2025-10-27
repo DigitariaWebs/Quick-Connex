@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRealtime } from '@/contexts/RealtimeContext';
 import { useSession } from '@/contexts/SessionContext';
 import { 
-  RealtimeNotification,
+  NotificationAPI,
   SocketEventType,
   NotificationType,
   NotificationPriority,
@@ -347,14 +347,18 @@ export function useNotificationPreferences() {
           push: true
         },
         types: {
-          transfer_status_change: true,
-          new_transfer: true,
-          urgent_transfer: true,
-          transfer_reminder: false,
-          system: true,
-          scheduling: true,
-          user_approval: true,
-          dashboard_update: false
+          transfer_created: true,
+          transfer_updated: true,
+          transfer_assigned: true,
+          transfer_completed: true,
+          transfer_cancelled: true,
+          transfer_urgent: true,
+          user_approved: true,
+          user_rejected: true,
+          user_suspended: true,
+          system_announcement: true,
+          system_maintenance: true,
+          system_alert: true
         },
         quietHours: {
           enabled: false,

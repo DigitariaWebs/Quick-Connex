@@ -1,88 +1,37 @@
 /**
  * Notification Service
  * 
- * Main service for creating, targeting, and delivering notifications.
- * Integrates with SocketProvider for real-time delivery and existing
- * CommunicationService for email/SMS fallback.
+ * Core notification business logic
+ * Works entirely with Types.ObjectId internally
  */
 
-import { DatabaseService } from '@/lib/database';
+import { Types } from 'mongoose';
+import { UserRole } from '@/lib/auth/core/types';
+import { 
+  ActorType, 
+  AuditAction, 
+  AuditCategory, 
+  TargetResourceType, 
+  RiskLevel 
+} from '@/models/AuditLog';
 import { AuditService } from '@/lib/audit';
-import { AuditAction, TargetResourceType, ActorType } from '@/models/AuditLog';
 import { CommunicationService } from '@/lib/communication';
-import { log } from '@/lib/logging';
 import Notification from '@/models/Notification';
 import User from '@/models/User';
-import { SocketProvider } from '../providers';
 import { 
-  toStringId, 
-  toStringIds, 
-  toObjectId, 
-  toObjectIds,
-  getIdString,
-  toStringIdRequired
-} from '@/lib/utils/object-id';
-import { 
-  RealtimeNotification,
-  NotificationType,
-  NotificationPriority,
-  DeliveryMethod,
-  NotificationStatus,
-  UserRole,
-  DeliveryResult,
-  NotificationData,
-  NotificationSettings
-} from '../core/types';
-import { 
-  NOTIFICATION_TYPES,
-  NOTIFICATION_PRIORITIES,
-  DELIVERY_METHODS,
-  ERROR_CODES,
-  TIMING,
-  DEFAULTS
-} from '../core/constants';
-import { 
-  AppError,
-  ValidationError,
-  NotFoundError,
-  formatErrorForClient 
-} from '@/lib/utils/error-handling';
-import { 
-  retry,
-  withTimeout,
-  batchProcess 
-} from '@/lib/utils/async-helpers';
-import { 
-  sanitizeString,
-  sanitizeQueryInput 
-} from '@/lib/utils/request-validation';
-import { 
-  pickFields,
-  omitFields,
-  isEmpty 
-} from '@/lib/utils/data-helpers';
-import { 
-  getCurrentTimestamp,
-  isValidDate 
-} from '@/lib/utils/date-time';
-import { 
-  truncate,
-  capitalize 
-} from '@/lib/utils/string-helpers';
-
-// ===== NOTIFICATION SERVICE =====
+  NotificationDocument, 
+  CreateNotificationInput,
+  GetNotificationsOptions,
+  NOTIFICATION_STATUS 
+} from './types';
+import { toObjectId, toObjectIds } from '../utils/converters';
+import { log } from '@/lib/logging';
 
 export class NotificationService {
   private static instance: NotificationService;
-  private socketProvider: SocketProvider;
 
-  private constructor() {
-    this.socketProvider = SocketProvider.getInstance();
-  }
+  private constructor() {}
 
-  /**
-   * Get singleton instance
-   */
   public static getInstance(): NotificationService {
     if (!NotificationService.instance) {
       NotificationService.instance = new NotificationService();
@@ -91,284 +40,162 @@ export class NotificationService {
   }
 
   /**
-   * Create a new notification
+   * Create new notification
+   * 
+   * Accepts flexible input but normalizes to ObjectIds internally
+   * Returns MongoDB document with ObjectIds
    */
-  public async createNotification(
-    notificationData: CreateNotificationData,
-    createdBy?: string
-  ): Promise<RealtimeNotification> {
+  async createNotification(
+    input: CreateNotificationInput
+  ): Promise<NotificationDocument> {
     try {
-      // Validate notification data
-      const validated = this.validateNotificationData(notificationData);
-      
-      // Generate notification ID
-      const notificationId = this.generateNotificationId();
-      
+      // Normalize all IDs to ObjectIds
+      const targetUsers = input.targetUsers ? toObjectIds(input.targetUsers) : [];
+      const excludeUsers = input.excludeUsers ? toObjectIds(input.excludeUsers) : [];
+      const transferId = input.transferId ? toObjectId(input.transferId) : undefined;
+      const relatedResourceId = input.relatedResourceId ? toObjectId(input.relatedResourceId) : undefined;
+      const createdBy = toObjectId(input.createdBy);
+
       // Create notification document
-      const notification = await DatabaseService.create(Notification, {
-        id: notificationId,
-        type: validated.type || DEFAULTS.NOTIFICATION_PRIORITY,
-        priority: validated.priority || DEFAULTS.NOTIFICATION_PRIORITY,
-        title: validated.title,
-        message: validated.message,
-        targetUsers: validated.targetUsers || [],
-        targetRoles: validated.targetRoles || [],
-        excludeUsers: validated.excludeUsers || [],
-        transferId: validated.transferId,
-        data: validated.data || {},
+      const notification = await Notification.create({
+        type: input.type,
+        priority: input.priority || 'medium',
+        title: input.title,
+        message: input.message,
+        data: input.data,
+        targetUsers,
+        targetRoles: input.targetRoles || [],
+        excludeUsers,
+        transferId,
+        relatedResourceId,
+        relatedResourceType: input.relatedResourceType,
         deliveries: [],
-        settings: {
-          persistent: validated.settings?.persistent ?? true,
-          expiresAt: validated.settings?.expiresAt,
-          maxDeliveries: validated.settings?.maxDeliveries || TIMING.NOTIFICATION_MAX_RETRIES,
-          retryInterval: validated.settings?.retryInterval || TIMING.NOTIFICATION_RETRY_DELAY
-        },
-        status: DEFAULTS.NOTIFICATION_STATUS,
+        status: NOTIFICATION_STATUS.PENDING,
         deliveryAttempts: 0,
-        createdBy: createdBy,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        settings: {
+          persistent: true,
+          requireAcknowledgment: false,
+          channels: ['realtime', 'push'],
+          ...input.settings,
+        },
+        createdBy,
+        createdByType: input.createdByType,
       });
 
-      // Convert to RealtimeNotification format for logging
-      const realtimeNotification: RealtimeNotification = {
-        id: getIdString(notification),
-        type: notification.type as NotificationType,
-        priority: notification.priority as NotificationPriority,
-        title: notification.title,
-        message: notification.message,
-        targetUsers: notification.targetUsers,
-        targetRoles: notification.targetRoles as UserRole[],
-        excludeUsers: notification.excludeUsers,
-        transferId: notification.transferId,
-        data: notification.data,
-        deliveries: notification.deliveries.map(delivery => ({
-          userId: delivery.userId,
-          deliveredAt: delivery.deliveredAt,
-          readAt: delivery.readAt,
-          dismissedAt: delivery.dismissedAt,
-          deliveryMethod: delivery.deliveryMethod
-        })),
-        settings: notification.settings,
-        status: notification.status as NotificationStatus,
-        deliveryAttempts: notification.deliveryAttempts,
-        lastDeliveryAttempt: notification.lastDeliveryAttempt,
-        createdBy: notification.createdBy,
-        createdAt: notification.createdAt,
-        updatedAt: notification.updatedAt
-      };
-
-      // Log audit event
-      await this.logNotificationCreated(realtimeNotification, createdBy);
+      // Audit log
+      await AuditService.logCommunication({
+        actorId: createdBy.toString(),
+        actorType: input.createdByType,
+        action: AuditAction.NOTIFICATION_SENT,
+        description: `Created notification: ${input.title}`,
+        targetResourceId: (notification as any)._id.toString(),
+      });
 
       log.info('Notification created successfully', {
-        notificationId,
-        type: notification.type,
-        priority: notification.priority,
-        targetUsers: notification.targetUsers.length,
-        targetRoles: notification.targetRoles.length
-      });
-
-      return realtimeNotification;
-
-    } catch (error) {
-      log.error('Failed to create notification:', error);
-      
-      if (error instanceof ValidationError || error instanceof AppError) {
-        throw error;
-      }
-      
-      const errorInfo = formatErrorForClient(error);
-      throw new AppError(
-        errorInfo.message,
-        500,
-        ERROR_CODES.NOTIFICATION_SEND_FAILED
-      );
-    }
-  }
-
-  /**
-   * Send notification to users
-   */
-  public async sendNotification(
-    notification: RealtimeNotification,
-    channels: DeliveryMethod[] = [DELIVERY_METHODS.REALTIME]
-  ): Promise<DeliveryResult[]> {
-    try {
-      const results: DeliveryResult[] = [];
-      
-      // Get target users
-      const targetUsers = await this.getTargetUsers(notification);
-      
-      if (targetUsers.length === 0) {
-        log.warn('No target users found for notification', {
-          notificationId: notification.id
-        });
-        return results;
-      }
-
-      // Send via each channel
-      for (const channel of channels) {
-        const channelResults = await this.sendViaChannel(
-          notification,
-          targetUsers,
-          channel
-        );
-        results.push(...channelResults);
-      }
-
-      // Update notification status
-      await this.updateNotificationStatus(toStringIdRequired(notification.id), results);
-
-      // Log audit event
-      await this.logNotificationSent(notification, results);
-
-      log.info('Notification sent successfully', {
-        notificationId: notification.id,
+        notificationId: (notification as any)._id.toString(),
+        type: input.type,
         targetUsers: targetUsers.length,
-        channels: channels.length,
-        successfulDeliveries: results.filter(r => r.success).length
+        targetRoles: input.targetRoles?.length || 0,
       });
 
-      return results;
-
+      return notification as unknown as NotificationDocument;
     } catch (error) {
-      log.error('Failed to send notification:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Create and send notification in one operation
-   */
-  public async createAndSendNotification(
-    notificationData: CreateNotificationData,
-    channels: DeliveryMethod[] = [DELIVERY_METHODS.REALTIME],
-    createdBy?: string
-  ): Promise<{ notification: RealtimeNotification; results: DeliveryResult[] }> {
-    try {
-      // Create notification
-      const notification = await this.createNotification(notificationData, createdBy);
-      
-      // Send notification
-      const results = await this.sendNotification(notification, channels);
-      
-      return { notification, results };
-
-    } catch (error) {
-      log.error('Failed to create and send notification:', error);
+      log.error('Failed to create notification', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        input: {
+          type: input.type,
+          title: input.title,
+          targetUsers: input.targetUsers?.length || 0,
+        },
+      });
       throw error;
     }
   }
 
   /**
    * Get notifications for user
+   * 
+   * Accepts flexible userId input
+   * Returns array of documents with ObjectIds
    */
-  public async getUserNotifications(
-    userId: string,
-    options: GetNotificationsOptions = {}
-  ): Promise<{ notifications: RealtimeNotification[]; total: number; unread: number }> {
+  async getUserNotifications(
+    options: GetNotificationsOptions
+  ): Promise<{
+    notifications: NotificationDocument[];
+    total: number;
+    unread: number;
+  }> {
     try {
-      const user = await DatabaseService.findById(User, userId);
-      if (!user) {
-        throw new NotFoundError('User not found');
+      const userId = options.userId ? toObjectId(options.userId) : undefined;
+
+      const query: any = {};
+
+      // User targeting
+      if (userId) {
+        query.$or = [
+          { targetUsers: userId },
+          { targetRoles: { $in: options.userRoles || [] } },
+        ];
+        
+        // Exclude explicitly excluded users
+        query.$nor = [{ excludeUsers: userId }];
+      } else if (options.userRoles?.length) {
+        query.targetRoles = { $in: options.userRoles };
       }
 
-      const query: any = {
-        $and: [
-          {
-            $or: [
-              { targetUsers: userId },
-              { targetRoles: { $in: [user.userType] } }
-            ]
-          },
-          {
-            excludeUsers: { $ne: userId }
-          },
-          {
-            status: { $in: ['pending', 'delivered'] }
-          }
-        ]
-      };
+      // Filters
+      if (options.type) query.type = options.type;
+      if (options.priority) query.priority = options.priority;
+      if (options.status) query.status = options.status;
 
-      // Add filters
-      if (options.unreadOnly) {
-        query.$and.push({
-          'deliveries': {
-            $not: {
-              $elemMatch: {
-                userId: userId,
-                readAt: { $exists: true }
-              }
-            }
-          }
-        });
-      }
-
-      if (options.type) {
-        query.type = options.type;
-      }
-
-      if (options.priority) {
-        query.priority = options.priority;
-      }
-
-      // Execute query
-      const notifications = await DatabaseService.findMany(Notification, query, {
-        sort: { createdAt: -1 },
-        limit: options.limit || 50,
-        skip: options.skip || 0
-      });
-
-      // Get total count
-      const total = await DatabaseService.count(Notification, query);
-
-      // Get unread count
-      const unreadQuery = {
-        ...query,
-        'deliveries': {
+      // Unread filter
+      if (options.unreadOnly && userId) {
+        query['deliveries'] = {
           $not: {
             $elemMatch: {
-              userId: userId,
-              readAt: { $exists: true }
-            }
-          }
-        }
+              userId,
+              readAt: { $exists: true },
+            },
+          },
+        };
+      }
+
+      const notifications = await Notification.find(query)
+        .sort(options.sort || { createdAt: -1 })
+        .limit(options.limit || 50)
+        .skip(options.skip || 0)
+        .lean();
+
+      const total = await Notification.countDocuments(query);
+      const unread = userId ? await this.getUnreadCount(userId) : 0;
+
+      log.debug('Retrieved user notifications', {
+        userId: userId?.toString(),
+        count: notifications.length,
+        total,
+        unread,
+        filters: {
+          type: options.type,
+          priority: options.priority,
+          status: options.status,
+          unreadOnly: options.unreadOnly,
+        },
+      });
+
+      return {
+        notifications: notifications as unknown as NotificationDocument[],
+        total,
+        unread,
       };
-      const unread = await DatabaseService.count(Notification, unreadQuery);
-
-      // Convert notifications to RealtimeNotification format
-      const realtimeNotifications: RealtimeNotification[] = notifications.map(notification => ({
-        id: getIdString(notification),
-        type: notification.type as NotificationType,
-        priority: notification.priority as NotificationPriority,
-        title: notification.title,
-        message: notification.message,
-        targetUsers: notification.targetUsers,
-        targetRoles: notification.targetRoles as UserRole[],
-        excludeUsers: notification.excludeUsers,
-        transferId: notification.transferId,
-        data: notification.data,
-        deliveries: notification.deliveries.map(delivery => ({
-          userId: delivery.userId,
-          deliveredAt: delivery.deliveredAt,
-          readAt: delivery.readAt,
-          dismissedAt: delivery.dismissedAt,
-          deliveryMethod: delivery.deliveryMethod
-        })),
-        settings: notification.settings,
-        status: notification.status as NotificationStatus,
-        deliveryAttempts: notification.deliveryAttempts,
-        lastDeliveryAttempt: notification.lastDeliveryAttempt,
-        createdBy: notification.createdBy,
-        createdAt: notification.createdAt,
-        updatedAt: notification.updatedAt
-      }));
-
-      return { notifications: realtimeNotifications, total, unread };
-
     } catch (error) {
-      log.error('Failed to get user notifications:', error);
+      log.error('Failed to get user notifications', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        options: {
+          userId: options.userId?.toString(),
+          userRoles: options.userRoles,
+          type: options.type,
+        },
+      });
       throw error;
     }
   }
@@ -376,126 +203,170 @@ export class NotificationService {
   /**
    * Mark notification as read
    */
-  public async markAsRead(notificationId: string, userId: string): Promise<void> {
+  async markAsRead(
+    notificationId: string | Types.ObjectId,
+    userId: string | Types.ObjectId
+  ): Promise<boolean> {
     try {
-      const result = await DatabaseService.updateMany(
-        Notification,
-        { 
-          id: notificationId,
-          'deliveries.userId': userId 
+      const notifId = toObjectId(notificationId);
+      const uid = toObjectId(userId);
+
+      const result = await Notification.updateOne(
+        {
+          _id: notifId,
+          'deliveries.userId': uid,
         },
-        { 
-          $set: { 'deliveries.$.readAt': new Date() }
+        {
+          $set: {
+            'deliveries.$.readAt': new Date(),
+          },
         }
       );
 
-      if (!result || result.modifiedCount === 0) {
-        throw new NotFoundError('Notification not found or already read');
+      const success = result.modifiedCount > 0;
+      
+      if (success) {
+        log.info('Notification marked as read', {
+          notificationId: notifId.toString(),
+          userId: uid.toString(),
+        });
+      } else {
+        log.warn('Failed to mark notification as read - not found or already read', {
+          notificationId: notifId.toString(),
+          userId: uid.toString(),
+        });
       }
 
-      // Log audit event
-      await AuditService.logCommunication({
-        action: AuditAction.NOTIFICATION_SENT,
-        actorId: userId,
-        actorType: ActorType.USER,
-        description: `Notification marked as read by user ${userId}`,
-        targetResourceType: TargetResourceType.NOTIFICATION,
-        targetResourceId: notificationId,
-        details: { userId }
-      });
-
-      log.debug('Notification marked as read', {
-        notificationId,
-        userId
-      });
-
+      return success;
     } catch (error) {
-      log.error('Failed to mark notification as read:', error);
+      log.error('Failed to mark notification as read', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        notificationId: notificationId.toString(),
+        userId: userId.toString(),
+      });
       throw error;
     }
   }
 
   /**
-   * Mark notification as dismissed
+   * Dismiss notification
    */
-  public async markAsDismissed(notificationId: string, userId: string): Promise<void> {
+  async dismissNotification(
+    notificationId: string | Types.ObjectId,
+    userId: string | Types.ObjectId
+  ): Promise<boolean> {
     try {
-      const result = await DatabaseService.updateMany(
-        Notification,
-        { 
-          id: notificationId,
-          'deliveries.userId': userId 
+      const notifId = toObjectId(notificationId);
+      const uid = toObjectId(userId);
+
+      const result = await Notification.updateOne(
+        {
+          _id: notifId,
+          'deliveries.userId': uid,
         },
-        { 
-          $set: { 'deliveries.$.dismissedAt': new Date() }
+        {
+          $set: {
+            'deliveries.$.dismissedAt': new Date(),
+          },
         }
       );
 
-      if (!result || result.modifiedCount === 0) {
-        throw new NotFoundError('Notification not found');
+      const success = result.modifiedCount > 0;
+      
+      if (success) {
+        log.info('Notification dismissed', {
+          notificationId: notifId.toString(),
+          userId: uid.toString(),
+        });
       }
 
-      // Log audit event
-      await AuditService.logCommunication({
-        action: AuditAction.NOTIFICATION_SENT,
-        actorId: userId,
-        actorType: ActorType.USER,
-        description: `Notification dismissed by user ${userId}`,
-        targetResourceType: TargetResourceType.NOTIFICATION,
-        targetResourceId: notificationId,
-        details: { userId }
-      });
-
-      log.debug('Notification dismissed', {
-        notificationId,
-        userId
-      });
-
+      return success;
     } catch (error) {
-      log.error('Failed to dismiss notification:', error);
+      log.error('Failed to dismiss notification', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        notificationId: notificationId.toString(),
+        userId: userId.toString(),
+      });
       throw error;
     }
   }
 
   /**
-   * Delete notification
+   * Get unread count for user
    */
-  public async deleteNotification(notificationId: string, deletedBy?: string): Promise<void> {
+  private async getUnreadCount(userId: Types.ObjectId): Promise<number> {
     try {
-      const result = await DatabaseService.deleteOne(Notification, { id: notificationId });
+      return await Notification.countDocuments({
+        $or: [
+          { targetUsers: userId },
+        ],
+        'deliveries': {
+          $not: {
+            $elemMatch: {
+              userId,
+              readAt: { $exists: true },
+            },
+          },
+        },
+      });
+    } catch (error) {
+      log.error('Failed to get unread count', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        userId: userId.toString(),
+      });
+      return 0;
+    }
+  }
 
-      if (!result) {
-        throw new NotFoundError('Notification not found');
+  /**
+   * Clean up expired notifications
+   */
+  async cleanupExpiredNotifications(): Promise<number> {
+    try {
+      const result = await Notification.deleteMany({
+        'settings.expiresAt': {
+          $lt: new Date(),
+        },
+      });
+
+      if (result.deletedCount > 0) {
+        log.info('Cleaned up expired notifications', {
+          deletedCount: result.deletedCount,
+        });
       }
 
-      // Log audit event
-      await AuditService.logCommunication({
-        action: AuditAction.NOTIFICATION_SENT,
-        actorId: deletedBy || 'system',
-        actorType: ActorType.USER,
-        description: `Notification deleted by ${deletedBy || 'system'}`,
-        targetResourceType: TargetResourceType.NOTIFICATION,
-        targetResourceId: notificationId,
-        details: { deletedBy }
-      });
-
-      log.info('Notification deleted', {
-        notificationId,
-        deletedBy
-      });
-
+      return result.deletedCount;
     } catch (error) {
-      log.error('Failed to delete notification:', error);
-      throw error;
+      log.error('Failed to cleanup expired notifications', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      return 0;
     }
   }
 
   /**
    * Get notification statistics
    */
-  public async getNotificationStats(): Promise<any> {
+  async getNotificationStats(
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<{
+    total: number;
+    byType: Record<string, number>;
+    byPriority: Record<string, number>;
+    byStatus: Record<string, number>;
+  }> {
     try {
-      const stats = await DatabaseService.aggregate(Notification, [
+      const matchQuery: any = {};
+      
+      if (startDate || endDate) {
+        matchQuery.createdAt = {};
+        if (startDate) matchQuery.createdAt.$gte = startDate;
+        if (endDate) matchQuery.createdAt.$lte = endDate;
+      }
+
+      const stats = await Notification.aggregate([
+        { $match: matchQuery },
         {
           $group: {
             _id: null,
@@ -503,430 +374,57 @@ export class NotificationService {
             byType: {
               $push: {
                 type: '$type',
+                count: 1,
+              },
+            },
+            byPriority: {
+              $push: {
                 priority: '$priority',
-                status: '$status'
-              }
-            }
-          }
-        }
+                count: 1,
+              },
+            },
+            byStatus: {
+              $push: {
+                status: '$status',
+                count: 1,
+              },
+            },
+          },
+        },
       ]);
 
-      return stats[0] || { total: 0, byType: [] };
+      const result = stats[0] || { total: 0, byType: [], byPriority: [], byStatus: [] };
 
+      return {
+        total: result.total,
+        byType: this.groupByField(result.byType, 'type'),
+        byPriority: this.groupByField(result.byPriority, 'priority'),
+        byStatus: this.groupByField(result.byStatus, 'status'),
+      };
     } catch (error) {
-      log.error('Failed to get notification stats:', error);
-      throw error;
-    }
-  }
-
-  // ===== PRIVATE METHODS =====
-
-  private validateNotificationData(data: CreateNotificationData): CreateNotificationData {
-    const errors: string[] = [];
-
-    if (!data.title || data.title.trim().length === 0) {
-      errors.push('Title is required');
-    }
-
-    if (!data.message || data.message.trim().length === 0) {
-      errors.push('Message is required');
-    }
-
-    if (data.title && data.title.length > 100) {
-      errors.push('Title must be 100 characters or less');
-    }
-
-    if (data.message && data.message.length > 500) {
-      errors.push('Message must be 500 characters or less');
-    }
-
-    if (data.targetUsers && data.targetUsers.length > 1000) {
-      errors.push('Too many target users (max 1000)');
-    }
-
-    if (data.targetRoles && data.targetRoles.length > 10) {
-      errors.push('Too many target roles (max 10)');
-    }
-
-    if (errors.length > 0) {
-      throw new ValidationError(errors.join(', '));
-    }
-
-    return {
-      ...data,
-      title: data.title?.trim(),
-      message: data.message?.trim()
-    };
-  }
-
-  private generateNotificationId(): string {
-    return `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  private async getTargetUsers(notification: RealtimeNotification): Promise<any[]> {
-    const query: any = {
-      $and: []
-    };
-
-    // Add user targeting
-    if (notification.targetUsers.length > 0) {
-      query.$and.push({
-        _id: { $in: notification.targetUsers }
+      log.error('Failed to get notification stats', {
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
+      return {
+        total: 0,
+        byType: {},
+        byPriority: {},
+        byStatus: {},
+      };
     }
-
-    // Add role targeting
-    if (notification.targetRoles.length > 0) {
-      query.$and.push({
-        userType: { $in: notification.targetRoles }
-      });
-    }
-
-    // Exclude users
-    if (notification.excludeUsers.length > 0) {
-      query.$and.push({
-        _id: { $nin: notification.excludeUsers }
-      });
-    }
-
-    // If no targeting specified, return empty array
-    if (query.$and.length === 0) {
-      return [];
-    }
-
-    return await DatabaseService.findMany(User, query);
   }
 
-  private async sendViaChannel(
-    notification: RealtimeNotification,
-    targetUsers: any[],
-    channel: DeliveryMethod
-  ): Promise<DeliveryResult[]> {
-    const results: DeliveryResult[] = [];
-
-    switch (channel) {
-      case DELIVERY_METHODS.REALTIME:
-        results.push(...await this.sendRealtime(notification, targetUsers));
-        break;
-      case DELIVERY_METHODS.EMAIL:
-        results.push(...await this.sendEmail(notification, targetUsers));
-        break;
-      case DELIVERY_METHODS.SMS:
-        results.push(...await this.sendSMS(notification, targetUsers));
-        break;
-      case DELIVERY_METHODS.PUSH:
-        results.push(...await this.sendPush(notification, targetUsers));
-        break;
-    }
-
-    return results;
-  }
-
-  private async sendRealtime(
-    notification: RealtimeNotification,
-    targetUsers: any[]
-  ): Promise<DeliveryResult[]> {
-    const results: DeliveryResult[] = [];
-
-    for (const user of targetUsers) {
-      try {
-        await this.socketProvider.emitToUser(
-          user._id.toString(),
-          'notification:new',
-          {
-            notification: {
-              id: notification.id,
-              type: notification.type,
-              priority: notification.priority,
-              title: notification.title,
-              message: notification.message,
-              data: notification.data,
-              createdAt: notification.createdAt
-            }
-          }
-        );
-
-        results.push({
-          success: true,
-          method: DELIVERY_METHODS.REALTIME,
-          userId: user._id.toString(),
-          notificationId: notification.id,
-          timestamp: new Date()
-        });
-
-      } catch (error) {
-        results.push({
-          success: false,
-          method: DELIVERY_METHODS.REALTIME,
-          userId: user._id.toString(),
-          notificationId: notification.id,
-          error: error instanceof Error ? error.message : 'Unknown error',
-          timestamp: new Date()
-        });
-      }
-    }
-
-    return results;
-  }
-
-  private async sendEmail(
-    notification: RealtimeNotification,
-    targetUsers: any[]
-  ): Promise<DeliveryResult[]> {
-    const results: DeliveryResult[] = [];
-
-    try {
-      const communicationService = CommunicationService.getInstance();
-      
-      for (const user of targetUsers) {
-        try {
-          // Create email message
-          const emailMessage = {
-            id: `notification-${notification.id}-${user._id}`,
-            channel: 'email' as const,
-            status: 'pending' as const,
-            recipient: {
-              email: user.email,
-              name: `${user.firstName} ${user.lastName}`
-            },
-            content: {
-              subject: notification.title,
-              html: this.generateEmailHTML(notification, user),
-              text: notification.message
-            },
-            metadata: {
-              source: 'notification-service',
-              category: TargetResourceType.NOTIFICATION,
-              notificationId: toStringIdRequired(notification.id),
-              userId: user._id.toString()
-            },
-            priority: notification.priority,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          };
-
-          await communicationService.sendEmail(emailMessage);
-
-          results.push({
-            success: true,
-            method: DELIVERY_METHODS.EMAIL,
-            userId: user._id.toString(),
-            notificationId: notification.id,
-            timestamp: new Date()
-          });
-
-        } catch (error) {
-          results.push({
-            success: false,
-            method: DELIVERY_METHODS.EMAIL,
-            userId: user._id.toString(),
-            notificationId: notification.id,
-            error: error instanceof Error ? error.message : 'Unknown error',
-            timestamp: new Date()
-          });
-        }
-      }
-
-    } catch (error) {
-      log.error('Failed to send email notifications:', error);
-    }
-
-    return results;
-  }
-
-  private async sendSMS(
-    notification: RealtimeNotification,
-    targetUsers: any[]
-  ): Promise<DeliveryResult[]> {
-    const results: DeliveryResult[] = [];
-
-    try {
-      const communicationService = CommunicationService.getInstance();
-      
-      for (const user of targetUsers) {
-        if (!user.phone) continue;
-
-        try {
-          // Create SMS message
-          const smsMessage = {
-            id: `notification-${notification.id}-${user._id}`,
-            channel: 'sms' as const,
-            status: 'pending' as const,
-            recipient: {
-              phone: user.phone,
-              name: `${user.firstName} ${user.lastName}`
-            },
-            content: {
-              text: `${notification.title}: ${notification.message}`
-            },
-            metadata: {
-              source: 'notification-service',
-              category: TargetResourceType.NOTIFICATION,
-              notificationId: toStringIdRequired(notification.id),
-              userId: user._id.toString()
-            },
-            priority: notification.priority,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          };
-
-          await communicationService.sendSMS(smsMessage);
-
-          results.push({
-            success: true,
-            method: DELIVERY_METHODS.SMS,
-            userId: user._id.toString(),
-            notificationId: notification.id,
-            timestamp: new Date()
-          });
-
-        } catch (error) {
-          results.push({
-            success: false,
-            method: DELIVERY_METHODS.SMS,
-            userId: user._id.toString(),
-            notificationId: notification.id,
-            error: error instanceof Error ? error.message : 'Unknown error',
-            timestamp: new Date()
-          });
-        }
-      }
-
-    } catch (error) {
-      log.error('Failed to send SMS notifications:', error);
-    }
-
-    return results;
-  }
-
-  private async sendPush(
-    notification: RealtimeNotification,
-    targetUsers: any[]
-  ): Promise<DeliveryResult[]> {
-    // Web Push implementation will be added in Phase 2
-    return [];
-  }
-
-  private generateEmailHTML(notification: RealtimeNotification, user: any): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>${notification.title}</title>
-        </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #2c3e50;">${notification.title}</h2>
-            <p>Hello ${user.firstName},</p>
-            <p>${notification.message}</p>
-            ${notification.data?.transfer ? `
-              <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                <h3>Transfer Details</h3>
-                <p><strong>Patient:</strong> ${notification.data.transfer.patient?.firstName} ${notification.data.transfer.patient?.lastName}</p>
-                <p><strong>From:</strong> ${notification.data.transfer.fromHospital}</p>
-                <p><strong>To:</strong> ${notification.data.transfer.toHospital}</p>
-                <p><strong>Status:</strong> ${notification.data.transfer.status}</p>
-              </div>
-            ` : ''}
-            <p style="margin-top: 30px; font-size: 12px; color: #666;">
-              This is an automated notification from the Patient Management System.
-            </p>
-          </div>
-        </body>
-      </html>
-    `;
-  }
-
-  private async updateNotificationStatus(
-    notificationId: string,
-    results: DeliveryResult[]
-  ): Promise<void> {
-    const successfulDeliveries = results.filter(r => r.success);
-    const failedDeliveries = results.filter(r => !r.success);
-
-    await DatabaseService.updateOne(
-      Notification,
-      { id: notificationId },
-      {
-        $push: {
-          deliveries: {
-            $each: successfulDeliveries.map(r => ({
-              userId: r.userId,
-              deliveredAt: r.timestamp,
-              deliveryMethod: r.method
-            }))
-          }
-        },
-        $inc: { deliveryAttempts: results.length },
-        $set: {
-          lastDeliveryAttempt: new Date(),
-          status: failedDeliveries.length === 0 ? 'delivered' : 'failed'
-        }
-      }
-    );
-  }
-
-  private async logNotificationCreated(notification: RealtimeNotification, createdBy?: string): Promise<void> {
-    await AuditService.logCommunication({
-      action: AuditAction.NOTIFICATION_SENT,
-      actorId: createdBy || 'system',
-      actorType: ActorType.USER,
-      description: `Notification created: ${notification.title}`,
-      targetResourceType: TargetResourceType.NOTIFICATION,
-      targetResourceId: toStringIdRequired(notification.id),
-      details: {
-        type: notification.type,
-        priority: notification.priority,
-        targetUsers: notification.targetUsers.length,
-        targetRoles: notification.targetRoles.length
-      }
+  /**
+   * Helper method to group aggregation results
+   */
+  private groupByField(items: any[], field: string): Record<string, number> {
+    const grouped: Record<string, number> = {};
+    
+    items.forEach(item => {
+      const key = item[field];
+      grouped[key] = (grouped[key] || 0) + item.count;
     });
-  }
-
-  private async logNotificationSent(notification: RealtimeNotification, results: DeliveryResult[]): Promise<void> {
-    const successful = results.filter(r => r.success).length;
-    const failed = results.filter(r => !r.success).length;
-
-    await AuditService.logCommunication({
-      action: AuditAction.NOTIFICATION_SENT,
-      actorId: 'system',
-      actorType: ActorType.USER,
-      description: `Notification sent: ${successful} successful, ${failed} failed`,
-      targetResourceType: TargetResourceType.NOTIFICATION,
-      targetResourceId: toStringIdRequired(notification.id),
-      details: {
-        totalDeliveries: results.length,
-        successfulDeliveries: successful,
-        failedDeliveries: failed
-      }
-    });
+    
+    return grouped;
   }
 }
-
-// ===== INTERFACES =====
-
-export interface CreateNotificationData {
-  type?: NotificationType;
-  priority?: NotificationPriority;
-  title: string;
-  message: string;
-  targetUsers?: string[];
-  targetRoles?: UserRole[];
-  excludeUsers?: string[];
-  transferId?: string;
-  data?: NotificationData;
-  settings?: Partial<NotificationSettings>;
-}
-
-export interface GetNotificationsOptions {
-  unreadOnly?: boolean;
-  type?: NotificationType;
-  priority?: NotificationPriority;
-  limit?: number;
-  skip?: number;
-}
-
-// ===== EXPORTS =====
-
-export default NotificationService;

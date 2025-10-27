@@ -17,10 +17,11 @@ import React, {
 } from "react";
 import { io, Socket } from "socket.io-client";
 import { useSession } from "@/contexts/SessionContext";
-import { toStringId } from "@/lib/utils/object-id";
+import { ActorType } from "@/models/AuditLog";
+import { toStringId } from "@/lib/realtime/utils/converters";
 import { log } from "@/lib/logging";
 import {
-  RealtimeNotification,
+  NotificationAPI,
   SocketEventType,
   NotificationToast,
   NotificationPreferences,
@@ -32,7 +33,6 @@ import {
   NOTIFICATION_PRIORITIES,
 } from "@/lib/realtime/core/constants";
 import { REALTIME_CONFIG } from "@/lib/realtime/core/config";
-import { ClientPushManager } from "@/lib/realtime/utils/client-push-manager";
 
 // ===== CONTEXT TYPES =====
 
@@ -43,7 +43,7 @@ export interface RealtimeContextType {
   connectionError: string | null;
 
   // Notifications
-  notifications: RealtimeNotification[];
+  notifications: NotificationAPI[];
   unreadCount: number;
 
   // Web Push
@@ -66,7 +66,7 @@ export interface RealtimeContextType {
   unsubscribeFromPush: () => Promise<boolean>;
 
   // Toast methods
-  showToast: (notification: RealtimeNotification) => void;
+  showToast: (notification: NotificationAPI) => void;
   hideToast: (toastId: string) => void;
 
   // Utility methods
@@ -90,9 +90,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
   // Notifications
-  const [notifications, setNotifications] = useState<RealtimeNotification[]>(
-    []
-  );
+  const [notifications, setNotifications] = useState<NotificationAPI[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
   // Web Push
@@ -106,7 +104,6 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
   // Refs
   const socketRef = useRef<Socket | null>(null);
-  const pushManagerRef = useRef<ClientPushManager | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
 
@@ -272,21 +269,18 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
   // ===== NOTIFICATION HANDLERS =====
 
-  const handleNewNotification = useCallback(
-    (notification: RealtimeNotification) => {
-      setNotifications((prev) => [notification, ...prev]);
-      setUnreadCount((prev) => prev + 1);
+  const handleNewNotification = useCallback((notification: NotificationAPI) => {
+    setNotifications((prev) => [notification, ...prev]);
+    setUnreadCount((prev) => prev + 1);
 
-      // Show toast for high priority notifications
-      if (
-        notification.priority === "high" ||
-        notification.priority === "urgent"
-      ) {
-        showToast(notification);
-      }
-    },
-    []
-  );
+    // Show toast for high priority notifications
+    if (
+      notification.priority === "high" ||
+      notification.priority === "urgent"
+    ) {
+      showToast(notification);
+    }
+  }, []);
 
   const handleNotificationRead = useCallback(
     (notificationId: string) => {
@@ -337,9 +331,9 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
   const handleSystemAnnouncement = useCallback((data: any) => {
     // Show system announcements as toasts
-    const announcement: RealtimeNotification = {
+    const announcement: NotificationAPI = {
       id: `announcement-${Date.now()}`,
-      type: NOTIFICATION_TYPES.SYSTEM,
+      type: NOTIFICATION_TYPES.SYSTEM_ANNOUNCEMENT,
       priority: NOTIFICATION_PRIORITIES.HIGH,
       title: data.title || "System Announcement",
       message: data.message || "A new system announcement is available",
@@ -347,9 +341,15 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       targetRoles: [],
       excludeUsers: [],
       deliveries: [],
-      settings: { persistent: false },
+      settings: {
+        persistent: false,
+        requireAcknowledgment: false,
+        channels: ["realtime"],
+      },
       status: "delivered",
       deliveryAttempts: 0,
+      createdBy: "system",
+      createdByType: ActorType.SYSTEM,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -416,17 +416,18 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
   const subscribeToPush = useCallback(async (): Promise<boolean> => {
     try {
-      if (!pushManagerRef.current) {
-        pushManagerRef.current = ClientPushManager.getInstance();
-      }
+      // TODO: Implement push subscription
+      // if (!pushManagerRef.current) {
+      //   pushManagerRef.current = ClientPushManager.getInstance();
+      // }
 
-      const subscription = await pushManagerRef.current.subscribe(user!._id);
+      // const subscription = await pushManagerRef.current.subscribe(user!._id);
 
-      if (subscription) {
-        setIsPushSubscribed(true);
-        setPushPermission("granted");
-        return true;
-      }
+      // if (subscription) {
+      //   setIsPushSubscribed(true);
+      //   setPushPermission("granted");
+      //   return true;
+      // }
 
       return false;
     } catch (error) {
@@ -437,11 +438,12 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
   const unsubscribeFromPush = useCallback(async (): Promise<boolean> => {
     try {
-      if (!pushManagerRef.current) {
-        pushManagerRef.current = ClientPushManager.getInstance();
-      }
+      // TODO: Implement push unsubscription
+      // if (!pushManagerRef.current) {
+      //   pushManagerRef.current = ClientPushManager.getInstance();
+      // }
 
-      await pushManagerRef.current.unsubscribe(user!._id);
+      // await pushManagerRef.current.unsubscribe(user!._id);
       setIsPushSubscribed(false);
       setPushPermission("denied");
       return true;
@@ -453,7 +455,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
   // ===== TOAST METHODS =====
 
-  const showToast = useCallback((notification: RealtimeNotification) => {
+  const showToast = useCallback((notification: NotificationAPI) => {
     const toast: NotificationToast = {
       id: `toast-${Date.now()}`,
       notification,
@@ -493,13 +495,19 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   // Initialize push manager and check support
   useEffect(() => {
     if (typeof window !== "undefined") {
-      pushManagerRef.current = ClientPushManager.getInstance();
+      // TODO: Implement push manager initialization
+      // pushManagerRef.current = ClientPushManager.getInstance();
 
-      pushManagerRef.current.getSubscriptionInfo().then((info) => {
-        setIsPushSupported(info.supported);
-        setIsPushSubscribed(info.subscribed);
-        setPushPermission(info.permission);
-      });
+      // pushManagerRef.current.getSubscriptionInfo().then((info) => {
+      //   setIsPushSupported(info.supported);
+      //   setIsPushSubscribed(info.subscribed);
+      //   setPushPermission(info.permission);
+      // });
+
+      // For now, set basic values
+      setIsPushSupported(false);
+      setIsPushSubscribed(false);
+      setPushPermission("default");
     }
   }, []);
 

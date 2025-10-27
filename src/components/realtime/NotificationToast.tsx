@@ -8,10 +8,7 @@
  */
 
 import { useState, useEffect } from "react";
-import {
-  RealtimeNotification,
-  NotificationToast,
-} from "@/lib/realtime/core/types";
+import { NotificationAPI, NotificationToast } from "@/lib/realtime/core/types";
 import {
   NOTIFICATION_TYPES,
   NOTIFICATION_PRIORITIES,
@@ -76,13 +73,13 @@ export default function NotificationToastComponent({
     }
 
     switch (notification.type) {
-      case NOTIFICATION_TYPES.TRANSFER_STATUS_CHANGE:
-        return <CheckCircle className="h-5 w-5 text-blue-500" />;
-      case NOTIFICATION_TYPES.NEW_TRANSFER:
+      case NOTIFICATION_TYPES.TRANSFER_CREATED:
         return <Bell className="h-5 w-5 text-green-500" />;
-      case NOTIFICATION_TYPES.URGENT_TRANSFER:
+      case NOTIFICATION_TYPES.TRANSFER_UPDATED:
+        return <CheckCircle className="h-5 w-5 text-blue-500" />;
+      case NOTIFICATION_TYPES.TRANSFER_URGENT:
         return <AlertCircle className="h-5 w-5 text-red-500" />;
-      case NOTIFICATION_TYPES.SYSTEM:
+      case NOTIFICATION_TYPES.SYSTEM_ANNOUNCEMENT:
         return <Settings className="h-5 w-5 text-gray-500" />;
       default:
         return <Info className="h-5 w-5 text-blue-500" />;
@@ -226,7 +223,7 @@ export default function NotificationToastComponent({
                 </button>
               )}
 
-              {notification.type === NOTIFICATION_TYPES.SYSTEM && (
+              {notification.type === NOTIFICATION_TYPES.SYSTEM_ANNOUNCEMENT && (
                 <button
                   onClick={() => {
                     // Navigate to admin panel

@@ -1,217 +1,364 @@
 /**
- * Real-time Notifications System Types
+ * Realtime Notification System Types
  * 
- * Comprehensive type definitions for the real-time notification system.
- * Includes Socket.io events, notification data structures, and client interfaces.
+ * Comprehensive type definitions with zero duplication.
+ * All types imported from their source modules.
  */
 
-import { Types } from 'mongoose';
-import { FlexibleId } from '@/lib/utils/object-id';
+// ===== EXTERNAL TYPE IMPORTS =====
 
-// ===== CORE NOTIFICATION TYPES =====
+// Auth Module
+import { 
+  UserRole, 
+  TokenPayload, 
+  AuthUser,
+  RequestInfo 
+} from '@/lib/auth/core/types';
 
-export interface RealtimeNotification {
-  id: FlexibleId;                    // Was: string
+// Audit Module
+import { 
+  ActorType, 
+  AuditAction, 
+  AuditCategory,
+  TargetResourceType,
+  RiskLevel 
+} from '@/models/AuditLog';
+
+// Database Module
+import { Types, Document } from 'mongoose';
+
+// Communication Module
+import { 
+  CommunicationChannel,
+  CommunicationPriority,
+  CommunicationStatus 
+} from '@/lib/communication/core/types';
+
+// Socket.io
+import { Socket } from 'socket.io';
+
+// ===== SOCKET.IO TYPES =====
+
+/**
+ * Socket.io transport types from engine.io-client
+ */
+export type SocketTransport = 'polling' | 'websocket' | 'webtransport';
+
+/**
+ * Authenticated Socket Interface
+ * Extends Socket.io Socket with authentication data from JWT
+ * 
+ * IMPORTANT: Fields match TokenPayload exactly - no additions
+ */
+export interface AuthenticatedSocket extends Socket {
+  // From JWT TokenPayload
+  userId: string;
+  userType: UserRole;
+  userEmail: string;
+  sessionId?: string;
+  
+  // Connection metadata (not from JWT)
+  connectedAt: Date;
+  lastActivityAt: Date;
+  ipAddress: string;
+  userAgent: string;
+}
+
+// ===== NOTIFICATION TYPES =====
+
+/**
+ * Notification types aligned with system events
+ */
+export const NOTIFICATION_TYPES = {
+  // Transfer events
+  TRANSFER_CREATED: 'transfer_created',
+  TRANSFER_UPDATED: 'transfer_updated',
+  TRANSFER_ASSIGNED: 'transfer_assigned',
+  TRANSFER_COMPLETED: 'transfer_completed',
+  TRANSFER_CANCELLED: 'transfer_cancelled',
+  TRANSFER_URGENT: 'transfer_urgent',
+  
+  // User events
+  USER_APPROVED: 'user_approved',
+  USER_REJECTED: 'user_rejected',
+  USER_SUSPENDED: 'user_suspended',
+  
+  // System events
+  SYSTEM_ANNOUNCEMENT: 'system_announcement',
+  SYSTEM_MAINTENANCE: 'system_maintenance',
+  SYSTEM_ALERT: 'system_alert',
+} as const;
+
+export type NotificationType = typeof NOTIFICATION_TYPES[keyof typeof NOTIFICATION_TYPES];
+
+/**
+ * Notification priorities aligned with communication module
+ */
+export type NotificationPriority = CommunicationPriority;
+
+/**
+ * Notification status tracking
+ */
+export const NOTIFICATION_STATUS = {
+  PENDING: 'pending',
+  DELIVERED: 'delivered',
+  READ: 'read',
+  DISMISSED: 'dismissed',
+  FAILED: 'failed',
+} as const;
+
+export type NotificationStatus = typeof NOTIFICATION_STATUS[keyof typeof NOTIFICATION_STATUS];
+
+/**
+ * Delivery methods aligned with communication channels
+ */
+export type DeliveryMethod = CommunicationChannel;
+
+// ===== MONGODB DOCUMENT TYPES =====
+
+/**
+ * Notification Document (as stored in MongoDB)
+ * Uses native Types.ObjectId throughout
+ * 
+ * This is what the database returns and what services work with
+ */
+export interface NotificationDocument extends Document {
+  _id: Types.ObjectId;
+  
+  // Content
   type: NotificationType;
   priority: NotificationPriority;
   title: string;
   message: string;
+  data?: Record<string, any>;
   
   // Targeting
-  targetUsers: FlexibleId[];         // Was: string[]
+  targetUsers: Types.ObjectId[];
   targetRoles: UserRole[];
-  excludeUsers: FlexibleId[];        // Was: string[]
+  excludeUsers: Types.ObjectId[];
   
-  // Related data
-  transferId?: string;
-  data?: NotificationData;
+  // References
+  transferId?: Types.ObjectId;
+  relatedResourceId?: Types.ObjectId;
+  relatedResourceType?: TargetResourceType;
   
   // Delivery tracking
-  deliveries: NotificationDelivery[];
-  
-  // Settings
-  settings: NotificationSettings;
+  deliveries: NotificationDeliveryDocument[];
   
   // Status
   status: NotificationStatus;
   deliveryAttempts: number;
   lastDeliveryAttempt?: Date;
   
-  // Audit
-  createdBy?: FlexibleId;            // Was: string
+  // Settings
+  settings: {
+    persistent: boolean;
+    expiresAt?: Date;
+    requireAcknowledgment: boolean;
+    channels: DeliveryMethod[];
+  };
+  
+  // Audit fields
+  createdBy: Types.ObjectId;
+  createdByType: ActorType;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type NotificationType = 
-  | 'transfer_status_change' 
-  | 'new_transfer' 
-  | 'urgent_transfer' 
-  | 'transfer_reminder' 
-  | 'system' 
-  | 'scheduling'
-  | 'user_approval'
-  | 'dashboard_update';
-
-export type NotificationPriority = 'low' | 'medium' | 'high' | 'urgent';
-
-export type NotificationStatus = 'pending' | 'delivered' | 'failed' | 'expired';
-
-export type UserRole = 'employee' | 'manager' | 'admin' | 'super_admin';
-
-export interface NotificationData {
-  transfer?: {
-    id: string;
-    transferId: string;
-    patient?: {
-      firstName: string;
-      lastName: string;
-      patientId: string;
-    };
-    fromHospital?: string;
-    toHospital?: string;
-    status?: string;
-    oldStatus?: string;
-    priority?: string;
-    scheduledDate?: Date;
-  };
-  changedBy?: {
-    id: string;
-    name: string;
-    userType: string;
-  };
-  requestedBy?: {
-    id: string;
-    name: string;
-    userType: string;
-  };
-  dashboard?: {
-    stats?: any;
-    activity?: any;
-  };
-  [key: string]: any;
-}
-
-export interface NotificationDelivery {
-  userId: FlexibleId;              // Was: string
+/**
+ * Notification Delivery Document
+ * Tracks delivery to individual users
+ */
+export interface NotificationDeliveryDocument {
+  userId: Types.ObjectId;
+  deliveryMethod: DeliveryMethod;
   deliveredAt: Date;
   readAt?: Date;
   dismissedAt?: Date;
+  acknowledgedAt?: Date;
+  failureReason?: string;
+}
+
+// ===== API RESPONSE TYPES =====
+
+/**
+ * Notification API Response (for client consumption)
+ * All ObjectIds converted to strings
+ * 
+ * This is what gets sent to the frontend
+ */
+export interface NotificationAPI {
+  id: string;                           // Converted from _id
+  type: NotificationType;
+  priority: NotificationPriority;
+  title: string;
+  message: string;
+  data?: Record<string, any>;
+  
+  targetUsers: string[];                // Converted
+  targetRoles: UserRole[];
+  excludeUsers: string[];               // Converted
+  
+  transferId?: string;                  // Converted
+  relatedResourceId?: string;           // Converted
+  relatedResourceType?: TargetResourceType;
+  
+  deliveries: NotificationDeliveryAPI[];
+  status: NotificationStatus;
+  deliveryAttempts: number;
+  lastDeliveryAttempt?: Date;
+  
+  settings: {
+    persistent: boolean;
+    expiresAt?: Date;
+    requireAcknowledgment: boolean;
+    channels: DeliveryMethod[];
+  };
+  
+  createdBy: string;                    // Converted
+  createdByType: ActorType;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Notification Delivery API Response
+ */
+export interface NotificationDeliveryAPI {
+  userId: string;                       // Converted
   deliveryMethod: DeliveryMethod;
+  deliveredAt: Date;
+  readAt?: Date;
+  dismissedAt?: Date;
+  acknowledgedAt?: Date;
+  failureReason?: string;
 }
 
-export type DeliveryMethod = 'realtime' | 'email' | 'sms' | 'push';
+// ===== SERVICE TYPES =====
 
-export interface NotificationSettings {
-  persistent: boolean;
-  expiresAt?: Date;
-  maxDeliveries?: number;
-  retryInterval?: number;
+/**
+ * Create Notification Input
+ * Used when creating new notifications
+ * Accepts both string and ObjectId for flexibility
+ */
+export interface CreateNotificationInput {
+  type: NotificationType;
+  priority?: NotificationPriority;
+  title: string;
+  message: string;
+  data?: Record<string, any>;
+  
+  // Can accept either format - service will normalize
+  targetUsers?: (string | Types.ObjectId)[];
+  targetRoles?: UserRole[];
+  excludeUsers?: (string | Types.ObjectId)[];
+  
+  transferId?: string | Types.ObjectId;
+  relatedResourceId?: string | Types.ObjectId;
+  relatedResourceType?: TargetResourceType;
+  
+  settings?: Partial<NotificationDocument['settings']>;
+  
+  createdBy: string | Types.ObjectId;
+  createdByType: ActorType;
 }
 
-// ===== SOCKET.IO EVENT TYPES =====
-
-export interface SocketEvent {
-  type: SocketEventType;
-  payload: any;
-  timestamp: Date;
-  userId?: string;
-  room?: string;
+/**
+ * Get Notifications Query Options
+ */
+export interface GetNotificationsOptions {
+  userId?: string | Types.ObjectId;
+  userRoles?: UserRole[];
+  type?: NotificationType;
+  priority?: NotificationPriority;
+  status?: NotificationStatus;
+  unreadOnly?: boolean;
+  limit?: number;
+  skip?: number;
+  sort?: Record<string, 1 | -1>;
 }
 
-export type SocketEventType = 
-  // Notification events
-  | 'notification:new'
-  | 'notification:read'
-  | 'notification:deleted'
-  | 'notification:dismissed'
-  
-  // Transfer events
-  | 'transfer:created'
-  | 'transfer:updated'
-  | 'transfer:assigned'
-  | 'transfer:completed'
-  | 'transfer:cancelled'
-  | 'transfer:status_changed'
-  
-  // Dashboard events
-  | 'dashboard:stats:update'
-  | 'dashboard:activity:new'
-  | 'dashboard:urgent:alert'
-  | 'dashboard:subscribe'
-  | 'dashboard:unsubscribe'
-  
-  // System events
-  | 'system:announcement'
-  | 'user:presence'
-  | 'user:online'
-  | 'user:offline'
-  
-  // Test events
-  | 'test:broadcast'
-  | 'test:notification'
-  | 'test:socket_event'
-  
-  // Connection events
-  | 'connection:established'
-  | 'connection:reconnected'
-  | 'connection:error';
+// ===== SOCKET EVENT TYPES =====
 
-export interface NotificationEventPayload {
-  notification: RealtimeNotification;
-  userId?: string;
-  room?: string;
+export const SOCKET_EVENTS = {
+  // Connection
+  CONNECTION: 'connection',
+  DISCONNECT: 'disconnect',
+  CONNECT_ERROR: 'connect_error',
+  
+  // Authentication
+  AUTHENTICATE: 'authenticate',
+  AUTHENTICATED: 'authenticated',
+  
+  // Notifications
+  NOTIFICATION_NEW: 'notification:new',
+  NOTIFICATION_READ: 'notification:read',
+  NOTIFICATION_DISMISSED: 'notification:dismissed',
+  NOTIFICATION_BULK_UPDATE: 'notification:bulk_update',
+  
+  // Transfers
+  TRANSFER_CREATED: 'transfer:created',
+  TRANSFER_UPDATED: 'transfer:updated',
+  TRANSFER_STATUS_CHANGED: 'transfer:status_changed',
+  
+  // Dashboard
+  DASHBOARD_STATS_UPDATE: 'dashboard:stats',
+  DASHBOARD_ACTIVITY_NEW: 'dashboard:activity',
+  DASHBOARD_SUBSCRIBE: 'dashboard:subscribe',
+  DASHBOARD_UNSUBSCRIBE: 'dashboard:unsubscribe',
+  
+  // System
+  USER_PRESENCE: 'user:presence',
+  SYSTEM_ANNOUNCEMENT: 'system:announcement',
+} as const;
+
+export type SocketEventType = typeof SOCKET_EVENTS[keyof typeof SOCKET_EVENTS];
+
+// ===== ROOM TYPES =====
+
+export enum RoomType {
+  USER = 'user',
+  ROLE = 'role',
+  TRANSFER = 'transfer',
+  DASHBOARD = 'dashboard',
+  BROADCAST = 'broadcast',
 }
 
-export interface TransferEventPayload {
-  transfer: {
-    id: string;
-    transferId: string;
-    status: string;
-    oldStatus?: string;
-    assignedTo?: string;
-    createdBy: string;
-    patient?: {
-      firstName: string;
-      lastName: string;
+export interface RoomInfo {
+  name: string;
+  type: RoomType;
+  members: string[];                    // User IDs as strings
+  createdAt: Date;
+}
+
+// ===== CONFIGURATION TYPES =====
+
+export interface RealtimeServiceConfig {
+  socket: {
+    path: string;
+    transports: SocketTransport[];
+    pingInterval: number;
+    pingTimeout: number;
+    maxHttpBufferSize: number;
+    cors: {
+      origin: string | string[];
+      credentials: boolean;
     };
-    fromHospital?: string;
-    toHospital?: string;
-    priority?: string;
   };
-  changedBy?: {
-    id: string;
-    name: string;
-    userType: string;
+  notifications: {
+    maxRetries: number;
+    retryDelay: number;
+    batchSize: number;
+    cleanupInterval: number;
   };
-}
-
-export interface DashboardEventPayload {
-  stats?: {
-    totalPending: number;
-    totalAccepted: number;
-    totalInProgress: number;
-    totalCompleted: number;
-    totalUrgent: number;
-    scheduledToday: number;
-  };
-  activity?: {
-    id: string;
-    type: string;
-    description: string;
-    timestamp: Date;
-    userId?: string;
+  webPush: {
+    vapidPublicKey: string;
+    vapidPrivateKey: string;
+    vapidEmail: string;
   };
 }
 
-export interface UserPresencePayload {
-  userId: string;
-  status: 'online' | 'offline';
-  lastSeen?: Date;
-  userType: UserRole;
-}
-
-// ===== CLIENT-SIDE TYPES =====
+// ===== CLIENT TYPES =====
 
 export interface RealtimeContextType {
   // Connection state
@@ -220,7 +367,7 @@ export interface RealtimeContextType {
   connectionError: string | null;
   
   // Notifications
-  notifications: RealtimeNotification[];
+  notifications: NotificationAPI[];
   unreadCount: number;
   
   // Web Push
@@ -229,18 +376,12 @@ export interface RealtimeContextType {
   pushPermission: NotificationPermission;
   
   // Methods
-  connect: () => Promise<void>;
+  connect: () => void;
   disconnect: () => void;
-  emitEvent: (event: SocketEventType, payload: any) => void;
-  
-  // Notification methods
   markAsRead: (notificationId: string) => Promise<void>;
-  markAsDismissed: (notificationId: string) => Promise<void>;
-  clearAllNotifications: () => Promise<void>;
-  
-  // Web Push methods
-  subscribeToPush: () => Promise<boolean>;
-  unsubscribeFromPush: () => Promise<boolean>;
+  dismissNotification: (notificationId: string) => Promise<void>;
+  subscribeToPush: () => Promise<void>;
+  unsubscribeFromPush: () => Promise<void>;
   
   // Utility methods
   clearError: () => void;
@@ -248,7 +389,7 @@ export interface RealtimeContextType {
 
 export interface NotificationToast {
   id: string;
-  notification: RealtimeNotification;
+  notification: NotificationAPI;
   duration?: number;
   position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
 }
@@ -264,88 +405,48 @@ export interface NotificationPreferences {
   types: {
     [key in NotificationType]: boolean;
   };
-  quietHours?: {
+  quietHours: {
     enabled: boolean;
-    start: string; // HH:mm format
-    end: string;   // HH:mm format
+    start: string;
+    end: string;
   };
 }
-
-// ===== SERVER-SIDE TYPES =====
 
 export interface SocketConnection {
   id: string;
   userId: string;
   userType: UserRole;
   connectedAt: Date;
-  lastActivity: Date;
+  lastActivityAt: Date;
+  ipAddress: string;
+  userAgent: string;
   rooms: string[];
-  ipAddress?: string;
-  userAgent?: string;
 }
 
-export interface RoomInfo {
-  name: string;
-  type: 'user' | 'role' | 'transfer' | 'broadcast';
-  members: string[];
-  createdAt: Date;
-}
+// ===== ERROR TYPES =====
 
-export interface RealtimeServiceConfig {
-  socket: {
-    path: string;
-    transports: string[];
-    pingInterval: number;
-    pingTimeout: number;
-    maxHttpBufferSize: number;
-    cors: {
-      origin: string | string[];
-      credentials: boolean;
-    };
-  };
-  notifications: {
-    maxRetries: number;
-    retryDelay: number;
-    expirationTime: number;
-    batchSize: number;
-  };
-  webPush: {
-    vapidPublicKey: string;
-    vapidPrivateKey: string;
-    vapidEmail: string;
-  };
-}
-
-export interface DeliveryResult {
-  success: boolean;
-  method: DeliveryMethod;
-  userId: string;
-  notificationId: FlexibleId;  // Was: string
-  error?: string;
+export interface RealtimeError {
+  code: string;
+  message: string;
+  details?: any;
   timestamp: Date;
 }
 
-export interface RealtimeAnalytics {
-  connections: {
-    total: number;
-    active: number;
-    byRole: Record<UserRole, number>;
-  };
-  notifications: {
-    sent: number;
-    delivered: number;
-    failed: number;
-    byType: Record<NotificationType, number>;
-    byPriority: Record<NotificationPriority, number>;
-  };
-  performance: {
-    averageDeliveryTime: number;
-    socketLatency: number;
-    errorRate: number;
-  };
-}
+export const REALTIME_ERROR_CODES = {
+  CONNECTION_FAILED: 'CONNECTION_FAILED',
+  AUTHENTICATION_FAILED: 'AUTHENTICATION_FAILED',
+  NOTIFICATION_CREATE_FAILED: 'NOTIFICATION_CREATE_FAILED',
+  NOTIFICATION_DELIVERY_FAILED: 'NOTIFICATION_DELIVERY_FAILED',
+  PUSH_SUBSCRIPTION_FAILED: 'PUSH_SUBSCRIPTION_FAILED',
+  INVALID_INPUT: 'INVALID_INPUT',
+  PERMISSION_DENIED: 'PERMISSION_DENIED',
+  RATE_LIMITED: 'RATE_LIMITED',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+} as const;
 
-// ===== API RESPONSE TYPES =====
+export type RealtimeErrorCode = typeof REALTIME_ERROR_CODES[keyof typeof REALTIME_ERROR_CODES];
+
+// ===== RESPONSE TYPES =====
 
 export interface RealtimeApiResponse<T = any> {
   success: boolean;
@@ -355,11 +456,13 @@ export interface RealtimeApiResponse<T = any> {
 }
 
 export interface NotificationListResponse {
-  notifications: RealtimeNotification[];
+  notifications: NotificationAPI[];
   total: number;
   unread: number;
   hasMore: boolean;
 }
+
+// ===== WEB PUSH TYPES =====
 
 export interface WebPushSubscription {
   endpoint: string;
@@ -369,9 +472,9 @@ export interface WebPushSubscription {
   };
 }
 
-// ===== UTILITY TYPES =====
+// ===== EVENT HANDLER TYPES =====
 
-export type EventHandler<T = any> = (payload: T) => void | Promise<void>;
+export type EventHandler<T = any> = (data: T) => void | Promise<void>;
 
 export interface EventSubscription {
   event: SocketEventType;
@@ -379,81 +482,12 @@ export interface EventSubscription {
   once?: boolean;
 }
 
+// ===== CONNECTION OPTIONS =====
+
 export interface ConnectionOptions {
   autoConnect?: boolean;
-  reconnection?: boolean;
-  reconnectionAttempts?: number;
-  reconnectionDelay?: number;
+  reconnect?: boolean;
+  reconnectAttempts?: number;
+  reconnectDelay?: number;
   timeout?: number;
 }
-
-// ===== API BOUNDARY TYPES =====
-
-/**
- * API response type with strict string IDs for client consumption
- */
-export interface NotificationAPIResponse {
-  id: string;                        // API always returns strings
-  type: NotificationType;
-  priority: NotificationPriority;
-  title: string;
-  message: string;
-  targetUsers: string[];
-  targetRoles: UserRole[];
-  excludeUsers: string[];
-  transferId?: string;
-  data?: NotificationData;
-  deliveries: Array<{
-    userId: string;                  // API always returns strings
-    deliveredAt: Date;
-    readAt?: Date;
-    dismissedAt?: Date;
-    deliveryMethod: DeliveryMethod;
-  }>;
-  settings: NotificationSettings;
-  status: NotificationStatus;
-  deliveryAttempts: number;
-  lastDeliveryAttempt?: Date;
-  createdBy?: string;                // API always returns strings
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-/**
- * API request type for creating notifications
- */
-export interface CreateNotificationAPIRequest {
-  type: NotificationType;
-  priority: NotificationPriority;
-  title: string;
-  message: string;
-  targetUsers?: string[];            // API accepts strings
-  targetRoles?: UserRole[];
-  excludeUsers?: string[];           // API accepts strings
-  transferId?: string;
-  data?: NotificationData;
-  settings?: Partial<NotificationSettings>;
-}
-
-// ===== ERROR TYPES =====
-
-export interface RealtimeError extends Error {
-  code: string;
-  type: 'connection' | 'authentication' | 'delivery' | 'validation';
-  details?: any;
-}
-
-export type RealtimeErrorCode = 
-  | 'CONNECTION_FAILED'
-  | 'AUTHENTICATION_FAILED'
-  | 'ROOM_JOIN_FAILED'
-  | 'NOTIFICATION_SEND_FAILED'
-  | 'PUSH_SUBSCRIPTION_FAILED'
-  | 'INVALID_EVENT_TYPE'
-  | 'RATE_LIMIT_EXCEEDED';
-
-// ===== EXPORTS =====
-
-export type {
-  Types
-};

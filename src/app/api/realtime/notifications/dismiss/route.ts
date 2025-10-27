@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await notificationService.markAsDismissed(notificationId, authResult.user._id);
+    await notificationService.dismissNotification(notificationId, authResult.user._id);
 
     return NextResponse.json({
       success: true,
