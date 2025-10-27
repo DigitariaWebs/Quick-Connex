@@ -10,7 +10,7 @@ import { DatabaseConfig, MonitoringConfig, CacheConfig } from './types';
 // ===== DEFAULT CONFIGURATIONS =====
 
 export const DEFAULT_DATABASE_CONFIG: DatabaseConfig = {
-  uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/patients-management',
+  uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/patients_management',
   options: {
     bufferCommands: false,
     maxPoolSize: parseInt(process.env.DATABASE_POOL_SIZE || '10'),
@@ -45,7 +45,7 @@ export const DEFAULT_DATABASE_CONFIG: DatabaseConfig = {
 };
 
 export const PRODUCTION_DATABASE_CONFIG: DatabaseConfig = {
-  uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/patients-management',
+  uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/patients_management',
   options: {
     bufferCommands: false,
     maxPoolSize: parseInt(process.env.DATABASE_POOL_SIZE || '20'),
@@ -167,7 +167,13 @@ export const PERFORMANCE_SETTINGS = {
  */
 export function getDatabaseConfig(): DatabaseConfig {
   const isProduction = process.env.NODE_ENV === 'production';
-  return isProduction ? PRODUCTION_DATABASE_CONFIG : DEFAULT_DATABASE_CONFIG;
+  const baseConfig = isProduction ? PRODUCTION_DATABASE_CONFIG : DEFAULT_DATABASE_CONFIG;
+  
+  // Override URI with current environment variable (in case it was set after module load)
+  return {
+    ...baseConfig,
+    uri: process.env.MONGODB_URI || baseConfig.uri
+  };
 }
 
 /**

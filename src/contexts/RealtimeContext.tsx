@@ -134,38 +134,8 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       setIsConnecting(true);
       setConnectionError(null);
 
-      // Initialize Socket.io server if needed
-      try {
-        log.info("Ensuring Socket.io server is initialized...");
-        const initResponse = await fetch("/api/socket/io", {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!initResponse.ok) {
-          throw new Error(
-            `Socket.io initialization failed: ${initResponse.status}`
-          );
-        }
-
-        const initData = await initResponse.json();
-        if (!initData.success) {
-          throw new Error(
-            `Socket.io initialization failed: ${initData.message}`
-          );
-        }
-
-        log.info("Socket.io server initialization confirmed", {
-          initialized: initData.initialized,
-          status: initData.status,
-        });
-      } catch (error) {
-        log.error("Failed to initialize Socket.io server:", error);
-        throw new Error("Socket.io server initialization failed");
-      }
+      // Socket.io server is initialized with the custom server
+      log.info("Socket.io server is integrated with custom server");
 
       // Get authentication token from server
       const tokenResponse = await fetch("/api/auth/verify", {
@@ -197,19 +167,9 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
       const token = tokenData.token;
 
-      // Get socket server URL - always use localhost:3001 for now
-      const getSocketUrl = () => {
-        // Use environment variable if set
-        if (process.env.NEXT_PUBLIC_SOCKET_URL) {
-          return process.env.NEXT_PUBLIC_SOCKET_URL;
-        }
-
-        // Always use localhost:3001 for Socket.io server
-        return "http://localhost:3001";
-      };
-
-      // Create socket connection
-      const socketUrl = getSocketUrl();
+      // Get socket server URL - use same port as Next.js server
+      const socketUrl =
+        process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
       log.info("Creating Socket.io connection", {
         url: socketUrl,
         path: REALTIME_CONFIG.socket.path,
