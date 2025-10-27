@@ -1,7 +1,9 @@
 import next from 'next';
 import os from 'os';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
 import { DatabaseService } from './src/lib/database';
+import { SocketServer } from './src/lib/realtime/server';
 
 // Load environment variables from .env.local
 dotenv.config({ path: '.env.local' });
@@ -156,14 +158,29 @@ async function startServer(): Promise<void> {
     console.log('✅ Next.js app prepared successfully');
     console.log('🎉 Turbopack: First compilation completed - app is ready!');
 
+    // Create HTTP server
+    const httpServer = createServer();
+    
+    // Initialize Socket.io server
+    const socketServer = new SocketServer();
+    await socketServer.initialize(httpServer);
+    console.log('🔌 Socket.io server initialized successfully');
+
     // Use Next.js built-in server
     const handle = app.getRequestHandler();
 
-    // Start Next.js server
-    console.log(`🚀 Starting server on ${config.hostname}:${config.port}`);
+    // Set up request handling
+    httpServer.on('request', (req, res) => {
+      handle(req, res);
+    });
+
+    // Start HTTP server
+    httpServer.listen(config.port, config.hostname, () => {
+      console.log(`🚀 Server started on ${config.hostname}:${config.port}`);
+    });
 
     console.log(`🎉 Server ready on http://${config.hostname}:${config.port}`);
-    console.log('🔌 SSE notification system ready for real-time notifications');
+    console.log('🔌 Real-time notifications system ready with Socket.io');
 
     // Display network access information
     const networkIP = getLocalNetworkIP();

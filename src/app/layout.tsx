@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/contexts/SessionContext";
+import { ClientRealtimeProvider } from "@/components/providers/ClientRealtimeProvider";
 // Remove startup logging from layout - not compatible with Vercel
 // import { logApplicationStartup } from "@/lib/utils/startup-logger";
 
@@ -37,7 +38,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <ClientRealtimeProvider>{children}</ClientRealtimeProvider>
+        </SessionProvider>
       </body>
     </html>
   );
