@@ -31,7 +31,7 @@ return ResponseBuilder.paginated(res, users, pagination);
 {
   "success": true,
   "timestamp": "2025-10-28T15:10:55.183Z",
-  "data": {
+  "payload": {
     "user": { "id": "123", "email": "user@example.com" },
     "session": { "id": "456", "expiresAt": "2025-10-29T15:10:55.183Z" }
   },
@@ -46,8 +46,8 @@ return ResponseBuilder.paginated(res, users, pagination);
 
 ```typescript
 // ✅ Correct
-const user = response.data.user;
-const session = response.data.session;
+const user = response.payload.user;
+const session = response.payload.session;
 
 // ❌ Wrong
 const user = response.user; // undefined

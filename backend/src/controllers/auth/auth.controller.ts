@@ -19,7 +19,7 @@ export async function login(req: Request, res: Response): Promise<Response> {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return ResponseBuilder.success(res, { error: 'Email and password are required' }, { errorCode: 'VALIDATION_ERROR' }, 400);
+      return ResponseBuilder.badRequest(res, 'Email and password are required');
     }
 
     log.info('Login attempt', { email: email.toLowerCase(), ipAddress: req.ip || 'unknown' });
@@ -36,7 +36,13 @@ export async function login(req: Request, res: Response): Promise<Response> {
 
     return ResponseBuilder.success(res, {
       user: loginResult.user,
-      session: loginResult.session
+      session: loginResult.session,
+      tokens: loginResult.tokens ? {
+        accessToken: loginResult.tokens.accessToken,
+        refreshToken: loginResult.tokens.refreshToken,
+        accessTokenExpiresAt: loginResult.tokens.accessTokenExpiresAt,
+        refreshTokenExpiresAt: loginResult.tokens.refreshTokenExpiresAt
+      } : undefined
     });
 
   } catch (error) {
@@ -44,17 +50,17 @@ export async function login(req: Request, res: Response): Promise<Response> {
     
     if (error instanceof Error) {
       if (error.message.includes('Rate limit')) {
-        return ResponseBuilder.success(res, { error: error.message }, { errorCode: 'RATE_LIMITED' }, 429);
+        return ResponseBuilder.rateLimited(res, error.message);
       }
       if (error.message.includes('locked')) {
-        return ResponseBuilder.success(res, { error: error.message }, { errorCode: 'ACCOUNT_LOCKED' }, 423);
+        return ResponseBuilder.error(res, 'ACCOUNT_LOCKED', error.message, undefined, 423);
       }
       if (error.message.includes('Invalid credentials')) {
-        return ResponseBuilder.success(res, { error: 'Invalid credentials' }, { errorCode: 'INVALID_CREDENTIALS' }, 401);
+        return ResponseBuilder.unauthorized(res, 'Invalid credentials');
       }
     }
 
-    return ResponseBuilder.success(res, { error: 'Login failed' }, { errorCode: 'INTERNAL_ERROR' }, 500);
+    return ResponseBuilder.serverError(res, 'Login failed');
   }
 }
 
@@ -68,7 +74,7 @@ export async function logout(req: Request, res: Response): Promise<Response> {
     const sessionId = req.body.sessionId;
 
     if (!authHeader && !sessionId) {
-      return ResponseBuilder.success(res, { error: 'Session information required' }, { errorCode: 'VALIDATION_ERROR' }, 400);
+      return ResponseBuilder.badRequest(res, 'Session information required');
     }
 
     let sessionIdToLogout = sessionId;
@@ -84,7 +90,7 @@ export async function logout(req: Request, res: Response): Promise<Response> {
     }
 
     if (!sessionIdToLogout) {
-      return ResponseBuilder.success(res, { error: 'Invalid session' }, { errorCode: 'INVALID_SESSION' }, 400);
+      return ResponseBuilder.badRequest(res, 'Invalid session');
     }
 
     await AuthService.logout(sessionIdToLogout, req);
@@ -98,7 +104,7 @@ export async function logout(req: Request, res: Response): Promise<Response> {
 
   } catch (error) {
     log.error('Logout failed', error, { ipAddress: req.ip || 'unknown' });
-    return ResponseBuilder.success(res, { error: 'Logout failed' }, { errorCode: 'INTERNAL_ERROR' }, 500);
+    return ResponseBuilder.serverError(res, 'Logout failed');
   }
 }
 
@@ -111,14 +117,14 @@ export async function getCurrentUser(req: Request, res: Response): Promise<Respo
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return ResponseBuilder.success(res, { error: 'Access token required' }, { errorCode: 'UNAUTHORIZED' }, 401);
+      return ResponseBuilder.unauthorized(res, 'Access token required');
     }
 
     const token = authHeader.replace('Bearer ', '');
     const validationResult = await TokenService.verifyAccessToken(token);
 
     if (!validationResult.isValid || !validationResult.payload) {
-      return ResponseBuilder.success(res, { error: 'Invalid or expired token' }, { errorCode: 'INVALID_TOKEN' }, 401);
+      return ResponseBuilder.unauthorized(res, 'Invalid or expired token');
     }
 
     const payload = validationResult.payload;
@@ -139,6 +145,6 @@ export async function getCurrentUser(req: Request, res: Response): Promise<Respo
 
   } catch (error) {
     log.error('Get current user failed', error, { ipAddress: req.ip || 'unknown' });
-    return ResponseBuilder.success(res, { error: 'Failed to get user information' }, { errorCode: 'INTERNAL_ERROR' }, 500);
+    return ResponseBuilder.serverError(res, 'Failed to get user information');
   }
 }

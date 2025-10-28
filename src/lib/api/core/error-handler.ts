@@ -6,6 +6,7 @@
  */
 
 import { ApiError, ApiErrorException, ErrorCode, NetworkError, ValidationErrorDetail } from '../types/error.types';
+import { NormalizedApiError } from '../types/normalized-error.types';
 
 /**
  * Error Handler - Parses and processes API errors
@@ -174,4 +175,35 @@ export class ErrorHandler {
 
     return baseInfo;
   }
+}
+
+/**
+ * Convert any error to a user-friendly error message
+ */
+export function toUserError(error: unknown): { code: string; message: string } {
+  if (error instanceof NormalizedApiError) {
+    return {
+      code: error.code,
+      message: error.message,
+    };
+  }
+
+  if (error instanceof ApiErrorException) {
+    return {
+      code: error.code,
+      message: ErrorHandler.getUserMessage(error),
+    };
+  }
+
+  if (error instanceof Error) {
+    return {
+      code: 'UNKNOWN_ERROR',
+      message: error.message || 'An unexpected error occurred',
+    };
+  }
+
+  return {
+    code: 'UNKNOWN_ERROR',
+    message: 'An unexpected error occurred',
+  };
 }

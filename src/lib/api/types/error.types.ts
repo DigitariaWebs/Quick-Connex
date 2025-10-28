@@ -48,6 +48,15 @@ export enum ErrorCode {
 }
 
 /**
+ * Normalized API error for ResponseBuilder responses
+ */
+export interface NormalizedApiError extends Error {
+  code: string;
+  details?: unknown;
+  status?: number;
+}
+
+/**
  * Custom error class for API errors
  */
 export class ApiErrorException extends Error {

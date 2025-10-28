@@ -6,7 +6,7 @@
 📦 API Response
 ├── ✅ success: boolean
 ├── 🕐 timestamp: string
-├── 📊 data: T
+├── 📦 payload: T
 │   ├── 👤 user: UserObject
 │   ├── 🔐 session: SessionObject
 │   ├── 📋 permissions: Permission[]
@@ -29,7 +29,7 @@ Express Response
      ↓
 JSON Structure
      ↓
-Client Access: response.data.user
+Client Access: response.payload.user
 ```
 
 ## Response Layers
@@ -44,7 +44,7 @@ res.status(200).json(responseObject)
 {
   success: true,
   timestamp: "2025-10-28T15:10:55.183Z",
-  data: { ... },      // ← Your data goes here
+  payload: { ... },   // ← Your data goes here
   meta: { ... }
 }
 ```

@@ -12,7 +12,6 @@ export * from './types/validation.types';
 
 // Utils
 export * from './utils/response.util';
-export * from './utils/error.util';
 
 // Middleware
 export * from './middleware/error.middleware';

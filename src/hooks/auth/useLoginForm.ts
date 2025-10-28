@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
-import { authClient } from '@/lib/client';
-import { ApiError } from '@/lib/client';
+import { login } from '@/lib/auth/client';
+import { toUserError } from '@/lib/api/core/error-handler';
 
 /**
  * useLoginForm Hook
@@ -19,7 +19,7 @@ export function useLoginForm() {
     
     try {
       const formData = new FormData(event.currentTarget);
-      const result = await authClient.login({
+      const result = await login({
         email: formData.get('email') as string,
         password: formData.get('password') as string
       });
@@ -31,8 +31,10 @@ export function useLoginForm() {
       console.log('👤 User data:', result.user);
       console.log('👤 User type:', result.user.userType);
       
-      // Get redirect path using AuthClient business logic
-      const redirectPath = authClient.getRedirectPath(result.user.userType);
+      // Simple redirect logic based on user type
+      const redirectPath = result.user.userType === 'admin' || result.user.userType === 'super_admin' 
+        ? '/admin' 
+        : '/dashboard';
       
       console.log(`✅ Login: Redirecting ${result.user.userType} to ${redirectPath}`);
       console.log('🔗 Full redirect URL:', window.location.origin + redirectPath);
@@ -46,28 +48,18 @@ export function useLoginForm() {
     } catch (error) {
       console.error('Login error:', error);
       
-      if (error instanceof ApiError) {
-        // Handle API-specific errors
-        if (error.statusCode === 403) {
-          const errorData = error.data;
-          if (errorData?.status === 'pending') {
-            setMessage({ 
-              type: 'warning', 
-              text: 'Your account is pending approval. You will receive an email notification once approved.' 
-            });
-          } else if (errorData?.status === 'rejected') {
-            setMessage({ 
-              type: 'error', 
-              text: 'Your account registration has been rejected. Please contact support for more information.' 
-            });
-          } else {
-            setMessage({ type: 'error', text: error.message });
-          }
-        } else {
-          setMessage({ type: 'error', text: error.message });
-        }
+      const { code, message: errorMessage } = toUserError(error);
+      
+      // Handle specific error cases
+      if (code === 'UNAUTHORIZED' || code === 'INVALID_CREDENTIALS') {
+        setMessage({ type: 'error', text: 'Invalid email or password. Please try again.' });
+      } else if (code === 'FORBIDDEN') {
+        setMessage({ 
+          type: 'warning', 
+          text: 'Your account is pending approval. You will receive an email notification once approved.' 
+        });
       } else {
-        setMessage({ type: 'error', text: 'Failed to connect to server. Please try again.' });
+        setMessage({ type: 'error', text: errorMessage });
       }
     } finally {
       setIsLoading(false);

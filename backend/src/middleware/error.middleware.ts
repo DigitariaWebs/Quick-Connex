@@ -6,7 +6,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { ErrorBuilder } from '../utils/error.util';
+import { ResponseBuilder } from '../utils/response.util';
 
 /**
  * Global error handler middleware
@@ -29,15 +29,36 @@ export function errorHandler(
     timestamp: new Date().toISOString(),
   });
 
-  // Use ErrorBuilder to handle and format the error
-  return ErrorBuilder.handleError(res, err);
+  // Handle different error types with ResponseBuilder
+  if (err.name === 'ValidationError') {
+    return ResponseBuilder.validationError(res, err.message, err.details || []);
+  }
+  
+  if (err.name === 'UnauthorizedError') {
+    return ResponseBuilder.unauthorized(res, err.message);
+  }
+  
+  if (err.name === 'ForbiddenError') {
+    return ResponseBuilder.forbidden(res, err.message);
+  }
+  
+  if (err.name === 'NotFoundError') {
+    return ResponseBuilder.notFound(res, err.message);
+  }
+  
+  if (err.name === 'ConflictError') {
+    return ResponseBuilder.conflict(res, err.message, err.details);
+  }
+  
+  // Default to server error for unexpected errors
+  return ResponseBuilder.serverError(res, 'An unexpected error occurred');
 }
 
 /**
  * 404 handler for unmatched routes
  */
 export function notFoundHandler(req: Request, res: Response): Response {
-  return ErrorBuilder.notFound(res, `Route ${req.method} ${req.url} not found`);
+  return ResponseBuilder.notFound(res, `Route ${req.method} ${req.url} not found`);
 }
 
 /**

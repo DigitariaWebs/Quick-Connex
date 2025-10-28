@@ -1,10 +1,11 @@
+import dotenv from 'dotenv';
+
+// Load environment variables FIRST, before any imports that use them
+dotenv.config({ path: './backend/.env' });
+
 import next from 'next';
 import os from 'os';
-import dotenv from 'dotenv';
 import { DatabaseService } from './src/lib/database';
-
-// Load environment variables from .env.local
-dotenv.config({ path: '.env.local' });
 
 // ===== TYPES =====
 

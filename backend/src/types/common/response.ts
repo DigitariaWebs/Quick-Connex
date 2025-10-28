@@ -17,7 +17,7 @@ export interface BaseResponse {
 
 export interface SuccessResponse<T = any> extends BaseResponse {
   success: true;
-  data: T;
+  payload: T;
   meta?: Record<string, any>;
 }
 
@@ -30,11 +30,12 @@ export interface ErrorResponse extends BaseResponse {
     retryable?: boolean;
     retryAfter?: number;
   };
+  meta?: Record<string, any>;
 }
 
 export interface PaginatedResponse<T> extends BaseResponse {
   success: true;
-  data: T[];
+  payload: T[];
   pagination: PaginationMeta;
   meta?: Record<string, any>;
 }
@@ -56,12 +57,13 @@ export interface ValidationErrorResponse extends BaseResponse {
     message: string;
     details: ValidationErrorDetail[];
   };
+  meta?: Record<string, any>;
 }
 
 // Response builder types
 export interface ResponseBuilder {
-  success<T>(data: T, meta?: Record<string, any>): SuccessResponse<T>;
+  success<T>(payload: T, meta?: Record<string, any>): SuccessResponse<T>;
   error(code: string, message: string, details?: any): ErrorResponse;
   validationError(message: string, errors: ValidationErrorDetail[]): ValidationErrorResponse;
-  paginated<T>(data: T[], pagination: PaginationMeta, meta?: Record<string, any>): PaginatedResponse<T>;
+  paginated<T>(payload: T[], pagination: PaginationMeta, meta?: Record<string, any>): PaginatedResponse<T>;
 }

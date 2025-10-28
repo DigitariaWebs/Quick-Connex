@@ -19,14 +19,14 @@ export async function listSessions(req: Request, res: Response): Promise<Respons
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return ResponseBuilder.success(res, { error: 'Access token required' }, { errorCode: 'UNAUTHORIZED' }, 401);
+      return ResponseBuilder.unauthorized(res, 'Access token required');
     }
 
     const token = authHeader.replace('Bearer ', '');
     const validationResult = await TokenService.verifyAccessToken(token);
 
     if (!validationResult.isValid || !validationResult.payload) {
-      return ResponseBuilder.success(res, { error: 'Invalid or expired token' }, { errorCode: 'INVALID_TOKEN' }, 401);
+      return ResponseBuilder.unauthorized(res, 'Invalid or expired token');
     }
 
     const userId = validationResult.payload.userId;
@@ -54,7 +54,7 @@ export async function listSessions(req: Request, res: Response): Promise<Respons
 
   } catch (error) {
     log.error('List sessions failed', error, { ipAddress: req.ip || 'unknown' });
-    return ResponseBuilder.success(res, { error: 'Failed to list sessions' }, { errorCode: 'INTERNAL_ERROR' }, 500);
+    return ResponseBuilder.serverError(res, 'Failed to list sessions');
   }
 }
 
@@ -67,14 +67,14 @@ export async function refreshSession(req: Request, res: Response): Promise<Respo
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return ResponseBuilder.success(res, { error: 'Access token required' }, { errorCode: 'UNAUTHORIZED' }, 401);
+      return ResponseBuilder.unauthorized(res, 'Access token required');
     }
 
     const token = authHeader.replace('Bearer ', '');
     const validationResult = await TokenService.verifyAccessToken(token);
 
     if (!validationResult.isValid || !validationResult.payload) {
-      return ResponseBuilder.success(res, { error: 'Invalid or expired token' }, { errorCode: 'INVALID_TOKEN' }, 401);
+      return ResponseBuilder.unauthorized(res, 'Invalid or expired token');
     }
 
     const sessionId = validationResult.payload.sessionId;
@@ -87,12 +87,12 @@ export async function refreshSession(req: Request, res: Response): Promise<Respo
     });
 
     if (!session) {
-      return ResponseBuilder.success(res, { error: 'Session not found or invalid' }, { errorCode: 'INVALID_SESSION' }, 401);
+      return ResponseBuilder.unauthorized(res, 'Session not found or invalid');
     }
 
     // Check if session is still valid
     if (!(session as any).isValid()) {
-      return ResponseBuilder.success(res, { error: 'Session expired' }, { errorCode: 'SESSION_EXPIRED' }, 401);
+      return ResponseBuilder.unauthorized(res, 'Session expired');
     }
 
     // Generate new tokens
@@ -131,7 +131,7 @@ export async function refreshSession(req: Request, res: Response): Promise<Respo
 
   } catch (error) {
     log.error('Refresh session failed', error, { ipAddress: req.ip || 'unknown' });
-    return ResponseBuilder.success(res, { error: 'Failed to refresh session' }, { errorCode: 'INTERNAL_ERROR' }, 500);
+    return ResponseBuilder.serverError(res, 'Failed to refresh session');
   }
 }
 
@@ -145,14 +145,14 @@ export async function revokeSession(req: Request, res: Response): Promise<Respon
     const { sessionId } = req.params;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return ResponseBuilder.success(res, { error: 'Access token required' }, { errorCode: 'UNAUTHORIZED' }, 401);
+      return ResponseBuilder.unauthorized(res, 'Access token required');
     }
 
     const token = authHeader.replace('Bearer ', '');
     const validationResult = await TokenService.verifyAccessToken(token);
 
     if (!validationResult.isValid || !validationResult.payload) {
-      return ResponseBuilder.success(res, { error: 'Invalid or expired token' }, { errorCode: 'INVALID_TOKEN' }, 401);
+      return ResponseBuilder.unauthorized(res, 'Invalid or expired token');
     }
 
     const userId = validationResult.payload.userId;
@@ -166,7 +166,7 @@ export async function revokeSession(req: Request, res: Response): Promise<Respon
     });
 
     if (!session) {
-      return ResponseBuilder.success(res, { error: 'Session not found' }, { errorCode: 'SESSION_NOT_FOUND' }, 404);
+      return ResponseBuilder.notFound(res, 'Session not found');
     }
 
     // Revoke the session
@@ -187,6 +187,6 @@ export async function revokeSession(req: Request, res: Response): Promise<Respon
 
   } catch (error) {
     log.error('Revoke session failed', error, { ipAddress: req.ip || 'unknown' });
-    return ResponseBuilder.success(res, { error: 'Failed to revoke session' }, { errorCode: 'INTERNAL_ERROR' }, 500);
+    return ResponseBuilder.serverError(res, 'Failed to revoke session');
   }
 }

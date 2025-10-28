@@ -22,7 +22,7 @@ All API responses follow this structure:
 interface ApiResponse<T = any> {
   success: boolean;
   timestamp: string;
-  data: T;                    // The actual response data
+  payload: T;                 // The actual response data
   meta: {
     timestamp: string;
     requestId: string;
@@ -38,7 +38,7 @@ interface ApiResponse<T = any> {
 |-------|------|-------------|
 | `success` | `boolean` | Always `true` for successful responses |
 | `timestamp` | `string` | ISO 8601 timestamp of response generation |
-| `data` | `T` | The actual response payload |
+| `payload` | `T` | The actual response payload |
 | `meta` | `object` | Response metadata |
 | `meta.timestamp` | `string` | ISO 8601 timestamp (same as root timestamp) |
 | `meta.requestId` | `string` | Unique UUID for request tracking |
@@ -52,7 +52,7 @@ interface ApiResponse<T = any> {
 ```typescript
 ResponseBuilder.success<T>(
   res: Response,
-  data: T,
+  payload: T,
   meta?: Partial<ResponseMeta>,
   statusCode: number = HTTP_STATUS.OK
 ): Response
@@ -78,7 +78,7 @@ return ResponseBuilder.success(res, { user: userData }, {}, 201);
 {
   "success": true,
   "timestamp": "2025-10-28T15:10:55.183Z",
-  "data": {
+  "payload": {
     "user": {
       "id": "68ee13e35443e309644f9044",
       "email": "user@example.com",
@@ -98,7 +98,7 @@ return ResponseBuilder.success(res, { user: userData }, {}, 201);
 ```typescript
 ResponseBuilder.paginated<T>(
   res: Response,
-  data: T[],
+  payload: T[],
   pagination: PaginationInfo,
   meta?: Partial<ResponseMeta>
 ): Response
@@ -115,7 +115,7 @@ return ResponseBuilder.paginated(res, users, pagination);
 {
   "success": true,
   "timestamp": "2025-10-28T15:10:55.183Z",
-  "data": [
+  "payload": [
     { "id": "1", "name": "User 1" },
     { "id": "2", "name": "User 2" }
   ],
@@ -139,7 +139,7 @@ return ResponseBuilder.paginated(res, users, pagination);
 ```typescript
 ResponseBuilder.created<T>(
   res: Response, 
-  data: T, 
+  payload: T, 
   meta?: Partial<ResponseMeta>
 ): Response
 ```
@@ -165,7 +165,7 @@ return ResponseBuilder.noContent(res);
 ```typescript
 ResponseBuilder.withMeta<T>(
   res: Response,
-  data: T,
+  payload: T,
   meta: Record<string, any>,
   statusCode: number = HTTP_STATUS.OK
 ): Response
@@ -222,9 +222,9 @@ The ResponseBuilder uses these standard HTTP status codes:
 The response structure means clients should access data like this:
 
 ```typescript
-// ✅ Correct - Access data through response.data
-const user = response.data.user;
-const session = response.data.session;
+// ✅ Correct - Access data through response.payload
+const user = response.payload.user;
+const session = response.payload.session;
 
 // ❌ Incorrect - Don't access data directly
 const user = response.user; // This will be undefined
@@ -236,7 +236,7 @@ const user = response.user; // This will be undefined
 response
 ├── success: boolean
 ├── timestamp: string
-├── data: T                    ← Your actual data is here
+├── payload: T                 ← Your actual data is here
 │   ├── user: UserObject
 │   ├── session: SessionObject
 │   └── ...other fields
@@ -384,10 +384,31 @@ const session: Session = response.data.session; // ✅ Type safe
 
 ## Error Handling
 
-While ResponseBuilder focuses on success responses, error responses should follow a similar structure:
+ResponseBuilder now includes comprehensive error response methods that follow the same structure as success responses:
+
+### Error Response Methods
 
 ```typescript
-// Error response structure (for reference)
+// Generic error response
+ResponseBuilder.error(res, 'ERROR_CODE', 'Error message', details?, statusCode?, meta?)
+
+// Specific error methods
+ResponseBuilder.badRequest(res, 'Bad request message', details?, meta?)
+ResponseBuilder.unauthorized(res, 'Unauthorized message', details?, meta?)
+ResponseBuilder.forbidden(res, 'Forbidden message', details?, meta?)
+ResponseBuilder.notFound(res, 'Not found message', details?, meta?)
+ResponseBuilder.conflict(res, 'Conflict message', details?, meta?)
+ResponseBuilder.validationError(res, 'Validation failed', errors, meta?)
+ResponseBuilder.rateLimited(res, 'Too many requests', retryAfter?, meta?)
+ResponseBuilder.serverError(res, 'Server error message', details?, meta?)
+ResponseBuilder.serviceUnavailable(res, 'Service unavailable', details?, meta?)
+```
+
+### Error Response Structure
+
+All error responses follow this consistent structure:
+
+```typescript
 interface ErrorResponse {
   success: false;
   timestamp: string;
@@ -395,11 +416,253 @@ interface ErrorResponse {
     code: string;
     message: string;
     details?: any;
+    retryable?: boolean;
+    retryAfter?: number;
   };
   meta: {
     timestamp: string;
     requestId: string;
+    [key: string]: any;
   };
+}
+```
+
+### Error Handling Examples
+
+#### Authentication Errors
+
+```typescript
+// Login endpoint
+export async function login(req: Request, res: Response): Promise<Response> {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return ResponseBuilder.badRequest(res, 'Email and password are required');
+    }
+
+    const loginResult = await AuthService.login({ email, password }, req);
+    return ResponseBuilder.success(res, {
+      user: loginResult.user,
+      session: loginResult.session
+    });
+
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('Rate limit')) {
+        return ResponseBuilder.rateLimited(res, error.message);
+      }
+      if (error.message.includes('locked')) {
+        return ResponseBuilder.error(res, 'ACCOUNT_LOCKED', error.message, undefined, 423);
+      }
+      if (error.message.includes('Invalid credentials')) {
+        return ResponseBuilder.unauthorized(res, 'Invalid credentials');
+      }
+    }
+
+    return ResponseBuilder.serverError(res, 'Login failed');
+  }
+}
+```
+
+#### Validation Errors
+
+```typescript
+// User registration endpoint
+export async function signup(req: Request, res: Response): Promise<Response> {
+  try {
+    const { email, password, firstName, lastName } = req.body;
+
+    // Validate input
+    const validationErrors: ValidationErrorDetail[] = [];
+    
+    if (!email || !isValidEmail(email)) {
+      validationErrors.push({
+        field: 'email',
+        message: 'Valid email is required',
+        code: 'INVALID_EMAIL'
+      });
+    }
+
+    if (!password || password.length < 8) {
+      validationErrors.push({
+        field: 'password',
+        message: 'Password must be at least 8 characters',
+        code: 'PASSWORD_TOO_SHORT'
+      });
+    }
+
+    if (validationErrors.length > 0) {
+      return ResponseBuilder.validationError(res, 'Validation failed', validationErrors);
+    }
+
+    const user = await UserService.create({ email, password, firstName, lastName });
+    return ResponseBuilder.created(res, { user });
+
+  } catch (error) {
+    if (error instanceof DuplicateEmailError) {
+      return ResponseBuilder.conflict(res, 'Email already exists');
+    }
+    
+    return ResponseBuilder.serverError(res, 'Registration failed');
+  }
+}
+```
+
+#### Resource Not Found
+
+```typescript
+// Get user by ID endpoint
+export async function getUser(req: Request, res: Response): Promise<Response> {
+  try {
+    const { id } = req.params;
+    const user = await UserService.findById(id);
+
+    if (!user) {
+      return ResponseBuilder.notFound(res, 'User not found');
+    }
+
+    return ResponseBuilder.success(res, { user });
+
+  } catch (error) {
+    return ResponseBuilder.serverError(res, 'Failed to fetch user');
+  }
+}
+```
+
+### Error Response Examples
+
+#### Bad Request (400)
+```json
+{
+  "success": false,
+  "timestamp": "2025-10-28T15:10:55.183Z",
+  "error": {
+    "code": "BAD_REQUEST",
+    "message": "Email and password are required"
+  },
+  "meta": {
+    "timestamp": "2025-10-28T15:10:55.183Z",
+    "requestId": "d2ff194c-d562-43c7-89d7-02d3180dde75"
+  }
+}
+```
+
+#### Validation Error (422)
+```json
+{
+  "success": false,
+  "timestamp": "2025-10-28T15:10:55.183Z",
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed",
+    "details": [
+      {
+        "field": "email",
+        "message": "Valid email is required",
+        "code": "INVALID_EMAIL"
+      },
+      {
+        "field": "password",
+        "message": "Password must be at least 8 characters",
+        "code": "PASSWORD_TOO_SHORT"
+      }
+    ]
+  },
+  "meta": {
+    "timestamp": "2025-10-28T15:10:55.183Z",
+    "requestId": "d2ff194c-d562-43c7-89d7-02d3180dde75"
+  }
+}
+```
+
+#### Rate Limited (429)
+```json
+{
+  "success": false,
+  "timestamp": "2025-10-28T15:10:55.183Z",
+  "error": {
+    "code": "RATE_LIMITED",
+    "message": "Too many requests",
+    "details": {
+      "retryAfter": 60
+    }
+  },
+  "meta": {
+    "timestamp": "2025-10-28T15:10:55.183Z",
+    "requestId": "d2ff194c-d562-43c7-89d7-02d3180dde75"
+  }
+}
+```
+
+### Best Practices for Error Handling
+
+#### 1. Use Appropriate Error Methods
+
+```typescript
+// ✅ Good - Use specific error methods
+return ResponseBuilder.unauthorized(res, 'Invalid credentials');
+return ResponseBuilder.notFound(res, 'User not found');
+return ResponseBuilder.validationError(res, 'Validation failed', errors);
+
+// ❌ Bad - Don't use success for errors
+return ResponseBuilder.success(res, { error: 'Invalid credentials' }, { errorCode: 'UNAUTHORIZED' }, 401);
+```
+
+#### 2. Provide Meaningful Error Messages
+
+```typescript
+// ✅ Good - Clear, actionable messages
+return ResponseBuilder.badRequest(res, 'Email and password are required');
+return ResponseBuilder.unauthorized(res, 'Invalid or expired token');
+
+// ❌ Bad - Vague messages
+return ResponseBuilder.badRequest(res, 'Error');
+return ResponseBuilder.unauthorized(res, 'Unauthorized');
+```
+
+#### 3. Include Relevant Details
+
+```typescript
+// ✅ Good - Include helpful details
+return ResponseBuilder.validationError(res, 'Validation failed', [
+  { field: 'email', message: 'Valid email is required', code: 'INVALID_EMAIL' }
+]);
+
+// ✅ Good - Include retry information
+return ResponseBuilder.rateLimited(res, 'Too many requests', 60);
+```
+
+#### 4. Handle Different Error Types Appropriately
+
+```typescript
+export async function handleRequest(req: Request, res: Response): Promise<Response> {
+  try {
+    // Business logic here
+    return ResponseBuilder.success(res, { data: result });
+    
+  } catch (error) {
+    // Handle specific error types
+    if (error instanceof ValidationError) {
+      return ResponseBuilder.validationError(res, error.message, error.details);
+    }
+    
+    if (error instanceof UnauthorizedError) {
+      return ResponseBuilder.unauthorized(res, error.message);
+    }
+    
+    if (error instanceof NotFoundError) {
+      return ResponseBuilder.notFound(res, error.message);
+    }
+    
+    if (error instanceof ConflictError) {
+      return ResponseBuilder.conflict(res, error.message, error.details);
+    }
+    
+    // Log unexpected errors
+    log.error('Unexpected error', error);
+    return ResponseBuilder.serverError(res, 'An unexpected error occurred');
+  }
 }
 ```
 
@@ -431,13 +694,20 @@ return ResponseBuilder.success(res, userData);
 ### 3. Use Appropriate Status Codes
 
 ```typescript
-// ✅ Good
+// ✅ Good - Use specific methods for status codes
 return ResponseBuilder.created(res, { user });        // 201
 return ResponseBuilder.success(res, { user });        // 200
 return ResponseBuilder.noContent(res);                // 204
 
-// ❌ Bad
+// ✅ Good - Use error methods for error status codes
+return ResponseBuilder.badRequest(res, 'Invalid input');           // 400
+return ResponseBuilder.unauthorized(res, 'Invalid token');         // 401
+return ResponseBuilder.notFound(res, 'Resource not found');        // 404
+return ResponseBuilder.serverError(res, 'Internal error');         // 500
+
+// ❌ Bad - Don't use success for error status codes
 return ResponseBuilder.success(res, { user }, {}, 201); // Use created() instead
+return ResponseBuilder.success(res, { error: 'Bad request' }, {}, 400); // Use badRequest() instead
 ```
 
 ### 4. Add Meaningful Metadata
@@ -454,6 +724,29 @@ return ResponseBuilder.success(res, { users }, {
 return ResponseBuilder.success(res, { users }, {
   randomData: 'not useful'
 });
+```
+
+### 5. Proper Error Handling
+
+```typescript
+// ✅ Good - Use specific error methods
+return ResponseBuilder.unauthorized(res, 'Invalid credentials');
+return ResponseBuilder.validationError(res, 'Validation failed', errors);
+return ResponseBuilder.rateLimited(res, 'Too many requests', 60);
+
+// ❌ Bad - Don't use success for errors
+return ResponseBuilder.success(res, { error: 'Invalid credentials' }, { errorCode: 'UNAUTHORIZED' }, 401);
+
+// ✅ Good - Handle different error types appropriately
+if (error instanceof ValidationError) {
+  return ResponseBuilder.validationError(res, error.message, error.details);
+}
+if (error instanceof UnauthorizedError) {
+  return ResponseBuilder.unauthorized(res, error.message);
+}
+
+// ❌ Bad - Generic error handling
+return ResponseBuilder.serverError(res, 'Something went wrong');
 ```
 
 ## Migration Guide
@@ -480,6 +773,33 @@ return res.json({
 
 // After
 return ResponseBuilder.success(res, { user: userData });
+```
+
+### From Error Response Anti-patterns
+
+```typescript
+// Before - Using success for errors (anti-pattern)
+return ResponseBuilder.success(res, { error: 'Invalid credentials' }, { errorCode: 'UNAUTHORIZED' }, 401);
+return ResponseBuilder.success(res, { error: 'User not found' }, { errorCode: 'NOT_FOUND' }, 404);
+return ResponseBuilder.success(res, { error: 'Validation failed' }, { errorCode: 'VALIDATION_ERROR' }, 422);
+
+// After - Using proper error methods
+return ResponseBuilder.unauthorized(res, 'Invalid credentials');
+return ResponseBuilder.notFound(res, 'User not found');
+return ResponseBuilder.validationError(res, 'Validation failed', validationErrors);
+```
+
+### From Direct Error Responses
+
+```typescript
+// Before
+return res.status(401).json({
+  error: 'Unauthorized',
+  message: 'Invalid token'
+});
+
+// After
+return ResponseBuilder.unauthorized(res, 'Invalid token');
 ```
 
 ## Testing

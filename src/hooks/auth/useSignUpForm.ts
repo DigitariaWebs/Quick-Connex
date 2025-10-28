@@ -1,7 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { authClient } from '@/lib/client';
-import { ApiError } from '@/lib/client';
+import { signup } from '@/lib/auth/client';
+import { toUserError } from '@/lib/api/core/error-handler';
 
 /**
  * useSignUpForm Hook
@@ -24,28 +24,40 @@ export function useSignUpForm() {
     
     try {
       const formData = new FormData(event.currentTarget);
-      const result = await authClient.signup({
-        email: formData.get('email') as string,
-        password: formData.get('password') as string,
-        confirmPassword: formData.get('confirmPassword') as string,
+      
+      // Basic validation
+      const password = formData.get('password') as string;
+      const confirmPassword = formData.get('confirmPassword') as string;
+      
+      if (password !== confirmPassword) {
+        setMessage({ type: 'error', text: 'Passwords do not match' });
+        return;
+      }
+      
+      const result = await signup({
         firstName: formData.get('firstName') as string,
         lastName: formData.get('lastName') as string,
-        userType: userType as any,
-        hospital: formData.get('hospital') as string || undefined,
+        email: formData.get('email') as string,
+        phone: formData.get('phone') as string,
+        password: password,
+        userType: userType as 'employee' | 'manager',
+        post: formData.get('post') as string || undefined,
         ciusss: formData.get('ciusss') as string || undefined,
       });
       
       setMessage({ 
         type: 'success', 
-        text: result.message || 'Account created successfully! Your registration is pending approval. You will receive an email notification once approved.' 
+        text: 'Account created successfully! Your registration is pending approval. You will receive an email notification once approved.' 
       });
       
       // If user was approved and session was created, redirect to dashboard
       if (result.session && result.user) {
         console.log('✅ Signup: Session created for approved user');
         
-        // Get redirect path using AuthClient business logic
-        const redirectPath = authClient.getRedirectPath(result.user.userType);
+        // Simple redirect logic based on user type
+        const redirectPath = result.user.userType === 'admin' || result.user.userType === 'super_admin' 
+          ? '/admin' 
+          : '/dashboard';
         
         setTimeout(() => {
           router.replace(redirectPath);
@@ -59,18 +71,15 @@ export function useSignUpForm() {
     } catch (error) {
       console.error('Signup error:', error);
       
-      if (error instanceof ApiError) {
-        // Handle API-specific errors
-        if (error.data?.errors && typeof error.data.errors === 'object') {
-          // Handle field-specific errors
-          setFieldErrors(error.data.errors);
-          setMessage({ type: 'error', text: error.message || 'Please correct the errors below' });
-        } else {
-          // Handle general error messages
-          setMessage({ type: 'error', text: error.message || 'An error occurred during sign up' });
-        }
+      const { code, message: errorMessage } = toUserError(error);
+      
+      // Handle validation errors
+      if (code === 'VALIDATION_ERROR' || code === 'INVALID_INPUT') {
+        setMessage({ type: 'error', text: errorMessage });
+      } else if (code === 'CONFLICT' || code === 'DUPLICATE_ENTRY') {
+        setMessage({ type: 'error', text: 'An account with this email already exists.' });
       } else {
-        setMessage({ type: 'error', text: 'Failed to connect to server. Please try again.' });
+        setMessage({ type: 'error', text: errorMessage });
       }
     } finally {
       setIsLoading(false);

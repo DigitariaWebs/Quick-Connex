@@ -6,6 +6,18 @@
  */
 
 /**
+ * Backend ResponseBuilder envelope types
+ */
+export type ApiSuccess<T> = { success: true; data: T; meta?: Record<string, unknown> };
+export type ApiErrorResponse = { success: false; error: { code: string; message: string; details?: unknown } };
+export type ApiEnvelope<T> = ApiSuccess<T> | ApiErrorResponse;
+
+/**
+ * Flattened response after processing ResponseBuilder envelope
+ */
+export type FlattenedResponse<T> = { data: T; meta?: Record<string, unknown> };
+
+/**
  * Standard API Response wrapper
  * Mirrors backend ApiResponse structure
  */
@@ -62,7 +74,7 @@ export interface PaginationParams {
  * API Error structure in responses
  */
 export interface ApiError {
-  code: ErrorCode;
+  code: string;
   message: string;
   details?: ValidationErrorDetail[] | Record<string, any>;
   retryable?: boolean;
