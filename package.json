@@ -18,6 +18,8 @@
     "approve-user": "node scripts/essentials/approve-user.js",
     "clear-db": "node scripts/essentials/clear-database.js",
     "create-transfers": "node scripts/create-test-transfers.js",
+    "test:auth": "node scripts/essentials/test-auth-system.js",
+    "test:auth:auto": "node scripts/essentials/run-auth-tests.js --start-server",
     "db-stats": "node scripts/essentials/database-stats.js",
     "cleanup-login-data": "node scripts/essentials/cleanup-login-data.js",
     "cleanup-redundant-login-data": "node scripts/essentials/cleanup-redundant-login-data.js",

@@ -1,17 +1,25 @@
 /**
- * Auth Utils Module
+ * Auth Utilities Index
  * 
- * Authentication utility functions and helpers.
+ * Centralized exports for all authentication utilities.
  */
 
-// Re-export JWT utilities
-export * from './jwt';
+export { 
+  hashIpAddress, 
+  truncateIpAddress, 
+  isLoginHistoryExpired,
+  cleanExpiredLoginHistory 
+} from './privacy';
 
-// Re-export security utilities
-export * from './security';
+export {
+  parseUserAgent,
+  generateDeviceFingerprint
+} from './device';
 
-// Re-export device utilities
-export * from './device';
-
-// Re-export rate limiting utilities
-export * from './rate-limit';
+export {
+  assessSecurityRisk,
+  checkSuspiciousActivity,
+  extractIpAddress,
+  isNewDevice,
+  isNewLocation
+} from './security';

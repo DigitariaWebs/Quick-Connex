@@ -41,7 +41,7 @@ import { log } from '../../logging';
 import Session from '../../../models/Session';
 
 // Import User model (assuming it exists)
-// import User from '../../../models/User';
+import User from '../../../models/User';
 
 /**
  * Authentication Service Class
@@ -93,22 +93,10 @@ export class AuthService {
         throw new Error(`Account temporarily locked. Try again in ${Math.ceil(timeUntilUnlock / 60000)} minutes.`);
       }
       
-      // Find user (TODO: Replace with actual User model)
-      // const user = await DatabaseService.findOne(User, { 
-      //   email: credentials.email.toLowerCase() 
-      // });
-      
-      // Mock user for now - replace with actual database query
-      const user = {
-        _id: 'mock-user-id',
-        email: credentials.email.toLowerCase(),
-        password: '$2b$12$mock.hash', // Mock bcrypt hash
-        userType: 'employee' as const,
-        firstName: 'John',
-        lastName: 'Doe',
-        status: 'approved' as const,
-        accountLockedUntil: null
-      };
+      // Find user in database
+      const user = await User.findOne({ 
+        email: credentials.email.toLowerCase() 
+      });
       
       if (!user) {
         await this.recordFailedAttempt(credentials.email, ipAddress);
@@ -292,12 +280,9 @@ export class AuthService {
       }
       
       // Check for existing user
-      // const existing = await DatabaseService.findOne(User, { 
-      //   $or: [{ email: userData.email }, { phone: userData.phone }]
-      // });
-      
-      // Mock check - replace with actual database query
-      const existing = null;
+      const existing = await User.findOne({ 
+        $or: [{ email: userData.email }, { phone: userData.phone }]
+      });
       
       if (existing) {
         throw new Error('User already exists');
@@ -307,21 +292,12 @@ export class AuthService {
       const hashedPassword = await bcrypt.hash(userData.password, 12);
       
       // Create user
-      // const user = await DatabaseService.create(User, {
-      //   ...userData,
-      //   password: hashedPassword,
-      //   email: userData.email.toLowerCase(),
-      //   status: 'pending'
-      // });
-      
-      // Mock user creation - replace with actual database operation
-      const user = {
-        _id: 'mock-user-id-' + Date.now(),
+      const user = await User.create({
         ...userData,
         password: hashedPassword,
         email: userData.email.toLowerCase(),
-        status: 'pending' as const
-      };
+        status: 'pending'
+      });
       
       // Log signup event
       await this.logAuthEvent({

@@ -16,8 +16,8 @@ import rateLimit from 'express-rate-limit';
 import { errorHandler, notFoundHandler, requestLogger } from './src/middleware/error.middleware';
 import { getDatabaseHealth, isDatabaseConnected } from './src/lib/database';
 
-// Import routes (these will be created when you add actual routes)
-// import authRoutes from './src/routes/auth.routes';
+// Import routes
+import authRoutes from './src/routes/auth';
 // import userRoutes from './src/routes/user.routes';
 // import transferRoutes from './src/routes/transfer.routes';
 
@@ -126,8 +126,8 @@ export function createApp(): express.Application {
     next();
   });
 
-  // Mount route handlers (uncomment when routes are created)
-  // app.use('/api/auth', authRoutes);
+  // Mount route handlers
+  app.use('/api/auth', authRoutes);
   // app.use('/api/users', userRoutes);
   // app.use('/api/transfers', transferRoutes);
 
