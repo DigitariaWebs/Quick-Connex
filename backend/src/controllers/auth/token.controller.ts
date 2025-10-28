@@ -31,7 +31,7 @@ export async function refreshToken(req: Request, res: Response): Promise<Respons
         userAgent: req.get('User-Agent') || 'unknown'
       });
       
-      return ErrorBuilder.unauthorized(res as any, 'Refresh token required');
+      return ErrorBuilder.unauthorized(res, 'Refresh token required');
     }
     
     // Validate token format
@@ -42,7 +42,7 @@ export async function refreshToken(req: Request, res: Response): Promise<Respons
         userAgent: req.get('User-Agent') || 'unknown'
       });
       
-      return ErrorBuilder.unauthorized(res as any, 'Invalid refresh token format');
+      return ErrorBuilder.unauthorized(res, 'Invalid refresh token format');
     }
     
     // Create token context
@@ -70,7 +70,7 @@ export async function refreshToken(req: Request, res: Response): Promise<Respons
         deviceFingerprint: context.deviceFingerprint
       });
       
-      return ErrorBuilder.unauthorized(res as any, 'Invalid or expired refresh token');
+      return ErrorBuilder.unauthorized(res, 'Invalid or expired refresh token');
     }
     
     // Create response
@@ -110,7 +110,7 @@ export async function refreshToken(req: Request, res: Response): Promise<Respons
       userAgent: req.get('User-Agent') || 'unknown'
     });
     
-    return ErrorBuilder.serverError(res as any, 'Token refresh failed');
+    return ErrorBuilder.serverError(res, 'Token refresh failed');
   }
 }
 
@@ -124,12 +124,12 @@ export async function validateToken(req: Request, res: Response): Promise<Respon
     const accessToken = extractAccessTokenFromRequest(req);
     
     if (!accessToken) {
-      return ErrorBuilder.unauthorized(res as any, 'Access token required');
+      return ErrorBuilder.unauthorized(res, 'Access token required');
     }
     
     // Validate token format
     if (!validateTokenFormat(accessToken)) {
-      return ErrorBuilder.unauthorized(res as any, 'Invalid access token format');
+      return ErrorBuilder.unauthorized(res, 'Invalid access token format');
     }
     
     // Verify access token
@@ -144,7 +144,7 @@ export async function validateToken(req: Request, res: Response): Promise<Respon
         userAgent: req.get('User-Agent') || 'unknown'
       });
       
-      return ErrorBuilder.unauthorized(res as any, validationResult.error || 'Invalid access token');
+      return ErrorBuilder.unauthorized(res, validationResult.error || 'Invalid access token');
     }
     
     const payload = validationResult.payload!;
@@ -176,7 +176,7 @@ export async function validateToken(req: Request, res: Response): Promise<Respon
       userAgent: req.get('User-Agent') || 'unknown'
     });
     
-    return ErrorBuilder.serverError(res as any, 'Token validation failed');
+    return ErrorBuilder.serverError(res, 'Token validation failed');
   }
 }
 
@@ -189,7 +189,7 @@ export async function revokeToken(req: Request, res: Response): Promise<Response
     const { tokenId, reason } = req.body;
     
     if (!tokenId) {
-      return ErrorBuilder.badRequest(res as any, 'Token ID required');
+      return ErrorBuilder.badRequest(res, 'Token ID required');
     }
     
     // Revoke refresh token
@@ -204,7 +204,7 @@ export async function revokeToken(req: Request, res: Response): Promise<Response
         userAgent: req.get('User-Agent') || 'unknown'
       });
       
-      return ErrorBuilder.badRequest(res as any, 'Failed to revoke token');
+      return ErrorBuilder.badRequest(res, 'Failed to revoke token');
     }
     
     log.info('Token revoked successfully', {
@@ -228,7 +228,7 @@ export async function revokeToken(req: Request, res: Response): Promise<Response
       userAgent: req.get('User-Agent') || 'unknown'
     });
     
-    return ErrorBuilder.serverError(res as any, 'Token revocation failed');
+    return ErrorBuilder.serverError(res, 'Token revocation failed');
   }
 }
 
@@ -241,7 +241,7 @@ export async function revokeAllUserTokens(req: Request, res: Response): Promise<
     const { userId } = req.body;
     
     if (!userId) {
-      return ErrorBuilder.badRequest(res as any, 'User ID required');
+      return ErrorBuilder.badRequest(res, 'User ID required');
     }
     
     // Revoke all user refresh tokens
@@ -269,7 +269,7 @@ export async function revokeAllUserTokens(req: Request, res: Response): Promise<
       userAgent: req.get('User-Agent') || 'unknown'
     });
     
-    return ErrorBuilder.serverError(res as any, 'User token revocation failed');
+    return ErrorBuilder.serverError(res, 'User token revocation failed');
   }
 }
 
@@ -303,6 +303,6 @@ export async function cleanupTokens(req: Request, res: Response): Promise<Respon
       userAgent: req.get('User-Agent') || 'unknown'
     });
     
-    return ErrorBuilder.serverError(res as any, 'Token cleanup failed');
+    return ErrorBuilder.serverError(res, 'Token cleanup failed');
   }
 }

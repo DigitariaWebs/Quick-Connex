@@ -5,25 +5,7 @@
  * Provides consistent error responses and logging.
  */
 
-// Note: Express types would be imported here in a real Express app
-// For now, we'll define the interfaces locally
-interface Request {
-  url: string;
-  method: string;
-  body: any;
-  query: any;
-  params: any;
-}
-
-interface Response {
-  status(code: number): Response;
-  json(data: any): Response;
-  on(event: string, callback: () => void): void;
-}
-
-interface NextFunction {
-  (error?: any): void;
-}
+import { Request, Response, NextFunction } from 'express';
 import { ErrorBuilder } from '../utils/error.util';
 
 /**
@@ -48,14 +30,14 @@ export function errorHandler(
   });
 
   // Use ErrorBuilder to handle and format the error
-  return ErrorBuilder.handleError(res as any, err);
+  return ErrorBuilder.handleError(res, err);
 }
 
 /**
  * 404 handler for unmatched routes
  */
 export function notFoundHandler(req: Request, res: Response): Response {
-  return ErrorBuilder.notFound(res as any, `Route ${req.method} ${req.url} not found`);
+  return ErrorBuilder.notFound(res, `Route ${req.method} ${req.url} not found`);
 }
 
 /**

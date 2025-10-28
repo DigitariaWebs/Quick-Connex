@@ -5,13 +5,7 @@
  * Provides consistent response structure and automatic status code handling.
  */
 
-// Note: Express types would be imported here in a real Express app
-// For now, we'll define the Response interface locally
-interface Response {
-  status(code: number): Response;
-  json(data: any): Response;
-  send(data?: any): Response;
-}
+import { Response } from 'express';
 import { ApiResponse, PaginatedResponse, PaginationInfo, ResponseMeta, HTTP_STATUS } from '../types/api.types';
 import { v4 as uuidv4 } from 'uuid';
 
