@@ -6,16 +6,15 @@
  */
 
 import { GridFSBucket, ObjectId, Db } from 'mongodb';
-import { Readable, Writable } from 'stream';
+import { Readable } from 'stream';
 import crypto from 'crypto';
 import { DatabaseService } from './DatabaseService';
+import { log } from '../../logging';
 import { 
   GridFSFileMetadata, 
   GridFSUploadOptions, 
   GridFSDownloadOptions, 
   GridFSFileInfo,
-  GridFSUploadResult,
-  GridFSDeleteResult,
   GridFSListOptions,
   GridFSListResult
 } from './types';
@@ -23,7 +22,8 @@ import {
   DatabaseError, 
   ValidationError, 
   NotFoundError,
-  GridFSError
+  GridFSError,
+  DatabaseErrorCode
 } from '../../../types/database';
 import { GRIDFS_CONFIG } from './constants';
 
@@ -96,23 +96,23 @@ export class GridFSService {
       // Wait for upload to complete
       const fileId = await new Promise<string>((resolve, reject) => {
         uploadStream.on('finish', () => {
-          console.log(`GridFS: File uploaded successfully - ${gridFSFilename}, ID: ${uploadStream.id}`);
+          log.database(`File uploaded successfully - ${gridFSFilename}, ID: ${uploadStream.id}`);
           resolve(uploadStream.id.toString());
         });
         
         uploadStream.on('error', (error) => {
-          console.error('GridFS: Upload failed:', error);
+          log.error('Upload failed', error);
           reject(error);
         });
       });
       
       const executionTime = Date.now() - startTime;
-      console.log(`GridFS: Upload completed in ${executionTime}ms`);
+      log.database(`Upload completed in ${executionTime}ms`, { duration: executionTime });
       
       return fileId;
     } catch (error) {
       const executionTime = Date.now() - startTime;
-      console.error(`GridFS: Upload error after ${executionTime}ms:`, error);
+      log.error(`Upload error after ${executionTime}ms`, error, { duration: executionTime });
       throw this.transformGridFSError(error, 'uploadFile');
     }
   }
@@ -140,8 +140,8 @@ export class GridFSService {
       
       // Create download stream
       const downloadStream = bucket.openDownloadStream(objectId, {
-        start: options.start,
-        end: options.end
+        ...(options.start !== undefined && { start: options.start }),
+        ...(options.end !== undefined && { end: options.end })
       });
       
       // Collect chunks into buffer
@@ -154,27 +154,27 @@ export class GridFSService {
         
         downloadStream.on('end', () => {
           const buffer = Buffer.concat(chunks);
-          console.log(`GridFS: File downloaded successfully - ${fileInfo.filename}`);
+          log.database(`File downloaded successfully - ${fileInfo?.filename || 'unknown'}`);
           resolve({
             buffer,
-            metadata: fileInfo.metadata as GridFSFileMetadata,
-            filename: fileInfo.filename
+            metadata: fileInfo?.metadata as GridFSFileMetadata || {},
+            filename: fileInfo?.filename || 'unknown'
           });
         });
         
         downloadStream.on('error', (error) => {
-          console.error('GridFS: Download failed:', error);
+          log.error('Download failed', error);
           reject(error);
         });
       });
       
       const executionTime = Date.now() - startTime;
-      console.log(`GridFS: Download completed in ${executionTime}ms`);
+      log.database(`Download completed in ${executionTime}ms`, { duration: executionTime });
       
       return result;
     } catch (error) {
       const executionTime = Date.now() - startTime;
-      console.error(`GridFS: Download error after ${executionTime}ms:`, error);
+      log.error(`Download error after ${executionTime}ms`, error, { duration: executionTime });
       throw this.transformGridFSError(error, 'downloadFile');
     }
   }
@@ -197,8 +197,8 @@ export class GridFSService {
       }
       
       return bucket.openDownloadStream(objectId, {
-        start: options.start,
-        end: options.end
+        ...(options.start !== undefined && { start: options.start }),
+        ...(options.end !== undefined && { end: options.end })
       });
     } catch (error) {
       throw this.transformGridFSError(error, 'streamFile');
@@ -216,13 +216,13 @@ export class GridFSService {
       const objectId = new ObjectId(fileId);
       
       await bucket.delete(objectId);
-      console.log(`GridFS: File deleted successfully - ID: ${fileId}`);
+      log.database(`File deleted successfully - ID: ${fileId}`);
       
       const executionTime = Date.now() - startTime;
-      console.log(`GridFS: Delete completed in ${executionTime}ms`);
+      log.database(`Delete completed in ${executionTime}ms`, { duration: executionTime });
     } catch (error) {
       const executionTime = Date.now() - startTime;
-      console.error(`GridFS: Delete error after ${executionTime}ms:`, error);
+      log.error(`Delete error after ${executionTime}ms`, error, { duration: executionTime });
       throw this.transformGridFSError(error, 'deleteFile');
     }
   }
@@ -240,7 +240,12 @@ export class GridFSService {
         return null;
       }
       
-      return files[0].metadata as GridFSFileMetadata;
+      const file = files[0];
+      if (!file) {
+        return null;
+      }
+      
+      return file.metadata as GridFSFileMetadata;
     } catch (error) {
       throw this.transformGridFSError(error, 'getFileMetadata');
     }
@@ -264,12 +269,15 @@ export class GridFSService {
       }
       
       const currentFile = files[0];
+      if (!currentFile) {
+        throw new NotFoundError('File not found');
+      }
       const updatedMetadata = { ...currentFile.metadata, ...updates };
       
       // Update the metadata in the files collection
       const connection = DatabaseService.getConnection();
       if (!connection) {
-        throw new DatabaseError('No active database connection');
+        throw new DatabaseError(DatabaseErrorCode.CONNECTION_ERROR, 'No active database connection');
       }
       
       const db = connection.db as unknown as Db;
@@ -278,7 +286,7 @@ export class GridFSService {
         { $set: { metadata: updatedMetadata } }
       );
       
-      console.log(`GridFS: Metadata updated for file ${fileId}`);
+      log.database(`Metadata updated for file ${fileId}`);
     } catch (error) {
       throw this.transformGridFSError(error, 'updateFileMetadata');
     }
@@ -301,8 +309,8 @@ export class GridFSService {
         length: file.length,
         chunkSize: file.chunkSize,
         uploadDate: file.uploadDate,
-        contentType: file.contentType,
-        aliases: file.aliases,
+        ...(file.contentType && { contentType: file.contentType }),
+        ...(file.aliases && { aliases: file.aliases }),
         metadata: file.metadata as GridFSFileMetadata
       }));
     } catch (error) {
@@ -338,8 +346,8 @@ export class GridFSService {
         length: file.length,
         chunkSize: file.chunkSize,
         uploadDate: file.uploadDate,
-        contentType: file.contentType,
-        aliases: file.aliases,
+        ...(file.contentType && { contentType: file.contentType }),
+        ...(file.aliases && { aliases: file.aliases }),
         metadata: file.metadata as GridFSFileMetadata
       }));
     } catch (error) {
@@ -375,8 +383,8 @@ export class GridFSService {
           length: file.length,
           chunkSize: file.chunkSize,
           uploadDate: file.uploadDate,
-          contentType: file.contentType,
-          aliases: file.aliases,
+          ...(file.contentType && { contentType: file.contentType }),
+          ...(file.aliases && { aliases: file.aliases }),
           metadata: file.metadata as GridFSFileMetadata
         })),
         total,
@@ -411,7 +419,7 @@ export class GridFSService {
       };
       
       files.forEach(file => {
-        const documentType = file.metadata?.documentType || 'unknown';
+        const documentType = file.metadata?.['documentType'] || 'unknown';
         stats.filesByType[documentType] = (stats.filesByType[documentType] || 0) + 1;
         stats.sizeByType[documentType] = (stats.sizeByType[documentType] || 0) + file.length;
       });
@@ -443,13 +451,13 @@ export class GridFSService {
         try {
           await bucket.delete(file._id);
           deletedCount++;
-          console.log(`GridFS: Deleted expired file ${file.filename}`);
+          log.database(`Deleted expired file ${file.filename}`);
         } catch (error) {
-          console.error(`GridFS: Failed to delete expired file ${file.filename}:`, error);
+          log.error(`Failed to delete expired file ${file.filename}`, error);
         }
       }
       
-      console.log(`GridFS: Cleanup completed - deleted ${deletedCount} expired files`);
+      log.database(`Cleanup completed - deleted ${deletedCount} expired files`);
       return { deletedCount };
     } catch (error) {
       throw this.transformGridFSError(error, 'cleanupExpiredFiles');
@@ -474,7 +482,7 @@ export class GridFSService {
       }
       
       const fileInfo = files[0];
-      const expectedChecksum = fileInfo.metadata?.checksum;
+      const expectedChecksum = fileInfo?.metadata?.['checksum'];
       
       if (!expectedChecksum) {
         return { isValid: false };
@@ -521,7 +529,7 @@ export class GridFSService {
     }
     
     // Check MIME type
-    if (!GRIDFS_CONFIG.ALLOWED_MIME_TYPES.includes(mimeType)) {
+    if (!GRIDFS_CONFIG.ALLOWED_MIME_TYPES.includes(mimeType as any)) {
       errors.push(`File type not allowed. Allowed types: ${GRIDFS_CONFIG.ALLOWED_MIME_TYPES.join(', ')}`);
     }
     
@@ -532,8 +540,8 @@ export class GridFSService {
     
     return { 
       isValid: errors.length === 0, 
-      errors: errors.length > 0 ? errors : undefined,
-      warnings: warnings.length > 0 ? warnings : undefined
+      ...(errors.length > 0 && { errors }),
+      ...(warnings.length > 0 && { warnings })
     };
   }
 
@@ -549,7 +557,7 @@ export class GridFSService {
     const extension = this.getFileExtension(sanitizedFilename);
     const baseName = sanitizedFilename.replace(extension, '');
     
-    return `${metadata.documentType}_${metadata.userId}_${timestamp}_${baseName}${extension}`;
+    return `${metadata['documentType']}_${metadata.userId}_${timestamp}_${baseName}${extension}`;
   }
 
   /**

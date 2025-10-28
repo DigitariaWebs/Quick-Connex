@@ -6,6 +6,7 @@
  */
 
 import { DatabaseService } from './core/DatabaseService';
+import { log } from '../logging';
 
 /**
  * Initialize database connection
@@ -18,7 +19,7 @@ import { DatabaseService } from './core/DatabaseService';
  */
 export async function connectDatabase(): Promise<void> {
   try {
-    console.log('📊 Initializing database connection...');
+    log.database('Initializing database connection...');
     
     // Connect using the static method
     const connection = await DatabaseService.connect();
@@ -29,19 +30,19 @@ export async function connectDatabase(): Promise<void> {
       throw new Error('Database connection verification failed');
     }
     
-    console.log('✅ Database connected successfully');
-    console.log(`📍 Database: ${connection.name}`);
-    console.log(`🏠 Host: ${connection.host}:${connection.port}`);
-    console.log(`🔗 State: ${connection.readyState}`);
+    log.info('Database connected successfully');
+    log.info(`Database: ${connection.name}`);
+    log.info(`Host: ${connection.host}:${connection.port}`);
+    log.info(`State: ${connection.readyState}`);
     
     // Log basic configuration info
-    console.log('⚙️  Database Configuration:');
-    console.log(`   - Connection Pool: Active`);
-    console.log(`   - Monitoring: Enabled`);
-    console.log(`   - Caching: Enabled`);
+    log.info('Database Configuration:');
+    log.info('   - Connection Pool: Active');
+    log.info('   - Monitoring: Enabled');
+    log.info('   - Caching: Enabled');
     
   } catch (error) {
-    console.error('❌ Database connection failed:', error);
+    log.error('Database connection failed', error);
     throw error;
   }
 }
@@ -56,13 +57,13 @@ export async function connectDatabase(): Promise<void> {
  */
 export async function disconnectDatabase(): Promise<void> {
   try {
-    console.log('📊 Disconnecting from database...');
+    log.database('Disconnecting from database...');
     
     await DatabaseService.disconnect();
     
-    console.log('✅ Database disconnected successfully');
+    log.info('Database disconnected successfully');
   } catch (error) {
-    console.error('❌ Database disconnection failed:', error);
+    log.error('Database disconnection failed', error);
     throw error;
   }
 }

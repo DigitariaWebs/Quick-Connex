@@ -6,7 +6,8 @@
 
 import { UserRole } from './permissions.types';
 import { IDocumentReference } from './security.types';
-import { UserDTO, SessionDTO } from './user.types';
+import { UserDTO } from '../dto/user.dto';
+import { SessionDTO } from '../dto/session.dto';
 
 export interface LoginCredentials {
   email: string;

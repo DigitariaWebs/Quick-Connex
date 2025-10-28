@@ -4,6 +4,8 @@
  * Database monitoring, metrics, and performance tracking types.
  */
 
+import { DatabaseError } from './errors.types';
+
 export interface QueryStats {
   totalQueries: number;
   averageExecutionTime: number;
@@ -75,7 +77,7 @@ export interface DatabaseAlert {
 }
 
 export interface DatabaseEvent {
-  type: 'connect' | 'disconnect' | 'error' | 'query' | 'slow_query' | 'transaction';
+  type: 'connect' | 'disconnect' | 'error' | 'query' | 'slow_query' | 'transaction' | 'alert';
   timestamp: Date;
   data: any;
 }

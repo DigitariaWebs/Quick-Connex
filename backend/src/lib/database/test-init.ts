@@ -16,7 +16,7 @@ export function testDatabaseInitialization(): void {
   try {
     // Test 1: Get singleton instance
     console.log('✅ Test 1: Getting DatabaseService singleton instance');
-    const dbService = DatabaseService.getInstance();
+    DatabaseService.getInstance();
     console.log('   - Singleton instance created successfully');
     
     // Test 2: Check static methods exist

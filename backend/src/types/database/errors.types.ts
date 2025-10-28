@@ -4,8 +4,8 @@
  * Database-specific error handling and error types.
  */
 
-export interface DatabaseError extends Error {
-  code?: number;
+export interface DatabaseErrorInterface extends Error {
+  code?: DatabaseErrorCode;
   codeName?: string;
   keyPattern?: any;
   keyValue?: any;
@@ -55,7 +55,7 @@ export class ConnectionError extends DatabaseError {
 }
 
 export class QueryError extends DatabaseError {
-  constructor(message: string, query?: any, details?: any) {
+  constructor(message: string, _query?: any, details?: any) {
     super(DatabaseErrorCode.QUERY_ERROR, message, 400, details, 'query');
     this.name = 'QueryError';
   }
@@ -72,6 +72,13 @@ export class DuplicateKeyError extends DatabaseError {
   constructor(message: string, keyValue?: any) {
     super(DatabaseErrorCode.DUPLICATE_KEY, message, 409, { keyValue });
     this.name = 'DuplicateKeyError';
+  }
+}
+
+export class NotFoundError extends DatabaseError {
+  constructor(message: string = 'Resource not found', model?: string) {
+    super(DatabaseErrorCode.DOCUMENT_NOT_FOUND, message, 404, undefined, 'find', model);
+    this.name = 'NotFoundError';
   }
 }
 

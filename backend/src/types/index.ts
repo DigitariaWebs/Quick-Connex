@@ -14,6 +14,9 @@ export * from './auth';
 // Database types
 export * from './database';
 
+// Logging types
+export * from './logging';
+
 // DTO types
 export * from './dto';
 

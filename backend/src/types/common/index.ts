@@ -138,18 +138,3 @@ export interface PaginatedResponse<T> extends BaseResponse {
   meta?: Record<string, any>;
 }
 
-export interface ValidationError {
-  field: string;
-  message: string;
-  code: string;
-  value?: any;
-}
-
-export interface ValidationErrorResponse extends BaseResponse {
-  success: false;
-  error: {
-    code: 'VALIDATION_ERROR';
-    message: string;
-    details: ValidationError[];
-  };
-}

@@ -140,7 +140,7 @@ export interface AuthMetrics {
   rateLimitHits: number;
 }
 
-export interface PerformanceMetrics {
+export interface AuthPerformanceMetrics { 
   averageAuthTime: number;
   averageSessionValidationTime: number;
   cacheHitRate: number;
@@ -155,7 +155,7 @@ export interface SessionCacheEntry {
   expiresAt: Date;
 }
 
-export interface CacheStats {
+export interface AuthCacheStats {
   size: number;
   maxSize: number;
   hitRate: number;

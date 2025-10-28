@@ -33,7 +33,7 @@ export function errorHandler(
   err: any,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): Response {
   // Log error details
   console.error('Error occurred:', {
@@ -48,14 +48,14 @@ export function errorHandler(
   });
 
   // Use ErrorBuilder to handle and format the error
-  return ErrorBuilder.handleError(res, err);
+  return ErrorBuilder.handleError(res as any, err);
 }
 
 /**
  * 404 handler for unmatched routes
  */
 export function notFoundHandler(req: Request, res: Response): Response {
-  return ErrorBuilder.notFound(res, `Route ${req.method} ${req.path} not found`);
+  return ErrorBuilder.notFound(res as any, `Route ${req.method} ${req.url} not found`);
 }
 
 /**
@@ -76,7 +76,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
   
   res.on('finish', () => {
     const duration = Date.now() - start;
-    console.log(`${req.method} ${req.url} - ${res.statusCode} - ${duration}ms`);
+    console.log(`${req.method} ${req.url} - ${(res as any).statusCode || 200} - ${duration}ms`);
   });
   
   next();

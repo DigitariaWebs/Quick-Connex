@@ -40,10 +40,10 @@ export class AuthError extends Error {
   }
 }
 
-export class ValidationError extends AuthError {
+export class AuthValidationError extends AuthError {
   constructor(message: string, details?: any) {
     super(AuthErrorCode.VALIDATION_ERROR, message, 400, details);
-    this.name = 'ValidationError';
+    this.name = 'AuthValidationError';
   }
 }
 
@@ -61,10 +61,10 @@ export class ForbiddenError extends AuthError {
   }
 }
 
-export class NotFoundError extends AuthError {
+export class AuthNotFoundError extends AuthError {
   constructor(message: string = 'User not found') {
     super(AuthErrorCode.USER_NOT_FOUND, message, 404);
-    this.name = 'NotFoundError';
+    this.name = 'AuthNotFoundError';
   }
 }
 
@@ -101,7 +101,7 @@ export interface AuthErrorResponse {
   timestamp: string;
 }
 
-export interface ValidationErrorResponse extends AuthErrorResponse {
+export interface AuthValidationErrorResponse extends AuthErrorResponse {
   error: {
     code: AuthErrorCode.VALIDATION_ERROR;
     message: string;

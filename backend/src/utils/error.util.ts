@@ -5,13 +5,9 @@
  * Provides consistent error structure and automatic status code handling.
  */
 
-// Note: Express types would be imported here in a real Express app
-// For now, we'll define the Response interface locally
-interface Response {
-  status(code: number): Response;
-  json(data: any): Response;
-}
-import { ApiResponse, ApiError, ErrorCode, HTTP_STATUS, ValidationErrorDetail } from '../types/api.types';
+import { Response } from 'express';
+import { ApiResponse, ApiErrorResponse, HTTP_STATUS, ValidationErrorDetail } from '../types/api.types';
+import { ErrorCode } from '../types/error.types';
 
 /**
  * Error Response Builder
@@ -29,12 +25,12 @@ export class ErrorBuilder {
     retryable: boolean = false,
     retryAfter?: number
   ): Response {
-    const error: ApiError = {
+    const error: ApiErrorResponse = {
       code,
       message,
-      details,
-      retryable,
-      retryAfter,
+      ...(details && { details }),
+      ...(retryable && { retryable }),
+      ...(retryAfter && { retryAfter })
     };
 
     const response: ApiResponse = {
@@ -212,7 +208,7 @@ export class ErrorBuilder {
 
     // Default to server error
     return this.serverError(res, 
-      process.env.NODE_ENV === 'production' 
+      process.env['NODE_ENV'] === 'production' 
         ? 'An unexpected error occurred' 
         : error.message
     );

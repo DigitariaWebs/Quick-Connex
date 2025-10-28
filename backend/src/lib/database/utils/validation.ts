@@ -7,8 +7,7 @@
 
 import { Types } from 'mongoose';
 import { 
-  ValidationError,
-  DatabaseError
+  ValidationError
 } from '../../../types/database';
 import { VALIDATION_PATTERNS } from '../core/constants';
 
@@ -241,6 +240,11 @@ export function validateSortParams(sort: any): { valid: boolean; errors: string[
     }
     
     const [field, direction] = parts;
+    if (!field || !direction) {
+      errors.push('Sort field and direction are required');
+      return { valid: false, errors, sanitized: {} };
+    }
+    
     const validDirections = ['asc', 'desc', '1', '-1'];
     
     if (!validDirections.includes(direction.toLowerCase())) {
@@ -339,34 +343,35 @@ export function validateData(data: any, schema: any): { valid: boolean; errors: 
   
   for (const [field, rules] of Object.entries(schema)) {
     const value = data[field];
+    const fieldRules = rules as any;
     
-    if (rules.required && (value === undefined || value === null || value === '')) {
+    if (fieldRules.required && (value === undefined || value === null || value === '')) {
       errors.push(`Field '${field}' is required`);
       continue;
     }
     
     if (value !== undefined && value !== null) {
-      if (rules.type && typeof value !== rules.type) {
-        errors.push(`Field '${field}' must be of type ${rules.type}`);
+      if (fieldRules.type && typeof value !== fieldRules.type) {
+        errors.push(`Field '${field}' must be of type ${fieldRules.type}`);
       }
       
-      if (rules.minLength && typeof value === 'string' && value.length < rules.minLength) {
-        errors.push(`Field '${field}' must be at least ${rules.minLength} characters long`);
+      if (fieldRules.minLength && typeof value === 'string' && value.length < fieldRules.minLength) {
+        errors.push(`Field '${field}' must be at least ${fieldRules.minLength} characters long`);
       }
       
-      if (rules.maxLength && typeof value === 'string' && value.length > rules.maxLength) {
-        errors.push(`Field '${field}' must be no more than ${rules.maxLength} characters long`);
+      if (fieldRules.maxLength && typeof value === 'string' && value.length > fieldRules.maxLength) {
+        errors.push(`Field '${field}' must be no more than ${fieldRules.maxLength} characters long`);
       }
       
-      if (rules.min && typeof value === 'number' && value < rules.min) {
-        errors.push(`Field '${field}' must be at least ${rules.min}`);
+      if (fieldRules.min && typeof value === 'number' && value < fieldRules.min) {
+        errors.push(`Field '${field}' must be at least ${fieldRules.min}`);
       }
       
-      if (rules.max && typeof value === 'number' && value > rules.max) {
-        errors.push(`Field '${field}' must be no more than ${rules.max}`);
+      if (fieldRules.max && typeof value === 'number' && value > fieldRules.max) {
+        errors.push(`Field '${field}' must be no more than ${fieldRules.max}`);
       }
       
-      if (rules.pattern && typeof value === 'string' && !rules.pattern.test(value)) {
+      if (fieldRules.pattern && typeof value === 'string' && !fieldRules.pattern.test(value)) {
         errors.push(`Field '${field}' does not match required pattern`);
       }
     }

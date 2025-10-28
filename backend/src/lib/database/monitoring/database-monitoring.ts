@@ -25,8 +25,7 @@ import {
 } from '../utils/health';
 import { 
   getConnectionStats,
-  getPoolStats,
-  performHealthCheck as checkConnectionHealth
+  getPoolStats
 } from '../utils/connection';
 import { MONITORING_THRESHOLDS, HEALTH_STATUS } from '../core/constants';
 

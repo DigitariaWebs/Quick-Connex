@@ -12,7 +12,7 @@
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
-  error?: ApiError;
+  error?: ApiErrorResponse;
   meta?: ResponseMeta;
 }
 
@@ -51,7 +51,7 @@ export interface ResponseMeta {
 /**
  * API Error structure in responses
  */
-export interface ApiError {
+export interface ApiErrorResponse {
   code: string; // ErrorCode enum value
   message: string;
   details?: ValidationErrorDetail[] | Record<string, any>;

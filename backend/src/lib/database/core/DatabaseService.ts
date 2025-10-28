@@ -48,6 +48,7 @@ import {
   endSession,
   executeInTransaction
 } from '../utils/transaction';
+import { log } from '../../logging';
 import { 
   MemoryCache,
   shouldCacheQuery,
@@ -127,12 +128,12 @@ export class DatabaseService {
   private async autoInitialize(): Promise<void> {
     try {
       if (!this.connection || this.connection.readyState !== 1) {
-        console.log('Auto-initializing database connection...');
+        log.database('Auto-initializing database connection...');
         await this.performConnection();
-        console.log('Database connection auto-initialized successfully');
+        log.database('Database connection auto-initialized successfully');
       }
     } catch (error) {
-      console.warn('Auto-initialization failed:', error);
+      log.warn('Auto-initialization failed', error as Error);
       // Don't throw error - let individual operations handle connection
     }
   }
@@ -567,19 +568,19 @@ export class DatabaseService {
   }
 
   private async establishConnection(): Promise<Connection> {
-    const { uri, options } = this.config;
+    const { uri } = this.config;
 
     if (!uri) {
       throw new ConnectionError('MongoDB URI is required');
     }
 
-    console.log('Connecting to MongoDB...');
+    log.database('Connecting to MongoDB...');
 
     try {
       const connection = await retryDatabaseOperation(
         async () => {
           const conn = await mongoose.connect(uri, createConnectionOptions(this.config));
-          console.log('Successfully connected to MongoDB');
+          log.database('Successfully connected to MongoDB');
           
           this.setupConnectionEvents(conn.connection);
           this.startHealthMonitoring();
@@ -596,10 +597,10 @@ export class DatabaseService {
 
     } catch (error) {
       this.connectionAttempts++;
-      console.error('Connection failed:', error);
+      log.error('Connection failed', error);
       
       if (this.connectionAttempts < this.maxReconnectAttempts) {
-        console.log(`Retrying connection (${this.connectionAttempts}/${this.maxReconnectAttempts})`);
+        log.warn(`Retrying connection (${this.connectionAttempts}/${this.maxReconnectAttempts})`);
         await new Promise(resolve => setTimeout(resolve, this.reconnectDelay));
         this.reconnectDelay = Math.min(this.reconnectDelay * 2, TIMEOUTS.MAX_RETRY_DELAY);
         return this.establishConnection();
@@ -618,9 +619,9 @@ export class DatabaseService {
     if (this.connection) {
       try {
         await this.connection.close();
-        console.log('Disconnected from MongoDB');
+        log.database('Disconnected from MongoDB');
       } catch (error) {
-        console.error('Error during disconnect:', error);
+        log.error('Error during disconnect', error);
       }
       this.connection = null;
     }
@@ -628,12 +629,12 @@ export class DatabaseService {
     try {
       await mongoose.disconnect();
     } catch (error) {
-      console.error('Error during mongoose disconnect:', error);
+      log.error('Error during mongoose disconnect', error);
     }
   }
 
   private async performReconnect(): Promise<Connection> {
-    console.log('Forcing reconnection...');
+    log.database('Forcing reconnection...');
     await this.performDisconnect();
     await new Promise(resolve => setTimeout(resolve, 1000));
     return this.performConnection();
@@ -641,26 +642,26 @@ export class DatabaseService {
 
   private setupConnectionEvents(connection: Connection): void {
     connection.on('connected', () => {
-      console.log('Connected to MongoDB');
+      log.database('Connected to MongoDB');
       this.connectionAttempts = 0;
       this.reconnectDelay = RETRY_CONFIG.BACKOFF_MULTIPLIER * 1000;
     });
 
     connection.on('disconnected', () => {
-      console.warn('Disconnected from MongoDB');
+      log.warn('Disconnected from MongoDB');
       this.connection = null;
     });
 
     connection.on('error', (error) => {
-      console.error('Connection error:', error);
+      log.error('Connection error', error);
     });
 
     connection.on('reconnected', () => {
-      console.log('Reconnected to MongoDB');
+      log.database('Reconnected to MongoDB');
     });
 
     connection.on('close', () => {
-      console.warn('Connection closed');
+      log.warn('Connection closed');
       this.connection = null;
     });
   }

@@ -48,38 +48,7 @@ export enum UserStatus {
   SUSPENDED = 'suspended'
 }
 
-// DTOs for API responses (safe data only)
-export interface UserDTO {
-  _id: string;
-  userType: UserRole;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  status: UserStatus;
-  post?: string;
-  ciusss?: {
-    _id: string;
-    name: string;
-    code: string;
-  };
-  hospital?: {
-    _id: string;
-    name: string;
-    address: string;
-  };
-  permissions?: Permission[];
-  createdAt: Date;
-  updatedAt: Date;
-  lastLogin?: Date;
-  lastLoginIp?: string;
-}
-
-export interface UserProfileDTO extends UserDTO {
-  documents?: IDocumentReference[];
-  loginHistory?: ILoginHistory[];
-  accountLockedUntil?: Date;
-}
+// Note: DTOs moved to /types/dto/user.dto.ts to avoid conflicts
 
 export interface CreateUserDTO {
   userType: 'employee' | 'manager';

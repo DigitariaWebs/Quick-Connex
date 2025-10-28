@@ -6,6 +6,7 @@
  */
 
 import { ClientSession } from 'mongoose';
+import { log } from '../../logging';
 import { 
   TransactionOptions, 
   TransactionCallback,
@@ -36,13 +37,13 @@ export async function withTransaction<T>(
     
     const executionTime = Date.now() - startTime;
     
-    console.log(`Transaction completed successfully in ${executionTime}ms`);
+    log.database(`Transaction completed successfully in ${executionTime}ms`, { duration: executionTime });
     
     return result;
   } catch (error) {
     const executionTime = Date.now() - startTime;
     
-    console.error(`Transaction failed after ${executionTime}ms:`, error);
+    log.error(`Transaction failed after ${executionTime}ms`, error, { duration: executionTime });
     
     throw new TransactionError(
       `Transaction failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -94,7 +95,7 @@ export async function endSession(session: ClientSession): Promise<void> {
   try {
     await session.endSession();
   } catch (error) {
-    console.error('Error ending session:', error);
+    log.error('Error ending session', error);
     // Don't throw here as session cleanup should be best effort
   }
 }
@@ -169,7 +170,7 @@ export async function retryTransaction<T>(
         maxDelay
       );
       
-      console.log(`Transaction attempt ${attempt} failed, retrying in ${delay}ms...`);
+      log.warn(`Transaction attempt ${attempt} failed, retrying in ${delay}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
@@ -301,7 +302,7 @@ export async function cleanupTransaction(session: ClientSession): Promise<void> 
       await session.abortTransaction();
     }
   } catch (error) {
-    console.error('Error aborting transaction:', error);
+    log.error('Error aborting transaction', error);
   } finally {
     await endSession(session);
   }

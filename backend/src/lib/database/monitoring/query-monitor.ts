@@ -85,7 +85,7 @@ export class QueryMonitor {
       executionTime,
       timestamp: new Date(),
       success,
-      error,
+      ...(error && { error }),
       slow: executionTime > this.slowQueryThreshold
     };
 
@@ -307,7 +307,7 @@ export class QueryMonitor {
    */
   private calculatePercentile(sorted: number[], percentile: number): number {
     const index = Math.ceil(sorted.length * percentile) - 1;
-    return sorted[Math.max(0, index)];
+    return sorted[Math.max(0, index)] || 0;
   }
 
   /**
@@ -336,7 +336,7 @@ export class QueryMonitor {
         model: query.model,
         executionTime: query.executionTime,
         success: query.success,
-        error: query.error
+        ...(query.error && { error: query.error })
       }
     };
 

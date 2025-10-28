@@ -35,13 +35,6 @@ export interface RetryConfig {
   retryCondition?: (error: any) => boolean;
 }
 
-export interface TransactionOptions {
-  readPreference?: 'primary' | 'secondary' | 'primaryPreferred' | 'secondaryPreferred' | 'nearest';
-  readConcern?: any;
-  writeConcern?: any;
-  maxCommitTimeMS?: number;
-  retryWrites?: boolean;
-}
 
 export interface PaginationOptions {
   page?: number;
@@ -91,16 +84,6 @@ export interface QueryResult<T> {
   options: QueryOptions;
 }
 
-export interface TransactionResult<T> {
-  result: T;
-  session: any;
-  executionTime: number;
-  operations: number;
-}
-
-export interface TransactionCallback<T> {
-  (session: any): Promise<T>;
-}
 
 export interface QueryBuilder {
   build(): any;

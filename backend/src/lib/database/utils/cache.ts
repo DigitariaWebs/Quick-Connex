@@ -6,6 +6,7 @@
  */
 
 import { CacheConfig, CacheStats, CacheOptions, CacheInvalidationOptions } from '../../../types/database';
+import { log } from '../../logging';
 import { CACHE_CONFIG } from '../core/constants';
 
 /**
@@ -235,7 +236,7 @@ export class MemoryCache {
     }
 
     if (cleanedCount > 0) {
-      console.log(`Cache cleanup: removed ${cleanedCount} expired entries`);
+      log.debug(`Cache cleanup: removed ${cleanedCount} expired entries`);
       this.updateStats();
     }
   }
@@ -336,7 +337,7 @@ export function generateCacheKey(
  */
 export function shouldCacheQuery(
   operation: string,
-  modelName: string,
+  _modelName: string,
   options: any = {}
 ): boolean {
   // Don't cache write operations

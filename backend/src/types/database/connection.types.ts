@@ -4,8 +4,6 @@
  * Database connection configuration and management types.
  */
 
-import { Connection } from 'mongoose';
-
 export interface DatabaseConfig {
   uri?: string;
   options?: {

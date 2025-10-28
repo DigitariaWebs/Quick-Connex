@@ -37,19 +37,14 @@ export interface PaginatedResponse<T> extends BaseResponse {
   meta?: Record<string, any>;
 }
 
-export interface ValidationError {
-  field: string;
-  message: string;
-  code: string;
-  value?: any;
-}
+import { ValidationErrorDetail } from '../api.types';
 
 export interface ValidationErrorResponse extends BaseResponse {
   success: false;
   error: {
     code: 'VALIDATION_ERROR';
     message: string;
-    details: ValidationError[];
+    details: ValidationErrorDetail[];
   };
 }
 
@@ -57,6 +52,6 @@ export interface ValidationErrorResponse extends BaseResponse {
 export interface ResponseBuilder {
   success<T>(data: T, meta?: Record<string, any>): SuccessResponse<T>;
   error(code: string, message: string, details?: any): ErrorResponse;
-  validationError(message: string, errors: ValidationError[]): ValidationErrorResponse;
+  validationError(message: string, errors: ValidationErrorDetail[]): ValidationErrorResponse;
   paginated<T>(data: T[], pagination: PaginationMeta, meta?: Record<string, any>): PaginatedResponse<T>;
 }

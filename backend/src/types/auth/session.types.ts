@@ -33,20 +33,7 @@ export enum SessionType {
   API = 'api'
 }
 
-// DTOs for API responses
-export interface SessionDTO {
-  sessionId: string;
-  expiresAt: Date;
-  lastAccessedAt: Date;
-  securityRisk: 'low' | 'medium' | 'high';
-  isNewDevice: boolean;
-  isNewLocation: boolean;
-  sessionAge: number;
-  remainingTime: number;
-  isPrimary: boolean;
-  deviceInfo: DeviceInfo;
-  location?: LocationInfo;
-}
+// Note: SessionDTO moved to /types/dto/session.dto.ts to avoid conflicts
 
 export interface SessionInfo {
   sessionId: string;

@@ -6,6 +6,7 @@
  */
 
 import { Connection } from 'mongoose';
+import { log } from '../../logging';
 import { 
   DatabaseConfig, 
   ConnectionStats, 
@@ -268,7 +269,7 @@ export function monitorQuery<T>(
       
       // Log slow queries
       if (executionTime > 1000) {
-        console.warn(`Slow query detected: ${operation} on ${modelName} took ${executionTime}ms`, {
+        log.warn(`Slow query detected: ${operation} on ${modelName} took ${executionTime}ms`, {
           operation,
           model: modelName,
           executionTime,
@@ -280,7 +281,7 @@ export function monitorQuery<T>(
     } catch (error) {
       const executionTime = Date.now() - startTime;
       
-      console.error(`Query failed: ${operation} on ${modelName} after ${executionTime}ms`, {
+      log.error(`Query failed: ${operation} on ${modelName} after ${executionTime}ms`, {
         operation,
         model: modelName,
         executionTime,

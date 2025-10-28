@@ -14,6 +14,7 @@ import {
   GeoQuery
 } from '../../../types/common/query';
 import { PaginationParams, PaginationMeta } from '../../../types/common/pagination';
+import { log } from '../../logging';
 import { DEFAULT_SORT, FIELD_NAMES } from '../core/constants';
 
 /**
@@ -575,7 +576,7 @@ export class QueryOptimizer {
     
     if (analysis.hints.length > 0) {
       // In a real implementation, you might add $hint or other optimizations
-      console.log('Query optimization hints:', analysis.hints);
+      log.debug('Query optimization hints', { hints: analysis.hints });
     }
     
     return optimized;
