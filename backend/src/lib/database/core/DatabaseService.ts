@@ -12,9 +12,9 @@ import {
   ConnectionStats, 
   PoolStats, 
   DatabaseHealth,
-  QueryOptions,
+  DatabaseQueryOptions,
   TransactionOptions,
-  PaginationOptions,
+  DatabasePaginationOptions,
   BulkWriteOperation,
   BulkWriteResult,
   AggregationOptions,
@@ -212,7 +212,7 @@ export class DatabaseService {
   static async create<T>(
     model: Model<T>, 
     data: any, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<T> {
     const instance = DatabaseService.getInstance();
     return instance.performCreate(model, data, options);
@@ -224,7 +224,7 @@ export class DatabaseService {
   static async createMany<T>(
     model: Model<T>, 
     data: any[], 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<T[]> {
     const instance = DatabaseService.getInstance();
     return instance.performCreateMany(model, data, options);
@@ -236,7 +236,7 @@ export class DatabaseService {
   static async insertBulk<T>(
     model: Model<T>, 
     operations: BulkWriteOperation[], 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<BulkWriteResult> {
     const instance = DatabaseService.getInstance();
     return instance.performBulkWrite(model, operations, options);
@@ -248,7 +248,7 @@ export class DatabaseService {
   static async findById<T>(
     model: Model<T>, 
     id: string, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<T | null> {
     const instance = DatabaseService.getInstance();
     return instance.performFindById(model, id, options);
@@ -260,7 +260,7 @@ export class DatabaseService {
   static async findOne<T>(
     model: Model<T>, 
     query: any, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<T | null> {
     const instance = DatabaseService.getInstance();
     return instance.performFindOne(model, query, options);
@@ -272,7 +272,7 @@ export class DatabaseService {
   static async findMany<T>(
     model: Model<T>, 
     query: any, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<T[]> {
     const instance = DatabaseService.getInstance();
     return instance.performFindMany(model, query, options);
@@ -284,8 +284,8 @@ export class DatabaseService {
   static async findWithPagination<T>(
     model: Model<T>, 
     query: any, 
-    pagination: PaginationOptions, 
-    options: QueryOptions = {}
+    pagination: DatabasePaginationOptions, 
+    options: DatabaseQueryOptions = {}
   ): Promise<PaginatedResult<T>> {
     const instance = DatabaseService.getInstance();
     return instance.performFindWithPagination(model, query, pagination, options);
@@ -298,7 +298,7 @@ export class DatabaseService {
     model: Model<T>, 
     id: string, 
     update: any, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<T | null> {
     const instance = DatabaseService.getInstance();
     return instance.performUpdateById(model, id, update, options);
@@ -311,7 +311,7 @@ export class DatabaseService {
     model: Model<T>, 
     query: any, 
     update: any, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<T | null> {
     const instance = DatabaseService.getInstance();
     return instance.performUpdateOne(model, query, update, options);
@@ -324,7 +324,7 @@ export class DatabaseService {
     model: Model<T>, 
     query: any, 
     update: any, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<{ modifiedCount: number }> {
     const instance = DatabaseService.getInstance();
     return instance.performUpdateMany(model, query, update, options);
@@ -336,7 +336,7 @@ export class DatabaseService {
   static async deleteById<T>(
     model: Model<T>, 
     id: string, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<boolean> {
     const instance = DatabaseService.getInstance();
     return instance.performDeleteById(model, id, options);
@@ -348,7 +348,7 @@ export class DatabaseService {
   static async deleteOne<T>(
     model: Model<T>, 
     query: any, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<boolean> {
     const instance = DatabaseService.getInstance();
     return instance.performDeleteOne(model, query, options);
@@ -360,7 +360,7 @@ export class DatabaseService {
   static async deleteMany<T>(
     model: Model<T>, 
     query: any, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<{ deletedCount: number }> {
     const instance = DatabaseService.getInstance();
     return instance.performDeleteMany(model, query, options);
@@ -372,7 +372,7 @@ export class DatabaseService {
   static async count<T>(
     model: Model<T>, 
     query: any, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<number> {
     const instance = DatabaseService.getInstance();
     return instance.performCount(model, query, options);
@@ -447,7 +447,7 @@ export class DatabaseService {
    */
   static buildPaginatedQuery(
     query: any, 
-    pagination: PaginationOptions, 
+    pagination: DatabasePaginationOptions, 
     sort?: any
   ): any {
     const paginationParams = buildPaginationParams(pagination);
@@ -694,7 +694,7 @@ export class DatabaseService {
   private async performCreate<T>(
     model: Model<T>, 
     data: any, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<T> {
     const startTime = Date.now();
     
@@ -722,7 +722,7 @@ export class DatabaseService {
   private async performCreateMany<T>(
     model: Model<T>, 
     data: any[], 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<T[]> {
     const startTime = Date.now();
     
@@ -749,7 +749,7 @@ export class DatabaseService {
   private async performBulkWrite<T>(
     model: Model<T>, 
     operations: BulkWriteOperation[], 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<BulkWriteResult> {
     const startTime = Date.now();
     
@@ -776,7 +776,7 @@ export class DatabaseService {
   private async performFindById<T>(
     model: Model<T>, 
     id: string, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<T | null> {
     const startTime = Date.now();
     
@@ -804,7 +804,7 @@ export class DatabaseService {
   private async executeFindById<T>(
     model: Model<T>, 
     id: Types.ObjectId, 
-    options: QueryOptions
+    options: DatabaseQueryOptions
   ): Promise<T | null> {
     const query = model.findById(id);
     
@@ -827,7 +827,7 @@ export class DatabaseService {
   private async performFindOne<T>(
     model: Model<T>, 
     query: any, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<T | null> {
     const startTime = Date.now();
     
@@ -855,7 +855,7 @@ export class DatabaseService {
   private async executeFindOne<T>(
     model: Model<T>, 
     query: any, 
-    options: QueryOptions
+    options: DatabaseQueryOptions
   ): Promise<T | null> {
     const mongoQuery = model.findOne(query);
     
@@ -882,7 +882,7 @@ export class DatabaseService {
   private async performFindMany<T>(
     model: Model<T>, 
     query: any, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<T[]> {
     const startTime = Date.now();
     
@@ -910,7 +910,7 @@ export class DatabaseService {
   private async executeFindMany<T>(
     model: Model<T>, 
     query: any, 
-    options: QueryOptions
+    options: DatabaseQueryOptions
   ): Promise<T[]> {
     const mongoQuery = model.find(query);
     
@@ -945,8 +945,8 @@ export class DatabaseService {
   private async performFindWithPagination<T>(
     model: Model<T>, 
     query: any, 
-    pagination: PaginationOptions, 
-    options: QueryOptions = {}
+    pagination: DatabasePaginationOptions, 
+    options: DatabaseQueryOptions = {}
   ): Promise<PaginatedResult<T>> {
     const startTime = Date.now();
     
@@ -995,7 +995,7 @@ export class DatabaseService {
     model: Model<T>, 
     id: string, 
     update: any, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<T | null> {
     const startTime = Date.now();
     
@@ -1033,7 +1033,7 @@ export class DatabaseService {
     model: Model<T>, 
     query: any, 
     update: any, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<T | null> {
     const startTime = Date.now();
     
@@ -1071,7 +1071,7 @@ export class DatabaseService {
     model: Model<T>, 
     query: any, 
     update: any, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<{ modifiedCount: number }> {
     const startTime = Date.now();
     
@@ -1104,7 +1104,7 @@ export class DatabaseService {
   private async performDeleteById<T>(
     model: Model<T>, 
     id: string, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<boolean> {
     const startTime = Date.now();
     
@@ -1134,7 +1134,7 @@ export class DatabaseService {
   private async performDeleteOne<T>(
     model: Model<T>, 
     query: any, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<boolean> {
     const startTime = Date.now();
     
@@ -1164,7 +1164,7 @@ export class DatabaseService {
   private async performDeleteMany<T>(
     model: Model<T>, 
     query: any, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<{ deletedCount: number }> {
     const startTime = Date.now();
     
@@ -1194,7 +1194,7 @@ export class DatabaseService {
   private async performCount<T>(
     model: Model<T>, 
     query: any, 
-    options: QueryOptions = {}
+    options: DatabaseQueryOptions = {}
   ): Promise<number> {
     const startTime = Date.now();
     

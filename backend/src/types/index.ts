@@ -38,6 +38,6 @@ export type {
 
 export type {
   DatabaseErrorCode,
-  QueryOptions,
+  DatabaseQueryOptions,
   TransactionOptions
 } from './database';

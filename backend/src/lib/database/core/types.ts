@@ -11,16 +11,12 @@ export * from '../../../types/database';
 // ===== ERROR TYPES =====
 export { 
   NotFoundError,
-  ValidationError as DatabaseValidationError,
+  ValidationError,
   ConflictError,
   UnauthorizedError,
   ForbiddenError,
   ServerError
 } from '../../../types/error.types';
-
-// ===== TYPE ALIASES FOR CONVENIENCE =====
-export type { ObjectId } from 'mongoose';
-export type { Model as DBModel, Document as DBDocument, Connection as DBConnection } from 'mongoose';
 
 // ===== COMMON TYPE ALIASES =====
 export type { 

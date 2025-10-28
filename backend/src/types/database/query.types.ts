@@ -1,29 +1,22 @@
 /**
  * Database Query Types
  * 
- * Query options, operations, and result types.
+ * Extends the base QueryOptions with database-specific capabilities
+ * (retry, monitoring, timeouts, read/write prefs, etc.).
+ * Use these only within repository/DAO/database-layer APIs.
  */
 
-import { PopulateOptions } from '../common/query';
+import { PopulateOptions, QueryOptions as BaseQueryOptions } from '../common/query';
 
-export interface QueryOptions {
+/**
+ * DatabaseQueryOptions
+ * 
+ * Database-specific options layered on top of the base QueryOptions.
+ */
+export interface DatabaseQueryOptions extends BaseQueryOptions {
   retry?: RetryConfig;
   monitor?: boolean;
   timeout?: number; // milliseconds
-  lean?: boolean;
-  populate?: PopulateOptions | PopulateOptions[];
-  select?: string | Record<string, 0 | 1>;
-  sort?: Record<string, 1 | -1> | string;
-  limit?: number;
-  skip?: number;
-  session?: any; // Mongoose session
-  readPreference?: 'primary' | 'secondary' | 'primaryPreferred' | 'secondaryPreferred' | 'nearest';
-  writeConcern?: any;
-  hint?: any;
-  comment?: string;
-  maxTimeMS?: number;
-  collation?: any;
-  allowDiskUse?: boolean;
 }
 
 export interface RetryConfig {
@@ -36,7 +29,13 @@ export interface RetryConfig {
 }
 
 
-export interface PaginationOptions {
+/**
+ * DatabasePaginationOptions
+ * 
+ * Database-layer pagination knobs. Prefer common PaginationOptions
+ * for API-layer types; use this only when DB-specific sorting/flags are needed.
+ */
+export interface DatabasePaginationOptions {
   page?: number;
   limit?: number;
   offset?: number;
@@ -81,7 +80,7 @@ export interface QueryResult<T> {
   executionTime: number;
   cached: boolean;
   query: any;
-  options: QueryOptions;
+  options: DatabaseQueryOptions;
 }
 
 
@@ -99,7 +98,7 @@ export interface BatchOperation<T> {
   operation: 'create' | 'update' | 'delete' | 'upsert';
   data: T | Partial<T>;
   filter?: any;
-  options?: QueryOptions;
+  options?: DatabaseQueryOptions;
 }
 
 export interface BatchResult<T> {

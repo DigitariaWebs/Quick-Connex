@@ -30,6 +30,7 @@ export class ResponseBuilder {
   ): Response {
     const response: ApiResponse<T> = {
       success: true,
+      timestamp: new Date().toISOString(),
       data,
       meta: {
         timestamp: new Date().toISOString(),
@@ -51,6 +52,7 @@ export class ResponseBuilder {
   ): Response {
     const response: PaginatedResponse<T> = {
       success: true,
+      timestamp: new Date().toISOString(),
       data,
       pagination,
       meta: {
@@ -102,6 +104,7 @@ export class ResponseBuilder {
   ): Response {
     const response: ApiResponse<T> = {
       success: true,
+      timestamp: new Date().toISOString(),
       data,
       meta: {
         timestamp: new Date().toISOString(),

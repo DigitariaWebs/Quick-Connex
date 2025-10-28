@@ -1,7 +1,9 @@
 /**
  * Query Types
  * 
- * Types for database queries, filters, and operations.
+ * Shared query options used across modules (DB, services, etc.).
+ * This file is the single source of truth for generic query concerns.
+ * Module-specific options should EXTEND these (e.g., DatabaseQueryOptions).
  */
 
 export interface QueryFilter {
@@ -21,6 +23,12 @@ export interface PopulateOptions {
   populate?: PopulateOptions | PopulateOptions[];
 }
 
+/**
+ * QueryOptions (base)
+ * 
+ * Generic, module-agnostic query options. Database-specific extensions
+ * should use `DatabaseQueryOptions` which extends this interface.
+ */
 export interface QueryOptions {
   select?: string | string[];
   sort?: SortOptions;

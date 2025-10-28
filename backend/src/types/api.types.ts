@@ -5,38 +5,30 @@
  * All endpoints should return these structures for consistency.
  */
 
+import { 
+  PaginationMeta, 
+  PaginatedResponse as BasePaginatedResponse,
+  SuccessResponse as BaseSuccessResponse,
+  ValidationErrorDetail 
+} from './common/response';
+
 /**
  * Standard API Response wrapper
  * All endpoints should return this structure
  */
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: ApiErrorResponse;
-  meta?: ResponseMeta;
+export interface ApiResponse<T = any> extends BaseSuccessResponse<T> {
+  timestamp: string;
 }
 
 /**
  * Paginated response structure
  */
-export interface PaginatedResponse<T> {
-  success: boolean;
-  data: T[];
-  pagination: PaginationInfo;
-  meta?: ResponseMeta;
-}
+export interface PaginatedResponse<T> extends BasePaginatedResponse<T> {}
 
 /**
- * Pagination information
+ * Pagination information (alias for PaginationMeta)
  */
-export interface PaginationInfo {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrev: boolean;
-}
+export type PaginationInfo = PaginationMeta;
 
 /**
  * Response metadata
@@ -57,16 +49,6 @@ export interface ApiErrorResponse {
   details?: ValidationErrorDetail[] | Record<string, any>;
   retryable?: boolean;
   retryAfter?: number; // seconds
-}
-
-/**
- * Field-level validation error
- */
-export interface ValidationErrorDetail {
-  field: string;
-  message: string;
-  code: string;
-  value?: any;
 }
 
 /**

@@ -4,7 +4,7 @@
  * Types for request validation and validation results.
  */
 
-import { ValidationErrorDetail } from './api.types';
+import { ValidationErrorDetail } from './common/response';
 
 /**
  * Validation result structure

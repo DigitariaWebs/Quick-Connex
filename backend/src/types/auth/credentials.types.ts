@@ -46,10 +46,6 @@ export interface SignupResult {
   errorCode?: string;
 }
 
-export interface PasswordResetRequest {
-  email: string;
-}
-
 export interface PasswordResetRequestResult {
   success: boolean;
   message?: string;
@@ -78,20 +74,6 @@ export interface ChangePasswordResult {
   success: boolean;
   message?: string;
   error?: string;
-}
-
-export interface AuthContext {
-  user: UserDTO;
-  session: SessionDTO;
-  isValid: boolean;
-  securityRisk: 'low' | 'medium' | 'high';
-}
-
-export interface AuthOptions {
-  roles?: UserRole[];
-  requireSession?: boolean;
-  requireActiveStatus?: boolean;
-  skipRateLimit?: boolean;
 }
 
 export interface TokenPayload {

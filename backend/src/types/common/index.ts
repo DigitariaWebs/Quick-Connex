@@ -5,6 +5,11 @@
  * Provides utility types, enums, and common interfaces.
  */
 
+// Re-export from specific files
+export * from './pagination';
+export * from './query';
+export * from './response';
+
 // Common utility types
 export type ObjectId = string;
 export type Timestamp = Date | string;
@@ -55,86 +60,5 @@ export interface TextSearch {
 export interface SortField {
   field: string;
   order: SortOrder;
-}
-
-// Pagination types
-export interface PaginationParams {
-  page?: number;
-  limit?: number;
-  offset?: number;
-}
-
-export interface PaginationMeta {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrev: boolean;
-  offset?: number;
-}
-
-export interface PaginatedResult<T> {
-  data: T[];
-  pagination: PaginationMeta;
-}
-
-// Query types
-export interface QueryFilter {
-  [key: string]: any;
-}
-
-export interface SortOptions {
-  [key: string]: 1 | -1 | 'asc' | 'desc';
-}
-
-export interface PopulateOptions {
-  path: string;
-  select?: string;
-  model?: string;
-  match?: any;
-  options?: any;
-  populate?: PopulateOptions | PopulateOptions[];
-}
-
-export interface QueryOptions {
-  select?: string | string[];
-  sort?: SortOptions;
-  limit?: number;
-  skip?: number;
-  populate?: PopulateOptions | PopulateOptions[];
-  lean?: boolean;
-}
-
-// Response types
-export interface BaseResponse {
-  success: boolean;
-  message?: string;
-  timestamp: string;
-  requestId?: string;
-}
-
-export interface SuccessResponse<T = any> extends BaseResponse {
-  success: true;
-  data: T;
-  meta?: Record<string, any>;
-}
-
-export interface ErrorResponse extends BaseResponse {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: any;
-    retryable?: boolean;
-    retryAfter?: number;
-  };
-}
-
-export interface PaginatedResponse<T> extends BaseResponse {
-  success: true;
-  data: T[];
-  pagination: PaginationMeta;
-  meta?: Record<string, any>;
 }
 

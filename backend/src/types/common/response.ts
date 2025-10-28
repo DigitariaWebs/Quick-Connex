@@ -6,6 +6,8 @@
 
 import { PaginationMeta } from './pagination';
 
+export { PaginationMeta };
+
 export interface BaseResponse {
   success: boolean;
   message?: string;
@@ -37,7 +39,15 @@ export interface PaginatedResponse<T> extends BaseResponse {
   meta?: Record<string, any>;
 }
 
-import { ValidationErrorDetail } from '../api.types';
+/**
+ * Field-level validation error
+ */
+export interface ValidationErrorDetail {
+  field: string;
+  message: string;
+  code: string;
+  value?: any;
+}
 
 export interface ValidationErrorResponse extends BaseResponse {
   success: false;

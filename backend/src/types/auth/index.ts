@@ -7,6 +7,9 @@
 
 export * from './user.types';
 export * from './session.types';
+export * from './token.types';
+export * from './request.types';
+export * from './config.types';
 export * from './credentials.types';
 export * from './permissions.types';
 export * from './security.types';

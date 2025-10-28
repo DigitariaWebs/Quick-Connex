@@ -67,6 +67,8 @@ export interface RateLimitResult {
   reason?: string;
   retryAfter?: number;
   remaining?: number;
+  limit?: number;
+  windowMs?: number;
 }
 
 export interface RiskAssessment {
@@ -103,30 +105,6 @@ export interface AuthAuditContext {
   riskLevel?: 'low' | 'medium' | 'high';
   isSensitive?: boolean;
   requiresReview?: boolean;
-}
-
-export interface AuthConfig {
-  // Rate limiting
-  maxLoginAttempts: number;
-  loginWindowMs: number;
-  maxSessionsPerUser: number;
-  
-  // Session security
-  sessionTimeoutMinutes: number;
-  requireIpBinding: boolean;
-  suspiciousActivityThreshold: number;
-  
-  // Device security
-  requireDeviceVerification: boolean;
-  maxNewDevicesPerDay: number;
-  
-  // JWT settings
-  tokenExpirationHours: number;
-  refreshTokenExpirationDays: number;
-  
-  // Security thresholds
-  highRiskThreshold: number;
-  mediumRiskThreshold: number;
 }
 
 export interface AuthMetrics {

@@ -6,7 +6,8 @@
  */
 
 import { Response } from 'express';
-import { ApiResponse, ApiErrorResponse, HTTP_STATUS, ValidationErrorDetail } from '../types/api.types';
+import { ApiErrorResponse, HTTP_STATUS } from '../types/api.types';
+import { ValidationErrorDetail } from '../types/common/response';
 import { ErrorCode } from '../types/error.types';
 
 /**
@@ -25,20 +26,12 @@ export class ErrorBuilder {
     retryable: boolean = false,
     retryAfter?: number
   ): Response {
-    const error: ApiErrorResponse = {
+    const response: ApiErrorResponse = {
       code,
       message,
       ...(details && { details }),
       ...(retryable && { retryable }),
-      ...(retryAfter && { retryAfter })
-    };
-
-    const response: ApiResponse = {
-      success: false,
-      error,
-      meta: {
-        timestamp: new Date().toISOString(),
-      },
+      ...(retryAfter && { retryAfter }),
     };
 
     return res.status(statusCode).json(response);
@@ -94,6 +87,19 @@ export class ErrorBuilder {
       ErrorCode.NOT_FOUND,
       message,
       HTTP_STATUS.NOT_FOUND
+    );
+  }
+
+  /**
+   * Bad request error (400)
+   */
+  static badRequest(res: Response, message: string = 'Bad request', details?: Record<string, any>): Response {
+    return this.sendError(
+      res,
+      ErrorCode.VALIDATION_ERROR,
+      message,
+      HTTP_STATUS.BAD_REQUEST,
+      details
     );
   }
 
