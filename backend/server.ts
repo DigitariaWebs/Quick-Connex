@@ -12,6 +12,7 @@ dotenv.config({ path: '.env' });
 import http from 'http';
 import { createApp, setupGracefulShutdown } from './app';
 import { connectDatabase, disconnectDatabase } from './src/lib/database';
+import { CommunicationService } from './src/lib/communication';
 
 /**
  * Server configuration
@@ -34,6 +35,12 @@ async function startServer(): Promise<void> {
     console.log('📊 Connecting to database...');
     await connectDatabase();
     console.log('✅ Database connected successfully');
+
+    // Initialize communication service
+    console.log('📧 Initializing communication service...');
+    const communicationService = CommunicationService.getInstance();
+    await communicationService.initialize();
+    console.log('✅ Communication service initialized successfully');
 
     // Create Express app
     console.log('⚙️  Configuring Express application...');

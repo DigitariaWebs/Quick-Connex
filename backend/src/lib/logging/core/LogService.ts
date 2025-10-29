@@ -71,6 +71,10 @@ export class LogService implements LogServiceInterface {
     this.log('warn', message, undefined, { ...context, category: 'security' });
   }
 
+  logCommunicationEvent(message: string, context?: LogContext): void {
+    this.log('info', message, undefined, { ...context, category: 'communication' });
+  }
+
   logPerformanceEvent(message: string, duration: number, context?: LogContext): void {
     this.log('info', message, undefined, { 
       ...context, 
@@ -238,6 +242,7 @@ export const log = {
   auth: (message: string, context?: LogContext) => logService.logAuthEvent(message, context),
   database: (message: string, context?: LogContext) => logService.logDatabaseEvent(message, context),
   security: (message: string, context?: LogContext) => logService.logSecurityEvent(message, context),
+  communication: (message: string, context?: LogContext) => logService.logCommunicationEvent(message, context),
   performance: (message: string, duration: number, context?: LogContext) => 
     logService.logPerformanceEvent(message, duration, context),
   

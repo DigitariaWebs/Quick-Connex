@@ -110,7 +110,7 @@ export class AuthService {
         
         // Log failed login
         await this.logAuthEvent({
-          userId: user._id,
+          userId: user._id as string,
           action: 'LOGIN_FAILED',
           description: `Failed login attempt for ${user.email}`,
           ipAddress,
@@ -138,14 +138,14 @@ export class AuthService {
       
       // Check for suspicious activity
       const suspiciousCheck = await checkSuspiciousActivity(
-        user._id,
+        user._id as string,
         ipAddress,
         userAgent
       );
       
       // Check if device/location is new
-      const isNewDeviceFlag = await isNewDevice(user._id, deviceFingerprint);
-      const isNewLocationFlag = await isNewLocation(user._id, ipAddress);
+      const isNewDeviceFlag = await isNewDevice(user._id as string, deviceFingerprint);
+      const isNewLocationFlag = await isNewLocation(user._id as string, ipAddress);
       
       // Assess security risk
       const riskAssessment = assessSecurityRisk(
@@ -157,7 +157,7 @@ export class AuthService {
       
       // Create session
       const session = await this.createSession(
-        user._id,
+        user._id as string,
         deviceInfo,
         ipAddress,
         deviceFingerprint,
@@ -166,7 +166,7 @@ export class AuthService {
       
       // Generate token pair
       const tokenContext: TokenContext = {
-        userId: user._id,
+        userId: user._id as string,
         sessionId: session.sessionId,
         ipAddress,
         userAgent,
@@ -180,7 +180,7 @@ export class AuthService {
       };
       
       const tokenPair = await TokenService.generateTokenPair(
-        user._id,
+        user._id as string,
         user.email,
         user.userType,
         session.sessionId,
@@ -198,7 +198,7 @@ export class AuthService {
       
       // Log successful login
       await this.logAuthEvent({
-        userId: user._id,
+        userId: user._id as string,
         action: 'LOGIN_SUCCESS',
         description: `Successful login for ${user.email}`,
         ipAddress,
@@ -219,7 +219,7 @@ export class AuthService {
       return {
         success: true,
         user: {
-          _id: user._id,
+          _id: user._id as string,
           email: user.email,
           userType: user.userType,
           firstName: user.firstName,
@@ -301,7 +301,7 @@ export class AuthService {
       
       // Log signup event
       await this.logAuthEvent({
-        userId: user._id,
+        userId: user._id as string,
         action: 'SIGNUP',
         description: `User signup for ${user.email}`,
         ipAddress,
@@ -318,12 +318,12 @@ export class AuthService {
       return {
         success: true,
         user: {
-          _id: user._id,
+          _id: user._id as string,
           email: user.email,
-          userType: user.userType,
+          userType: user.userType as "employee" | "manager",
           firstName: user.firstName,
           lastName: user.lastName,
-          status: user.status
+          status: user.status as "pending"
         },
         message: 'Account created successfully. Please wait for approval.'
       };

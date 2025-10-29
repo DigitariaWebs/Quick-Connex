@@ -15,6 +15,7 @@ import rateLimit from 'express-rate-limit';
 // Import our API system
 import { errorHandler, notFoundHandler, requestLogger } from './src/middleware/error.middleware';
 import { getDatabaseHealth, isDatabaseConnected } from './src/lib/database';
+import { CommunicationService } from './src/lib/communication';
 
 // Import routes
 import authRoutes from './src/routes/auth';
@@ -84,6 +85,15 @@ export function createApp(): express.Application {
       const dbHealth = await getDatabaseHealth();
       const dbConnected = isDatabaseConnected();
       
+      // Get communication service health
+      let communicationHealth = { connected: false, providers: {} };
+      try {
+        const communicationService = CommunicationService.getInstance();
+        communicationHealth = await communicationService.getProviderHealth();
+      } catch (error) {
+        // Communication service not initialized or error
+      }
+      
       const healthStatus = {
         success: true,
         data: {
@@ -95,7 +105,8 @@ export function createApp(): express.Application {
           database: {
             connected: dbConnected,
             health: dbHealth
-          }
+          },
+          communication: communicationHealth
         },
       };
       

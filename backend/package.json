@@ -11,6 +11,9 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:communication": "tsx --env-file=.env scripts/test-communication.ts",
+    "test:communication:js": "node scripts/test-communication.js",
+    "test:templates": "tsx --env-file=.env scripts/test-templates.ts",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "type-check": "tsc --noEmit"
@@ -34,10 +37,11 @@
     "dotenv": "^17.2.3",
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
+    "handlebars": "^4.7.8",
     "helmet": "^7.1.0",
     "mongoose": "^8.18.1",
     "morgan": "^1.10.0",
-    "twilio": "^5.10.0",
+    "twilio": "^5.10.4",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
@@ -45,6 +49,7 @@
     "@types/compression": "^1.7.5",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
+    "@types/handlebars": "^4.0.40",
     "@types/jest": "^29.5.11",
     "@types/morgan": "^1.9.9",
     "@types/node": "^20.10.5",
