@@ -20,6 +20,9 @@ export * from './logging';
 // DTO types
 export * from './dto';
 
+// Audit types
+export * from './audit';
+
 // Re-export commonly used types for convenience
 export type {
   ObjectId,
