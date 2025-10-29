@@ -31,6 +31,8 @@ export async function sendTransferNotificationToAdmin(
     const emailContent = renderEmailTemplate('transfer_request_email', {
       transferId: transfer.transferId,
       patientName: transfer.patientName,
+      patientAge: transfer.patientAge || 'N/A',
+      dossierNumber: transfer.dossierNumber || 'N/A',
       fromHospital: transfer.fromHospital,
       toHospital: transfer.toHospital,
       priority: transfer.priority,
@@ -150,12 +152,15 @@ export async function sendAccountApprovalEmail(
       approvedBy: approvedBy.id
     });
 
-    const emailContent = renderEmailTemplate('user_approval_email', {
+    const templateId = status === 'approved' ? 'user_approval_email' : 'user_rejection_email';
+    const emailContent = renderEmailTemplate(templateId, {
       status,
       approvedBy: `${approvedBy.firstName} ${approvedBy.lastName}`,
       reason: reason || (status === 'approved' ? 'Your account has been approved and you can now access the system.' : 'Your account request has been rejected.'),
       firstName: user.firstName,
-      lastName: user.lastName
+      lastName: user.lastName,
+      email: user.email,
+      userType: user.userType
     });
 
     const emailMessage: EmailMessage = {
@@ -268,7 +273,9 @@ export async function sendTransferApprovalNotification(
       patientName: transfer.patientName,
       fromHospital: transfer.fromHospital,
       toHospital: transfer.toHospital,
-      approvedBy: `${approvedBy.firstName} ${approvedBy.lastName}`
+      priority: transfer.priority || 'medium',
+      approvedBy: `${approvedBy.firstName} ${approvedBy.lastName}`,
+      recipientType: user.userType === 'manager' ? 'manager' : 'employee'
     });
 
     const emailMessage: EmailMessage = {
