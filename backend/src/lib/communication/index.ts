@@ -1,7 +1,7 @@
 /**
  * Communication Module
  * 
- * Complete communication system for email and SMS.
+ * Simplified communication system for email and SMS.
  * Single import point for all communication functionality.
  */
 
@@ -15,122 +15,22 @@ export {
 // ===== CONFIGURATION =====
 export {
   getCommunicationConfig,
-  validateCommunicationConfig,
-  getEnvVar,
-  getRequiredEnvVar,
-  isCommunicationEnabled,
-  isEmailEnabled,
-  isSMSEnabled,
-  getDevelopmentConfig
+  validateCommunicationConfig
 } from './core/config';
 
 // ===== CONSTANTS =====
-export {
-  COMMUNICATION_CHANNELS,
-  COMMUNICATION_PRIORITY,
-  COMMUNICATION_STATUS,
-  EMAIL_PROVIDERS,
-  SMS_PROVIDERS,
-  COMMUNICATION_CONFIG,
-  COMMUNICATION_ERRORS,
-  COMMUNICATION_SUCCESS
-} from './core/constants';
+export * from './core/constants';
 
 // ===== PROVIDERS =====
 export {
-  ProviderManager,
-  createProviderManager
-} from './providers/manager';
-
-export {
-  BaseEmailProvider,
-  SendGridProvider,
   NodemailerProvider
 } from './providers/email';
 
 export {
-  BaseSMSProvider,
   TwilioProvider
 } from './providers/sms';
 
-// ===== UTILITIES =====
-export {
-  validateEmailMessage,
-  validateSMSMessage,
-  validateEmail,
-  validatePhoneNumber,
-  formatPhoneNumberForMessage,
-  isChannelEnabledForUser,
-  chunkArray,
-  getDefaultUserPreferences,
-  isValidChannel,
-  getChannelDisplayName,
-  isUrgentMessage,
-  getPriorityDisplayName,
-  generateMessageId,
-  isMessageExpired,
-  getMessageAge,
-  isMessageStale
-} from './utils/helpers';
-
-export {
-  shouldRetryMessage,
-  getRetryDelay,
-  applyRateLimit,
-  getRateLimitResetTime,
-  getRateLimitStatus,
-  shouldRetryBasedOnError,
-  getBackoffDelay,
-  getRetryStrategy
-} from './utils/rate-limiter';
-
-export {
-  sanitizeRecipient,
-  sanitizeMessageForLogging,
-  createCommunicationContext
-} from './utils/logger';
-
-export {
-  formatPhoneNumber,
-  formatEmailAddress,
-  sanitizeHTML,
-  htmlToText,
-  decodeHTMLEntities,
-  truncateText,
-  formatMessagePreview,
-  formatDateForEmail,
-  formatFileSize,
-  formatCurrency,
-  formatSMSSegments,
-  escapeHTML,
-  formatRecipientName,
-  formatMessageStatus
-} from './utils/formatters';
-
-// ===== ERROR HANDLING =====
-export {
-  CommunicationErrorType,
-  ErrorSeverity,
-  COMMUNICATION_ERROR_CODES,
-  ERROR_RECOVERY_SUGGESTIONS
-} from './errors/error-types';
-
-export {
-  handleCommunicationError,
-  handleProviderError,
-  shouldRetryError,
-  getRetryDelayForError,
-  formatErrorForLogging,
-  createErrorResponse
-} from './errors/error-handler';
-
-// ===== INTEGRATIONS =====
-export {
-  TransferNotificationService,
-  UserNotificationService,
-  NotificationIntegrationService
-} from './integrations';
-
+// ===== TEMPLATES =====
 export {
   createEmailFromNotification,
   generateEmailHTML,
@@ -145,6 +45,37 @@ export {
   getSMSTemplates
 } from './templates/sms-templates';
 
+// ===== UTILITIES =====
+export {
+  validateEmail,
+  validatePhoneNumber,
+  formatPhoneNumber
+} from './utils/validation';
+
+// ===== ERROR HANDLING =====
+export {
+  handleCommunicationError,
+  createErrorResponse,
+  CommunicationError,
+  ErrorResponse
+} from './errors';
+
+// ===== EVENTS =====
+export {
+  EventHandlerRegistry,
+  createEventHandlerRegistry,
+  handleCommunicationEvent
+} from './events';
+
+// ===== HELPERS =====
+export {
+  sendTransferNotificationToAdmin,
+  sendSignupNotificationToAdmin,
+  sendAccountApprovalEmail,
+  sendUrgentSMS,
+  sendTransferApprovalNotification
+} from './helpers';
+
 // ===== TYPE RE-EXPORTS =====
 export type {
   // Core types
@@ -158,16 +89,10 @@ export type {
   EmailRecipient,
   SMSRecipient,
   CommunicationContent,
-  EmailContent,
-  SMSContent,
   CommunicationAttachment,
   CommunicationMetadata,
-  CommunicationTracking,
-  CommunicationTemplate,
   CommunicationServiceResponse,
-  CommunicationAnalytics,
   ICommunicationService,
-  ICommunicationProvider,
   
   // Provider types
   EmailProvider,
@@ -177,57 +102,18 @@ export type {
   SMSProviderConfig,
   IEmailProvider,
   ISMSProvider,
-  IProviderManager,
-  ProviderHealthStatus,
-  ProviderStats,
-  ProviderError,
   
   // Event types
   CommunicationEventType,
   CommunicationEventData,
-  ICommunicationEventHandler,
-  IEventHandlerRegistry,
   
   // Config types
   CommunicationConfig,
-  TemplateConfig,
-  QueueConfig,
-  AnalyticsConfig,
-  RateLimitingConfig,
-  ValidationConfig,
-  MonitoringConfig,
-  SecurityConfig,
   ConfigValidationResult,
   
   // Response types
   BaseResponse,
   BulkCommunicationResponse,
-  TemplateResponse,
-  AnalyticsResponse,
-  HealthCheckResponse,
-  ServiceHealth,
-  ProviderStatusResponse,
-  ProviderStatus,
-  UserPreferencesResponse,
   ErrorResponse,
-  ValidationResponse,
-  
-  // Preference types
-  UserCommunicationPreferences,
-  EmailPreferences,
-  SMSPreferences,
-  PushPreferences,
-  GlobalPreferences,
-  QuietHours,
-  
-  // Template types
-  TemplateVariable,
-  TemplateCategory,
-  TemplateRenderingContext,
-  TemplateRenderingResult,
-  TemplateValidationResult,
-  TemplatePreviewOptions,
-  TemplatePreviewResult,
-  ITemplateLoader
+  ValidationResponse
 } from '../../types/communication';
-

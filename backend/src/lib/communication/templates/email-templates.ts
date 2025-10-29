@@ -1,10 +1,10 @@
 /**
  * Email Templates
  * 
- * Email template generation and management.
+ * Simple email template functions using string replacement.
  */
 
-import { CommunicationTemplate, CommunicationContent } from '../../../types/communication';
+import { CommunicationContent } from '../../../types/communication';
 
 /**
  * Create email from notification
@@ -66,59 +66,97 @@ export function generateEmailHTML(notification: any, user: any): string {
 }
 
 /**
- * Render email template
+ * Render email template with simple string replacement
  */
-export async function renderEmailTemplate(templateId: string, _data: Record<string, any>): Promise<CommunicationContent> {
-  // TODO: Implement template rendering
-  // For now, return basic content
+export function renderEmailTemplate(templateId: string, data: Record<string, any>): CommunicationContent {
+  const templates = getEmailTemplates();
+  const template = templates.find(t => t.id === templateId);
+  
+  if (!template) {
+    throw new Error(`Email template ${templateId} not found`);
+  }
+  
+  let subject = template.subject || '';
+  let text = template.text || '';
+  let html = template.html || '';
+  
+  // Simple variable replacement
+  for (const [key, value] of Object.entries(data)) {
+    const placeholder = `{{${key}}}`;
+    subject = subject.replace(new RegExp(placeholder, 'g'), String(value));
+    text = text.replace(new RegExp(placeholder, 'g'), String(value));
+    html = html.replace(new RegExp(placeholder, 'g'), String(value));
+  }
+  
   return {
-    subject: `Template: ${templateId}`,
-    text: `Template content for ${templateId}`,
-    html: `<p>Template content for ${templateId}</p>`
+    subject,
+    text,
+    html
   };
 }
 
 /**
  * Get email templates
  */
-export function getEmailTemplates(): CommunicationTemplate[] {
+export function getEmailTemplates() {
   return [
     {
       id: 'transfer_request_email',
       name: 'Transfer Request Email',
-      channel: 'email',
-      category: 'transfer',
-      text: 'New transfer request for {{patientName}} from {{fromHospital}} to {{toHospital}}',
-      html: '{{TRANSFER_REQUEST_HTML}}',
-      variables: ['patientName', 'fromHospital', 'toHospital', 'priority', 'requestedBy'],
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      subject: 'New Transfer Request - {{transferId}}',
+      text: 'New transfer request for {{patientName}} from {{fromHospital}} to {{toHospital}}. Priority: {{priority}}',
+      html: `
+        <h2>New Transfer Request</h2>
+        <p><strong>Transfer ID:</strong> {{transferId}}</p>
+        <p><strong>Patient:</strong> {{patientName}}</p>
+        <p><strong>From:</strong> {{fromHospital}}</p>
+        <p><strong>To:</strong> {{toHospital}}</p>
+        <p><strong>Priority:</strong> {{priority}}</p>
+        <p><strong>Requested by:</strong> {{requestedBy}}</p>
+      `,
+      variables: ['patientName', 'fromHospital', 'toHospital', 'priority', 'requestedBy', 'transferId']
     },
     {
       id: 'transfer_approved_email',
       name: 'Transfer Approved Email',
-      channel: 'email',
-      category: 'transfer',
-      text: 'Transfer approved for {{patientName}} from {{fromHospital}} to {{toHospital}}',
-      html: '{{TRANSFER_APPROVED_HTML}}',
-      variables: ['patientName', 'fromHospital', 'toHospital', 'transferId', 'approvedBy'],
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      subject: 'Transfer Approved - {{transferId}}',
+      text: 'Transfer {{transferId}} has been approved for {{patientName}} from {{fromHospital}} to {{toHospital}}',
+      html: `
+        <h2>Transfer Approved</h2>
+        <p><strong>Transfer ID:</strong> {{transferId}}</p>
+        <p><strong>Patient:</strong> {{patientName}}</p>
+        <p><strong>From:</strong> {{fromHospital}}</p>
+        <p><strong>To:</strong> {{toHospital}}</p>
+        <p><strong>Approved by:</strong> {{approvedBy}}</p>
+      `,
+      variables: ['patientName', 'fromHospital', 'toHospital', 'transferId', 'approvedBy']
     },
     {
       id: 'user_approval_email',
       name: 'User Approval Email',
-      channel: 'email',
-      category: 'user',
-      text: 'Your account has been {{status}} by {{approvedBy}}',
-      html: '{{USER_APPROVAL_HTML}}',
-      variables: ['status', 'approvedBy', 'reason'],
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      subject: 'Account {{status}} - {{firstName}} {{lastName}}',
+      text: 'Your account has been {{status}} by {{approvedBy}}. {{reason}}',
+      html: `
+        <h2>Account {{status}}</h2>
+        <p>Hello {{firstName}} {{lastName}},</p>
+        <p>Your account has been {{status}} by {{approvedBy}}.</p>
+        <p>{{reason}}</p>
+      `,
+      variables: ['status', 'approvedBy', 'reason', 'firstName', 'lastName']
+    },
+    {
+      id: 'signup_request_email',
+      name: 'Signup Request Email',
+      subject: 'New User Signup Request - {{firstName}} {{lastName}}',
+      text: 'New user signup request from {{firstName}} {{lastName}} ({{email}}). User type: {{userType}}',
+      html: `
+        <h2>New User Signup Request</h2>
+        <p><strong>Name:</strong> {{firstName}} {{lastName}}</p>
+        <p><strong>Email:</strong> {{email}}</p>
+        <p><strong>User Type:</strong> {{userType}}</p>
+        <p><strong>Requested at:</strong> {{requestedAt}}</p>
+      `,
+      variables: ['firstName', 'lastName', 'email', 'userType', 'requestedAt']
     }
   ];
 }
-

@@ -8,7 +8,6 @@ import * as nodemailer from 'nodemailer';
 import { BaseEmailProvider } from './EmailProvider';
 import { EmailMessage, CommunicationServiceResponse, CommunicationStatus } from '../../../../types/communication';
 import { log } from '../../../logging';
-import { createCommunicationContext } from '../../utils/logger';
 
 export class NodemailerProvider extends BaseEmailProvider {
   providerType = 'nodemailer' as const;
@@ -34,23 +33,23 @@ export class NodemailerProvider extends BaseEmailProvider {
 
   async send(message: EmailMessage): Promise<CommunicationServiceResponse> {
     try {
-      log.debug('NodemailerProvider sending email', 
-        createCommunicationContext('nodemailer_send_start', {
-          provider: 'nodemailer',
-          messageId: message.id
-        })
-      );
+      log.debug('NodemailerProvider sending email', {
+        category: 'communication',
+        operation: 'nodemailer_send_start',
+        provider: 'nodemailer',
+        messageId: message.id
+      });
 
       // Validate message
       const validation = this.validateMessage(message);
       if (!validation.isValid) {
-        log.warn('NodemailerProvider message validation failed', 
-          createCommunicationContext('nodemailer_validation_failed', {
-            provider: 'nodemailer',
-            messageId: message.id,
-            errors: validation.errors
-          })
-        );
+        log.warn('NodemailerProvider message validation failed', {
+          category: 'communication',
+          operation: 'nodemailer_validation_failed',
+          provider: 'nodemailer',
+          messageId: message.id,
+          errors: validation.errors
+        });
         return this.createErrorResponse(message.id, `Validation failed: ${validation.errors.join(', ')}`);
       }
 
@@ -60,84 +59,81 @@ export class NodemailerProvider extends BaseEmailProvider {
       // Send email
       const info = await this.transporter.sendMail(mailOptions);
       
-      log.debug('NodemailerProvider email sent successfully', 
-        createCommunicationContext('nodemailer_send_success', {
-          provider: 'nodemailer',
-          messageId: message.id,
-          providerMessageId: info.messageId
-        })
-      );
+      log.debug('NodemailerProvider email sent successfully', {
+        category: 'communication',
+        operation: 'nodemailer_send_success',
+        provider: 'nodemailer',
+        messageId: message.id,
+        providerMessageId: info.messageId
+      });
       
       return this.createSuccessResponse(message.id, info.messageId);
     } catch (error) {
-      log.error('NodemailerProvider send error', 
-        createCommunicationContext('nodemailer_send_error', {
-          provider: 'nodemailer',
-          messageId: message.id,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        })
-      );
+      log.error('NodemailerProvider send error', error, {
+        category: 'communication',
+        operation: 'nodemailer_send_error',
+        provider: 'nodemailer',
+        messageId: message.id
+      });
       return this.createErrorResponse(message.id, error instanceof Error ? error.message : 'Unknown error');
     }
   }
 
   async getStatus(messageId: string): Promise<CommunicationStatus> {
     try {
-      log.debug('NodemailerProvider checking message status', 
-        createCommunicationContext('nodemailer_status_check', {
-          provider: 'nodemailer',
-          messageId
-        })
-      );
+      log.debug('NodemailerProvider checking message status', {
+        category: 'communication',
+        operation: 'nodemailer_status_check',
+        provider: 'nodemailer',
+        messageId
+      });
       
       // Nodemailer doesn't provide a direct way to check message status
       // This would typically require tracking in a database
       return 'sent';
     } catch (error) {
-      log.error('NodemailerProvider status check error', 
-        createCommunicationContext('nodemailer_status_error', {
-          provider: 'nodemailer',
-          messageId,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        })
-      );
+      log.error('NodemailerProvider status check error', error, {
+        category: 'communication',
+        operation: 'nodemailer_status_error',
+        provider: 'nodemailer',
+        messageId
+      });
       return 'failed';
     }
   }
 
   async validateConfiguration(): Promise<boolean> {
     try {
-      log.debug('NodemailerProvider validating configuration', 
-        createCommunicationContext('nodemailer_config_validation', {
-          provider: 'nodemailer'
-        })
-      );
+      log.debug('NodemailerProvider validating configuration', {
+        category: 'communication',
+        operation: 'nodemailer_config_validation',
+        provider: 'nodemailer'
+      });
 
       if (!this.config.apiKey || !this.config.apiSecret) {
-        log.warn('NodemailerProvider missing credentials', 
-          createCommunicationContext('nodemailer_config_missing_credentials', {
-            provider: 'nodemailer'
-          })
-        );
+        log.warn('NodemailerProvider missing credentials', {
+          category: 'communication',
+          operation: 'nodemailer_config_missing_credentials',
+          provider: 'nodemailer'
+        });
         return false;
       }
 
       // Test SMTP connection
       await this.transporter.verify();
       
-      log.debug('NodemailerProvider configuration valid', 
-        createCommunicationContext('nodemailer_config_valid', {
-          provider: 'nodemailer'
-        })
-      );
+      log.debug('NodemailerProvider configuration valid', {
+        category: 'communication',
+        operation: 'nodemailer_config_valid',
+        provider: 'nodemailer'
+      });
       return true;
     } catch (error) {
-      log.error('NodemailerProvider configuration validation error', 
-        createCommunicationContext('nodemailer_config_error', {
-          provider: 'nodemailer',
-          error: error instanceof Error ? error.message : 'Unknown error'
-        })
-      );
+      log.error('NodemailerProvider configuration validation error', error, {
+        category: 'communication',
+        operation: 'nodemailer_config_error',
+        provider: 'nodemailer'
+      });
       return false;
     }
   }

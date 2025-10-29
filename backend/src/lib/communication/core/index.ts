@@ -1,21 +1,14 @@
 /**
  * Communication Core Module
  * 
- * Core communication service and configuration exports.
+ * Core communication functionality exports.
  */
 
-// Configuration
-export * from './config';
+// Re-export configuration
+export { getCommunicationConfig, validateCommunicationConfig } from './config';
+
+// Re-export constants
 export * from './constants';
 
-// Re-export types for convenience
-export type {
-  CommunicationConfig,
-  CommunicationProviderConfig,
-  EmailProviderConfig,
-  SMSProviderConfig,
-  ConfigValidationResult,
-  ConfigValidationError,
-  ConfigValidationWarning
-} from '../../../types/communication';
-
+// Re-export services
+export { CommunicationService, createCommunicationService, initializeCommunicationService } from './CommunicationService';

@@ -11,8 +11,13 @@
  *   npx ts-node scripts/test-communication.ts --email=test@example.com --phone=+1234567890
  */
 
-import { CommunicationService } from '../src/lib/communication/core/CommunicationService';
+import { CommunicationService, initializeCommunicationService } from '../src/lib/communication';
 import { EmailMessage, SMSMessage } from '../src/types/communication';
+import { 
+  sendTransferNotificationToAdmin,
+  sendSignupNotificationToAdmin,
+  sendAccountApprovalEmail 
+} from '../src/lib/communication/helpers';
 
 // Test configuration
 interface TestConfig {
@@ -300,8 +305,8 @@ async function testSMS(communicationService: CommunicationService, phone: string
 
 // Test integration services
 async function testIntegrations(
-  _email: string,
-  _phone: string,
+  email: string,
+  phone: string,
   verbose: boolean
 ): Promise<boolean> {
   console.log('\n🔗 Testing Integration Services...');
@@ -309,31 +314,74 @@ async function testIntegrations(
   let allPassed = true;
 
   try {
+    // Mock admin user
+    const mockAdmin = {
+      id: 'admin-1',
+      email: email,
+      firstName: 'Admin',
+      lastName: 'User',
+      userType: 'admin'
+    };
+
+    // Mock regular user
+    const mockUser = {
+      id: 'user-1',
+      email: email,
+      phone: phone,
+      firstName: 'Test',
+      lastName: 'User',
+      userType: 'employee'
+    };
+
     // Test TransferNotificationService
-    console.log('   📋 Testing TransferNotificationService...');
-    
-    // Note: TransferNotificationService methods would be tested here
-    console.log('   ✅ TransferNotificationService test completed (stub)');
-
-    // Test UserNotificationService
-    console.log('   👤 Testing UserNotificationService...');
-    
     if (verbose) {
-      console.log('     📤 Sending user approval email...');
+      console.log('   📋 Testing Transfer Notification Helper...');
+    }
+    
+    const mockTransfer = {
+      transferId: 'TEST-TRANSFER-001',
+      patientName: 'Test Patient',
+      fromHospital: 'Hospital A',
+      toHospital: 'Hospital B',
+      priority: 'medium'
+    };
+
+    try {
+      await sendTransferNotificationToAdmin(mockTransfer, mockUser, [mockAdmin]);
+      console.log('   ✅ Transfer notification test completed');
+    } catch (error) {
+      console.log('   ❌ Transfer notification test failed');
+      console.log(`   🚨 Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      allPassed = false;
     }
 
-    // This would send an approval email
-    console.log('     ✅ UserNotificationService test completed (check logs for details)');
-
-    // Test NotificationIntegrationService
-    console.log('   🔔 Testing NotificationIntegrationService...');
-    
+    // Test signup notification
     if (verbose) {
-      console.log('     📤 Sending notification via communication channels...');
+      console.log('   👤 Testing Signup Notification Helper...');
     }
 
-    // This would send via email and SMS
-    console.log('     ✅ NotificationIntegrationService test completed (check logs for details)');
+    try {
+      await sendSignupNotificationToAdmin(mockUser, [mockAdmin]);
+      console.log('   ✅ Signup notification test completed');
+    } catch (error) {
+      console.log('   ❌ Signup notification test failed');
+      console.log(`   🚨 Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      allPassed = false;
+    }
+
+    // Test account approval email
+    if (verbose) {
+      console.log('   ✉️  Testing Account Approval Email Helper...');
+    }
+
+    try {
+      await sendAccountApprovalEmail(mockUser, mockAdmin, 'approved', 'Test approval');
+      console.log('   ✅ Account approval email test completed');
+    } catch (error) {
+      console.log('   ❌ Account approval email test failed');
+      console.log(`   🚨 Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      allPassed = false;
+    }
 
   } catch (error) {
     console.log('   ❌ Integration tests failed');
@@ -344,32 +392,29 @@ async function testIntegrations(
   return allPassed;
 }
 
-// Test provider health
-async function testProviderHealth(communicationService: CommunicationService, verbose: boolean): Promise<boolean> {
-  console.log('\n🏥 Testing Provider Health...');
+// Test service initialization
+async function testServiceInitialization(communicationService: CommunicationService, verbose: boolean): Promise<boolean> {
+  console.log('\n🏥 Testing Service Initialization...');
   
   try {
-    const health = await communicationService.getProviderHealth();
+    const isInitialized = communicationService.isServiceInitialized();
     
     if (verbose) {
-      console.log('   📊 Provider Health Status:');
-      Object.entries(health).forEach(([provider, isHealthy]) => {
-        const status = isHealthy ? '✅' : '❌';
-        console.log(`     ${status} ${provider}: ${isHealthy ? 'Healthy' : 'Unhealthy'}`);
-      });
+      console.log(`   📊 Service Status: ${isInitialized ? 'Initialized' : 'Not Initialized'}`);
+      const config = communicationService.getConfig();
+      console.log(`   📧 Email Provider: ${config.providers.email.provider}`);
+      console.log(`   📱 SMS Provider: ${config.providers.sms.provider}`);
     }
 
-    const allHealthy = Object.values(health).every(status => status);
-    
-    if (allHealthy) {
-      console.log('   ✅ All providers are healthy');
+    if (isInitialized) {
+      console.log('   ✅ Communication service is initialized');
+      return true;
     } else {
-      console.log('   ⚠️  Some providers are unhealthy');
+      console.log('   ❌ Communication service is not initialized');
+      return false;
     }
-
-    return allHealthy;
   } catch (error) {
-    console.log('   ❌ Provider health check failed');
+    console.log('   ❌ Service initialization check failed');
     console.log(`   🚨 Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return false;
   }
@@ -422,26 +467,19 @@ async function runTests(): Promise<void> {
   console.log('\n🔧 Initializing Services...');
   
   try {
-    const communicationService = CommunicationService.getInstance();
-    await communicationService.initialize();
+    const communicationService = await initializeCommunicationService();
     console.log('   ✅ CommunicationService initialized');
-
-    console.log('   ✅ TransferNotificationService initialized');
-
-    console.log('   ✅ UserNotificationService initialized');
-
-    console.log('   ✅ NotificationIntegrationService initialized');
 
     // Run tests
     const results = {
-      providerHealth: false,
+      serviceInit: false,
       email: false,
       sms: false,
       integrations: false
     };
 
-    // Test provider health
-    results.providerHealth = await testProviderHealth(communicationService, config.verbose);
+    // Test service initialization
+    results.serviceInit = await testServiceInitialization(communicationService, config.verbose);
 
     // Test email
     if (config.testEmail) {
@@ -465,7 +503,7 @@ async function runTests(): Promise<void> {
     // Summary
     console.log('\n📊 Test Results Summary');
     console.log('========================');
-    console.log(`   🏥 Provider Health: ${results.providerHealth ? '✅ PASS' : '❌ FAIL'}`);
+    console.log(`   🏥 Service Initialization: ${results.serviceInit ? '✅ PASS' : '❌ FAIL'}`);
     if (config.testEmail) {
       console.log(`   📧 Email Test: ${results.email ? '✅ PASS' : '❌ FAIL'}`);
     }

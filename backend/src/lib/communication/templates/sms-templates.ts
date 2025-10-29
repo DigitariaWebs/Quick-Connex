@@ -1,10 +1,10 @@
 /**
  * SMS Templates
  * 
- * SMS template generation and management.
+ * Simple SMS template functions using string replacement.
  */
 
-import { CommunicationTemplate, CommunicationContent } from '../../../types/communication';
+import { CommunicationContent } from '../../../types/communication';
 
 /**
  * Create SMS from notification
@@ -50,10 +50,9 @@ export function generateSMSText(notification: any, user: any): string {
 }
 
 /**
- * Render SMS template
+ * Render SMS template with simple string replacement
  */
-export async function renderSMSTemplate(templateId: string, data: Record<string, any>): Promise<CommunicationContent> {
-  // For SMS, we use simple text templates
+export function renderSMSTemplate(templateId: string, data: Record<string, any>): CommunicationContent {
   const templates = getSMSTemplates();
   const template = templates.find(t => t.id === templateId);
   
@@ -76,41 +75,37 @@ export async function renderSMSTemplate(templateId: string, data: Record<string,
 /**
  * Get SMS templates
  */
-export function getSMSTemplates(): CommunicationTemplate[] {
+export function getSMSTemplates() {
   return [
     {
       id: 'transfer_request_sms',
       name: 'Transfer Request SMS',
-      channel: 'sms',
-      category: 'transfer',
       text: 'New transfer request for {{patientName}} from {{fromHospital}} to {{toHospital}}. Priority: {{priority}}',
-      variables: ['patientName', 'fromHospital', 'toHospital', 'priority'],
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      variables: ['patientName', 'fromHospital', 'toHospital', 'priority']
     },
     {
       id: 'transfer_approved_sms',
       name: 'Transfer Approved SMS',
-      channel: 'sms',
-      category: 'transfer',
       text: 'Transfer {{transferId}} approved for {{patientName}}. From: {{fromHospital}} To: {{toHospital}}',
-      variables: ['transferId', 'patientName', 'fromHospital', 'toHospital'],
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      variables: ['transferId', 'patientName', 'fromHospital', 'toHospital']
     },
     {
       id: 'urgent_notification_sms',
       name: 'Urgent Notification SMS',
-      channel: 'sms',
-      category: 'system',
       text: 'URGENT: {{message}}',
-      variables: ['message'],
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      variables: ['message']
+    },
+    {
+      id: 'user_approval_sms',
+      name: 'User Approval SMS',
+      text: 'Account {{status}} by {{approvedBy}}. {{reason}}',
+      variables: ['status', 'approvedBy', 'reason']
+    },
+    {
+      id: 'signup_request_sms',
+      name: 'Signup Request SMS',
+      text: 'New signup request from {{firstName}} {{lastName}} ({{userType}})',
+      variables: ['firstName', 'lastName', 'userType']
     }
   ];
 }
-
