@@ -1,3 +1,21 @@
+export interface RealtimeEnvConfig {
+  ablyApiKey?: string;
+  vapidPublicKey?: string;
+  vapidPrivateKey?: string;
+  featureRealtimeEnabled: boolean;
+  featureWebPushEnabled: boolean;
+  ablyTokenTtlMs: number;
+}
+
+export const REALTIME_ENV: RealtimeEnvConfig = {
+  ablyApiKey: process.env.ABLY_API_KEY,
+  vapidPublicKey: process.env.VAPID_PUBLIC_KEY,
+  vapidPrivateKey: process.env.VAPID_PRIVATE_KEY,
+  featureRealtimeEnabled: process.env.REALTIME_ENABLED !== 'false',
+  featureWebPushEnabled: process.env.WEB_PUSH_ENABLED !== 'false',
+  ablyTokenTtlMs: Number(process.env.ABLY_TOKEN_TTL_MS || 60 * 60 * 1000),
+};
+
 /**
  * Realtime Service Configuration
  * 

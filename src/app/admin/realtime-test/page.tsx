@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Real-time Test Page
  *
@@ -10,6 +12,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "@/contexts/SessionContext";
 import { useRealtime } from "@/contexts/RealtimeContext";
+import { ClientRealtimeProvider } from "@/components/providers/ClientRealtimeProvider";
 import { useWebPush } from "@/hooks/realtime";
 import {
   Bell,
@@ -25,7 +28,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 
-export default function RealtimeTestPage() {
+function RealtimeTestContent() {
   const { user, isAuthenticated } = useSession();
   const { isConnected, connectionError, emitEvent } = useRealtime();
   const {
@@ -470,5 +473,13 @@ export default function RealtimeTestPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function RealtimeTestPage() {
+  return (
+    <ClientRealtimeProvider>
+      <RealtimeTestContent />
+    </ClientRealtimeProvider>
   );
 }

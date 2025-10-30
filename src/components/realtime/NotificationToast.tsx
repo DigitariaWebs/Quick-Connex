@@ -7,7 +7,7 @@
  * Supports different positions, durations, and priority levels.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NotificationAPI, NotificationToast } from "@/lib/realtime/core/types";
 import {
   NOTIFICATION_TYPES,
@@ -34,6 +34,7 @@ export default function NotificationToastComponent({
 }: NotificationToastProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const notification = toast.notification;
 
   // Show toast with animation
@@ -62,6 +63,19 @@ export default function NotificationToastComponent({
       onHide(toast.id);
     }, 300);
   };
+
+  // Keyboard support and focus management
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        handleHide();
+      }
+    };
+    document.addEventListener("keydown", onKey, { capture: true });
+    return () =>
+      document.removeEventListener("keydown", onKey, { capture: true } as any);
+  }, []);
 
   // Get notification icon
   const getNotificationIcon = () => {
@@ -134,8 +148,17 @@ export default function NotificationToastComponent({
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  const prefersReducedMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   return (
     <div
+      ref={containerRef}
+      role="alert"
+      aria-live="assertive"
+      tabIndex={0}
       className={`
         relative max-w-sm w-full bg-white border rounded-lg shadow-lg transition-all duration-300 ease-in-out
         ${styling.container}
@@ -147,7 +170,9 @@ export default function NotificationToastComponent({
         ${isExiting ? "opacity-0 translate-x-full" : ""}
         ${
           notification.priority === NOTIFICATION_PRIORITIES.URGENT
-            ? "animate-pulse"
+            ? prefersReducedMotion
+              ? ""
+              : "animate-pulse"
             : ""
         }
       `}
@@ -240,7 +265,7 @@ export default function NotificationToastComponent({
       </div>
 
       {/* Progress bar for auto-dismiss */}
-      {toast.duration && toast.duration > 0 && (
+      {toast.duration && toast.duration > 0 && !prefersReducedMotion && (
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200 rounded-b-lg overflow-hidden">
           <div
             className={`h-full ${styling.accent} transition-all ease-linear`}

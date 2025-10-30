@@ -1,3 +1,13 @@
+export const APP_EVENTS_CHANNEL = 'app:events';
+
+export const MESSAGE_TYPES = {
+  TRANSFER_CREATED: 'transfer.created',
+  TRANSFER_UPDATED: 'transfer.updated',
+  TRANSFER_STATUS_CHANGED: 'transfer.status_changed',
+  NOTIFICATION_CREATED: 'notification.created',
+  SYSTEM_ANNOUNCEMENT: 'system.announcement',
+} as const;
+
 /**
  * Realtime Notification System Constants
  * 
