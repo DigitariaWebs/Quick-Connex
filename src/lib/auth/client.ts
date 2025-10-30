@@ -1,11 +1,30 @@
 /**
  * Auth API Client
  * 
- * Client functions for authentication endpoints using the new backend
- * with ResponseBuilder flattening.
+ * Client functions for authentication using Next.js API routes
+ * with simple fetch-based requests.
  */
 
-import { request } from '../api/core/api-client';
+async function requestJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
+  const res = await fetch(input, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers || {}),
+    },
+  });
+  const data = await res.json().catch(() => undefined);
+  if (!res.ok) {
+    const error = (data && (data.error || data)) || { message: 'Request failed' };
+    const code = (data && (data.code || data.errorCode)) || 'REQUEST_FAILED';
+    const err: any = new Error(error.message || error);
+    err.code = code;
+    err.status = res.status;
+    err.error = data;
+    throw err;
+  }
+  return data as T;
+}
 import { User } from '../../types/user';
 
 // Simplified Session interface for client responses
@@ -59,43 +78,32 @@ export interface MeResponse {
  * Login user with email and password
  */
 export async function login(payload: LoginRequest): Promise<LoginResponse> {
-  const response = await request<LoginResponse>({
+  return requestJson<LoginResponse>('/api/auth/login', {
     method: 'POST',
-    url: '/api/auth/login',
-    data: payload,
+    body: JSON.stringify(payload),
   });
-  return response.data;
 }
 
 /**
  * Signup new user
  */
 export async function signup(payload: SignupRequest): Promise<SignupResponse> {
-  const response = await request<SignupResponse>({
+  return requestJson<SignupResponse>('/api/auth/signup', {
     method: 'POST',
-    url: '/api/auth/signup',
-    data: payload,
+    body: JSON.stringify(payload),
   });
-  return response.data;
 }
 
 /**
  * Get current user info
  */
 export async function me(): Promise<MeResponse> {
-  const response = await request<MeResponse>({
-    method: 'GET',
-    url: '/api/auth/me',
-  });
-  return response.data;
+  return requestJson<MeResponse>('/api/auth/me', { method: 'GET' });
 }
 
 /**
  * Logout current user
  */
 export async function logout(): Promise<void> {
-  await request<void>({
-    method: 'POST',
-    url: '/api/auth/logout',
-  });
+  await requestJson('/api/auth/logout', { method: 'POST' });
 }

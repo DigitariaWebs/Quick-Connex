@@ -1,7 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { signup } from '@/lib/auth/client';
-import { toUserError } from '@/lib/api/core/error-handler';
+import { toUserError } from '@/lib/utils/error-handling';
 
 /**
  * useSignUpForm Hook

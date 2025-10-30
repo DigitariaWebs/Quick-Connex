@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { login } from '@/lib/auth/client';
-import { toUserError } from '@/lib/api/core/error-handler';
+import { toUserError } from '@/lib/utils/error-handling';
 
 /**
  * useLoginForm Hook
