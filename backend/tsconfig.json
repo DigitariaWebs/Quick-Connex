@@ -26,6 +26,7 @@
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
     "baseUrl": "./",
+    "moduleResolution": "node",
     "paths": {
       "@/*": ["src/*"]
     }

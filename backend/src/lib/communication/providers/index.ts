@@ -5,7 +5,7 @@
  */
 
 // Provider manager
-export * from './manager';
+// export * from './manager';
 
 // Email providers
 export * from './email';

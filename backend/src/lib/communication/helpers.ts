@@ -5,9 +5,9 @@
  */
 
 import { CommunicationService } from './core/CommunicationService';
-import { EmailMessage, SMSMessage } from '../types/communication';
-import { renderEmailTemplate, getEmailTemplates } from './templates/email-templates';
-import { renderSMSTemplate, getSMSTemplates } from './templates/sms-templates';
+import { EmailMessage, SMSMessage, EmailContent } from '@/types/communication';
+import { renderEmailTemplate } from './templates/email-templates';
+import { renderSMSTemplate } from './templates/sms-templates';
 import { log } from '../logging';
 
 /**
@@ -50,12 +50,12 @@ export async function sendTransferNotificationToAdmin(
           name: `${admin.firstName} ${admin.lastName}`,
           userType: 'admin'
         },
-        content: emailContent,
+        content: emailContent as EmailContent,
         metadata: {
           source: 'transfer_system',
           category: 'transfer_request',
           transferId: transfer.transferId,
-          requestedBy: requestingUser.id
+          userId: requestingUser.id
         },
         createdAt: new Date(),
         updatedAt: new Date()
@@ -109,12 +109,11 @@ export async function sendSignupNotificationToAdmin(
           name: `${admin.firstName} ${admin.lastName}`,
           userType: 'admin'
         },
-        content: emailContent,
+        content: emailContent as EmailContent,
         metadata: {
           source: 'user_system',
           category: 'signup_request',
-          userId: user.id,
-          userType: user.userType
+          userId: user.id
         },
         createdAt: new Date(),
         updatedAt: new Date()
@@ -177,9 +176,7 @@ export async function sendAccountApprovalEmail(
       metadata: {
         source: 'user_system',
         category: 'account_approval',
-        userId: user.id,
-        status,
-        approvedBy: approvedBy.id
+        userId: user.id
       },
       createdAt: new Date(),
       updatedAt: new Date()
@@ -226,13 +223,12 @@ export async function sendUrgentSMS(
       status: 'pending',
       recipient: {
         phone,
-        userType
+        userType: userType as 'employee' | 'manager' | 'admin'
       },
       content: smsContent,
       metadata: {
         source: 'system',
-        category: 'urgent_notification',
-        isUrgent: true
+        category: 'urgent_notification'
       },
       createdAt: new Date(),
       updatedAt: new Date()
@@ -293,7 +289,7 @@ export async function sendTransferApprovalNotification(
         source: 'transfer_system',
         category: 'transfer_approval',
         transferId: transfer.transferId,
-        approvedBy: approvedBy.id
+        userId: approvedBy.id
       },
       createdAt: new Date(),
       updatedAt: new Date()
@@ -323,8 +319,7 @@ export async function sendTransferApprovalNotification(
         metadata: {
           source: 'transfer_system',
           category: 'transfer_approval',
-          transferId: transfer.transferId,
-          isUrgent: true
+          transferId: transfer.transferId
         },
         createdAt: new Date(),
         updatedAt: new Date()

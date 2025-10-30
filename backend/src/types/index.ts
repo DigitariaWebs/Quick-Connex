@@ -23,6 +23,9 @@ export * from './dto';
 // Audit types
 export * from './audit';
 
+// Request types
+export * from './request.types';
+
 // Re-export commonly used types for convenience
 export type {
   ObjectId,

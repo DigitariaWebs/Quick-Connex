@@ -66,7 +66,7 @@ export function extractAuditIpAddress(request: Request): string {
   const cfConnectingIp = request.get('cf-connecting-ip');
   
   if (forwarded) {
-    return forwarded.split(',')[0].trim();
+    return forwarded.split(',')[0]?.trim() || '';
   }
   
   if (realIp) {

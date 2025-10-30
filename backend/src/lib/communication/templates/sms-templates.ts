@@ -38,7 +38,7 @@ export function createSMSFromNotification(notification: any, user: any): any {
 /**
  * Generate SMS text
  */
-export function generateSMSText(notification: any, user: any): string {
+export function generateSMSText(notification: any, _user: any): string {
   let text = `${notification.title}: ${notification.message}`;
   
   // Truncate if too long

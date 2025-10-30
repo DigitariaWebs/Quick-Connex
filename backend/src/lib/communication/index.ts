@@ -56,8 +56,7 @@ export {
 export {
   handleCommunicationError,
   createErrorResponse,
-  CommunicationError,
-  ErrorResponse
+  CommunicationError
 } from './errors';
 
 // ===== EVENTS =====

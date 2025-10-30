@@ -466,6 +466,26 @@ export class CommunicationService {
       operation: 'service_shutdown'
     });
   }
+
+  /**
+   * Get service health information
+   */
+  public async getHealth(): Promise<{ connected: boolean; providers: Record<string, any> }> {
+    const connected = this.isInitialized && (!!this.emailProvider || !!this.smsProvider);
+    return {
+      connected,
+      providers: {
+        email: {
+          enabled: !!this.emailProvider,
+          provider: this.emailProvider ? this.getConfig().providers.email.provider : undefined
+        },
+        sms: {
+          enabled: !!this.smsProvider,
+          provider: this.smsProvider ? this.getConfig().providers.sms.provider : undefined
+        }
+      }
+    };
+  }
 }
 
 /**

@@ -19,8 +19,11 @@ import { CommunicationService } from './src/lib/communication';
 
 // Import routes
 import authRoutes from './src/routes/auth';
-// import userRoutes from './src/routes/user.routes';
-// import transferRoutes from './src/routes/transfer.routes';
+import { transferRouter, timelineRouter, adminTransferRouter } from './src/routes/transfers';
+import { userRouter, adminUserRouter } from './src/routes/users';
+import hospitalRouter from './src/routes/hospitals/hospital.routes';
+import ciusssRouter from './src/routes/ciusss/ciusss.routes';
+
 
 /**
  * Create and configure Express application
@@ -89,7 +92,9 @@ export function createApp(): express.Application {
       let communicationHealth = { connected: false, providers: {} };
       try {
         const communicationService = CommunicationService.getInstance();
-        communicationHealth = await communicationService.getProviderHealth();
+        if (communicationService.isServiceInitialized()) {
+          communicationHealth = await communicationService.getHealth();
+        }
       } catch (error) {
         // Communication service not initialized or error
       }
@@ -139,8 +144,13 @@ export function createApp(): express.Application {
 
   // Mount route handlers
   app.use('/api/auth', authRoutes);
-  // app.use('/api/users', userRoutes);
-  // app.use('/api/transfers', transferRoutes);
+  app.use('/api/transfers', transferRouter);
+  app.use('/api/admin/transfers', adminTransferRouter);
+  app.use('/api/timeline', timelineRouter);
+  app.use('/api/users', userRouter);
+  app.use('/api/admin/users', adminUserRouter);
+  app.use('/api/hospitals', hospitalRouter);
+  app.use('/api/ciusss', ciusssRouter);
 
   // API documentation endpoint (placeholder)
   app.get('/api', (_req: express.Request, res: express.Response) => {

@@ -4,7 +4,7 @@
  * Beautiful styled email templates using string replacement with helper functions.
  */
 
-import { CommunicationContent } from '../../../types/communication';
+import { EmailContent } from '../../../types/communication';
 
 /**
  * Get priority-based styles for transfer emails
@@ -146,7 +146,7 @@ export function generateEmailHTML(notification: any, _user: any): string {
 /**
  * Render email template with simple string replacement and helper functions
  */
-export function renderEmailTemplate(templateId: string, data: Record<string, any>): CommunicationContent {
+export function renderEmailTemplate(templateId: string, data: Record<string, any>): EmailContent {
   const templates = getEmailTemplates();
   const template = templates.find(t => t.id === templateId);
   

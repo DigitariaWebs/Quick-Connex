@@ -433,17 +433,19 @@ export class AuthService {
         throw new Error('Session invalid or expired');
       }
       
+      // Fetch complete user record from database
+      const user = await User.findById(payload.userId).select('-password');
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
       // Check user status if required
-      if (options.requireActiveStatus) {
-        // TODO: Check user status from database
-        // const user = await DatabaseService.findOne(User, { _id: payload.userId });
-        // if (!user || user.status !== 'approved') {
-        //   throw new Error('Account not active');
-        // }
+      if (options.requireActiveStatus && user.status !== 'approved') {
+        throw new Error('Account not active');
       }
       
       // Check roles if specified
-      if (options.roles && !options.roles.includes(payload.userType)) {
+      if (options.roles && !options.roles.includes(user.userType)) {
         throw new Error('Insufficient permissions');
       }
       
@@ -455,12 +457,12 @@ export class AuthService {
       
       return {
         user: {
-          _id: payload.userId,
-          email: payload.email,
-          userType: payload.userType,
-          firstName: '', // TODO: Get from user record
-          lastName: '',   // TODO: Get from user record
-          status: 'approved' // TODO: Get from user record
+          _id: (user._id as any).toString(),
+          email: user.email,
+          userType: user.userType,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          status: user.status
         },
         session: {
           sessionId: session.sessionId,

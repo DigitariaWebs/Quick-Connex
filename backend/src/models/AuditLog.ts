@@ -485,13 +485,13 @@ AuditLogSchema.index({ 'requestInfo.sessionId': 1, timestamp: -1 });
 AuditLogSchema.index({ timestamp: 1 }, { expireAfterSeconds: 63072000 });
 
 // Static methods for common operations
-AuditLogSchema.statics.logAction = async function(logData: Partial<IAuditLog>) {
+AuditLogSchema.statics['logAction'] = async function(logData: Partial<IAuditLog>) {
   const log = new this(logData);
   return await log.save();
 };
 
 // Get recent activity
-AuditLogSchema.statics.getRecentActivity = function(
+AuditLogSchema.statics['getRecentActivity'] = function(
   limit: number = 50,
   actorId?: string,
   category?: AuditCategory
@@ -507,7 +507,7 @@ AuditLogSchema.statics.getRecentActivity = function(
 };
 
 // Get activity by category
-AuditLogSchema.statics.getActivityByCategory = function(
+AuditLogSchema.statics['getActivityByCategory'] = function(
   category: AuditCategory,
   startDate?: Date,
   endDate?: Date,
@@ -528,7 +528,7 @@ AuditLogSchema.statics.getActivityByCategory = function(
 };
 
 // Get failed actions
-AuditLogSchema.statics.getFailedActions = function(limit: number = 100) {
+AuditLogSchema.statics['getFailedActions'] = function(limit: number = 100) {
   return this.find({ outcome: 'failure' })
     .sort({ timestamp: -1 })
     .limit(limit)
@@ -536,7 +536,7 @@ AuditLogSchema.statics.getFailedActions = function(limit: number = 100) {
 };
 
 // Get sensitive actions
-AuditLogSchema.statics.getSensitiveActions = function(limit: number = 100) {
+AuditLogSchema.statics['getSensitiveActions'] = function(limit: number = 100) {
   return this.find({ 'securityContext.isSensitive': true })
     .sort({ timestamp: -1 })
     .limit(limit)
@@ -544,7 +544,7 @@ AuditLogSchema.statics.getSensitiveActions = function(limit: number = 100) {
 };
 
 // Get high-risk activities
-AuditLogSchema.statics.getHighRiskActivities = function(limit: number = 100) {
+AuditLogSchema.statics['getHighRiskActivities'] = function(limit: number = 100) {
   return this.find({ 
     'securityContext.riskLevel': { $in: [RiskLevel.HIGH, RiskLevel.CRITICAL] }
   })
@@ -554,7 +554,7 @@ AuditLogSchema.statics.getHighRiskActivities = function(limit: number = 100) {
 };
 
 // Get actions requiring review
-AuditLogSchema.statics.getActionsRequiringReview = function(limit: number = 100) {
+AuditLogSchema.statics['getActionsRequiringReview'] = function(limit: number = 100) {
   return this.find({ 'securityContext.requiresReview': true })
     .sort({ timestamp: -1 })
     .limit(limit)
@@ -562,7 +562,7 @@ AuditLogSchema.statics.getActionsRequiringReview = function(limit: number = 100)
 };
 
 // Get activity statistics
-AuditLogSchema.statics.getActivityStats = async function(
+AuditLogSchema.statics['getActivityStats'] = async function(
   startDate: Date, 
   endDate: Date
 ) {
@@ -602,7 +602,7 @@ AuditLogSchema.statics.getActivityStats = async function(
 };
 
 // Get user activity
-AuditLogSchema.statics.getUserActivity = function(
+AuditLogSchema.statics['getUserActivity'] = function(
   userId: string,
   limit: number = 50,
   startDate?: Date,
@@ -623,7 +623,7 @@ AuditLogSchema.statics.getUserActivity = function(
 };
 
 // Get admin activity
-AuditLogSchema.statics.getAdminActivity = function(
+AuditLogSchema.statics['getAdminActivity'] = function(
   adminId: string,
   limit: number = 50,
   startDate?: Date,
@@ -650,8 +650,8 @@ AuditLogSchema.statics.getAdminActivity = function(
 let AuditLog: Model<IAuditLog>;
 
 try {
-  if (mongoose.models.AuditLog) {
-    AuditLog = mongoose.models.AuditLog as Model<IAuditLog>;
+  if (mongoose.models['AuditLog']) {
+    AuditLog = mongoose.models['AuditLog'] as Model<IAuditLog>;
     console.log('📋 Models: Using existing AuditLog model');
   } else {
     AuditLog = mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);

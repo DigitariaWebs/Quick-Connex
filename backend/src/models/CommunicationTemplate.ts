@@ -110,12 +110,12 @@ CommunicationTemplateSchema.pre('save', function(next) {
 });
 
 // Static method to find active template by ID
-CommunicationTemplateSchema.statics.findActiveById = function(id: string) {
+CommunicationTemplateSchema.statics['findActiveById'] = function(id: string) {
   return this.findOne({ id, isActive: true });
 };
 
 // Static method to find templates by channel and category
-CommunicationTemplateSchema.statics.findByChannelAndCategory = function(channel: string, category?: string) {
+CommunicationTemplateSchema.statics['findByChannelAndCategory'] = function(channel: string, category?: string) {
   const query: any = { channel, isActive: true };
   if (category) {
     query.category = category;

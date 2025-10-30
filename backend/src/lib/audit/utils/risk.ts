@@ -15,7 +15,7 @@ import {
  */
 export function assessAuditRiskLevel(
   action: AuditAction,
-  category: AuditCategory,
+  _category: AuditCategory,
   context: Record<string, any>
 ): RiskLevel {
   // High-risk actions
@@ -43,17 +43,17 @@ export function assessAuditRiskLevel(
   }
   
   // Check for sensitive data access
-  if (context.sensitiveDataAccess || context.patientDataAccess) {
+  if (context['sensitiveDataAccess'] || context['patientDataAccess']) {
     return RiskLevel.MEDIUM;
   }
   
   // Check for bulk operations
-  if (context.bulkOperation || context.isBulkOperation) {
+  if (context['bulkOperation'] || context['isBulkOperation']) {
     return RiskLevel.MEDIUM;
   }
   
   // Check for admin actions
-  if (context.actorRole === 'admin' || context.actorRole === 'super_admin') {
+  if (context['actorRole'] === 'admin' || context['actorRole'] === 'super_admin') {
     return RiskLevel.MEDIUM;
   }
   

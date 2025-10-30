@@ -261,7 +261,7 @@ UserSchema.index({ 'documents.fileId': 1 });
 UserSchema.index({ userType: 1, status: 1 });
 
 // Instance methods
-UserSchema.methods.hasPermission = function(this: IUser, permission: Permission): boolean {
+UserSchema.methods['hasPermission'] = function(this: IUser, permission: Permission): boolean {
   // Super admins have all permissions
   if (this.userType === UserRole.SUPER_ADMIN) {
     return true;
@@ -271,7 +271,7 @@ UserSchema.methods.hasPermission = function(this: IUser, permission: Permission)
   return this.permissions?.includes(permission) || false;
 };
 
-UserSchema.methods.hasAnyPermission = function(this: IUser, permissions: Permission[]): boolean {
+UserSchema.methods['hasAnyPermission'] = function(this: IUser, permissions: Permission[]): boolean {
   if (this.userType === UserRole.SUPER_ADMIN) {
     return true;
   }
@@ -279,11 +279,11 @@ UserSchema.methods.hasAnyPermission = function(this: IUser, permissions: Permiss
   return permissions.some(permission => this.permissions?.includes(permission));
 };
 
-UserSchema.methods.isAdmin = function(this: IUser): boolean {
+UserSchema.methods['isAdmin'] = function(this: IUser): boolean {
   return this.userType === UserRole.ADMIN || this.userType === UserRole.SUPER_ADMIN;
 };
 
-UserSchema.methods.recordLogin = function(this: IUser, ipAddress: string, userAgent: string, success: boolean = true) {
+UserSchema.methods['recordLogin'] = function(this: IUser, ipAddress: string, userAgent: string, success: boolean = true) {
   if (!this.loginHistory) {
     this.loginHistory = [];
   }
@@ -321,14 +321,14 @@ UserSchema.methods.recordLogin = function(this: IUser, ipAddress: string, userAg
   }
   
   // Use updateOne to avoid triggering full document validation
-  const UserModel = mongoose.models.User || mongoose.model('User', UserSchema);
-  return UserModel.updateOne(
+  const UserModel = mongoose.models['User'] || mongoose.model('User', UserSchema);
+  return (UserModel as any).updateOne(
     { _id: this._id },
     { $set: updateData }
   );
 };
 
-UserSchema.methods.isAccountLocked = function(this: IUser): boolean {
+UserSchema.methods['isAccountLocked'] = function(this: IUser): boolean {
   if (!this.accountLockedUntil) {
     return false;
   }
@@ -337,7 +337,7 @@ UserSchema.methods.isAccountLocked = function(this: IUser): boolean {
 };
 
 // Helper method to get recent failed attempts
-UserSchema.methods.getRecentFailedAttempts = function(this: IUser, minutes: number = 15): number {
+UserSchema.methods['getRecentFailedAttempts'] = function(this: IUser, minutes: number = 15): number {
   if (!this.loginHistory) return 0;
   
   const cutoffTime = new Date(Date.now() - (minutes * 60 * 1000));
@@ -347,29 +347,29 @@ UserSchema.methods.getRecentFailedAttempts = function(this: IUser, minutes: numb
 };
 
 // Helper method to get last successful login
-UserSchema.methods.getLastLogin = function(this: IUser): Date | null {
+UserSchema.methods['getLastLogin'] = function(this: IUser): Date | null {
   if (!this.loginHistory) return null;
   
   const successfulLogins = this.loginHistory
     .filter((entry: any) => entry.success)
     .sort((a: any, b: any) => b.timestamp.getTime() - a.timestamp.getTime());
   
-  return successfulLogins.length > 0 ? successfulLogins[0].timestamp : null;
+  return successfulLogins.length > 0 ? (successfulLogins[0]?.timestamp || null) : null;
 };
 
 // Helper method to get last login IP
-UserSchema.methods.getLastLoginIp = function(this: IUser): string | null {
+UserSchema.methods['getLastLoginIp'] = function(this: IUser): string | null {
   if (!this.loginHistory) return null;
   
   const successfulLogins = this.loginHistory
     .filter((entry: any) => entry.success)
     .sort((a: any, b: any) => b.timestamp.getTime() - a.timestamp.getTime());
   
-  return successfulLogins.length > 0 ? successfulLogins[0].ipAddress : null;
+  return successfulLogins.length > 0 ? (successfulLogins[0]?.ipAddress || null) : null;
 };
 
 // Method to get sanitized login history for admin display
-UserSchema.methods.getSanitizedLoginHistory = function(this: IUser): any[] {
+UserSchema.methods['getSanitizedLoginHistory'] = function(this: IUser): any[] {
   return this.loginHistory?.map((entry: any) => ({
     timestamp: entry.timestamp,
     success: entry.success,
@@ -382,8 +382,8 @@ UserSchema.methods.getSanitizedLoginHistory = function(this: IUser): any[] {
 let User: mongoose.Model<IUser>;
 
 // Force recompilation to ensure methods are attached
-if (mongoose.models.User) {
-  delete mongoose.models.User;
+if (mongoose.models['User']) {
+  delete mongoose.models['User'];
 }
 
 User = mongoose.model<IUser>('User', UserSchema);
