@@ -53,6 +53,8 @@ export function useDashboardData() {
     }
   }, [isAuthenticated, user]);
 
+  // Realtime removed: no listeners; future realtime can be reintroduced cleanly
+
   // Initial data fetch
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -63,5 +65,6 @@ export function useDashboardData() {
   return {
     ...data,
     refetch: fetchData,
+    isConnected: false,
   };
 }

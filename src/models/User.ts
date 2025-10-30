@@ -78,6 +78,17 @@ export interface IUser extends Document {
   loginHistory?: ILoginHistory[];
   accountLockedUntil?: Date;
   
+  // Push notification subscription
+  pushSubscription?: {
+    endpoint: string;
+    keys: {
+      p256dh: string;
+      auth: string;
+    };
+    subscribedAt: Date;
+    isActive: boolean;
+  };
+  
   // Approval system fields
   status: 'pending' | 'approved' | 'rejected' | 'suspended';
   approvedBy?: string; // Admin email who approved/rejected
@@ -270,6 +281,23 @@ const UserSchema = new Schema<IUser>({
   resetPasswordExpires: {
     type: Date
   },
+  
+  // Push notification subscription
+  pushSubscription: {
+    endpoint: String,
+    keys: {
+      p256dh: String,
+      auth: String
+    },
+    subscribedAt: {
+      type: Date,
+      default: Date.now
+    },
+    isActive: {
+      type: Boolean,
+      default: true
+    }
+  }
 }, {
   timestamps: true, // This will automatically add createdAt and updatedAt fields
   versionKey: false // This will remove the __v field

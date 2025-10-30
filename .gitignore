@@ -42,6 +42,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# compiled server
+/dist
+
 data.txt
 cookies.txt
 things.txt
@@ -49,3 +52,4 @@ secrets.txt
 /test
 test_users_credentials.txt
 env.local.backup
+vapid-keys.txt

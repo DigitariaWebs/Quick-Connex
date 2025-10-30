@@ -3,6 +3,13 @@
 import { useState, useEffect } from "react";
 import { useSession } from "@/contexts/SessionContext";
 import { Bell } from "lucide-react";
+import {
+  isSupported,
+  getExistingSubscription,
+  subscribePush,
+  registerSubscriptionWithServer,
+  unsubscribePush,
+} from "@/lib/sw/registrar";
 
 interface NotificationBellProps {
   showToasts?: boolean;
@@ -11,25 +18,70 @@ interface NotificationBellProps {
 }
 
 export default function NotificationBell({
-  showToasts = true,
+  showToasts = false,
   showPanel = false,
   position = "top-right",
 }: NotificationBellProps) {
   const { user } = useSession();
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  // TODO: Connect to notification system when backend is implemented
-  // Currently displays bell icon without active notifications
-  useEffect(() => {
-    if (!user) return;
-
-    // Set unread count to 0 for now - ready for backend integration
-    setUnreadCount(0);
-  }, [user]);
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const unreadCount = 0;
 
   if (!user) {
     return null;
+  }
+
+  useEffect(() => {
+    let mounted = true;
+    async function check() {
+      const supported = isSupported();
+      if (!mounted) return;
+      setPushSupported(supported);
+      if (!supported) return;
+      const sub = await getExistingSubscription();
+      if (!mounted) return;
+      setPushEnabled(!!sub && Notification.permission === "granted");
+    }
+    check();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  async function handleEnable() {
+    setBusy(true);
+    setError(null);
+    try {
+      const ok = window.confirm("Enable browser push notifications?");
+      if (!ok) return;
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY as string;
+      if (!vapidKey) throw new Error("Missing VAPID public key");
+      const sub = await subscribePush(vapidKey);
+      if (!sub) throw new Error("Subscription failed or denied");
+      const registered = await registerSubscriptionWithServer(sub);
+      if (!registered) throw new Error("Failed to register subscription");
+      setPushEnabled(true);
+    } catch (e: any) {
+      setError(e?.message || "Failed to enable push");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDisable() {
+    setBusy(true);
+    setError(null);
+    try {
+      await unsubscribePush();
+      setPushEnabled(false);
+    } catch (e: any) {
+      setError(e?.message || "Failed to disable push");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -39,7 +91,7 @@ export default function NotificationBell({
         <button
           onClick={() => setShowNotificationPanel(!showNotificationPanel)}
           className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-          title="Notifications"
+          title={`Notifications`}
         >
           <Bell size={20} />
           {unreadCount > 0 && (
@@ -49,40 +101,46 @@ export default function NotificationBell({
           )}
         </button>
 
-        {/* Notification Panel Dropdown */}
+        {/* Quick Push Toggle */}
         {showNotificationPanel && (
-          <div
-            className={`absolute z-50 w-96 max-w-sm bg-white rounded-lg shadow-lg border border-gray-200 ${
-              position === "top-right"
-                ? "top-12 right-0"
-                : position === "top-left"
-                ? "top-12 left-0"
-                : position === "bottom-right"
-                ? "bottom-12 right-0"
-                : "bottom-12 left-0"
-            }`}
-          >
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-800">
-                  Notifications
-                </h3>
-                <button
-                  onClick={() => setShowNotificationPanel(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ×
-                </button>
+          <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg p-3">
+            {!pushSupported ? (
+              <div className="text-sm text-gray-600">
+                Push not supported on this device.
               </div>
-            </div>
-
-            <div className="max-h-96 overflow-y-auto p-4">
-              <p className="text-gray-500 text-center">
-                Notification system is not yet configured.
-                <br />
-                This component is ready for backend integration.
-              </p>
-            </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-800 font-medium">
+                    Browser Push
+                  </div>
+                  {!pushEnabled ? (
+                    <button
+                      disabled={busy}
+                      onClick={handleEnable}
+                      className="px-2 py-1 text-xs bg-blue-600 text-white rounded disabled:opacity-50"
+                    >
+                      Enable
+                    </button>
+                  ) : (
+                    <button
+                      disabled={busy}
+                      onClick={handleDisable}
+                      className="px-2 py-1 text-xs bg-gray-200 text-gray-800 rounded disabled:opacity-50"
+                    >
+                      Disable
+                    </button>
+                  )}
+                </div>
+                {error && <div className="text-xs text-red-600">{error}</div>}
+                <div className="text-xs text-gray-500">
+                  Manage advanced settings in your profile.
+                </div>
+                <a href="/profile" className="text-xs text-blue-600 underline">
+                  Open Settings
+                </a>
+              </div>
+            )}
           </div>
         )}
       </div>
