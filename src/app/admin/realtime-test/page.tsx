@@ -14,6 +14,7 @@ import { useSession } from "@/contexts/SessionContext";
 import { useRealtime } from "@/contexts/RealtimeContext";
 import { ClientRealtimeProvider } from "@/components/providers/ClientRealtimeProvider";
 import { useWebPush } from "@/hooks/realtime";
+import { AdminLayout } from "@/components/admin/layouts";
 import {
   Bell,
   Wifi,
@@ -478,8 +479,13 @@ function RealtimeTestContent() {
 
 export default function RealtimeTestPage() {
   return (
-    <ClientRealtimeProvider>
-      <RealtimeTestContent />
-    </ClientRealtimeProvider>
+    <AdminLayout
+      pageTitle="Real-time System Test Panel"
+      pageDescription="Test and monitor the real-time notification system"
+    >
+      <ClientRealtimeProvider>
+        <RealtimeTestContent />
+      </ClientRealtimeProvider>
+    </AdminLayout>
   );
 }
