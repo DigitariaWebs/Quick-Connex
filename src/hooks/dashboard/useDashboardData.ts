@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from '@/contexts/SessionContext';
-import { useRealtime } from '@/contexts/RealtimeContext';
 import { dashboardClient } from '@/lib/client';
 import { DashboardData } from '@/lib/client';
-import { SOCKET_EVENTS } from '@/lib/realtime/core/constants';
 
 /**
  * useDashboardData Hook
@@ -13,7 +11,6 @@ import { SOCKET_EVENTS } from '@/lib/realtime/core/constants';
  */
 export function useDashboardData() {
   const { user, isAuthenticated } = useSession();
-  const { isConnected, emitEvent } = useRealtime();
   const [data, setData] = useState<DashboardData>({
     stats: {
       totalPending: 0,
@@ -56,62 +53,7 @@ export function useDashboardData() {
     }
   }, [isAuthenticated, user]);
 
-  // Real-time update handlers
-  const handleStatsUpdate = useCallback((statsData: any) => {
-    console.log('📊 Dashboard stats updated via real-time:', statsData);
-    setData(prev => ({
-      ...prev,
-      stats: {
-        ...prev.stats,
-        ...statsData
-      }
-    }));
-  }, []);
-
-  const handleActivityUpdate = useCallback((activityData: any) => {
-    console.log('📈 Dashboard activity updated via real-time:', activityData);
-    setData(prev => ({
-      ...prev,
-      recentActivity: [activityData, ...prev.recentActivity].slice(0, 10) // Keep last 10 activities
-    }));
-  }, []);
-
-  const handleUrgentAlert = useCallback((alertData: any) => {
-    console.log('🚨 Urgent transfer alert:', alertData);
-    setData(prev => ({
-      ...prev,
-      urgentTransfers: [alertData, ...prev.urgentTransfers].slice(0, 5) // Keep last 5 urgent transfers
-    }));
-  }, []);
-
-  // Set up real-time listeners
-  useEffect(() => {
-    if (!isConnected || !user) return;
-
-    console.log('🔌 Setting up dashboard real-time listeners');
-
-    // Listen for dashboard updates
-    const handleDashboardStatsUpdate = (event: any) => {
-      handleStatsUpdate(event.stats);
-    };
-
-    const handleDashboardActivityNew = (event: any) => {
-      handleActivityUpdate(event.activity);
-    };
-
-    const handleDashboardUrgentAlert = (event: any) => {
-      handleUrgentAlert(event.transfer);
-    };
-
-    // Register event listeners
-    emitEvent(SOCKET_EVENTS.DASHBOARD_SUBSCRIBE, { userId: user._id });
-
-    // Return cleanup function
-    return () => {
-      console.log('🔌 Cleaning up dashboard real-time listeners');
-      emitEvent(SOCKET_EVENTS.DASHBOARD_UNSUBSCRIBE, { userId: user._id });
-    };
-  }, [isConnected, user, emitEvent, handleStatsUpdate, handleActivityUpdate, handleUrgentAlert]);
+  // Realtime removed: no listeners; future realtime can be reintroduced cleanly
 
   // Initial data fetch
   useEffect(() => {
@@ -123,6 +65,6 @@ export function useDashboardData() {
   return {
     ...data,
     refetch: fetchData,
-    isConnected,
+    isConnected: false,
   };
 }
