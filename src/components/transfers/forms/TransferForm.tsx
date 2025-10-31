@@ -85,27 +85,76 @@ export default function TransferForm({
           const data = await response.json();
           setUser(data.user);
 
-          // Preselect manager hospital if available
-          if (data.user?.hospital) {
-            // If HospitalAutocomplete supports passing initial value by name only,
-            // we can leave it to the user to change; otherwise, fetch the hospital to get name
+          // Preselect source hospital based on manager's CIUSSS
+          if (data.user?.userType === "manager") {
             try {
-              const hid =
-                typeof data.user.hospital === "string"
-                  ? data.user.hospital
-                  : data.user.hospital._id;
-              const hospitalsResp = await fetch(`/api/hospitals?limit=100`);
-              const hospitalsData = await hospitalsResp.json();
-              if (hospitalsData.success) {
-                const found = hospitalsData.hospitals.find(
-                  (h: any) => h._id === hid
-                );
-                if (found) {
-                  setSelectedFromHospital(found);
+              // Fetch full user profile to get CIUSSS information
+              const profileResponse = await fetch("/api/users/profile", {
+                method: "GET",
+                credentials: "include",
+              });
+
+              if (profileResponse.ok) {
+                const profileData = await profileResponse.json();
+                const userProfile = profileData.data?.profile;
+
+                // Get CIUSSS name if available (handle both object and string formats)
+                let ciusssName: string | undefined;
+                if (userProfile?.ciusss) {
+                  ciusssName =
+                    typeof userProfile.ciusss === "string"
+                      ? userProfile.ciusss
+                      : userProfile.ciusss.name || userProfile.ciusss.code;
+                }
+
+                // Get manager's hospital ID (handle both object and string formats)
+                const managerHospitalId =
+                  userProfile?.hospital?._id || userProfile?.hospital;
+
+                if (ciusssName) {
+                  // Fetch all hospitals
+                  const hospitalsResp = await fetch(
+                    `/api/hospitals?limit=1000`
+                  );
+                  const hospitalsData = await hospitalsResp.json();
+
+                  if (hospitalsData.success) {
+                    // Filter hospitals by CIUSSS (matching organization.name with CIUSSS name, case-insensitive)
+                    const ciusssHospitals = hospitalsData.hospitals.filter(
+                      (h: any) =>
+                        h.organization?.name?.toLowerCase().trim() ===
+                        ciusssName.toLowerCase().trim()
+                    );
+
+                    if (ciusssHospitals.length > 0) {
+                      // Normalize IDs to strings for comparison
+                      const normalizeId = (id: any): string => {
+                        if (!id) return "";
+                        if (typeof id === "string") return id;
+                        if (id._id) return String(id._id);
+                        return String(id);
+                      };
+
+                      const managerHospitalIdStr =
+                        normalizeId(managerHospitalId);
+
+                      // Prefer manager's hospital if it belongs to their CIUSSS
+                      let selectedHospital = ciusssHospitals.find(
+                        (h: any) => normalizeId(h._id) === managerHospitalIdStr
+                      );
+
+                      // If manager's hospital not found, use first hospital from CIUSSS
+                      if (!selectedHospital) {
+                        selectedHospital = ciusssHospitals[0];
+                      }
+
+                      setSelectedFromHospital(selectedHospital);
+                    }
+                  }
                 }
               }
             } catch (e) {
-              console.warn("Could not preselect manager hospital:", e);
+              console.warn("Could not preselect hospital by CIUSSS:", e);
             }
           }
 

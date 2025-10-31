@@ -395,7 +395,7 @@ export class TransferNotificationService {
             countryCode: '1'
           },
           content: {
-            text: `✅ Transfer ${transferData.transferId} approved! Patient: ${transferData.patientName}, From: ${transferData.fromHospital} to ${transferData.toHospital}`
+            text: `Transfer ${transferData.transferId} approved: ${transferData.fromHospital} -> ${transferData.toHospital} [${transferData.priority}]`
           },
           metadata: {
             source: 'transfer_workflow',
@@ -459,7 +459,7 @@ export class TransferNotificationService {
             countryCode: '1'
           },
           content: {
-            text: `🚑 New transfer available! ${transferData.transferId} - ${transferData.patientName} from ${transferData.fromHospital} to ${transferData.toHospital}`
+            text: `New transfer posted ${transferData.transferId}: ${transferData.fromHospital} -> ${transferData.toHospital} [${transferData.priority}]`
           },
           metadata: {
             source: 'transfer_workflow',

@@ -116,11 +116,16 @@ export async function POST(
     }
     transfer.timeline.push(approvalEvent, statusChangeEvent);
 
-    await transfer;
+    // Persist approval changes
+    await (transfer as any).save?.() ?? await transfer;
 
-    // Note: Notifications are disabled for in-app approvals
-    // Only the transfer state is updated, no email/SMS notifications are sent
-    console.log('✅ Transfer approved - state updated without notifications');
+    // Send notifications (email + SMS) to manager and all approved employees
+    try {
+      await TransferNotificationService.sendTransferApprovedNotification(transfer, admin);
+      console.log('✅ Transfer approved - notifications dispatched');
+    } catch (notifyError) {
+      console.error('❌ Failed to send transfer approved notifications:', notifyError);
+    }
 
     return NextResponse.json({
       success: true,

@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import { Plus, Search, Menu } from "lucide-react";
 import type { User } from "@/types/user";
-import NotificationBell from "@/components/dashboard/widgets/NotificationBell";
 
 interface DashboardHeaderProps {
   user: User;
@@ -109,9 +108,6 @@ export default function DashboardHeader({
                 <Plus size={18} className="text-white" />
               </motion.button>
             )}
-
-            {/* Notification Bell - Ready for future backend */}
-            <NotificationBell position="top-right" />
 
             {/* User Profile Section - Responsive */}
             <div className="flex items-center space-x-2 lg:space-x-3 bg-green-50 rounded-full px-2 lg:px-3 py-2 border border-green-200 shadow-sm sidebar-nav-item">
