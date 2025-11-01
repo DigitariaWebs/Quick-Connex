@@ -15,6 +15,7 @@ import {
   NotFoundError,
   formatErrorForClient,
 } from "@/lib/utils/error-handling";
+import { logout as authLogout } from "@/lib/auth/client";
 
 // Client-side logging helpers (using console directly since LogService is server-only)
 const log = {
@@ -246,11 +247,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(false);
       setError(null);
 
-      // Call the proper logout endpoint
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
+      // Call the new backend logout endpoint
+      await authLogout();
 
       log.info("Logout successful", {
         operation: "logout_success",
@@ -286,11 +284,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(false);
       setError(null);
 
-      // Call the proper logout endpoint (which handles all sessions)
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
+      // Call the new backend logout endpoint (which handles all sessions)
+      await authLogout();
 
       log.info("All sessions revoked successfully", {
         operation: "logout_all_success",

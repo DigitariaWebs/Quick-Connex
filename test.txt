@@ -1,0 +1,17 @@
+# Using npm script (recommended)
+npm run test:communication
+
+# With specific recipients
+npm run test:communication -- --email=your@email.com --phone=+1234567890
+
+# Test only email
+npm run test:communication -- --email=your@email.com --email-only
+
+# Test only SMS
+npm run test:communication -- --phone=+1234567890 --sms-only
+
+# Test with verbose output
+npm run test:communication -- --email=your@email.com --phone=+1234567890 --verbose
+
+# Or directly with ts-node
+npx ts-node scripts/test-communication.ts --email=your@email.com --phone=+1234567890

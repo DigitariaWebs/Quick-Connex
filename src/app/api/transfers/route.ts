@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { publishEvent } from '@/lib/realtime/ably-server';
+import { createEnvelope } from '@/lib/realtime/events';
+import { v4 as uuidv4 } from 'uuid';
 import { DatabaseService } from '@/lib/database';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
@@ -365,6 +368,21 @@ export async function POST(request: NextRequest) {
     });
 
     await transfer.save();
+
+    // Publish realtime envelope (Ably)
+    try {
+      await publishEvent(
+        createEnvelope({
+          id: uuidv4(),
+          type: 'transfer.created',
+          entity: 'transfer',
+          entityId: (transfer._id as any).toString(),
+          actorId: (requestingUser._id as any).toString(),
+        })
+      );
+    } catch (e) {
+      console.error('Failed to publish transfer.created envelope', e);
+    }
 
     // Populate the response
     const populatedTransfer = await Transfer.findById(transfer._id)

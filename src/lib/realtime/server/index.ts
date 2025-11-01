@@ -1,20 +1,8 @@
 /**
  * Realtime Server Module
- * 
- * Server-side components for Socket.io and authentication.
+ *
+ * Server-side entry for Ably-based realtime services.
  */
 
-// Socket Server
-export { SocketServer } from './socket-server';
-
-// Authentication middleware
-export {
-  authenticateSocket,
-  createRateLimitMiddleware,
-  validateConnection,
-  requireRole,
-  trackActivity
-} from './auth';
-
-// Types
-export type { AuthenticatedSocket } from '../core/types';
+export { RealtimeService } from './RealtimeService';
+export { createRestrictedTokenRequest } from './TokenService';

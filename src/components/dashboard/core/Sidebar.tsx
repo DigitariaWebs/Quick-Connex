@@ -34,6 +34,13 @@ const navigation = [
     bgColor: "bg-blue-50",
   },
   {
+    name: "Profile",
+    href: "/profile",
+    icon: UserIcon,
+    color: "text-teal-600",
+    bgColor: "bg-teal-50",
+  },
+  {
     name: "Transfers",
     href: "/transfers",
     icon: ArrowRightLeft,

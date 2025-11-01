@@ -15,7 +15,6 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import { io, Socket } from "socket.io-client";
 import { useSession } from "@/contexts/SessionContext";
 import { ActorType } from "@/models/AuditLog";
 import { toStringId } from "@/lib/realtime/utils/converters";
@@ -33,6 +32,13 @@ import {
   NOTIFICATION_PRIORITIES,
 } from "@/lib/realtime/core/constants";
 import { REALTIME_CONFIG } from "@/lib/realtime/core/config";
+import {
+  isSupported as swIsSupported,
+  getExistingSubscription,
+  subscribePush as swSubscribePush,
+  unregisterSubscriptionWithServer,
+  registerSubscriptionWithServer,
+} from "@/lib/sw/registrar";
 
 // ===== CONTEXT TYPES =====
 
@@ -103,208 +109,21 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<NotificationToast[]>([]);
 
   // Refs
-  const socketRef = useRef<Socket | null>(null);
+  const socketRef = useRef<any>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
+  const recentToastKeysRef = useRef<Map<string, number>>(new Map());
+  const maxConcurrentToastsRef = useRef<number>(4);
 
   // ===== SOCKET CONNECTION =====
 
   const connect = useCallback(async () => {
-    if (!isAuthenticated || !user || isConnecting || isConnected) {
-      return;
-    }
-
-    // For now, always use localhost:3001 for Socket.io connection
-    // This ensures Socket.io works in development regardless of hostname
-
-    // Prevent multiple connection attempts
-    if (reconnectAttemptsRef.current >= 5) {
-      log.warn(
-        "Max reconnection attempts reached, stopping connection attempts",
-        {
-          userId: user?._id,
-          attempts: reconnectAttemptsRef.current,
-        }
-      );
-      setConnectionError("Connection failed after multiple attempts");
-      return;
-    }
-
-    try {
-      setIsConnecting(true);
-      setConnectionError(null);
-
-      // Socket.io server is initialized with the custom server
-      log.info("Socket.io server is integrated with custom server");
-
-      // Get authentication token from server
-      const tokenResponse = await fetch("/api/auth/verify", {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!tokenResponse.ok) {
-        log.warn("Authentication token request failed", {
-          status: tokenResponse.status,
-          statusText: tokenResponse.statusText,
-          userId: user?._id,
-        });
-        throw new Error("Failed to get authentication token");
-      }
-
-      const tokenData = await tokenResponse.json();
-      if (!tokenData.success || !tokenData.token) {
-        log.warn("Authentication token not found or invalid", {
-          success: tokenData.success,
-          hasToken: !!tokenData.token,
-          userId: user?._id,
-        });
-        throw new Error("Authentication token not found");
-      }
-
-      const token = tokenData.token;
-
-      // Get socket server URL - use same port as Next.js server
-      const socketUrl =
-        process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
-      log.info("Creating Socket.io connection", {
-        url: socketUrl,
-        path: REALTIME_CONFIG.socket.path,
-        transports: REALTIME_CONFIG.socket.transports,
-        userId: user?._id,
-      });
-
-      const socket = io(socketUrl, {
-        path: REALTIME_CONFIG.socket.path,
-        transports: REALTIME_CONFIG.socket.transports,
-        auth: {
-          token: token,
-        },
-        autoConnect: true,
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-        timeout: REALTIME_CONFIG.socket.pingTimeout,
-      });
-
-      socketRef.current = socket;
-
-      // Connection event handlers
-      socket.on("connect", () => {
-        log.info("Socket connected", { userId: user?._id });
-        setIsConnected(true);
-        setIsConnecting(false);
-        setConnectionError(null);
-        reconnectAttemptsRef.current = 0;
-      });
-
-      socket.on("disconnect", (reason) => {
-        log.info("Socket disconnected", { reason, userId: user?._id });
-        setIsConnected(false);
-        setIsConnecting(false);
-
-        // Attempt reconnection for certain disconnect reasons
-        if (reason === "io server disconnect") {
-          // Server initiated disconnect, don't reconnect
-          setConnectionError("Server disconnected");
-        } else {
-          // Client-side disconnect, attempt reconnection
-          scheduleReconnect();
-        }
-      });
-
-      socket.on("connect_error", (error) => {
-        log.error("Socket connection error", error, {
-          userId: user?._id,
-          errorMessage: error.message,
-          errorName: error.name,
-          socketUrl: socketUrl,
-          socketPath: REALTIME_CONFIG.socket.path,
-        });
-        setIsConnecting(false);
-
-        // Handle specific error types
-        if (
-          error.message?.includes("Authentication") ||
-          error.message?.includes("Invalid authentication token")
-        ) {
-          setConnectionError("Authentication failed - please log in again");
-          // Don't attempt reconnection for auth errors
-          return;
-        } else if (error.message?.includes("Session expired")) {
-          setConnectionError("Session expired - please log in again");
-          // Don't attempt reconnection for session errors
-          return;
-        } else {
-          setConnectionError(error.message);
-          scheduleReconnect();
-        }
-      });
-
-      // Connection confirmation from server
-      socket.on(SOCKET_EVENTS.CONNECTION, (data: any) => {
-        log.info("Connection confirmed by server", {
-          userId: data.userId,
-          userType: data.userType,
-          timestamp: data.timestamp,
-        });
-      });
-
-      // Notification event handlers
-      socket.on(SOCKET_EVENTS.NOTIFICATION_NEW, (data) => {
-        console.log("📨 New notification received:", data);
-        handleNewNotification(data.notification);
-      });
-
-      socket.on(SOCKET_EVENTS.NOTIFICATION_READ, (data) => {
-        console.log("✅ Notification marked as read:", data);
-        handleNotificationRead(data.notificationId);
-      });
-
-      socket.on(SOCKET_EVENTS.NOTIFICATION_DISMISSED, (data) => {
-        console.log("❌ Notification dismissed:", data);
-        handleNotificationDismissed(data.notificationId);
-      });
-
-      // Transfer event handlers
-      socket.on(SOCKET_EVENTS.TRANSFER_CREATED, (data) => {
-        console.log("🚚 Transfer created:", data);
-        handleTransferEvent("created", data);
-      });
-
-      socket.on(SOCKET_EVENTS.TRANSFER_UPDATED, (data) => {
-        console.log("🔄 Transfer updated:", data);
-        handleTransferEvent("updated", data);
-      });
-
-      // Dashboard event handlers
-      socket.on(SOCKET_EVENTS.DASHBOARD_STATS_UPDATE, (data) => {
-        console.log("📊 Dashboard stats updated:", data);
-        handleDashboardUpdate(data);
-      });
-
-      // System event handlers
-      socket.on(SOCKET_EVENTS.SYSTEM_ANNOUNCEMENT, (data) => {
-        console.log("📢 System announcement:", data);
-        handleSystemAnnouncement(data);
-      });
-    } catch (error) {
-      console.error("Failed to connect to Socket.io:", error);
-      setIsConnecting(false);
-      setConnectionError(
-        error instanceof Error ? error.message : "Connection failed"
-      );
-    }
+    // No-op: Ably EventBus handles connection; flags set on start/stop
+    return;
   }, [isAuthenticated, user, isConnecting, isConnected]);
 
   const disconnect = useCallback(() => {
-    if (socketRef.current) {
-      socketRef.current.disconnect();
-      socketRef.current = null;
-    }
+    socketRef.current = null;
 
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
@@ -496,59 +315,116 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
   const subscribeToPush = useCallback(async (): Promise<boolean> => {
     try {
-      // TODO: Implement push subscription
-      // if (!pushManagerRef.current) {
-      //   pushManagerRef.current = ClientPushManager.getInstance();
-      // }
+      if (typeof window === "undefined") return false;
+      if (!swIsSupported()) return false;
 
-      // const subscription = await pushManagerRef.current.subscribe(user!._id);
+      // Respect user gesture; assume caller invoked from UI
+      let permission: NotificationPermission =
+        typeof Notification !== "undefined"
+          ? Notification.permission
+          : "default";
+      if (permission !== "granted") {
+        permission = await Notification.requestPermission();
+      }
+      setPushPermission(permission);
+      if (permission !== "granted") return false;
 
-      // if (subscription) {
-      //   setIsPushSubscribed(true);
-      //   setPushPermission("granted");
-      //   return true;
-      // }
+      // Get VAPID key from API, fallback to env public key
+      let publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY as
+        | string
+        | undefined;
+      try {
+        const res = await fetch("/api/realtime/token/public-key");
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.publicKey) publicKey = data.publicKey as string;
+        }
+      } catch {}
+      if (!publicKey) return false;
 
-      return false;
+      const subscription = await swSubscribePush(publicKey);
+      if (!subscription) return false;
+
+      const ok = await registerSubscriptionWithServer(subscription);
+      if (!ok) return false;
+
+      setIsPushSubscribed(true);
+      setIsPushSupported(true);
+      setPushPermission("granted");
+      return true;
     } catch (error) {
       console.error("Failed to subscribe to push notifications:", error);
       return false;
     }
-  }, [user]);
+  }, []);
 
   const unsubscribeFromPush = useCallback(async (): Promise<boolean> => {
     try {
-      // TODO: Implement push unsubscription
-      // if (!pushManagerRef.current) {
-      //   pushManagerRef.current = ClientPushManager.getInstance();
-      // }
-
-      // await pushManagerRef.current.unsubscribe(user!._id);
+      const existing = await getExistingSubscription();
+      if (existing) {
+        try {
+          await unregisterSubscriptionWithServer(existing);
+        } catch {}
+        await existing.unsubscribe();
+      }
       setIsPushSubscribed(false);
-      setPushPermission("denied");
       return true;
     } catch (error) {
       console.error("Failed to unsubscribe from push notifications:", error);
       return false;
     }
-  }, [user]);
+  }, []);
 
   // ===== TOAST METHODS =====
 
   const showToast = useCallback((notification: NotificationAPI) => {
-    const toast: NotificationToast = {
-      id: `toast-${Date.now()}`,
-      notification,
-      duration: notification.priority === "urgent" ? 10000 : 5000,
-      position: "top-right",
-    };
+    const keyParts = [
+      notification.type,
+      (notification as any)?.data?.transferId || notification.id,
+    ];
+    const key = keyParts.join(":");
+    const now = Date.now();
+    const windowMs = notification.priority === "urgent" ? 3000 : 10000;
 
-    setToasts((prev) => [...prev, toast]);
+    // Dedupe within a short window by key
+    const last = recentToastKeysRef.current.get(key) || 0;
+    if (now - last < windowMs) {
+      return;
+    }
+    recentToastKeysRef.current.set(key, now);
 
-    // Auto-hide toast
+    // Trim map
+    if (recentToastKeysRef.current.size > 200) {
+      const entries = Array.from(recentToastKeysRef.current.entries()).sort(
+        (a, b) => a[1] - b[1]
+      );
+      for (let i = 0; i < entries.length - 100; i++) {
+        recentToastKeysRef.current.delete(entries[i][0]);
+      }
+    }
+
+    const duration = notification.priority === "urgent" ? 10000 : 5000;
+
+    setToasts((prev) => {
+      // Limit concurrent toasts
+      const next = [...prev];
+      if (next.length >= maxConcurrentToastsRef.current) {
+        next.shift();
+      }
+      next.push({
+        id: `toast-${now}`,
+        notification,
+        duration,
+        position: "top-right",
+      });
+      return next;
+    });
+
     setTimeout(() => {
-      hideToast(toast.id);
-    }, toast.duration);
+      setToasts((prev) =>
+        prev.filter((t) => now.toString() !== t.id.replace("toast-", ""))
+      );
+    }, duration);
   }, []);
 
   const hideToast = useCallback((toastId: string) => {
@@ -557,14 +433,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
   // ===== UTILITY METHODS =====
 
-  const emitEvent = useCallback(
-    (event: SocketEventType, payload: any) => {
-      if (socketRef.current && isConnected) {
-        socketRef.current.emit(event, payload);
-      }
-    },
-    [isConnected]
-  );
+  const emitEvent = useCallback((event: any, payload: any) => {}, []);
 
   const clearError = useCallback(() => {
     setConnectionError(null);
@@ -575,21 +444,37 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   // Initialize push manager and check support
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // TODO: Implement push manager initialization
-      // pushManagerRef.current = ClientPushManager.getInstance();
-
-      // pushManagerRef.current.getSubscriptionInfo().then((info) => {
-      //   setIsPushSupported(info.supported);
-      //   setIsPushSubscribed(info.subscribed);
-      //   setPushPermission(info.permission);
-      // });
-
-      // For now, set basic values
-      setIsPushSupported(false);
-      setIsPushSubscribed(false);
-      setPushPermission("default");
+      const supported = swIsSupported();
+      setIsPushSupported(supported);
+      setPushPermission(
+        typeof Notification !== "undefined"
+          ? Notification.permission
+          : "default"
+      );
+      if (!supported) return;
+      getExistingSubscription()
+        .then((s) => {
+          setIsPushSubscribed(
+            !!s &&
+              (typeof Notification === "undefined" ||
+                Notification.permission === "granted")
+          );
+        })
+        .catch(() => {});
     }
   }, []);
+
+  // Update app badge when unread count changes
+  useEffect(() => {
+    try {
+      const n = unreadCount;
+      const nav = navigator as any;
+      if (nav.setAppBadge) {
+        if (n > 0) nav.setAppBadge(n);
+        else nav.clearAppBadge();
+      }
+    } catch {}
+  }, [unreadCount]);
 
   // Connect when authenticated
   useEffect(() => {
@@ -599,6 +484,53 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       disconnect();
     }
   }, [isAuthenticated, user, connect, disconnect]);
+
+  // Centralized EventBus subscription
+  useEffect(() => {
+    let bus: any;
+    async function start() {
+      try {
+        const { EventBus } = await import("@/lib/realtime/client/EventBus");
+        const { createTransfersHandler } = await import(
+          "@/lib/realtime/client/handlers/transfersHandler"
+        );
+        bus = new EventBus();
+        bus.register(
+          createTransfersHandler((envelope) => {
+            showToast({
+              id: envelope.id,
+              type: NOTIFICATION_TYPES.TRANSFER_CREATED,
+              priority: "high" as any,
+              title: "New transfer created",
+              message: `Transfer ${envelope.entityId} created`,
+              targetUsers: [],
+              targetRoles: [],
+              excludeUsers: [],
+              deliveries: [],
+              settings: {
+                channels: ["realtime"],
+                persistent: false,
+                requireAcknowledgment: false,
+              },
+              status: "delivered" as any,
+              deliveryAttempts: 0,
+              createdBy: envelope.actorId || "system",
+              createdByType: 0 as any,
+              createdAt: new Date(envelope.ts),
+              updatedAt: new Date(envelope.ts),
+            });
+          })
+        );
+        await bus.start();
+      } catch (e) {
+        console.error("Failed to start EventBus", e);
+      }
+    }
+    if (isAuthenticated && user) start();
+    return () => {
+      if (bus) bus.stop();
+    };
+  }, [isAuthenticated, user, showToast]);
 
   // Cleanup on unmount
   useEffect(() => {

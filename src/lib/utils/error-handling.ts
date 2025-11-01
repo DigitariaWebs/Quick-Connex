@@ -478,6 +478,29 @@ export function sanitizeErrorForProduction(error: any): any {
 }
 
 /**
+ * Convert unknown error to a simple { code, message } shape for UI
+ */
+export function toUserError(error: unknown): { code: string; message: string } {
+  const anyErr = error as any;
+  if (anyErr && typeof anyErr === 'object') {
+    if (typeof anyErr.code === 'string' && typeof anyErr.message === 'string') {
+      return { code: anyErr.code, message: anyErr.message };
+    }
+    if (anyErr.error && typeof anyErr.error === 'object') {
+      const e = anyErr.error;
+      if (typeof e.code === 'string' && typeof e.message === 'string') {
+        return { code: e.code, message: e.message };
+      }
+    }
+  }
+
+  if (error instanceof Error) {
+    return { code: 'UNKNOWN_ERROR', message: error.message || 'An unexpected error occurred' };
+  }
+  return { code: 'UNKNOWN_ERROR', message: 'An unexpected error occurred' };
+}
+
+/**
  * Transform database errors to standardized format
  */
 export function transformDatabaseError(error: any): DatabaseError {

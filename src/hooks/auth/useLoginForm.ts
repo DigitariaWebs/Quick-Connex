@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react';
 import { authClient } from '@/lib/client';
 import { ApiError } from '@/lib/client';
 import { verifyAuthCookie } from '@/lib/auth/utils/cookie-verification';
+import { toUserError } from '@/lib/utils/error-handling';
 
 /**
  * useLoginForm Hook
@@ -64,28 +65,18 @@ export function useLoginForm() {
     } catch (error) {
       console.error('Login error:', error);
       
-      if (error instanceof ApiError) {
-        // Handle API-specific errors
-        if (error.statusCode === 403) {
-          const errorData = error.data;
-          if (errorData?.status === 'pending') {
-            setMessage({ 
-              type: 'warning', 
-              text: 'Your account is pending approval. You will receive an email notification once approved.' 
-            });
-          } else if (errorData?.status === 'rejected') {
-            setMessage({ 
-              type: 'error', 
-              text: 'Your account registration has been rejected. Please contact support for more information.' 
-            });
-          } else {
-            setMessage({ type: 'error', text: error.message });
-          }
-        } else {
-          setMessage({ type: 'error', text: error.message });
-        }
+      const { code, message: errorMessage } = toUserError(error);
+      
+      // Handle specific error cases
+      if (code === 'UNAUTHORIZED' || code === 'INVALID_CREDENTIALS') {
+        setMessage({ type: 'error', text: 'Invalid email or password. Please try again.' });
+      } else if (code === 'FORBIDDEN') {
+        setMessage({ 
+          type: 'warning', 
+          text: 'Your account is pending approval. You will receive an email notification once approved.' 
+        });
       } else {
-        setMessage({ type: 'error', text: 'Failed to connect to server. Please try again.' });
+        setMessage({ type: 'error', text: errorMessage });
       }
     } finally {
       setIsLoading(false);

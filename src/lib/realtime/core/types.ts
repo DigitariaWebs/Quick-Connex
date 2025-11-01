@@ -34,8 +34,7 @@ import {
   CommunicationStatus 
 } from '@/lib/communication/core/types';
 
-// Socket.io
-import { Socket } from 'socket.io';
+// Removed direct Socket.io dependency
 
 // ===== SOCKET.IO TYPES =====
 
@@ -50,7 +49,7 @@ export type SocketTransport = 'polling' | 'websocket' | 'webtransport';
  * 
  * IMPORTANT: Fields match TokenPayload exactly - no additions
  */
-export interface AuthenticatedSocket extends Socket {
+export interface AuthenticatedSocket {
   // From JWT TokenPayload
   userId: string;
   userType: UserRole;
