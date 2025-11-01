@@ -69,13 +69,6 @@ const navigation: NavigationSection[] = [
         bgColor: "bg-blue-50",
       },
       {
-        name: "Realtime Test",
-        href: "/admin/realtime-test",
-        icon: Activity,
-        color: "text-blue-600",
-        bgColor: "bg-blue-50",
-      },
-      {
         name: "Sessions",
         href: "/admin/sessions",
         icon: Shield,

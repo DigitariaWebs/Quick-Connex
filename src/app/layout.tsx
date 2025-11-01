@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/contexts/SessionContext";
-// Remove startup logging from layout - not compatible with Vercel
-// import { logApplicationStartup } from "@/lib/utils/startup-logger";
 
 // Log application startup only in development
 if (typeof window === "undefined" && process.env.NODE_ENV === "development") {
@@ -22,7 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Patients Management System",
+  title: "Quick Connex",
   description:
     "A modern web application for managing patients and healthcare staff",
 };
