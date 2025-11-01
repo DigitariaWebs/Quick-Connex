@@ -60,6 +60,12 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('auth-token')?.value;
 
   if (!token) {
+    // Log cookie detection failure for debugging
+    console.log('🔍 Middleware: No auth-token cookie found', {
+      pathname,
+      cookiesPresent: Array.from(request.cookies.getAll()).map(c => c.name),
+      userAgent: request.headers.get('user-agent')?.substring(0, 50)
+    });
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
@@ -76,6 +82,11 @@ export async function middleware(request: NextRequest) {
     } : null;
     
     if (!payload) {
+      console.log('🔍 Middleware: Token verification failed - invalid payload', {
+        pathname,
+        tokenPresent: !!token,
+        tokenLength: token.length
+      });
       return NextResponse.redirect(new URL('/login', request.url));
     }
     
@@ -96,7 +107,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
     
   } catch (error) {
-    console.error('Middleware authentication error:', error);
+    // Enhanced error logging for debugging cookie/token issues
+    console.error('🔍 Middleware authentication error:', {
+      error: error instanceof Error ? error.message : String(error),
+      pathname,
+      tokenPresent: !!token,
+      tokenLength: token?.length || 0,
+      cookiesPresent: Array.from(request.cookies.getAll()).map(c => c.name),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return NextResponse.redirect(new URL('/login', request.url));
   }
 }

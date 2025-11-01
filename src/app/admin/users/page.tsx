@@ -352,9 +352,14 @@ export default function UserManagement() {
 
   // Handle select all
   const handleSelectAll = () => {
-    const validUsers = users.filter(
-      (user) => user._id && user._id.trim() !== ""
-    );
+    const validUsers = users.filter((user) => {
+      if (!user._id) return false;
+      const id =
+        typeof user._id === "string"
+          ? user._id
+          : (user._id as any)?.toString?.() || String(user._id);
+      return id && typeof id === "string" && id.trim() !== "";
+    });
     if (selectedUsers.length === validUsers.length) {
       setSelectedUsers([]);
     } else {
@@ -1054,12 +1059,28 @@ export default function UserManagement() {
                       type="checkbox"
                       checked={
                         selectedUsers.length ===
-                          users.filter(
-                            (user) => user._id && user._id.trim() !== ""
-                          ).length &&
-                        users.filter(
-                          (user) => user._id && user._id.trim() !== ""
-                        ).length > 0
+                          users.filter((user) => {
+                            if (!user._id) return false;
+                            const id =
+                              typeof user._id === "string"
+                                ? user._id
+                                : (user._id as any)?.toString?.() ||
+                                  String(user._id);
+                            return (
+                              id && typeof id === "string" && id.trim() !== ""
+                            );
+                          }).length &&
+                        users.filter((user) => {
+                          if (!user._id) return false;
+                          const id =
+                            typeof user._id === "string"
+                              ? user._id
+                              : (user._id as any)?.toString?.() ||
+                                String(user._id);
+                          return (
+                            id && typeof id === "string" && id.trim() !== ""
+                          );
+                        }).length > 0
                       }
                       onChange={handleSelectAll}
                       className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
@@ -1067,9 +1088,17 @@ export default function UserManagement() {
                     <span className="text-sm font-medium text-gray-700">
                       Select all (
                       {
-                        users.filter(
-                          (user) => user._id && user._id.trim() !== ""
-                        ).length
+                        users.filter((user) => {
+                          if (!user._id) return false;
+                          const id =
+                            typeof user._id === "string"
+                              ? user._id
+                              : (user._id as any)?.toString?.() ||
+                                String(user._id);
+                          return (
+                            id && typeof id === "string" && id.trim() !== ""
+                          );
+                        }).length
                       }{" "}
                       users)
                     </span>
@@ -1082,7 +1111,16 @@ export default function UserManagement() {
                 {/* Users List */}
                 <div className="space-y-3">
                   {users
-                    .filter((user) => user._id && user._id.trim() !== "") // Filter out users without valid IDs
+                    .filter((user) => {
+                      // Filter out users without valid IDs
+                      if (!user._id) return false;
+                      // Handle both string and ObjectId cases
+                      const id =
+                        typeof user._id === "string"
+                          ? user._id
+                          : (user._id as any)?.toString?.() || String(user._id);
+                      return id && typeof id === "string" && id.trim() !== "";
+                    })
                     .map((user, index) => {
                       const statusConfig = getUserStatusConfig(user.status);
                       const roleConfig = getUserRoleConfig(user.userType);

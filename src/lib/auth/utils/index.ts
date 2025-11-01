@@ -13,6 +13,11 @@ export {
   clearAuthCookie
 } from './jwt';
 
+// Cookie Verification Utilities
+export {
+  verifyAuthCookie
+} from './cookie-verification';
+
 // Device Utilities
 export {
   parseUserAgent,

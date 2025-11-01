@@ -25,16 +25,25 @@ export default function AdminLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Handle authentication and authorization checks
+  // Add a delay to prevent race condition where SessionContext hasn't finished initial check yet
   useEffect(() => {
-    // Only proceed if we're not loading
-    if (isLoading) return;
+    // Don't redirect while still loading
+    if (isLoading) {
+      return;
+    }
 
-    // Add a small delay to prevent race conditions
-    const timeoutId = setTimeout(() => {
+    // Give SessionContext a moment to complete its initial auth check
+    // This prevents premature redirects after login
+    const checkTimer = setTimeout(() => {
       // If not authenticated, redirect to login
       if (!isAuthenticated) {
         console.log(
-          "🔒 AdminLayout: User not authenticated, redirecting to login"
+          "🔒 AdminLayout: User not authenticated, redirecting to login",
+          {
+            isLoading,
+            isAuthenticated,
+            hasUser: !!user,
+          }
         );
         router.push("/login");
         return;
@@ -58,9 +67,9 @@ export default function AdminLayout({
       } else {
         console.log("✅ AdminLayout: User is admin, allowing access");
       }
-    }, 100); // Small delay to prevent race conditions
+    }, 500); // Small delay to allow SessionContext to finish
 
-    return () => clearTimeout(timeoutId);
+    return () => clearTimeout(checkTimer);
   }, [isLoading, isAuthenticated, user, router]);
 
   // Debug authentication state
