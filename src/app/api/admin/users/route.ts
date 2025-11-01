@@ -107,44 +107,66 @@ export async function GET(request: NextRequest) {
     // Manually populate CIUSSS and Hospital data
     console.log('🔍 Admin Users API: Manually populating CIUSSS and Hospital data...');
     const users = await Promise.all(rawUsers.map(async (user) => {
-      const populatedUser = { ...user };
+      // Convert Mongoose document to plain object for JSON serialization
+      const populatedUser: any = user.toObject ? user.toObject() : { ...user };
       
-      // Handle CIUSSS population
+      // Handle CIUSSS population - return full object, not just ID
       if (user.ciusss) {
         try {
+          let ciusssData = null;
           // Check if ciusss is an ObjectId or string
           if (typeof user.ciusss === 'string') {
             // If it's a string, try to find by code
-            const ciusss = await DatabaseService.findOne(CIUSSS, { code: user.ciusss });
-            populatedUser.ciusss = ciusss?._id as any;
+            ciusssData = await DatabaseService.findOne(CIUSSS, { code: user.ciusss });
           } else {
             // If it's an ObjectId, populate normally
-            const ciusss = await DatabaseService.findById(CIUSSS, user.ciusss.toString());
-            populatedUser.ciusss = ciusss?._id as any;
+            ciusssData = await DatabaseService.findById(CIUSSS, user.ciusss.toString());
+          }
+          
+          // Set the full object if found, otherwise undefined
+          if (ciusssData) {
+            populatedUser.ciusss = ciusssData.toObject ? ciusssData.toObject() : ciusssData;
+          } else {
+            populatedUser.ciusss = undefined;
           }
         } catch (error) {
           console.warn(`⚠️ Failed to populate CIUSSS for user ${user._id}:`, error instanceof Error ? error.message : 'Unknown error');
           populatedUser.ciusss = undefined;
         }
+      } else {
+        populatedUser.ciusss = undefined;
       }
       
-      // Handle Hospital population
+      // Handle Hospital population - return full object, not just ID
       if (user.hospital) {
         try {
+          let hospitalData = null;
           // Check if hospital is an ObjectId or string
           if (typeof user.hospital === 'string') {
             // If it's a string, try to find by name
-            const hospital = await DatabaseService.findOne(HospitalModel, { name: user.hospital });
-            populatedUser.hospital = hospital?._id as any;
+            hospitalData = await DatabaseService.findOne(HospitalModel, { name: user.hospital });
           } else {
             // If it's an ObjectId, populate normally
-            const hospital = await DatabaseService.findById(HospitalModel, user.hospital.toString());
-            populatedUser.hospital = hospital?._id as any;
+            hospitalData = await DatabaseService.findById(HospitalModel, user.hospital.toString());
+          }
+          
+          // Set the full object if found, otherwise undefined
+          if (hospitalData) {
+            populatedUser.hospital = hospitalData.toObject ? hospitalData.toObject() : hospitalData;
+          } else {
+            populatedUser.hospital = undefined;
           }
         } catch (error) {
           console.warn(`⚠️ Failed to populate Hospital for user ${user._id}:`, error instanceof Error ? error.message : 'Unknown error');
           populatedUser.hospital = undefined;
         }
+      } else {
+        populatedUser.hospital = undefined;
+      }
+      
+      // Ensure _id is serialized as string
+      if (populatedUser._id && populatedUser._id.toString) {
+        populatedUser._id = populatedUser._id.toString();
       }
       
       return populatedUser;

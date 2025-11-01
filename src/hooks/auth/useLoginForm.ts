@@ -1,5 +1,7 @@
 import { useState, FormEvent } from 'react';
-import { login } from '@/lib/auth/client';
+import { authClient } from '@/lib/client';
+import { ApiError } from '@/lib/client';
+import { verifyAuthCookie } from '@/lib/auth/utils/cookie-verification';
 import { toUserError } from '@/lib/utils/error-handling';
 
 /**
@@ -19,31 +21,46 @@ export function useLoginForm() {
     
     try {
       const formData = new FormData(event.currentTarget);
-      const result = await login({
+      const result = await authClient.login({
         email: formData.get('email') as string,
         password: formData.get('password') as string
       });
-      
-      setMessage({ type: 'success', text: 'Login successful! Redirecting...' });
       
       console.log('✅ Login: Session created by API');
       console.log('🔍 Session data:', result.session);
       console.log('👤 User data:', result.user);
       console.log('👤 User type:', result.user.userType);
       
-      // Simple redirect logic based on user type
-      const redirectPath = result.user.userType === 'admin' || result.user.userType === 'super_admin' 
-        ? '/admin' 
-        : '/dashboard';
+      // Verify cookie is actually set before redirecting
+      setMessage({ type: 'success', text: 'Login successful! Verifying...' });
+      console.log('🔍 Verifying authentication cookie before redirect...');
       
-      console.log(`✅ Login: Redirecting ${result.user.userType} to ${redirectPath}`);
-      console.log('🔗 Full redirect URL:', window.location.origin + redirectPath);
+      const cookieVerified = await verifyAuthCookie(3, 200);
       
-      // Use a shorter delay and force page reload to ensure clean state
+      if (!cookieVerified) {
+        console.error('❌ Cookie verification failed - cannot redirect safely');
+        setMessage({ 
+          type: 'error', 
+          text: 'Authentication cookie not available. Please try logging in again.' 
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Get redirect path using AuthClient business logic
+      const redirectPath = authClient.getRedirectPath(result.user.userType);
+      
+      console.log(`✅ Cookie verified - Redirecting ${result.user.userType} to ${redirectPath}`);
+      
+      // Use full page reload to ensure cookie is available when SessionContext initializes
+      // This prevents race conditions where the dashboard checks auth before SessionContext finishes
+      setMessage({ type: 'success', text: 'Login successful! Redirecting...' });
+      
+      // Small delay to show success message, then full page reload
       setTimeout(() => {
-        console.log('🚀 Executing redirect to:', redirectPath);
+        console.log('🚀 Executing redirect with full page reload to:', redirectPath);
         window.location.href = redirectPath;
-      }, 1000);
+      }, 300);
       
     } catch (error) {
       console.error('Login error:', error);

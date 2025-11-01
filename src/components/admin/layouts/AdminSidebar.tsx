@@ -123,13 +123,6 @@ const navigation: NavigationSection[] = [
         color: "text-pink-600",
         bgColor: "bg-pink-50",
       },
-      {
-        name: "Reports",
-        href: "/admin/analytics",
-        icon: FileText,
-        color: "text-cyan-600",
-        bgColor: "bg-cyan-50",
-      },
     ],
   },
 ];

@@ -25,12 +25,39 @@ export async function POST(request: NextRequest) {
     });
     
     if (loginResult.token) {
-      response.cookies.set('auth-token', loginResult.token, {
+      // Set cookie with explicit configuration
+      const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        sameSite: 'lax' as const,
         path: '/',
-        maxAge: 24 * 60 * 60
+        maxAge: 24 * 60 * 60 // 24 hours
+      };
+      
+      response.cookies.set('auth-token', loginResult.token, cookieOptions);
+      
+      // Verify cookie was set successfully
+      const setCookie = response.cookies.get('auth-token');
+      if (setCookie) {
+        log.info('Auth cookie set successfully', {
+          operation: 'login_cookie_set',
+          requestId,
+          userId: loginResult.user?._id,
+          cookiePresent: true,
+          cookieLength: loginResult.token.length
+        });
+      } else {
+        log.error('Failed to set auth cookie', {
+          operation: 'login_cookie_error',
+          requestId,
+          userId: loginResult.user?._id
+        });
+      }
+    } else {
+      log.warn('No token returned from login - cookie not set', {
+        operation: 'login_no_token',
+        requestId,
+        userId: loginResult.user?._id
       });
     }
     
@@ -39,7 +66,8 @@ export async function POST(request: NextRequest) {
       operation: 'login_api',
       requestId,
       duration,
-      userId: loginResult.user?._id
+      userId: loginResult.user?._id,
+      cookieSet: !!loginResult.token
     });
     
     return response;

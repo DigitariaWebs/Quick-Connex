@@ -53,12 +53,31 @@ export default function EmployeeDashboard() {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
   // Redirect to login if not authenticated
+  // Add a small delay to prevent race condition where SessionContext hasn't finished initial check yet
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      console.log("🔒 Dashboard: User not authenticated, redirecting to login");
-      router.push("/login");
+    // Don't redirect while still loading
+    if (authLoading) {
+      return;
     }
-  }, [authLoading, isAuthenticated, router]);
+
+    // Give SessionContext a moment to complete its initial auth check
+    // This prevents premature redirects after login
+    const checkTimer = setTimeout(() => {
+      if (!isAuthenticated) {
+        console.log(
+          "🔒 Dashboard: User not authenticated, redirecting to login",
+          {
+            authLoading,
+            isAuthenticated,
+            hasUser: !!user,
+          }
+        );
+        router.push("/login");
+      }
+    }, 500); // Small delay to allow SessionContext to finish
+
+    return () => clearTimeout(checkTimer);
+  }, [authLoading, isAuthenticated, router, user]);
 
   // Show loading spinner only for authentication or initial data load
   if (authLoading || (dataLoading && !user)) {
