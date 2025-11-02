@@ -8,6 +8,7 @@ import { TransferAuditContext } from '@/lib/audit';
 import { AuditAction, ActorType, TargetResourceType } from '@/models/AuditLog';
 import { Permission } from '@/models/User';
 import TransferNotificationService from '@/lib/communication/integrations/TransferNotificationService';
+import { extractRequestInfo } from '@/lib/audit/utils/request';
 
 /**
  * Admin Transfer Actions API Endpoint
@@ -246,42 +247,8 @@ const transfer = await Transfer.findById(id);
       );
     }
 
-    // Add timeline entry
-    const timelineEntry = {
-      id: `admin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type: 'admin_action',
-      title: actionDescription,
-      description: actionDescription,
-      timestamp: new Date(),
-      actor: {
-        id: adminUser._id,
-        name: `${adminUser.firstName} ${adminUser.lastName}`,
-        email: adminUser.email,
-        userType: adminUser.userType
-      },
-      metadata: {
-        action,
-        reason,
-        newStatus,
-        newPriority,
-        reassignTo,
-        adminNote,
-        before: originalValues,
-        after: {
-          status: updatedTransfer.status,
-          priority: updatedTransfer.priority,
-          assignedTo: updatedTransfer.assignedTo,
-          notes: updatedTransfer.notes
-        }
-      },
-      isSystemEvent: false,
-      isVisible: true
-    };
-
-    // Add timeline entry to transfer
-    await Transfer.findByIdAndUpdate(id, {
-      $push: { timeline: timelineEntry }
-    });
+    // Timeline events are now stored in audit logs collection via AuditService.logTransferAction
+    // No need to push to transfer.timeline array
 
     // Note: Notifications are disabled for in-app admin actions
     // Only the transfer state is updated, no email/SMS notifications are sent
@@ -323,7 +290,7 @@ const transfer = await Transfer.findById(id);
         reassignTo,
         adminNote
       },
-      requestInfo: AuditService.extractRequestInfo(request),
+      requestInfo: extractRequestInfo(request),
       success: true
     };
     

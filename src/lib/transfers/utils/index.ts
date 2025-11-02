@@ -27,21 +27,7 @@ export * from './cancellation';
 // Timeline Formatters
 export { TimelineFormatters } from './timeline-formatters';
 
-// Event Creators
-export {
-  generateEventId,
-  createEvent,
-  createTransferCreatedEvent,
-  createStatusChangeEvent,
-  createApprovalEvent,
-  createRejectionEvent,
-  createAssignmentEvent,
-  createUnassignmentEvent,
-  createAcceptanceEvent,
-  createCompletionEvent,
-  createCancellationEvent,
-  createSystemEvent
-} from './event-creators';
+// Event Creators (removed - functionality moved to TimelineService)
 
 // Transformers
 export {

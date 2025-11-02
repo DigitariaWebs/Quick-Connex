@@ -41,6 +41,7 @@ export async function GET(
       page,
       limit,
       filters: {
+        transferId,
         actorId,
         kind,
         startDate,
@@ -51,7 +52,7 @@ export async function GET(
     };
     
     // Get timeline data
-    const timeline = await TimelineService.getTimelineForTransfer(transferId, options);
+    const timeline = await TimelineService.getTimeline(options);
     
     return NextResponse.json({
       success: true,

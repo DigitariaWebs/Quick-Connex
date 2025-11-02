@@ -156,6 +156,8 @@ export class CommunicationService {
   private config: CommunicationConfig;
   private providerManager: ProviderManager;
   private eventHandlerRegistry: EventHandlerRegistry;
+  private initialized: boolean = false;
+  private initializationPromise: Promise<void> | null = null;
 
   private constructor() {
     this.config = getCommunicationConfig();
@@ -177,12 +179,44 @@ export class CommunicationService {
    * Initialize the service
    */
   public async initialize(): Promise<void> {
+    if (this.initialized) {
+      return;
+    }
+
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    this.initializationPromise = this._initialize();
+    return this.initializationPromise;
+  }
+
+  /**
+   * Internal initialization method
+   */
+  private async _initialize(): Promise<void> {
     try {
       await this.providerManager.initializeProviders();
+      this.initialized = true;
       log.info('Communication service initialized successfully');
     } catch (error) {
-      log.error('Failed to initialize communication service:', error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      log.warn('Failed to initialize communication service providers. Some features may be unavailable:', {
+        error: errorMessage
+      });
+      // Don't throw - allow service to continue with limited functionality
+      this.initialized = false;
+    }
+  }
+
+  /**
+   * Ensure providers are initialized before use
+   */
+  private async ensureInitialized(): Promise<void> {
+    if (!this.initialized && !this.initializationPromise) {
+      await this.initialize();
+    } else if (this.initializationPromise) {
+      await this.initializationPromise;
     }
   }
 
@@ -191,10 +225,26 @@ export class CommunicationService {
    */
   public async sendEmail(message: EmailMessage): Promise<CommunicationServiceResponse> {
     try {
+      // Ensure providers are initialized
+      await this.ensureInitialized();
+
       // Validate message
       const validation = validateEmailMessage(message);
       if (!validation.isValid) {
         throw new ValidationError(`Email validation failed: ${validation.errors.join(', ')}`);
+      }
+
+      // Check if email provider is available
+      if (!this.providerManager.isEmailProviderAvailable(this.config.providers.email.provider)) {
+        const errorMessage = `Email provider ${this.config.providers.email.provider} not available`;
+        log.warn(errorMessage);
+        
+        return {
+          success: false,
+          status: 'failed',
+          messageId: message.id,
+          error: errorMessage
+        };
       }
 
       // Get email provider
@@ -239,6 +289,9 @@ export class CommunicationService {
    */
   public async sendSMS(message: SMSMessage): Promise<CommunicationServiceResponse> {
     try {
+      // Ensure providers are initialized
+      await this.ensureInitialized();
+
       // Validate message
       const validation = validateSMSMessage(message);
       if (!validation.isValid) {
@@ -247,6 +300,19 @@ export class CommunicationService {
 
       // Format phone number
       const formattedMessage = formatPhoneNumberForMessage(message);
+
+      // Check if SMS provider is available
+      if (!this.providerManager.isSMSProviderAvailable(this.config.providers.sms.provider)) {
+        const errorMessage = `SMS provider ${this.config.providers.sms.provider} not available`;
+        log.warn(errorMessage);
+        
+        return {
+          success: false,
+          status: 'failed',
+          messageId: message.id,
+          error: errorMessage
+        };
+      }
 
       // Get SMS provider
       const smsProvider = this.providerManager.getSMSProvider();

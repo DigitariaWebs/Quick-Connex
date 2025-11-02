@@ -7,6 +7,7 @@
 
 import { NextResponse } from 'next/server';
 import { TRANSFER_ERRORS } from '../core/constants';
+import { log } from '@/lib/logging';
 
 /**
  * Transfer Error Codes
@@ -482,11 +483,23 @@ export class TransferErrorHandler {
 
     // Log based on severity
     if (error.statusCode >= 500) {
-      console.error('Transfer System Error:', logData);
+      log.error('Transfer System Error', undefined, {
+        category: 'transfer',
+        operation: 'transfer_error',
+        ...logData
+      });
     } else if (error.statusCode >= 400) {
-      console.warn('Transfer System Warning:', logData);
+      log.warn('Transfer System Warning', {
+        category: 'transfer',
+        operation: 'transfer_warning',
+        ...logData
+      });
     } else {
-      console.info('Transfer System Info:', logData);
+      log.info('Transfer System Info', {
+        category: 'transfer',
+        operation: 'transfer_info',
+        ...logData
+      });
     }
   }
 }

@@ -10,15 +10,18 @@ import { DatabaseService } from '@/lib/database';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import { AuthService } from '@/lib/auth';
-import { TimelineService } from '@/lib/transfers';
+import { TimelineService, TransferUpdateService, ActorInfo, TransferStatus } from '@/lib/transfers';
 import TransferNotificationService from '@/lib/communication/integrations/TransferNotificationService';
+import { extractRequestInfo } from '@/lib/audit/utils/request';
+import { log } from '@/lib/logging';
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ transferId: string }> }
 ) {
+  const { transferId } = await params;
+  
   try {
-    const { transferId } = await params;
     const body = await request.json();
     const { assignedTo, notes } = body;
 
@@ -55,7 +58,7 @@ export async function PUT(
     }
 
     // Check if transfer is in the correct status for acceptance
-    if (transfer.status !== 'accepted') {
+    if (transfer.status !== TransferStatus.ACCEPTED) {
       return NextResponse.json(
         { error: `Transfer cannot be accepted. Current status: ${transfer.status}` },
         { status: 400 }
@@ -76,62 +79,63 @@ export async function PUT(
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
-    // Create timeline events for acceptance
-    const acceptanceEvent = TimelineService.createAcceptanceEvent({
+    // Extract request info for audit logging
+    const requestInfo = extractRequestInfo(request);
+
+    const actor: ActorInfo = {
       id: user._id as any,
       name: `${user.firstName} ${user.lastName}`,
       email: user.email,
-      userType: 'employee'
-    });
+      userType: user.userType as 'admin' | 'manager' | 'employee'
+    };
 
-    const assignmentEvent = TimelineService.createAssignmentEvent(
+    const transferIdString = transfer.transferId || transferId;
+
+    // Create acceptance event with audit logging
+    await TimelineService.createEventWithAudit(
       {
-        id: user._id as any,
-        name: `${user.firstName} ${user.lastName}`,
-        email: user.email,
-        userType: 'employee'
+        type: 'accepted',
+        title: 'Transfer Accepted',
+        description: `${actor.name} has accepted the transfer assignment`,
+        actor,
+        metadata: {
+          details: 'Employee has accepted responsibility for this transfer',
+          assignedTo: {
+            id: employee._id,
+            name: `${employee.firstName} ${employee.lastName}`,
+            email: employee.email
+          }
+        }
       },
+      transferIdString,
+      requestInfo
+    );
+
+    // Assign transfer using centralized service
+    await TransferUpdateService.assignTransfer(
+      transfer,
+      employee._id as any,
       {
-        id: employee._id as any,
         name: `${employee.firstName} ${employee.lastName}`,
         email: employee.email
       },
-      notes || 'Transfer accepted by employee'
+      actor,
+      notes || 'Transfer accepted by employee',
+      requestInfo
     );
 
-    const statusChangeEvent = TimelineService.createStatusChangeEvent(
-      {
-        id: user._id as any,
-        name: `${user.firstName} ${user.lastName}`,
-        email: user.email,
-        userType: 'employee'
-      },
-      'accepted',
-      'in_progress',
-      'Transfer accepted and started by employee'
+    // Update transfer status using centralized service
+    await TransferUpdateService.updateStatus(
+      transfer,
+      TransferStatus.IN_PROGRESS,
+      actor,
+      'Transfer accepted and started by employee',
+      requestInfo
     );
 
-    // Update transfer
-    transfer.assignedTo = employee._id as any;
-    transfer.status = 'in_progress';
-    transfer.acceptedAt = new Date(); // Track when transfer was accepted
-    transfer.lastModifiedBy = user._id as any;
-    
-    // Add to status history
-    transfer.statusHistory.push({
-      status: 'in_progress',
-      changedBy: user._id as any,
-      changedAt: new Date(),
-      reason: notes || 'Transfer accepted by employee'
-    });
-
-    // Add timeline events
-    if (!transfer.timeline) {
-      transfer.timeline = [];
-    }
-    transfer.timeline.push(acceptanceEvent, assignmentEvent, statusChangeEvent);
-
-    await transfer;
+    // Track acceptance timestamp
+    transfer.acceptedAt = new Date();
+    await transfer.save();
 
     // Send notifications
     try {
@@ -139,10 +143,20 @@ export async function PUT(
       await TransferNotificationService.sendTransferAcceptedNotification(transfer, user);
       
       // Note: Real-time notifications are now handled by the global SSE system
-      console.log('✅ Transfer accepted - real-time notifications handled by global SSE system');
+      log.info('Transfer accepted - real-time notifications handled by global SSE system', {
+        category: 'transfer',
+        operation: 'accept_transfer',
+        transferId,
+        userId: user._id?.toString()
+      });
       
     } catch (notificationError) {
-      console.error('Error sending acceptance notifications:', notificationError);
+      log.error('Error sending acceptance notifications', notificationError, {
+        category: 'transfer',
+        operation: 'accept_notifications',
+        transferId,
+        userId: user._id?.toString()
+      });
       // Don't fail the acceptance if notifications fail
     }
 
@@ -165,7 +179,11 @@ export async function PUT(
     });
 
   } catch (error) {
-    console.error('Error accepting transfer:', error);
+    log.error('Error accepting transfer', error, {
+      category: 'transfer',
+      operation: 'accept_transfer',
+      transferId
+    });
     if (error instanceof Error) {
       if (error.message === 'Authentication required') {
         return NextResponse.json(
@@ -192,9 +210,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ transferId: string }> }
 ) {
+  const { transferId } = await params;
+  
   try {
-    const { transferId } = await params;
-
     if (!transferId) {
       return NextResponse.json({ error: 'Transfer ID is required' }, { status: 400 });
     }
@@ -219,7 +237,7 @@ export async function GET(
     }
 
     // Check if user has permission to view this transfer
-    if (user.userType === 'employee' && transfer.status === 'pending') {
+    if (user.userType === 'employee' && transfer.status === TransferStatus.PENDING) {
       return NextResponse.json({ error: 'Access denied: Cannot view pending transfers' }, { status: 403 });
     }
 
@@ -237,13 +255,17 @@ export async function GET(
               : 'Unknown User',
             email: transfer.assignedTo.email || 'Unknown Email'
           } : null,
-          canAccept: transfer.status === 'accepted' && user.userType === 'employee'
+          canAccept: transfer.status === TransferStatus.ACCEPTED && user.userType === 'employee'
         }
       }
     });
 
   } catch (error) {
-    console.error('Error fetching transfer acceptance info:', error);
+    log.error('Error fetching transfer acceptance info', error, {
+      category: 'transfer',
+      operation: 'get_accept_info',
+      transferId
+    });
     if (error instanceof Error) {
       if (error.message === 'Authentication required') {
         return NextResponse.json(

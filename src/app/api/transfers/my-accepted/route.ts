@@ -9,14 +9,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import Transfer from '@/models/Transfer';
 import { AuthService } from '@/lib/auth';
 import { createSuccessResponse } from '@/lib/utils/api-responses';
+import { TransferStatus } from '@/lib/transfers';
+import { log } from '@/lib/logging';
 
 export async function GET(request: NextRequest) {
+  let user: any = null;
+  
   try {
     // Authenticate user
-    const { user } = await AuthService.requireAuth(request, {
+    const authResult = await AuthService.requireAuth(request, {
       roles: ['employee', 'manager', 'admin', 'super_admin'],
       requireSession: true
     });
+    user = authResult.user;
 
     // Only employees can access their accepted transfers
     if (user.userType !== 'employee') {
@@ -37,7 +42,7 @@ const { searchParams } = new URL(request.url);
       query.status = status;
     } else {
       // Default: only show active transfers (not pending or accepted)
-      query.status = { $in: ['in_progress', 'completed', 'cancelled'] };
+      query.status = { $in: [TransferStatus.IN_PROGRESS, TransferStatus.COMPLETED, TransferStatus.CANCELLED] };
     }
 
     // Get transfers with populated data
@@ -69,7 +74,6 @@ const { searchParams } = new URL(request.url);
       scheduledDate: transfer.scheduledDate,
       completedDate: transfer.completedDate,
       notes: transfer.notes,
-      timeline: transfer.timeline || [],
       statusHistory: transfer.statusHistory || []
     }));
 
@@ -85,7 +89,11 @@ const { searchParams } = new URL(request.url);
     });
 
   } catch (error) {
-    console.error('Error fetching my accepted transfers:', error);
+    log.error('Error fetching my accepted transfers', error, {
+      category: 'transfer',
+      operation: 'get_my_accepted',
+      userId: user?._id?.toString() || 'unknown'
+    });
     if (error instanceof Error) {
       if (error.message === 'Authentication required') {
         return NextResponse.json(

@@ -2,19 +2,7 @@
  * Transfer status validation and business logic
  */
 
-export type TransferStatus = 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
-export type TransferPriority = 'low' | 'urgent';
-
-/**
- * Valid status transitions
- */
-export const STATUS_TRANSITIONS: Record<TransferStatus, TransferStatus[]> = {
-  pending: ['accepted', 'cancelled'],
-  accepted: ['in_progress', 'cancelled'],
-  in_progress: ['completed', 'cancelled'],
-  completed: [], // Terminal state
-  cancelled: [] // Terminal state
-};
+import { TransferStatus, TransferPriority, TRANSFER_CONSTANTS } from '../core/constants';
 
 /**
  * Validate if a status transition is allowed
@@ -23,21 +11,22 @@ export function validateStatusTransition(
   currentStatus: TransferStatus, 
   newStatus: TransferStatus
 ): boolean {
-  return STATUS_TRANSITIONS[currentStatus]?.includes(newStatus) || false;
+  const transitions = TRANSFER_CONSTANTS.STATUS_TRANSITIONS[currentStatus];
+  return Array.isArray(transitions) && transitions.includes(newStatus);
 }
 
 /**
  * Get allowed transitions for a given status
  */
-export function getAllowedTransitions(currentStatus: TransferStatus): TransferStatus[] {
-  return STATUS_TRANSITIONS[currentStatus] || [];
+export function getAllowedTransitions(currentStatus: TransferStatus): readonly TransferStatus[] {
+  return TRANSFER_CONSTANTS.STATUS_TRANSITIONS[currentStatus] || [];
 }
 
 /**
  * Check if a status is terminal (no further transitions allowed)
  */
 export function isTerminalStatus(status: TransferStatus): boolean {
-  return STATUS_TRANSITIONS[status]?.length === 0;
+  return TRANSFER_CONSTANTS.STATUS_TRANSITIONS[status]?.length === 0;
 }
 
 /**
@@ -206,12 +195,12 @@ export function getTransferActionPermissions(
   };
 
   // Only employees can accept transfers
-  if (user.userType === 'employee' && transfer.status === 'pending') {
+  if (user.userType === 'employee' && transfer.status === TransferStatus.PENDING) {
     permissions.canAccept = true;
   }
 
   // Only assigned employee or manager can start transfer
-  if (transfer.status === 'accepted') {
+  if (transfer.status === TransferStatus.ACCEPTED) {
     if (user.userType === 'manager' || 
         transfer.assignedTo?.toString() === user._id) {
       permissions.canStart = true;
@@ -219,7 +208,7 @@ export function getTransferActionPermissions(
   }
 
   // Only assigned employee or manager can complete transfer
-  if (transfer.status === 'in_progress') {
+  if (transfer.status === TransferStatus.IN_PROGRESS) {
     if (user.userType === 'manager' || 
         transfer.assignedTo?.toString() === user._id) {
       permissions.canComplete = true;
@@ -249,76 +238,6 @@ export function calculateTransferDuration(
   return Math.round(durationMs / (1000 * 60)); // Duration in minutes
 }
 
-/**
- * Get status display information
- */
-export function getStatusDisplayInfo(status: TransferStatus) {
-  const statusInfo = {
-    pending: {
-      label: 'Pending',
-      color: 'amber',
-      icon: 'clock',
-      description: 'Waiting for employee to accept'
-    },
-    accepted: {
-      label: 'Accepted',
-      color: 'green',
-      icon: 'check-circle',
-      description: 'Accepted by employee, ready to start'
-    },
-    in_progress: {
-      label: 'In Progress',
-      color: 'blue',
-      icon: 'arrow-right',
-      description: 'Transfer is currently in progress'
-    },
-    completed: {
-      label: 'Completed',
-      color: 'purple',
-      icon: 'check-circle-2',
-      description: 'Transfer completed successfully'
-    },
-    cancelled: {
-      label: 'Cancelled',
-      color: 'red',
-      icon: 'x-circle',
-      description: 'Transfer was cancelled'
-    }
-  };
-
-  return statusInfo[status];
-}
-
-/**
- * Get priority display information
- */
-export function getPriorityDisplayInfo(priority: TransferPriority) {
-  const priorityInfo = {
-    low: {
-      label: 'Low',
-      color: 'green',
-      icon: 'arrow-down',
-      description: 'Non-urgent transfer'
-    },
-    medium: {
-      label: 'Medium',
-      color: 'yellow',
-      icon: 'minus',
-      description: 'Standard priority transfer'
-    },
-    high: {
-      label: 'High',
-      color: 'orange',
-      icon: 'arrow-up',
-      description: 'High priority transfer'
-    },
-    urgent: {
-      label: 'Urgent',
-      color: 'red',
-      icon: 'alert-triangle',
-      description: 'Urgent transfer - immediate attention required'
-    }
-  };
-
-  return priorityInfo[priority];
-}
+// Note: Status and priority display info functions removed.
+// Use STATUS_DISPLAY_INFO and PRIORITY_DISPLAY_INFO constants from core/constants.ts instead.
+// Or use TransferDisplayUtils.getStatusDisplayInfo() and TransferDisplayUtils.getPriorityDisplayInfo() from formatters.ts

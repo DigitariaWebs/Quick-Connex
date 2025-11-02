@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/database';
-import Transfer from '@/models/Transfer';
+import Transfer, { ITransfer } from '@/models/Transfer';
 import User from '@/models/User';
 import { TransferNotificationService } from '@/lib/communication/integrations/TransferNotificationService';
+import { log } from '@/lib/logging';
 
 // POST /api/transfers/[transferId]/notify - Trigger notifications for a transfer
 // This endpoint is designed for script usage and doesn't require authentication
@@ -10,9 +11,10 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ transferId: string }> }
 ) {
+  // Extract params outside try-catch so they're available for error logging
+  const { transferId } = await params;
+  
   try {
-    // DatabaseService handles connection automatically
-const { transferId } = await params;
     const body = await request.json();
     const { requestedBy } = body;
     
@@ -41,8 +43,12 @@ const { transferId } = await params;
       );
     }
     
-    console.log(`📧 Triggering notifications for transfer: ${transfer.transferId}`);
-    console.log(`👤 Requested by: ${requestingUser.firstName} ${requestingUser.lastName}`);
+    log.info('Triggering notifications for transfer', {
+      category: 'transfer',
+      operation: 'trigger_notifications',
+      transferId: transfer.transferId,
+      requestedBy: `${requestingUser.firstName} ${requestingUser.lastName}`
+    });
     
     // Create notification service instance
     const notificationService = new TransferNotificationService();
@@ -50,7 +56,11 @@ const { transferId } = await params;
     // Send notifications
     await notificationService.sendNewTransferRequestNotification(transfer, requestingUser);
     
-    console.log('✅ Notifications sent successfully');
+    log.info('Notifications sent successfully', {
+      category: 'transfer',
+      operation: 'trigger_notifications',
+      transferId: transfer.transferId
+    });
     
     return NextResponse.json({
       success: true,
@@ -61,7 +71,11 @@ const { transferId } = await params;
     });
     
   } catch (error) {
-    console.error('Error triggering notifications:', error);
+    log.error('Error triggering notifications', error, {
+      category: 'transfer',
+      operation: 'trigger_notifications',
+      transferId
+    });
     return NextResponse.json(
       { 
         error: 'Failed to send notifications',

@@ -9,16 +9,19 @@ import { DatabaseService } from '@/lib/database';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import { AuthService } from '@/lib/auth';
-import { TimelineService } from '@/lib/transfers';
+import { TimelineService, TransferUpdateService, ActorInfo, TransferStatus } from '@/lib/transfers';
 import TransferNotificationService from '@/lib/communication/integrations/TransferNotificationService';
 import { canCancelTransfer } from '@/lib/transfers';
+import { extractRequestInfo } from '@/lib/audit/utils/request';
+import { log } from '@/lib/logging';
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ transferId: string }> }
 ) {
+  const { transferId } = await params;
+  
   try {
-    const { transferId } = await params;
     const body = await request.json();
     const { reason } = body;
 
@@ -55,24 +58,13 @@ export async function PUT(
 
     // Only the assigned employee or a manager/admin can cancel
     if (user.userType === 'employee') {
-      // Debug logging to help identify the issue
-      console.log('Debug - User ID:', user._id);
-      console.log('Debug - User ID type:', typeof user._id);
-      console.log('Debug - Assigned To:', transfer.assignedTo);
-      console.log('Debug - Assigned To type:', typeof transfer.assignedTo);
-      
       // Since assignedTo is populated, we need to compare with the _id field
       const assignedToId = transfer.assignedTo?._id?.toString();
       const userId = user._id.toString();
       
-      console.log('Debug - Assigned To ID:', assignedToId);
-      console.log('Debug - User ID:', userId);
-      console.log('Debug - IDs match:', assignedToId === userId);
-      
       // Also try comparing without toString() in case of type issues
       const assignedToIdRaw = transfer.assignedTo?._id;
       const userIdRaw = user._id;
-      console.log('Debug - Raw comparison:', assignedToIdRaw?.equals?.(userIdRaw) || (assignedToIdRaw && userIdRaw && assignedToIdRaw.toString() === userIdRaw.toString()));
       
       // Try multiple comparison methods
       const isAuthorized = assignedToId === userId || 
@@ -93,54 +85,76 @@ export async function PUT(
       ? `${previousAssignee.firstName} ${previousAssignee.lastName}` 
       : 'Unknown';
 
-    // Create timeline events for unassignment (returning transfer to available pool)
-    const unassignmentEvent = TimelineService.createUnassignmentEvent(
+    // Extract request info for audit logging
+    const requestInfo = extractRequestInfo(request);
+
+    const actor: ActorInfo = {
+      id: user._id as any,
+      name: `${user.firstName} ${user.lastName}`,
+      email: user.email,
+      userType: (user.userType === 'super_admin' ? 'admin' : user.userType) as 'admin' | 'manager' | 'employee'
+    };
+
+    const transferIdString = transfer.transferId || transferId;
+    const cancellationReason = reason || 'Employee cancelled transfer - returned to available pool';
+
+    // Create unassignment event with audit logging
+    await TimelineService.createEventWithAudit(
       {
-        id: user._id as any,
-        name: `${user.firstName} ${user.lastName}`,
-        email: user.email,
-        userType: user.userType as 'admin' | 'employee' | 'manager'
+        type: 'unassigned',
+        title: 'Transfer Returned to Available Pool',
+        description: `Transfer unassigned from ${previousAssigneeName} and returned to available pool`,
+        actor,
+        metadata: {
+          previousAssignee: previousAssignee ? {
+            id: previousAssignee._id,
+            name: previousAssigneeName,
+            email: previousAssignee.email
+          } : null,
+          reason: cancellationReason,
+          details: `Previously assigned to: ${previousAssigneeName} (${previousAssignee?.email || 'Unknown'})`,
+          availableForReassignment: true
+        }
       },
-      {
-        id: previousAssignee?._id || user._id,
-        name: previousAssigneeName,
-        email: previousAssignee?.email || user.email
-      },
-      reason || 'Employee cancelled transfer - returned to available pool'
+      transferIdString,
+      requestInfo
     );
 
-    const statusChangeEvent = TimelineService.createStatusChangeEvent(
-      {
-        id: user._id as any,
-        name: `${user.firstName} ${user.lastName}`,
-        email: user.email,
-        userType: user.userType as 'admin' | 'employee' | 'manager'
-      },
-      'in_progress',
-      'accepted',
-      reason || 'Transfer returned to available pool after employee cancellation'
-    );
-
-    // Update transfer - return to accepted status and clear assignment
-    transfer.status = 'accepted';
+    // Clear assignment and update status
+    // Note: This is a special case - transitioning from 'in_progress' to 'accepted' 
+    // to return transfer to available pool. This bypasses normal state machine rules.
+    const currentStatus = transfer.status;
+    transfer.status = TransferStatus.ACCEPTED;
     transfer.assignedTo = undefined; // Clear assignment so other employees can take it
     transfer.lastModifiedBy = user._id as any;
     
     // Add to status history
     transfer.statusHistory.push({
-      status: 'accepted',
+      status: TransferStatus.ACCEPTED,
       changedBy: user._id as any,
       changedAt: new Date(),
-      reason: reason || 'Transfer returned to available pool after employee cancellation'
+      reason: cancellationReason
     });
 
-    // Add timeline events
-    if (!transfer.timeline) {
-      transfer.timeline = [];
-    }
-    transfer.timeline.push(unassignmentEvent, statusChangeEvent);
+    await transfer.save();
 
-    await transfer;
+    // Create status change event with audit logging (bypassing normal validation for this special case)
+    await TimelineService.createEventWithAudit(
+      {
+        type: 'status_changed',
+        title: `Status Changed: ${currentStatus} → accepted`,
+        description: `Transfer status changed from ${currentStatus} to accepted${cancellationReason ? ` - ${cancellationReason}` : ''}`,
+        actor,
+        metadata: {
+          oldValue: currentStatus,
+          newValue: TransferStatus.ACCEPTED,
+          reason: cancellationReason,
+          details: `Status transition from ${currentStatus} to accepted`
+        }
+      },
+      transferIdString,
+      requestInfo
+    );
 
     // Send notifications
     try {
@@ -175,7 +189,11 @@ export async function PUT(
     });
 
   } catch (error) {
-    console.error('Error cancelling transfer:', error);
+      log.error('Error cancelling transfer', error, {
+        category: 'transfer',
+        operation: 'cancel_transfer',
+        transferId
+      });
     if (error instanceof Error) {
       if (error.message === 'Authentication required') {
         return NextResponse.json(
@@ -202,9 +220,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ transferId: string }> }
 ) {
+  const { transferId } = await params;
+  
   try {
-    const { transferId } = await params;
-
     if (!transferId) {
       return NextResponse.json({ error: 'Transfer ID is required' }, { status: 400 });
     }
@@ -251,7 +269,11 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Error fetching transfer cancellation info:', error);
+    log.error('Error fetching transfer cancellation info', error, {
+      category: 'transfer',
+      operation: 'get_cancel_info',
+      transferId
+    });
     if (error instanceof Error) {
       if (error.message === 'Authentication required') {
         return NextResponse.json(

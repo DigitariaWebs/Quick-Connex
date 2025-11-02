@@ -24,13 +24,23 @@ export class ProviderManager {
    * Initialize all providers
    */
   async initializeProviders(): Promise<void> {
-    try {
-      await this.initializeEmailProviders();
-      await this.initializeSMSProviders();
+    // Initialize email and SMS providers independently
+    // Don't throw if one fails - allow partial functionality
+    await Promise.allSettled([
+      this.initializeEmailProviders(),
+      this.initializeSMSProviders()
+    ]);
+    
+    const emailAvailable = this.emailProviders.has(this.config.providers.email.provider);
+    const smsAvailable = this.smsProviders.has(this.config.providers.sms.provider);
+    
+    if (emailAvailable && smsAvailable) {
       log.info('Communication providers initialized successfully');
-    } catch (error) {
-      log.error('Failed to initialize communication providers:', error);
-      throw error;
+    } else {
+      log.warn('Communication providers initialized with limited functionality:', {
+        email: emailAvailable ? 'available' : 'unavailable',
+        sms: smsAvailable ? 'available' : 'unavailable'
+      });
     }
   }
 
@@ -58,8 +68,12 @@ export class ProviderManager {
           log.warn(`Email provider ${provider} not implemented yet`);
       }
     } catch (error) {
-      log.error(`Failed to initialize email provider ${provider}:`, error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      log.warn(`Failed to initialize email provider ${provider}. Email functionality will be unavailable.`, {
+        error: errorMessage,
+        provider
+      });
+      // Don't throw - allow service to continue without email provider
     }
   }
 
@@ -79,8 +93,12 @@ export class ProviderManager {
           log.warn(`SMS provider ${provider} not implemented yet`);
       }
     } catch (error) {
-      log.error(`Failed to initialize SMS provider ${provider}:`, error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      log.warn(`Failed to initialize SMS provider ${provider}. SMS functionality will be unavailable.`, {
+        error: errorMessage,
+        provider
+      });
+      // Don't throw - allow service to continue without SMS provider
     }
   }
 

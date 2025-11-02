@@ -32,7 +32,6 @@ export type NotificationType =
   | 'transfer_cancelled'
   | 'transfer_status_changed'
   | 'transfer_assigned'
-  | 'transfer_reminder'
   | 'transfer_timeout'
   | 'transfer_urgent_alert'
   | 'test_notification'

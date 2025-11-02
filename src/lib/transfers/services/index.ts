@@ -1,22 +1,10 @@
 /**
  * Transfer Services
  * 
- * Exports all transfer service components including
- * event management and handlers.
+ * Exports all transfer service components.
  */
 
-// Event System
-export { TransferEventManager } from './TransferEventManager';
-
-// Event Handlers
-export { TransferNotificationHandler } from './TransferNotificationHandler';
-export { TransferAuditHandler } from './TransferAuditHandler';
-export { TransferReminderHandler } from './TransferReminderHandler';
-
-// Types
-export type {
-  TransferEventType,
-  TransferEventData,
-  TransferEventHandler
-} from './types';
+// Update Service
+export { TransferUpdateService } from './TransferUpdateService';
+export type { ActorInfo } from './TransferUpdateService';
 

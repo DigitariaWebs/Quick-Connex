@@ -2,10 +2,11 @@
  * Transfer Configuration
  * 
  * Configuration settings for transfer operations.
- * Merged from /src/constants/transfer.ts for better organization.
+ * Merged from TRANSFER_CONSTANTS for better organization.
+ * Status transitions are defined in core/constants.ts and referenced here.
  */
 
-import { TransferStatus, TransferPriority } from './constants';
+import { TransferStatus, TransferPriority, TRANSFER_CONSTANTS } from './constants';
 
 export const TRANSFER_CONFIG = {
   // ID Generation
@@ -23,50 +24,28 @@ export const TRANSFER_CONFIG = {
     MIN_AGE: 0,
     MAX_AGE: 120,
     MAX_FUTURE_DAYS: 30,
-    MIN_SCHEDULE_ADVANCE_HOURS: 1
+    MIN_SCHEDULE_ADVANCE_HOURS: 1,
+    MIN_DOSSIER_LENGTH: 3,
+    MAX_DOSSIER_LENGTH: 50
   },
   
-  // Status Transitions
-  STATUS_TRANSITIONS: {
-    [TransferStatus.PENDING]: [TransferStatus.ACCEPTED, TransferStatus.CANCELLED],
-    [TransferStatus.ACCEPTED]: [TransferStatus.IN_PROGRESS, TransferStatus.CANCELLED],
-    [TransferStatus.IN_PROGRESS]: [TransferStatus.COMPLETED, TransferStatus.CANCELLED],
-    [TransferStatus.COMPLETED]: [],
-    [TransferStatus.CANCELLED]: []
-  },
+  // Status Transitions - Imported from TRANSFER_CONSTANTS (single source of truth)
+  STATUS_TRANSITIONS: TRANSFER_CONSTANTS.STATUS_TRANSITIONS,
   
   // Priority Weights (for sorting and calculations)
-  PRIORITY_WEIGHTS: {
-    [TransferPriority.LOW]: 1,
-    [TransferPriority.URGENT]: 2
-  },
+  PRIORITY_WEIGHTS: TRANSFER_CONSTANTS.PRIORITY_WEIGHTS,
   
   // Default Values
-  DEFAULTS: {
-    PRIORITY: TransferPriority.LOW,
-    STATUS: TransferStatus.PENDING,
-    DURATION_MINUTES: 60
-  },
+  DEFAULTS: TRANSFER_CONSTANTS.DEFAULTS,
   
   // Timeouts and Limits
-  TIMEOUTS: {
-    ACCEPT_TIMEOUT_HOURS: 24,
-    COMPLETION_TIMEOUT_HOURS: 48,
-    NOTIFICATION_EXPIRY_DAYS: 7
-  },
+  TIMEOUTS: TRANSFER_CONSTANTS.TIMEOUTS,
   
   // Pagination
-  PAGINATION: {
-    DEFAULT_PAGE_SIZE: 20,
-    MAX_PAGE_SIZE: 100
-  },
+  PAGINATION: TRANSFER_CONSTANTS.PAGINATION,
   
   // File Upload
-  FILE_UPLOAD: {
-    MAX_FILE_SIZE_MB: 10,
-    ALLOWED_TYPES: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
-    MAX_FILES_PER_TRANSFER: 5
-  }
+  FILE_UPLOAD: TRANSFER_CONSTANTS.FILE_UPLOAD
 } as const;
 
 export type TransferConfig = typeof TRANSFER_CONFIG;

@@ -9,17 +9,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/database';
 import Transfer from '@/models/Transfer';
 import { AuthService } from '@/lib/auth';
-import { TimelineService } from '@/lib/transfers';
+import { TimelineService, TransferStatus } from '@/lib/transfers';
 import { TimelineQueryOptions } from '@/types/timeline';
 import { TimelineEventType } from '@/types/transfer';
 import { createSuccessResponse } from '@/lib/utils/api-responses';
+import { extractRequestInfo } from '@/lib/audit/utils/request';
+import { log } from '@/lib/logging';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ transferId: string }> }
 ) {
+  const { transferId } = await params;
+  
   try {
-    const { transferId } = await params;
     const { searchParams } = new URL(request.url);
 
     if (!transferId) {
@@ -41,7 +44,7 @@ export async function GET(
     }
 
     // Check if user has permission to view this transfer
-    if (user.userType === 'employee' && transfer.status === 'pending') {
+    if (user.userType === 'employee' && transfer.status === TransferStatus.PENDING) {
       return NextResponse.json({ error: 'Access denied: Cannot view pending transfers' }, { status: 403 });
     }
 
@@ -62,7 +65,13 @@ export async function GET(
     };
 
     // Get enhanced timeline from audit logs
-    const timelineResponse = await TimelineService.getTimelineForTransfer(transferId, options);
+    const timelineResponse = await TimelineService.getTimeline({
+      ...options,
+      filters: {
+        ...options.filters,
+        transferId
+      }
+    });
 
     return NextResponse.json({
       success: true,
@@ -89,7 +98,11 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Error fetching transfer timeline:', error);
+    log.error('Error fetching transfer timeline', error, {
+      category: 'transfer',
+      operation: 'get_timeline',
+      transferId
+    });
     if (error instanceof Error) {
       if (error.message === 'Authentication required') {
         return NextResponse.json(
@@ -120,8 +133,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ transferId: string }> }
 ) {
+  const { transferId } = await params;
+  
   try {
-    const { transferId } = await params;
     const body = await request.json();
     const { type, title, description, metadata } = body;
 
@@ -147,7 +161,7 @@ export async function POST(
     }
 
     // Check if user has permission to add events to this transfer
-    if (user.userType === 'employee' && transfer.status === 'pending') {
+    if (user.userType === 'employee' && transfer.status === TransferStatus.PENDING) {
       return NextResponse.json({ error: 'Access denied: Cannot modify pending transfers' }, { status: 403 });
     }
 
@@ -168,12 +182,7 @@ export async function POST(
     };
 
     // Extract request info for audit logging
-    const requestInfo = {
-      ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown',
-      userAgent: request.headers.get('user-agent') || 'unknown',
-      method: request.method,
-      endpoint: request.url
-    };
+    const requestInfo = extractRequestInfo(request);
 
     // Create timeline event with audit logging
     const newEvent = await TimelineService.createEventWithAudit(
@@ -182,14 +191,11 @@ export async function POST(
       requestInfo
     );
 
-    // Add event to timeline
-    if (!transfer.timeline) {
-      transfer.timeline = [];
-    }
-    transfer.timeline.push(newEvent);
+    // Timeline events are now stored in audit logs collection, not in transfer document
+    // No need to push to transfer.timeline array
     transfer.lastModifiedBy = user._id as any;
 
-    await transfer;
+    await transfer.save();
 
     return createSuccessResponse({
       event: newEvent,
@@ -197,7 +203,11 @@ export async function POST(
     }, 'Timeline event added successfully', 201);
 
   } catch (error) {
-    console.error('Error adding timeline event:', error);
+    log.error('Error adding timeline event', error, {
+      category: 'transfer',
+      operation: 'add_timeline_event',
+      transferId
+    });
     if (error instanceof Error) {
       if (error.message === 'Authentication required') {
         return NextResponse.json(

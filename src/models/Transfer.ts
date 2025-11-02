@@ -88,30 +88,6 @@ export interface ITransfer extends Document {
     reason?: string;
   }>;
   
-  // Enhanced timeline tracking
-  timeline: Array<{
-    id: string;
-    type: string;
-    title: string;
-    description: string;
-    timestamp: Date;
-    actor: {
-      id: Types.ObjectId;
-      name: string;
-      email: string;
-      userType: string;
-    };
-    metadata?: {
-      oldValue?: any;
-      newValue?: any;
-      reason?: string;
-      details?: string;
-      [key: string]: any;
-    };
-    isSystemEvent?: boolean;
-    isVisible?: boolean;
-  }>;
-  
   // Audit fields
   lastModifiedBy: Types.ObjectId;
   estimatedDuration?: number; // in minutes
@@ -388,70 +364,6 @@ const TransferSchema = new Schema<ITransfer>({
     }
   }],
   
-  // Enhanced timeline tracking
-  timeline: [{
-    id: {
-      type: String,
-      required: true
-    },
-    type: {
-      type: String,
-      required: true,
-      enum: [
-        'created', 'transfer_created', 'status_changed', 'assigned', 'unassigned', 'patient_updated',
-        'hospital_updated', 'scheduled', 'rescheduled', 'document_uploaded',
-        'document_removed', 'notes_updated', 'priority_changed', 'reason_updated',
-        'approved', 'rejected', 'accepted', 'started', 'completed', 'cancelled',
-        'communication', 'system', 'admin_action', 'manager_action', 'employee_action'
-      ]
-    },
-    title: {
-      type: String,
-      required: true
-    },
-    description: {
-      type: String,
-      required: true
-    },
-    timestamp: {
-      type: Date,
-      required: true,
-      default: Date.now
-    },
-    actor: {
-      id: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-      },
-      name: {
-        type: String,
-        required: true
-      },
-      email: {
-        type: String,
-        required: true
-      },
-      userType: {
-        type: String,
-        required: true,
-        enum: ['manager', 'employee', 'admin']
-      }
-    },
-    metadata: {
-      type: Schema.Types.Mixed,
-      default: {}
-    },
-    isSystemEvent: {
-      type: Boolean,
-      default: false
-    },
-    isVisible: {
-      type: Boolean,
-      default: true
-    }
-  }],
-  
   // Audit fields
   lastModifiedBy: {
     type: Schema.Types.ObjectId,
@@ -482,8 +394,6 @@ TransferSchema.index({ requestedDate: -1 });
 TransferSchema.index({ scheduledDate: 1 });
 TransferSchema.index({ lastModifiedBy: 1 });
 TransferSchema.index({ 'statusHistory.changedAt': -1 });
-TransferSchema.index({ 'timeline.timestamp': -1 });
-TransferSchema.index({ 'timeline.type': 1 });
 
 // Pre-save hook to track status changes
 TransferSchema.pre('save', function(next) {

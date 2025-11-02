@@ -12,15 +12,18 @@ import User from '@/models/User';
 import Hospital from '@/models/Hospital';
 // Removed AdminService - using simple manager role check instead
 import TransferNotificationService from '@/lib/communication/integrations/TransferNotificationService';
-import { TimelineService } from '@/lib/transfers';
+import { TimelineService, TransferUpdateService, ActorInfo, TransferStatus } from '@/lib/transfers';
+import { extractRequestInfo } from '@/lib/audit/utils/request';
+import { log } from '@/lib/logging';
 
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ transferId: string }> }
 ) {
+  const { transferId } = await params;
+  
   try {
-    const { transferId } = await params;
     const body = await request.json();
     const { adminEmail, reason = 'Approved by administrator' } = body;
 
@@ -53,7 +56,7 @@ export async function POST(
       );
     }
 
-    if (transfer.status !== 'pending') {
+    if (transfer.status !== TransferStatus.PENDING) {
       return NextResponse.json(
         { error: `Transfer is already ${transfer.status}` },
         { status: 400 }
@@ -77,54 +80,44 @@ export async function POST(
       );
     }
 
-    // Create timeline events for approval
-    const approvalEvent = TimelineService.createApprovalEvent(
-      {
-        id: admin._id as any as any,
-        name: `${admin.firstName} ${admin.lastName}`,
-        email: admin.email,
-        userType: 'manager'
-      },
-      reason
+    // Extract request info for audit logging
+    const requestInfo = extractRequestInfo(request);
+
+    const actor: ActorInfo = {
+      id: admin._id as any,
+      name: `${admin.firstName} ${admin.lastName}`,
+      email: admin.email,
+      userType: (admin.userType === 'super_admin' ? 'admin' : admin.userType) as 'admin' | 'manager' | 'employee'
+    };
+
+    // Update transfer status using centralized service
+    // This handles validation, status update, status history, and audit logging
+    // Pass 'approved' as customEventType to create an "approved" event instead of "status_changed"
+    await TransferUpdateService.updateStatus(
+      transfer,
+      TransferStatus.ACCEPTED,
+      actor,
+      reason,
+      requestInfo,
+      'approved' // Use 'approved' event type instead of 'status_changed'
     );
-
-    const statusChangeEvent = TimelineService.createStatusChangeEvent(
-      {
-        id: admin._id as any as any,
-        name: `${admin.firstName} ${admin.lastName}`,
-        email: admin.email,
-        userType: 'manager'
-      },
-      'pending',
-      'accepted',
-      reason
-    );
-
-    // Update transfer status to accepted (approved)
-    transfer.status = 'accepted';
-    transfer.lastModifiedBy = admin._id as any;
-    transfer.statusHistory.push({
-      status: 'accepted',
-      changedBy: admin._id as any,
-      changedAt: new Date(),
-      reason: reason
-    });
-    
-    // Add timeline events
-    if (!transfer.timeline) {
-      transfer.timeline = [];
-    }
-    transfer.timeline.push(approvalEvent, statusChangeEvent);
-
-    // Persist approval changes
-    await (transfer as any).save?.() ?? await transfer;
 
     // Send notifications (email + SMS) to manager and all approved employees
     try {
       await TransferNotificationService.sendTransferApprovedNotification(transfer, admin);
-      console.log('✅ Transfer approved - notifications dispatched');
+      log.info('Transfer approved - notifications dispatched', {
+        category: 'transfer',
+        operation: 'approve_transfer',
+        transferId,
+        adminId: admin._id?.toString()
+      });
     } catch (notifyError) {
-      console.error('❌ Failed to send transfer approved notifications:', notifyError);
+      log.error('Failed to send transfer approved notifications', notifyError, {
+        category: 'transfer',
+        operation: 'approve_notifications',
+        transferId,
+        adminId: admin._id?.toString()
+      });
     }
 
     return NextResponse.json({
@@ -140,7 +133,11 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('Error approving transfer:', error);
+    log.error('Error approving transfer', error, {
+      category: 'transfer',
+      operation: 'approve_transfer',
+      transferId
+    });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -4,6 +4,9 @@ import { DatabaseService } from '@/lib/database';
 import Transfer from '@/models/Transfer';
 import { AuditAction, AuditCategory, ActorType, TargetResourceType } from '@/models/AuditLog';
 import { Permission } from '@/models/User';
+import { AuditService } from '@/lib/audit';
+import { TransferAuditContext } from '@/lib/audit/core/types';
+import { extractRequestInfo } from '@/lib/audit/utils/request';
 /**
  * Individual Transfer Admin API Endpoint
  * 
@@ -86,11 +89,8 @@ export async function GET(
     .sort({ requestedDate: -1 })
     .limit(5);
 
-    // Get transfer timeline with admin context
-    const timeline = transfer.timeline || [];
-    const adminTimeline = timeline.filter((event: any) => 
-      event.actor.userType === 'admin' || event.actor.userType === 'super_admin'
-    );
+    // Timeline is now read from audit logs collection via TimelineService
+    // No need to filter timeline from transfer document
 
     // Get available actions based on permissions and transfer status
     const availableActions = getAvailableActions(adminUser, transfer);
@@ -128,7 +128,6 @@ export async function GET(
       data: {
         transfer,
         relatedTransfers,
-        adminTimeline,
         availableActions,
         adminContext: {
           canEdit: adminUser.userType === 'super_admin' || adminUser.userType === 'admin',
@@ -231,40 +230,50 @@ const transfer = await Transfer.findById(id);
       }, { status: 404 });
     }
 
-    // Log admin action
-    console.log('Admin action logged:', {
-      adminId: adminUser._id.toString(),
-      adminName: `${adminUser.firstName} ${adminUser.lastName}`,
-      adminEmail: adminUser.email,
-      adminRole: adminUser.userType as 'admin' | 'super_admin',
+    // Determine which fields actually changed
+    const changedFields = Object.keys(originalValues).filter(key => {
+      const original = originalValues[key as keyof typeof originalValues];
+      const updated = (updatedTransfer as any)[key];
+      
+      // Handle ObjectId comparison
+      if (original && updated && typeof original.toString === 'function') {
+        return original.toString() !== updated?.toString();
+      }
+      
+      return original !== updated;
+    });
+
+    // Log admin action using AuditService
+    const transferContext: TransferAuditContext = {
+      actorId: adminUser._id.toString(),
+      actorType: ActorType.ADMIN,
+      actorEmail: adminUser.email,
+      actorName: `${adminUser.firstName} ${adminUser.lastName}`,
+      actorRole: adminUser.userType === 'super_admin' ? 'admin' : adminUser.userType,
       action: AuditAction.TRANSFER_UPDATED,
-      category: AuditCategory.TRANSFER_MANAGEMENT,
       description: `Updated transfer ${transfer.transferId}`,
-      targetResource: {
-        type: TargetResourceType.TRANSFER,
-        id: (transfer._id as any).toString(),
-        name: transfer.transferId
-      },
-      changes: {
-        before: originalValues,
-        after: {
-          status: updatedTransfer.status,
-          priority: updatedTransfer.priority,
-          assignedTo: updatedTransfer.assignedTo,
-          notes: updatedTransfer.notes
-        }
-      },
+      targetResourceType: TargetResourceType.TRANSFER,
+      targetResourceId: transfer.transferId || id,
+      targetResourceName: `Transfer ${transfer.transferId}`,
       metadata: {
+        changes: {
+          before: originalValues,
+          after: {
+            status: updatedTransfer.status,
+            priority: updatedTransfer.priority,
+            assignedTo: updatedTransfer.assignedTo,
+            notes: updatedTransfer.notes
+          },
+          fields: changedFields
+        },
         adminNote: body.adminNote
       },
-      requestInfo: {
-        ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown',
-        userAgent: request.headers.get('user-agent') || 'unknown',
-        method: request.method,
-        endpoint: request.url
-      },
-      outcome: 'success'
-    });
+      reason: body.adminNote,
+      requestInfo: extractRequestInfo(request),
+      success: true
+    };
+
+    await AuditService.logTransferAction(transferContext);
 
     return NextResponse.json({
       success: true,

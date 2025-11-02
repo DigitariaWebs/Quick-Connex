@@ -13,14 +13,18 @@ import Hospital from '@/models/Hospital';
 // Removed AdminService - using simple manager role check instead
 import { CommunicationService } from '@/lib/communication';
 import { EmailMessage } from '@/lib/communication';
+import { TransferStatus, TransferUpdateService, ActorInfo, TimelineService } from '@/lib/transfers';
+import { extractRequestInfo } from '@/lib/audit/utils/request';
+import { log } from '@/lib/logging';
 
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ transferId: string }> }
 ) {
+  const { transferId } = await params;
+  
   try {
-    const { transferId } = await params;
     const body = await request.json();
     const { adminEmail, reason = 'Rejected by administrator' } = body;
 
@@ -53,7 +57,7 @@ export async function POST(
       );
     }
 
-    if (transfer.status !== 'pending') {
+    if (transfer.status !== TransferStatus.PENDING) {
       return NextResponse.json(
         { error: `Transfer is already ${transfer.status}` },
         { status: 400 }
@@ -77,21 +81,36 @@ export async function POST(
       );
     }
 
-    // Update transfer status to cancelled (rejected)
-    transfer.status = 'cancelled';
-    transfer.lastModifiedBy = admin._id as any;
-    transfer.statusHistory.push({
-      status: 'cancelled',
-      changedBy: admin._id as any,
-      changedAt: new Date(),
-      reason: reason
-    });
+    // Extract request info for audit logging
+    const requestInfo = extractRequestInfo(request);
 
-    await transfer;
+    const actor: ActorInfo = {
+      id: admin._id as any,
+      name: `${admin.firstName} ${admin.lastName}`,
+      email: admin.email,
+      userType: (admin.userType === 'super_admin' ? 'admin' : admin.userType) as 'admin' | 'manager' | 'employee'
+    };
+
+    // Update transfer status using centralized service
+    // This handles validation, status update, status history, and audit logging
+    // Pass 'rejected' as customEventType to create a "rejected" event instead of "status_changed"
+    await TransferUpdateService.updateStatus(
+      transfer,
+      TransferStatus.CANCELLED,
+      actor,
+      reason,
+      requestInfo,
+      'rejected' // Use 'rejected' event type instead of 'status_changed'
+    );
 
     // Note: Notifications are disabled for in-app rejections
     // Only the transfer state is updated, no email/SMS notifications are sent
-    console.log('✅ Transfer rejected - state updated without notifications');
+    log.info('Transfer rejected - state updated without notifications', {
+      category: 'transfer',
+      operation: 'reject_transfer',
+      transferId: transfer.transferId || transferId,
+      adminId: admin._id?.toString()
+    });
 
     return NextResponse.json({
       success: true,
@@ -107,7 +126,11 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('Error rejecting transfer:', error);
+    log.error('Error rejecting transfer', error, {
+      category: 'transfer',
+      operation: 'reject_transfer',
+      transferId
+    });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -160,12 +183,26 @@ async function sendTransferRejectionNotification(transfer: any, admin: any, reas
 
     const result = await communicationService.sendEmail(emailMessage);
     if (result.success) {
-      console.log(`📧 Transfer rejection email sent to manager: ${transfer.requestedBy.email}`);
+      log.info('Transfer rejection email sent to manager', {
+        category: 'transfer',
+        operation: 'reject_notification',
+        recipientEmail: transfer.requestedBy.email,
+        transferId: transfer.transferId
+      });
     } else {
-      console.error(`❌ Failed to send transfer rejection email:`, result.error);
+      log.error('Failed to send transfer rejection email', result.error, {
+        category: 'transfer',
+        operation: 'reject_notification',
+        recipientEmail: transfer.requestedBy.email,
+        transferId: transfer.transferId
+      });
     }
   } catch (error) {
-    console.error('❌ Error sending transfer rejection notification:', error);
+    log.error('Error sending transfer rejection notification', error, {
+      category: 'transfer',
+      operation: 'reject_notification',
+      transferId: transfer.transferId
+    });
   }
 }
 

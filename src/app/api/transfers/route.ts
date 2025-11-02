@@ -6,9 +6,11 @@ import Hospital from '@/models/Hospital';
 import Patient from '@/models/Patient';
 import { AuthService } from '@/lib/auth';
 import { Types } from 'mongoose';
-import { validateTransferData } from '@/lib/transfers';
+import { validateTransferData, TransferStatus } from '@/lib/transfers';
 import { TimelineService } from '@/lib/transfers';
 import { createSuccessResponse } from '@/lib/utils/api-responses';
+import { extractRequestInfo } from '@/lib/audit/utils/request';
+import { log } from '@/lib/logging';
 
 // GET /api/transfers - Get transfer requests for employees
 export async function GET(request: NextRequest) {
@@ -43,7 +45,7 @@ export async function GET(request: NextRequest) {
       // Employees can only see approved transfers (not pending ones)
       // If no status specified, show only approved transfers
       if (status && status !== 'all') {
-        if (status === 'pending') {
+        if (status === TransferStatus.PENDING) {
           // Employees cannot see pending transfers
           return NextResponse.json({
       success: true,
@@ -57,7 +59,7 @@ export async function GET(request: NextRequest) {
         query.status = status;
       } else {
         // Default: only show approved and active transfers to employees
-        query.status = { $in: ['accepted', 'in_progress', 'completed', 'cancelled'] };
+        query.status = { $in: [TransferStatus.ACCEPTED, TransferStatus.IN_PROGRESS, TransferStatus.COMPLETED, TransferStatus.CANCELLED] };
       }
     } else if (user.userType === 'manager') {
       // Managers can see all transfers including pending ones
@@ -87,7 +89,10 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error fetching transfers:', error);
+    log.error('Error fetching transfers', error, {
+      category: 'transfer',
+      operation: 'get_transfers'
+    });
     
     if (error instanceof Error) {
       if (error.message === 'Authentication required') {
@@ -257,7 +262,11 @@ export async function POST(request: NextRequest) {
             isActive: true
           });
           await patientRecord.save();
-          console.log('✅ New patient record created:', patientRecord._id);
+          log.info('New patient record created', {
+            category: 'transfer',
+            operation: 'create_patient',
+            patientId: patientRecord._id?.toString()
+          });
         } else {
           // Update existing patient record with latest info
           patientRecord.firstName = patientFirstName;
@@ -265,10 +274,17 @@ export async function POST(request: NextRequest) {
           patientRecord.age = parseInt(patientAge as string);
           patientRecord.lastModifiedBy = new Types.ObjectId(requestingUser._id);
           await patientRecord.save();
-          console.log('✅ Existing patient record updated:', patientRecord._id);
+          log.info('Existing patient record updated', {
+            category: 'transfer',
+            operation: 'update_patient',
+            patientId: patientRecord._id?.toString()
+          });
         }
       } catch (patientError) {
-        console.error('Error creating/updating patient record:', patientError);
+        log.error('Error creating/updating patient record', patientError, {
+          category: 'transfer',
+          operation: 'patient_record_error'
+        });
         // Continue with transfer creation even if patient record fails
         // This ensures transfer creation isn't blocked by patient record issues
       }
@@ -299,34 +315,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract request info for audit logging
-    const requestInfo = {
-      ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown',
-      userAgent: request.headers.get('user-agent') || 'unknown',
-      method: request.method,
-      endpoint: request.url
-    };
+    const requestInfo = extractRequestInfo(request);
 
     // Create timeline event for transfer creation with audit logging
-    const creationEvent = await TimelineService.createTransferCreatedEventWithAudit(
+    const creationEvent = await TimelineService.createEventWithAudit(
       {
-        id: new Types.ObjectId(requestingUser._id),
-        name: `${requestingUser.firstName} ${requestingUser.lastName}`,
-        email: requestingUser.email,
-        userType: requestingUser.userType as 'manager' | 'employee' | 'admin'
-      },
-      {
-        transferId,
-        transferCategory,
-        patientInfo: patientInfo || {
-          firstName: patientName || 'N/A',
-          lastName: '',
-          age: 0,
-          dossierNumber: dossierNumber || 'N/A'
+        type: 'created',
+        title: 'Transfer Request Created',
+        description: `Transfer request created for ${patientInfo?.firstName || patientName || 'patient'} ${patientInfo?.lastName || ''}`,
+        actor: {
+          id: new Types.ObjectId(requestingUser._id),
+          name: `${requestingUser.firstName} ${requestingUser.lastName}`,
+          email: requestingUser.email,
+          userType: requestingUser.userType as 'manager' | 'employee' | 'admin'
         },
-        fromHospitalName,
-        toHospitalName,
-        priority,
-        reason
+        metadata: {
+          transferCategory,
+          fromHospital: fromHospitalName,
+          toHospital: toHospitalName,
+          priority,
+          reason
+        }
       },
       transferId,
       requestInfo
@@ -346,7 +355,7 @@ export async function POST(request: NextRequest) {
       patient: patientRecord?._id, // Link to patient record if available
       reason,
       priority,
-      status: 'pending',
+      status: TransferStatus.PENDING,
       requestedDate: new Date(),
       scheduledDate: scheduledDateTime,
       notes: `Issued by: ${issuerFromUser}${notes ? `\nAdditional notes: ${notes}` : ''}`,
@@ -356,12 +365,11 @@ export async function POST(request: NextRequest) {
       },
       lastModifiedBy: new Types.ObjectId(requestingUser._id),
       statusHistory: [{
-        status: 'pending',
+        status: TransferStatus.PENDING,
         changedBy: new Types.ObjectId(requestingUser._id),
         changedAt: new Date(),
         reason: 'Transfer created'
-      }],
-      timeline: [creationEvent]
+      }]
     });
 
     await transfer.save();
@@ -374,36 +382,61 @@ export async function POST(request: NextRequest) {
       .populate('patient', 'firstName lastName age dossierNumber');
 
     // Note: Real-time notifications are now handled by the global SSE system
-    console.log('✅ Transfer created successfully - notifications handled by global SSE system');
+    log.info('Transfer created successfully - notifications handled by global SSE system', {
+      category: 'transfer',
+      operation: 'create_transfer',
+      transferId,
+      userId: requestingUser._id?.toString()
+    });
 
     // Send comprehensive notifications to admins (email + SMS)
     try {
-      console.log('🔍 Fetching full user data for notifications...');
+      log.debug('Fetching full user data for notifications', {
+        category: 'transfer',
+        operation: 'notification_setup'
+      });
       
       // Fetch the full user data from database for notifications
       let fullUserData;
       try {
         fullUserData = await User.findById(new Types.ObjectId(requestingUser._id)).select('firstName lastName email phone userType');
       } catch (dbError) {
-        console.error('❌ Database error fetching user data:', dbError);
+        log.error('Database error fetching user data', dbError, {
+          category: 'transfer',
+          operation: 'notification_setup'
+        });
         return createSuccessResponse(populatedTransfer, 'Transfer request created successfully', 201);
       }
       
       if (!fullUserData) {
-        console.error('❌ Full user data not found for notifications');
+        log.warn('Full user data not found for notifications', {
+          category: 'transfer',
+          operation: 'notification_setup'
+        });
         return createSuccessResponse(populatedTransfer, 'Transfer request created successfully', 201);
       }
       
-      console.log('📧 Starting notification service...');
+      log.debug('Starting notification service', {
+        category: 'transfer',
+        operation: 'notification_setup'
+      });
       const TransferNotificationService = (await import('@/lib/communication/integrations/TransferNotificationService')).default;
       await TransferNotificationService.sendNewTransferRequestNotification(populatedTransfer, fullUserData);
-      console.log('✅ Notifications sent successfully');
+      log.info('Notifications sent successfully', {
+        category: 'transfer',
+        operation: 'notification_setup',
+        transferId
+      });
     } catch (notificationError) {
-      console.error('❌ Error sending transfer request notifications:', notificationError);
-      console.error('❌ Notification error details:', {
-        message: notificationError instanceof Error ? notificationError.message : 'Unknown error',
-        stack: notificationError instanceof Error ? notificationError.stack : undefined,
-        name: notificationError instanceof Error ? notificationError.name : 'Unknown'
+      log.error('Error sending transfer request notifications', notificationError, {
+        category: 'transfer',
+        operation: 'notification_setup',
+        transferId,
+        errorDetails: {
+          message: notificationError instanceof Error ? notificationError.message : 'Unknown error',
+          stack: notificationError instanceof Error ? notificationError.stack : undefined,
+          name: notificationError instanceof Error ? notificationError.name : 'Unknown'
+        }
       });
     }
 
@@ -414,11 +447,14 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
 
   } catch (error) {
-    console.error('Error creating transfer:', error);
-    console.error('Error details:', {
-      message: (error as Error).message,
-      stack: (error as Error).stack,
-      name: (error as Error).name
+    log.error('Error creating transfer', error, {
+      category: 'transfer',
+      operation: 'create_transfer',
+      errorDetails: {
+        message: (error as Error).message,
+        stack: (error as Error).stack,
+        name: (error as Error).name
+      }
     });
     
     if (error instanceof Error) {

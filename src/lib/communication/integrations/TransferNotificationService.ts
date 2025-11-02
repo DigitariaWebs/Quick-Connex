@@ -317,7 +317,9 @@ export class TransferNotificationService {
       // DatabaseService handles connection automatically
 
       // Get the manager who requested the transfer
-      const manager = await DatabaseService.findById(User, transfer.requestedBy.toString());
+      const manager = transfer.requestedBy?.email 
+        ? transfer.requestedBy  // Already populated, use directly
+        : await DatabaseService.findById(User, transfer.requestedBy?._id?.toString() || transfer.requestedBy?.toString());
       if (!manager) {
         console.error('Manager not found for transfer approval notification');
         return;
@@ -605,7 +607,9 @@ Please log into the system to view full details and take appropriate action.
       // DatabaseService handles connection automatically
 
       // Get the manager who requested the transfer
-      const manager = await DatabaseService.findById(User, transfer.requestedBy.toString());
+      const manager = transfer.requestedBy?.email 
+        ? transfer.requestedBy  // Already populated, use directly
+        : await DatabaseService.findById(User, transfer.requestedBy?._id?.toString() || transfer.requestedBy?.toString());
       if (!manager) {
         console.error('Manager not found for transfer acceptance notification');
         return;

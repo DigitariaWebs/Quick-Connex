@@ -60,10 +60,20 @@ export interface TimelineQueryOptions {
   page?: number;
   limit?: number;
   filters?: {
+    // Filter by transfer
+    transferId?: string;
+    // Filter by user (actor)
+    userId?: string;
+    // Filter by category
+    category?: string;
+    // Filter by actor type
     actorId?: string;
+    // Filter by event kind
     kind?: string;
+    // Date range filters
     startDate?: Date;
     endDate?: Date;
+    // Security filters
     isSensitive?: boolean;
     requiresReview?: boolean;
   };

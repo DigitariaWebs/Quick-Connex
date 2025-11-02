@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import { AuthService } from '@/lib/auth';
 import { DatabaseService } from '@/lib/database';
 import Transfer from '@/models/Transfer';
-import User from '@/models/User';
 import Hospital from '@/models/Hospital';
+import Patient from '@/models/Patient';
 import { AuditAction, AuditCategory, ActorType, TargetResourceType } from '@/models/AuditLog';
 import { Permission } from '@/models/User';
 /**
@@ -156,13 +157,42 @@ const { searchParams } = new URL(request.url);
     console.log('🔍 Admin Transfers API: Sort:', JSON.stringify(sort, null, 2));
     console.log('🔍 Admin Transfers API: Pagination:', { page, limit, skip });
     
+    // Ensure Hospital model is registered before populate
+    // This fixes the "Schema hasn't been registered" error
+    // The Hospital import should register it, but we verify and ensure it's available
+    if (mongoose.models && !mongoose.models.Hospital) {
+      // Access the model to trigger registration if needed
+      const _ = Hospital.modelName;
+      console.log('📋 Admin Transfers API: Hospital model accessed to ensure registration');
+    }
+    
+    // Verify the model is registered (should always be true after import)
+    if (!mongoose.models || !mongoose.models.Hospital) {
+      console.error('❌ Hospital model not found in mongoose.models');
+      throw new Error('Hospital model is not registered. Please ensure Hospital model is imported and registered.');
+    }
+    
+    // Ensure Patient model is registered before populate
+    // This fixes the "Schema hasn't been registered" error for Patient
+    if (mongoose.models && !mongoose.models.Patient) {
+      // Access the model to trigger registration if needed
+      const _ = Patient.modelName;
+      console.log('📋 Admin Transfers API: Patient model accessed to ensure registration');
+    }
+    
+    // Verify the Patient model is registered (should always be true after import)
+    if (!mongoose.models || !mongoose.models.Patient) {
+      console.error('❌ Patient model not found in mongoose.models');
+      throw new Error('Patient model is not registered. Please ensure Patient model is imported and registered.');
+    }
+    
     const transfers = await DatabaseService.findMany(Transfer, query, {
       populate: [
         { path: 'requestedBy', select: 'firstName lastName email userType' },
-        { path: 'fromHospital', select: 'name address organization' },
-        { path: 'toHospital', select: 'name address organization' },
+        { path: 'fromHospital', select: 'name address organization', model: 'Hospital' },
+        { path: 'toHospital', select: 'name address organization', model: 'Hospital' },
         { path: 'assignedTo', select: 'firstName lastName email userType' },
-        { path: 'patient', select: 'firstName lastName age dossierNumber' }
+        { path: 'patient', select: 'firstName lastName age dossierNumber', model: 'Patient' }
       ],
       sort: sort,
       skip: skip,
@@ -231,39 +261,40 @@ const { searchParams } = new URL(request.url);
     console.log('🔍 Admin Transfers API: Status counts:', JSON.stringify(statusCounts, null, 2));
 
     // Log admin action
-    console.log('🔍 Admin Transfers API: Admin user debug:', {
-      adminUser: adminUser,
-      hasId: !!adminUser._id,
-      idType: typeof adminUser._id,
-      idValue: adminUser._id
-    });
+    // TODO: Re-enable audit logging for transfer viewing if needed
+    // console.log('🔍 Admin Transfers API: Admin user debug:', {
+    //   adminUser: adminUser,
+    //   hasId: !!adminUser._id,
+    //   idType: typeof adminUser._id,
+    //   idValue: adminUser._id
+    // });
     
-    console.log('Admin action logged:', {
-      adminId: adminUser._id?.toString() || 'no-id',
-      adminName: `${adminUser.firstName} ${adminUser.lastName}`,
-      adminEmail: adminUser.email,
-      adminRole: adminUser.userType as 'admin' | 'super_admin',
-      action: AuditAction.DATA_EXPORTED,
-      category: AuditCategory.DATA_ACCESS,
-      description: `Viewed all transfers with filters: ${JSON.stringify(filters)}`,
-      targetResource: {
-        type: TargetResourceType.TRANSFER,
-        id: 'multiple',
-        name: 'Transfer List'
-      },
-      requestInfo: {
-        ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown',
-        userAgent: request.headers.get('user-agent') || 'unknown',
-        method: request.method,
-        endpoint: request.url
-      },
-      outcome: 'success',
-      metadata: {
-        filters,
-        resultCount: transfers.length,
-        totalCount
-      }
-    });
+    // console.log('Admin action logged:', {
+    //   adminId: adminUser._id?.toString() || 'no-id',
+    //   adminName: `${adminUser.firstName} ${adminUser.lastName}`,
+    //   adminEmail: adminUser.email,
+    //   adminRole: adminUser.userType as 'admin' | 'super_admin',
+    //   action: AuditAction.DATA_EXPORTED,
+    //   category: AuditCategory.DATA_ACCESS,
+    //   description: `Viewed all transfers with filters: ${JSON.stringify(filters)}`,
+    //   targetResource: {
+    //     type: TargetResourceType.TRANSFER,
+    //     id: 'multiple',
+    //     name: 'Transfer List'
+    //   },
+    //   requestInfo: {
+    //     ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown',
+    //     userAgent: request.headers.get('user-agent') || 'unknown',
+    //     method: request.method,
+    //     endpoint: request.url
+    //   },
+    //   outcome: 'success',
+    //   metadata: {
+    //     filters,
+    //     resultCount: transfers.length,
+    //     totalCount
+    //   }
+    // });
 
     const responseData = {
       success: true,

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Transfer from "@/models/Transfer";
-import User from "@/models/User";
-import Hospital from "@/models/Hospital";
+import { log } from '@/lib/logging';
 
 export async function GET(request: NextRequest) {
   try {
@@ -66,7 +65,10 @@ const { searchParams } = new URL(request.url);
       count: transfers.length,
     });
   } catch (error) {
-    console.error("Search transfers error:", error);
+    log.error('Search transfers error', error, {
+      category: 'transfer',
+      operation: 'search_transfers'
+    });
     return NextResponse.json(
       {
         success: false,

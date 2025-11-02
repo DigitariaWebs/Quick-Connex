@@ -275,7 +275,6 @@ export const NOTIFICATION_TYPES = {
   TRANSFER_CANCELLED: 'transfer_cancelled',
   TRANSFER_STATUS_CHANGE: 'transfer_status_change',
   URGENT_TRANSFER: 'urgent_transfer',
-  TRANSFER_REMINDER: 'transfer_reminder',
   TRANSFER_TIMEOUT: 'transfer_timeout'
 } as const;
 

@@ -317,19 +317,7 @@ export class TransferValidationUtils {
     };
   }
 
-  /**
-   * Check if status transition is valid
-   */
-  static isValidStatusTransition(currentStatus: TransferStatus, newStatus: TransferStatus): boolean {
-    const transitions = TRANSFER_CONFIG.STATUS_TRANSITIONS[currentStatus];
-    return Array.isArray(transitions) && transitions.includes(newStatus);
-  }
-
-  /**
-   * Check if status is terminal
-   */
-  static isTerminalStatus(status: TransferStatus): boolean {
-    return TRANSFER_CONFIG.STATUS_TRANSITIONS[status]?.length === 0;
-  }
+  // Note: Status transition validation functions moved to validation.ts
+  // Use validateStatusTransition() and isTerminalStatus() from validation.ts instead
 }
 

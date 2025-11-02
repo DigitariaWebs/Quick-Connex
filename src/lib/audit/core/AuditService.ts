@@ -68,10 +68,23 @@ import {
  */
 export class AuditService {
   /**
-   * Core audit logging method
+   * Core audit logging method (universal - accepts any audit data)
    */
-  private static async logAudit(data: AuditLogData): Promise<void> {
+  static async logAudit(data: AuditLogData): Promise<void> {
     try {
+      // Ensure requestInfo always has required fields
+      const requestInfo = data.requestInfo || {
+        ipAddress: 'unknown',
+        userAgent: 'unknown'
+      };
+      
+      // Ensure securityContext has required fields
+      const securityContext = data.securityContext || {
+        riskLevel: RiskLevel.LOW,
+        isSensitive: false,
+        requiresReview: false
+      };
+      
       const auditLog = new AuditLog({
         // Actor information
         actorId: data.actorId,
@@ -94,11 +107,26 @@ export class AuditService {
         // Context
         context: data.context,
         
-        // Request information
-        requestInfo: data.requestInfo,
+        // Request information - ensure required fields are present
+        requestInfo: {
+          ipAddress: requestInfo.ipAddress || 'unknown',
+          userAgent: requestInfo.userAgent || 'unknown',
+          method: requestInfo.method,
+          endpoint: requestInfo.endpoint,
+          requestId: requestInfo.requestId,
+          sessionId: requestInfo.sessionId,
+          deviceFingerprint: requestInfo.deviceFingerprint
+        },
         
-        // Security context
-        securityContext: data.securityContext,
+        // Security context - ensure required fields are present
+        securityContext: {
+          riskLevel: securityContext.riskLevel || RiskLevel.LOW,
+          isSensitive: securityContext.isSensitive || false,
+          requiresReview: securityContext.requiresReview || false,
+          securityFlags: securityContext.securityFlags || [],
+          riskScore: securityContext.riskScore,
+          complianceFlags: securityContext.complianceFlags || []
+        },
         
         // Outcome
         outcome: data.outcome,
@@ -116,12 +144,15 @@ export class AuditService {
         parentAuditId: data.parentAuditId
       });
       
-      await DatabaseService.create(AuditLog, auditLog.toObject());
+      const auditDataObject = auditLog.toObject();
+      await DatabaseService.create(AuditLog, auditDataObject);
     } catch (error) {
       log.error('Failed to save audit log', error, {
         operation: 'save_audit_log',
         actorId: data.actorId,
-        action: data.action
+        action: data.action,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined
       });
       // Could implement retry queue here
       throw error;
@@ -161,7 +192,10 @@ export class AuditService {
         requestId: context.requestInfo.requestId,
         sessionId: context.requestInfo.sessionId,
         deviceFingerprint: context.requestInfo.deviceFingerprint
-      } : undefined,
+      } : {
+        ipAddress: 'unknown',
+        userAgent: 'unknown'
+      },
       securityContext: {
         riskLevel: context.riskLevel || this.assessAuditRiskLevel(context.action),
         isSensitive: context.isSensitive || false,
@@ -220,7 +254,10 @@ export class AuditService {
         requestId: context.requestInfo.requestId,
         sessionId: context.requestInfo.sessionId,
         deviceFingerprint: context.requestInfo.deviceFingerprint
-      } : undefined,
+      } : {
+        ipAddress: 'unknown',
+        userAgent: 'unknown'
+      },
       securityContext: {
         riskLevel: context.riskLevel || this.assessAuditRiskLevel(context.action),
         isSensitive: context.isSensitive || false,
@@ -278,7 +315,10 @@ export class AuditService {
         requestId: context.requestInfo.requestId,
         sessionId: context.requestInfo.sessionId,
         deviceFingerprint: context.requestInfo.deviceFingerprint
-      } : undefined,
+      } : {
+        ipAddress: 'unknown',
+        userAgent: 'unknown'
+      },
       securityContext: {
         riskLevel: context.riskLevel || this.assessAuditRiskLevel(context.action),
         isSensitive: context.isSensitive || true, // Patient data is always sensitive
@@ -334,7 +374,10 @@ export class AuditService {
         requestId: context.requestInfo.requestId,
         sessionId: context.requestInfo.sessionId,
         deviceFingerprint: context.requestInfo.deviceFingerprint
-      } : undefined,
+      } : {
+        ipAddress: 'unknown',
+        userAgent: 'unknown'
+      },
       securityContext: {
         riskLevel: context.riskLevel || this.assessAuditRiskLevel(context.action),
         isSensitive: context.isSensitive || context.action === AuditAction.SUSPICIOUS_ACTIVITY,
@@ -390,7 +433,10 @@ export class AuditService {
         requestId: context.requestInfo.requestId,
         sessionId: context.requestInfo.sessionId,
         deviceFingerprint: context.requestInfo.deviceFingerprint
-      } : undefined,
+      } : {
+        ipAddress: 'unknown',
+        userAgent: 'unknown'
+      },
       securityContext: {
         riskLevel: context.riskLevel || this.assessAuditRiskLevel(context.action),
         isSensitive: context.isSensitive || false,
@@ -447,7 +493,10 @@ export class AuditService {
         requestId: context.requestInfo.requestId,
         sessionId: context.requestInfo.sessionId,
         deviceFingerprint: context.requestInfo.deviceFingerprint
-      } : undefined,
+      } : {
+        ipAddress: 'unknown',
+        userAgent: 'unknown'
+      },
       securityContext: {
         riskLevel: context.riskLevel || this.assessAuditRiskLevel(context.action),
         isSensitive: context.isSensitive || false,
@@ -503,7 +552,10 @@ export class AuditService {
         requestId: context.requestInfo.requestId,
         sessionId: context.requestInfo.sessionId,
         deviceFingerprint: context.requestInfo.deviceFingerprint
-      } : undefined,
+      } : {
+        ipAddress: 'unknown',
+        userAgent: 'unknown'
+      },
       securityContext: {
         riskLevel: context.riskLevel || this.assessAuditRiskLevel(context.action),
         isSensitive: context.isSensitive || true, // Data access is sensitive
@@ -559,7 +611,10 @@ export class AuditService {
         requestId: context.requestInfo.requestId,
         sessionId: context.requestInfo.sessionId,
         deviceFingerprint: context.requestInfo.deviceFingerprint
-      } : undefined,
+      } : {
+        ipAddress: 'unknown',
+        userAgent: 'unknown'
+      },
       securityContext: {
         riskLevel: context.riskLevel || this.assessAuditRiskLevel(context.action),
         isSensitive: context.isSensitive || false,
@@ -703,5 +758,130 @@ export class AuditService {
       case RiskLevel.LOW: return 25;
       default: return 25;
     }
+  }
+
+  /**
+   * Map timeline event type to audit action
+   */
+  static mapTimelineTypeToAuditAction(timelineType: string): AuditAction {
+    const mapping: Record<string, AuditAction> = {
+      'created': AuditAction.TRANSFER_CREATED,
+      'status_changed': AuditAction.TRANSFER_UPDATED,
+      'assigned': AuditAction.TRANSFER_REASSIGNED,
+      'unassigned': AuditAction.TRANSFER_REASSIGNED,
+      'patient_updated': AuditAction.TRANSFER_UPDATED,
+      'hospital_updated': AuditAction.TRANSFER_UPDATED,
+      'scheduled': AuditAction.TRANSFER_UPDATED,
+      'rescheduled': AuditAction.TRANSFER_UPDATED,
+      'document_uploaded': AuditAction.FILE_UPLOADED,
+      'document_removed': AuditAction.FILE_DELETED,
+      'notes_updated': AuditAction.TRANSFER_UPDATED,
+      'priority_changed': AuditAction.TRANSFER_UPDATED,
+      'reason_updated': AuditAction.TRANSFER_UPDATED,
+      'approved': AuditAction.TRANSFER_APPROVED,
+      'rejected': AuditAction.TRANSFER_REJECTED,
+      'accepted': AuditAction.TRANSFER_UPDATED,
+      'started': AuditAction.TRANSFER_UPDATED,
+      'completed': AuditAction.TRANSFER_COMPLETED,
+      'cancelled': AuditAction.TRANSFER_CANCELLED,
+      'communication': AuditAction.NOTIFICATION_SENT,
+      'system': AuditAction.SYSTEM_ALERT,
+      'admin_action': AuditAction.TRANSFER_UPDATED,
+      'manager_action': AuditAction.TRANSFER_UPDATED,
+      'employee_action': AuditAction.TRANSFER_UPDATED
+    };
+    
+    return mapping[timelineType] || AuditAction.TRANSFER_UPDATED;
+  }
+
+  /**
+   * Map timeline event type to audit category
+   */
+  static mapTimelineTypeToAuditCategory(timelineType: string): AuditCategory {
+    if (timelineType.includes('document_')) {
+      return AuditCategory.FILE_OPERATION;
+    }
+    if (timelineType.includes('communication')) {
+      return AuditCategory.NOTIFICATION;
+    }
+    if (timelineType === 'system') {
+      return AuditCategory.SYSTEM_CONFIGURATION;
+    }
+    return AuditCategory.TRANSFER_MANAGEMENT;
+  }
+
+  /**
+   * Map user type to actor type
+   */
+  static mapUserTypeToActorType(userType: string): ActorType {
+    switch (userType) {
+      case 'admin':
+      case 'super_admin':
+        return ActorType.ADMIN;
+      case 'manager':
+      case 'employee':
+        return ActorType.USER;
+      default:
+        return ActorType.USER;
+    }
+  }
+
+  /**
+   * Extract changed fields from metadata
+   */
+  static extractChangedFieldsFromMetadata(metadata?: any): string[] {
+    if (!metadata) return [];
+    
+    const fields: string[] = [];
+    
+    if (metadata.oldValue && metadata.newValue) {
+      // Compare objects to find changed fields
+      const oldObj = typeof metadata.oldValue === 'object' ? metadata.oldValue : {};
+      const newObj = typeof metadata.newValue === 'object' ? metadata.newValue : {};
+      
+      const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
+      
+      for (const key of allKeys) {
+        if (oldObj[key] !== newObj[key]) {
+          fields.push(key);
+        }
+      }
+    }
+    
+    return fields;
+  }
+
+  /**
+   * Assess risk level for timeline event type
+   */
+  static assessTimelineEventRiskLevel(timelineType: string, metadata?: any): RiskLevel {
+    const highRiskTypes = ['cancelled', 'rejected', 'admin_action'];
+    const mediumRiskTypes = ['completed', 'approved', 'assigned', 'unassigned'];
+    
+    if (highRiskTypes.includes(timelineType)) {
+      return RiskLevel.HIGH;
+    }
+    
+    if (mediumRiskTypes.includes(timelineType)) {
+      return RiskLevel.MEDIUM;
+    }
+    
+    return RiskLevel.LOW;
+  }
+
+  /**
+   * Check if timeline event type is sensitive
+   */
+  static isTimelineEventSensitive(timelineType: string): boolean {
+    const sensitiveTypes = ['cancelled', 'rejected', 'admin_action', 'patient_updated'];
+    return sensitiveTypes.includes(timelineType);
+  }
+
+  /**
+   * Check if timeline event type requires review
+   */
+  static doesTimelineEventRequireReview(timelineType: string): boolean {
+    const reviewTypes = ['cancelled', 'rejected', 'admin_action'];
+    return reviewTypes.includes(timelineType);
   }
 }

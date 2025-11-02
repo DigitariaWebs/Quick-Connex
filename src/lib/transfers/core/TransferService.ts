@@ -22,14 +22,14 @@ import {
   ITransfer,
   TransferRequestData,
   TransferResponse,
-  TransferValidationResult,
-  TransferActionPermissions,
   TransferStats,
   TransferFilterOptions,
   TransferQueryOptions,
   TransferListResponse,
   SchedulingConfig
 } from '@/types/transfer';
+import { validateTransferData as validateTransferDataUtil } from '../utils/validation';
+import { log } from '@/lib/logging';
 
 export class TransferService {
   /**
@@ -51,7 +51,7 @@ export class TransferService {
       }
 
       // Validate transfer data
-      const validation = this.validateTransferData(transferData);
+      const validation = validateTransferDataUtil(transferData);
       if (!validation.isValid) {
         return {
           success: false,
@@ -106,7 +106,12 @@ export class TransferService {
       };
 
     } catch (error) {
-      console.error('Error creating transfer:', error);
+      log.error('Error creating transfer', error, {
+        category: 'transfer',
+        operation: 'create_transfer',
+        userId: requestingUser._id?.toString(),
+        userType: requestingUser.userType
+      });
       return {
         success: false,
         error: 'Failed to create transfer request'
@@ -129,7 +134,11 @@ export class TransferService {
 
       return transfer ? this.mapTransferToResponse(transfer) : null;
     } catch (error) {
-      console.error('Error fetching transfer:', error);
+      log.error('Error fetching transfer', error, {
+        category: 'transfer',
+        operation: 'get_transfer',
+        transferId
+      });
       return null;
     }
   }
@@ -231,186 +240,12 @@ export class TransferService {
       };
 
     } catch (error) {
-      console.error('Error fetching transfers:', error);
+      log.error('Error fetching transfers', error, {
+        category: 'transfer',
+        operation: 'get_transfers',
+        filters: JSON.stringify(queryOptions.filter || {})
+      });
       throw new Error('Failed to fetch transfers');
-    }
-  }
-
-  /**
-   * Accept a transfer
-   */
-  static async acceptTransfer(
-    transferId: string,
-    userId: string,
-    notes?: string
-  ): Promise<{ success: boolean; transfer?: TransferResponse; error?: string }> {
-    try {
-      // DatabaseService handles connection automatically
-
-      const transfer = await Transfer.findById(transferId);
-      if (!transfer) {
-        return { success: false, error: TRANSFER_ERRORS.NOT_FOUND.TRANSFER };
-      }
-
-      // Validate status transition
-      if (!this.isValidStatusTransition(transfer.status, TransferStatus.ACCEPTED)) {
-        return { success: false, error: TRANSFER_ERRORS.VALIDATION.INVALID_TRANSITION };
-      }
-
-      // Update transfer
-      transfer.status = TransferStatus.ACCEPTED;
-      transfer.assignedTo = new Types.ObjectId(userId);
-      transfer.lastModifiedBy = new Types.ObjectId(userId);
-      
-      if (notes) {
-        transfer.notes = transfer.notes ? `${transfer.notes}\n${notes}` : notes;
-      }
-
-      await transfer.save();
-
-      const populatedTransfer = await this.getTransferById(transferId);
-      return {
-        success: true,
-        transfer: populatedTransfer || undefined
-      };
-
-    } catch (error) {
-      console.error('Error accepting transfer:', error);
-      return { success: false, error: 'Failed to accept transfer' };
-    }
-  }
-
-  /**
-   * Start a transfer
-   */
-  static async startTransfer(
-    transferId: string,
-    userId: string,
-    notes?: string
-  ): Promise<{ success: boolean; transfer?: TransferResponse; error?: string }> {
-    try {
-      // DatabaseService handles connection automatically
-
-      const transfer = await Transfer.findById(transferId);
-      if (!transfer) {
-        return { success: false, error: TRANSFER_ERRORS.NOT_FOUND.TRANSFER };
-      }
-
-      // Validate status transition
-      if (!this.isValidStatusTransition(transfer.status, TransferStatus.IN_PROGRESS)) {
-        return { success: false, error: TRANSFER_ERRORS.VALIDATION.INVALID_TRANSITION };
-      }
-
-      // Update transfer
-      transfer.status = TransferStatus.IN_PROGRESS;
-      transfer.lastModifiedBy = new Types.ObjectId(userId);
-      
-      if (notes) {
-        transfer.notes = transfer.notes ? `${transfer.notes}\n${notes}` : notes;
-      }
-
-      await transfer.save();
-
-      const populatedTransfer = await this.getTransferById(transferId);
-      return {
-        success: true,
-        transfer: populatedTransfer || undefined
-      };
-
-    } catch (error) {
-      console.error('Error starting transfer:', error);
-      return { success: false, error: 'Failed to start transfer' };
-    }
-  }
-
-  /**
-   * Complete a transfer
-   */
-  static async completeTransfer(
-    transferId: string,
-    userId: string,
-    notes?: string
-  ): Promise<{ success: boolean; transfer?: TransferResponse; error?: string }> {
-    try {
-      // DatabaseService handles connection automatically
-
-      const transfer = await Transfer.findById(transferId);
-      if (!transfer) {
-        return { success: false, error: TRANSFER_ERRORS.NOT_FOUND.TRANSFER };
-      }
-
-      // Validate status transition
-      if (!this.isValidStatusTransition(transfer.status, TransferStatus.COMPLETED)) {
-        return { success: false, error: TRANSFER_ERRORS.VALIDATION.INVALID_TRANSITION };
-      }
-
-      // Calculate actual duration
-      const actualDuration = this.calculateTransferDuration(
-        transfer.requestedDate,
-        new Date()
-      );
-
-      // Update transfer
-      transfer.status = TransferStatus.COMPLETED;
-      transfer.completedDate = new Date();
-      transfer.actualDuration = actualDuration;
-      transfer.lastModifiedBy = new Types.ObjectId(userId);
-      
-      if (notes) {
-        transfer.notes = transfer.notes ? `${transfer.notes}\n${notes}` : notes;
-      }
-
-      await transfer.save();
-
-      const populatedTransfer = await this.getTransferById(transferId);
-      return {
-        success: true,
-        transfer: populatedTransfer || undefined
-      };
-
-    } catch (error) {
-      console.error('Error completing transfer:', error);
-      return { success: false, error: 'Failed to complete transfer' };
-    }
-  }
-
-  /**
-   * Cancel a transfer
-   */
-  static async cancelTransfer(
-    transferId: string,
-    userId: string,
-    reason: string
-  ): Promise<{ success: boolean; transfer?: TransferResponse; error?: string }> {
-    try {
-      // DatabaseService handles connection automatically
-
-      const transfer = await Transfer.findById(transferId);
-      if (!transfer) {
-        return { success: false, error: TRANSFER_ERRORS.NOT_FOUND.TRANSFER };
-      }
-
-      // Validate status transition
-      if (!this.isValidStatusTransition(transfer.status, TransferStatus.CANCELLED)) {
-        return { success: false, error: TRANSFER_ERRORS.VALIDATION.INVALID_TRANSITION };
-      }
-
-      // Update transfer
-      transfer.status = TransferStatus.CANCELLED;
-      transfer.lastModifiedBy = new Types.ObjectId(userId);
-      transfer.notes = transfer.notes ? `${transfer.notes}\nCancelled: ${reason}` : `Cancelled: ${reason}`;
-
-      await transfer.save();
-
-      const populatedTransfer = await this.getTransferById(transferId);
-      return {
-        success: true,
-        transfer: populatedTransfer || undefined
-      };
-
-    } catch (error) {
-      console.error('Error cancelling transfer:', error);
-      return { success: false, error: 'Failed to cancel transfer' };
     }
   }
 
@@ -479,156 +314,19 @@ export class TransferService {
       };
 
     } catch (error) {
-      console.error('Error fetching transfer stats:', error);
+      log.error('Error fetching transfer stats', error, {
+        category: 'transfer',
+        operation: 'get_transfer_stats',
+        dateFrom: dateFrom?.toISOString(),
+        dateTo: dateTo?.toISOString()
+      });
       throw new Error('Failed to fetch transfer statistics');
     }
-  }
-
-  /**
-   * Get transfer action permissions for a user
-   */
-  static getTransferActionPermissions(
-    transfer: ITransfer,
-    user: any
-  ): TransferActionPermissions {
-    const permissions: TransferActionPermissions = {
-      canAccept: false,
-      canStart: false,
-      canComplete: false,
-      canCancel: false,
-      canEdit: false,
-      canView: true,
-      canCreate: user.userType === 'manager' // Only managers can create transfers
-    };
-
-    // Only employees can accept transfers
-    if (user.userType === 'employee' && transfer.status === TransferStatus.PENDING) {
-      permissions.canAccept = true;
-    }
-
-    // Only assigned employee or manager can start transfer
-    if (transfer.status === TransferStatus.ACCEPTED) {
-      if (user.userType === 'manager' || 
-          transfer.assignedTo?.toString() === user._id) {
-        permissions.canStart = true;
-      }
-    }
-
-    // Only assigned employee or manager can complete transfer
-    if (transfer.status === TransferStatus.IN_PROGRESS) {
-      if (user.userType === 'manager' || 
-          transfer.assignedTo?.toString() === user._id) {
-        permissions.canComplete = true;
-      }
-    }
-
-    // Cancellation permissions
-    if (!this.isTerminalStatus(transfer.status)) {
-      if (user.userType === 'manager' || 
-          transfer.requestedBy?.toString() === user._id ||
-          transfer.assignedTo?.toString() === user._id) {
-        permissions.canCancel = true;
-      }
-    }
-
-    // Edit permissions (managers only, and only for pending transfers)
-    if (user.userType === 'manager' && transfer.status === TransferStatus.PENDING) {
-      permissions.canEdit = true;
-    }
-
-    return permissions;
   }
 
   // Note: Conflict detection methods removed as hospitals handle their own logistics
 
   // Private helper methods
-
-  private static validateTransferData(data: TransferRequestData): TransferValidationResult {
-    const errors: string[] = [];
-    const warnings: string[] = [];
-
-    // Required fields
-    const requiredFields = [
-      'patientFirstName',
-      'patientLastName',
-      'patientDossierNumber',
-      'fromHospital',
-      'toHospital',
-      'transferDate',
-      'reason'
-    ];
-
-    for (const field of requiredFields) {
-      const value = (data as any)[field];
-      if (!value || (typeof value === 'string' && value.trim().length === 0)) {
-        errors.push(`${field} is required`);
-      }
-    }
-
-    // Business logic validation
-    if (data.fromHospital && data.toHospital && data.fromHospital === data.toHospital) {
-      errors.push(TRANSFER_ERRORS.VALIDATION.SAME_HOSPITALS);
-    }
-
-    // Date validation
-    if (data.transferDate) {
-      const transferDate = new Date(data.transferDate);
-      const now = new Date();
-      
-      if (transferDate < now) {
-        errors.push(TRANSFER_ERRORS.VALIDATION.INVALID_DATE);
-      }
-      
-      // Warning for dates too far in the future
-      const maxFutureDate = new Date();
-      maxFutureDate.setDate(maxFutureDate.getDate() + TRANSFER_CONFIG.VALIDATION.MAX_FUTURE_DAYS);
-      
-      if (transferDate > maxFutureDate) {
-        warnings.push(`Transfer date is more than ${TRANSFER_CONFIG.VALIDATION.MAX_FUTURE_DAYS} days in the future`);
-      }
-    }
-
-    // Priority validation
-    if (data.priority && !Object.values(TransferPriority).includes(data.priority)) {
-      errors.push(TRANSFER_ERRORS.VALIDATION.INVALID_PRIORITY);
-    }
-
-    // Reason length validation
-    if (data.reason) {
-      if (data.reason.length < TRANSFER_CONFIG.VALIDATION.MIN_REASON_LENGTH) {
-        warnings.push(TRANSFER_ERRORS.VALIDATION.SHORT_REASON);
-      }
-      if (data.reason.length > TRANSFER_CONFIG.VALIDATION.MAX_REASON_LENGTH) {
-        errors.push(TRANSFER_ERRORS.VALIDATION.LONG_REASON);
-      }
-    }
-
-    // Dossier number validation (optional field)
-    if (data.patientDossierNumber && data.patientDossierNumber.toString().trim() !== '') {
-      const dossierNumber = data.patientDossierNumber.toString().trim();
-      
-      // Check if dossier number contains only alphanumeric characters and common separators
-      if (!/^[A-Za-z0-9\-_\/]+$/.test(dossierNumber)) {
-        errors.push('Dossier number can only contain letters, numbers, hyphens, underscores, and forward slashes');
-      }
-      
-      // Check length (reasonable limits)
-      if (dossierNumber.length < 3) {
-        errors.push('Dossier number must be at least 3 characters long');
-      }
-      
-      if (dossierNumber.length > 50) {
-        errors.push('Dossier number cannot exceed 50 characters');
-      }
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors,
-      warnings
-    };
-  }
-
 
   private static generateTransferId(): string {
     return `${TRANSFER_CONFIG.ID_PREFIXES.TRANSFER}-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
@@ -667,19 +365,6 @@ export class TransferService {
     };
   }
 
-  private static isValidStatusTransition(currentStatus: string, newStatus: string): boolean {
-    const transitions = TRANSFER_CONFIG.STATUS_TRANSITIONS[currentStatus as TransferStatus];
-    return Array.isArray(transitions) && transitions.includes(newStatus as TransferStatus);
-  }
-
-  private static isTerminalStatus(status: TransferStatus): boolean {
-    return TRANSFER_CONFIG.STATUS_TRANSITIONS[status]?.length === 0;
-  }
-
-  private static calculateTransferDuration(startDate: Date, endDate: Date = new Date()): number {
-    const durationMs = endDate.getTime() - startDate.getTime();
-    return Math.round(durationMs / (1000 * 60)); // Duration in minutes
-  }
-
   // Note: Private conflict detection methods removed as hospitals handle their own logistics
+  // Note: Validation and status transition methods moved to validation.ts
 }
