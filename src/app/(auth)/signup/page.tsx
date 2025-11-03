@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useSignUpForm } from "@/hooks/auth/useSignUpForm";
 import { FormInput } from "@/components/shared/forms/FormInput";
@@ -13,6 +13,9 @@ import { SubmitButton } from "@/components/shared/forms/SubmitButton";
 import { Icon } from "@/components/shared/ui/icons/Icon";
 // Remove CIUSSS_OPTIONS import as we'll fetch from API
 import { TermsModal } from "@/components/shared/modals/TermsModal";
+
+// Validation status type
+type ValidationStatus = "idle" | "checking" | "exists" | "available" | "error";
 
 export default function SignUpPage() {
   const {
@@ -126,6 +129,220 @@ export default function SignUpPage() {
     useState(countryCodes);
   const [countryCodeSearchTerm, setCountryCodeSearchTerm] =
     useState<string>("");
+
+  // Real-time validation state
+  const [emailValidation, setEmailValidation] =
+    useState<ValidationStatus>("idle");
+  const [phoneValidation, setPhoneValidation] =
+    useState<ValidationStatus>("idle");
+  const [emailValidationError, setEmailValidationError] = useState<string>("");
+  const [phoneValidationError, setPhoneValidationError] = useState<string>("");
+
+  // Client-side cache for validation results (10 second TTL)
+  const validationCache = useRef<
+    Map<string, { result: boolean; timestamp: number }>
+  >(new Map());
+  const CACHE_TTL = 10000; // 10 seconds
+
+  // AbortControllers for cancelling in-flight requests
+  const emailAbortController = useRef<AbortController | null>(null);
+  const phoneAbortController = useRef<AbortController | null>(null);
+
+  // Debounce timers
+  const emailDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const phoneDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Normalize phone number (same logic as backend)
+  const normalizePhoneNumber = useCallback(
+    (phone: string, countryCode: string): string => {
+      let normalized = phone.replace(/\D/g, "");
+      const fullPhone = `${countryCode}${normalized}`;
+      let result = fullPhone.replace(/[^\d+]/g, "");
+      if (!result.startsWith("+") && result.startsWith("1")) {
+        result = "+" + result;
+      } else if (!result.startsWith("+")) {
+        result = "+1" + result;
+      }
+      return result;
+    },
+    []
+  );
+
+  // Check email availability
+  const checkEmailAvailability = useCallback(async (email: string) => {
+    // Skip if email is invalid format or too short
+    const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+    if (!email || !emailRegex.test(email)) {
+      setEmailValidation("idle");
+      setEmailValidationError("");
+      return;
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const cacheKey = `email:${normalizedEmail}`;
+
+    // Check cache first
+    const cached = validationCache.current.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      setEmailValidation(cached.result ? "available" : "exists");
+      setEmailValidationError(
+        cached.result ? "" : "This email is already registered"
+      );
+      return;
+    }
+
+    // Cancel previous request
+    if (emailAbortController.current) {
+      emailAbortController.current.abort();
+    }
+
+    // Create new abort controller
+    emailAbortController.current = new AbortController();
+    setEmailValidation("checking");
+    setEmailValidationError("");
+
+    try {
+      const response = await fetch("/api/auth/check-availability", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalizedEmail }),
+        signal: emailAbortController.current.signal,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.email !== undefined) {
+          const isAvailable = data.email === true;
+          setEmailValidation(isAvailable ? "available" : "exists");
+          setEmailValidationError(
+            isAvailable ? "" : "This email is already registered"
+          );
+
+          // Cache result
+          validationCache.current.set(cacheKey, {
+            result: isAvailable,
+            timestamp: Date.now(),
+          });
+        } else {
+          setEmailValidation("error");
+          setEmailValidationError("Failed to check email availability");
+        }
+      } else {
+        setEmailValidation("error");
+        const errorData = await response.json().catch(() => ({}));
+        setEmailValidationError(
+          errorData.error || "Failed to check email availability"
+        );
+      }
+    } catch (error: any) {
+      if (error.name === "AbortError") {
+        // Request was cancelled, ignore
+        return;
+      }
+      setEmailValidation("error");
+      setEmailValidationError("Failed to check email availability");
+    }
+  }, []);
+
+  // Check phone availability
+  const checkPhoneAvailability = useCallback(
+    async (phone: string, countryCode: string) => {
+      // Skip if phone has less than 7 digits
+      const digitsOnly = phone.replace(/\D/g, "");
+      if (!phone || digitsOnly.length < 7) {
+        setPhoneValidation("idle");
+        setPhoneValidationError("");
+        return;
+      }
+
+      const normalizedPhone = normalizePhoneNumber(phone, countryCode);
+      const cacheKey = `phone:${normalizedPhone}`;
+
+      // Check cache first
+      const cached = validationCache.current.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        setPhoneValidation(cached.result ? "available" : "exists");
+        setPhoneValidationError(
+          cached.result ? "" : "This phone number is already registered"
+        );
+        return;
+      }
+
+      // Cancel previous request
+      if (phoneAbortController.current) {
+        phoneAbortController.current.abort();
+      }
+
+      // Create new abort controller
+      phoneAbortController.current = new AbortController();
+      setPhoneValidation("checking");
+      setPhoneValidationError("");
+
+      try {
+        const response = await fetch("/api/auth/check-availability", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone: normalizedPhone }),
+          signal: phoneAbortController.current.signal,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.phone !== undefined) {
+            const isAvailable = data.phone === true;
+            setPhoneValidation(isAvailable ? "available" : "exists");
+            setPhoneValidationError(
+              isAvailable ? "" : "This phone number is already registered"
+            );
+
+            // Cache result
+            validationCache.current.set(cacheKey, {
+              result: isAvailable,
+              timestamp: Date.now(),
+            });
+          } else {
+            setPhoneValidation("error");
+            setPhoneValidationError("Failed to check phone availability");
+          }
+        } else {
+          setPhoneValidation("error");
+          const errorData = await response.json().catch(() => ({}));
+          setPhoneValidationError(
+            errorData.error || "Failed to check phone availability"
+          );
+        }
+      } catch (error: any) {
+        if (error.name === "AbortError") {
+          // Request was cancelled, ignore
+          return;
+        }
+        setPhoneValidation("error");
+        setPhoneValidationError("Failed to check phone availability");
+      }
+    },
+    [normalizePhoneNumber]
+  );
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // Clear debounce timers
+      if (emailDebounceTimer.current) {
+        clearTimeout(emailDebounceTimer.current);
+      }
+      if (phoneDebounceTimer.current) {
+        clearTimeout(phoneDebounceTimer.current);
+      }
+
+      // Abort pending requests
+      if (emailAbortController.current) {
+        emailAbortController.current.abort();
+      }
+      if (phoneAbortController.current) {
+        phoneAbortController.current.abort();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const loadHospitals = async () => {
@@ -584,20 +801,40 @@ export default function SignUpPage() {
                       required
                       disabled={isEmailVerified}
                       className={`flex-1 px-4 lg:px-5 py-3 lg:py-4 text-base lg:text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
-                        hasFieldError("email")
+                        hasFieldError("email") || emailValidation === "exists"
                           ? "border-red-300 bg-red-50"
+                          : emailValidation === "available"
+                          ? "border-green-300 bg-green-50"
                           : isEmailVerified
                           ? "border-green-300 bg-green-50"
                           : "border-gray-200"
                       } ${isEmailVerified ? "cursor-not-allowed" : ""}`}
                       placeholder="Enter your email"
-                      onChange={() => {
+                      onChange={(e) => {
+                        const email = e.target.value;
                         // Reset verification if email changes
                         if (isEmailVerified) {
                           setIsEmailVerified(false);
                           setEmailVerificationCode("");
                           setEmailCodeExpirationTime(null);
                         }
+
+                        // Reset validation error when user starts typing
+                        if (
+                          emailValidation === "exists" ||
+                          emailValidation === "error"
+                        ) {
+                          setEmailValidation("idle");
+                          setEmailValidationError("");
+                        }
+
+                        // Debounce email check (500ms)
+                        if (emailDebounceTimer.current) {
+                          clearTimeout(emailDebounceTimer.current);
+                        }
+                        emailDebounceTimer.current = setTimeout(() => {
+                          checkEmailAvailability(email);
+                        }, 500);
                       }}
                     />
                     {isEmailVerified && (
@@ -618,6 +855,60 @@ export default function SignUpPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Real-time validation feedback */}
+                  {emailValidation === "checking" && (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
+                      <svg
+                        className="animate-spin h-4 w-4"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      <span>Checking availability...</span>
+                    </div>
+                  )}
+                  {(emailValidation === "exists" || emailValidationError) && (
+                    <div className="mt-2">
+                      <p className="text-sm text-red-600">
+                        {emailValidationError ||
+                          "This email is already registered"}
+                      </p>
+                    </div>
+                  )}
+                  {emailValidation === "available" && (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-green-600">
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                      <span>Email is available</span>
+                    </div>
+                  )}
+
                   {hasFieldError("email") && (
                     <div className="mt-2">
                       {getFieldErrors("email").map((error, index) => (
@@ -1005,7 +1296,8 @@ export default function SignUpPage() {
                                 key={cc.code}
                                 type="button"
                                 onClick={() => {
-                                  setSelectedCountryCode(cc.code);
+                                  const newCountryCode = cc.code;
+                                  setSelectedCountryCode(newCountryCode);
                                   setCountryCodeSearchTerm("");
                                   setIsCountryCodeOpen(false);
                                   // Reset verification if country code changes
@@ -1013,6 +1305,30 @@ export default function SignUpPage() {
                                     setIsPhoneVerified(false);
                                     setPhoneVerificationCode("");
                                     setCodeExpirationTime(null);
+                                  }
+                                  // Re-validate phone with new country code
+                                  const phoneInput = document.getElementById(
+                                    "phone"
+                                  ) as HTMLInputElement;
+                                  const phone = phoneInput?.value || "";
+                                  if (
+                                    phone &&
+                                    phone.replace(/\D/g, "").length >= 7
+                                  ) {
+                                    // Clear existing timer
+                                    if (phoneDebounceTimer.current) {
+                                      clearTimeout(phoneDebounceTimer.current);
+                                    }
+                                    // Check with new country code
+                                    phoneDebounceTimer.current = setTimeout(
+                                      () => {
+                                        checkPhoneAvailability(
+                                          phone,
+                                          newCountryCode
+                                        );
+                                      },
+                                      500
+                                    );
                                   }
                                 }}
                                 className="w-full px-3 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none flex items-center gap-2"
@@ -1038,20 +1354,40 @@ export default function SignUpPage() {
                       required
                       disabled={isPhoneVerified}
                       className={`flex-1 px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
-                        hasFieldError("phone")
+                        hasFieldError("phone") || phoneValidation === "exists"
                           ? "border-red-300 bg-red-50"
+                          : phoneValidation === "available"
+                          ? "border-green-300 bg-green-50"
                           : isPhoneVerified
                           ? "border-green-300 bg-green-50"
                           : "border-gray-200"
                       } ${isPhoneVerified ? "cursor-not-allowed" : ""}`}
                       placeholder="(123) 456-7890"
-                      onChange={() => {
+                      onChange={(e) => {
+                        const phone = e.target.value;
                         // Reset verification if phone changes
                         if (isPhoneVerified) {
                           setIsPhoneVerified(false);
                           setPhoneVerificationCode("");
                           setCodeExpirationTime(null);
                         }
+
+                        // Reset validation error when user starts typing
+                        if (
+                          phoneValidation === "exists" ||
+                          phoneValidation === "error"
+                        ) {
+                          setPhoneValidation("idle");
+                          setPhoneValidationError("");
+                        }
+
+                        // Debounce phone check (500ms)
+                        if (phoneDebounceTimer.current) {
+                          clearTimeout(phoneDebounceTimer.current);
+                        }
+                        phoneDebounceTimer.current = setTimeout(() => {
+                          checkPhoneAvailability(phone, selectedCountryCode);
+                        }, 500);
                       }}
                     />
                     {isPhoneVerified && (
@@ -1072,6 +1408,60 @@ export default function SignUpPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Real-time validation feedback */}
+                  {phoneValidation === "checking" && (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
+                      <svg
+                        className="animate-spin h-4 w-4"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      <span>Checking availability...</span>
+                    </div>
+                  )}
+                  {(phoneValidation === "exists" || phoneValidationError) && (
+                    <div className="mt-2">
+                      <p className="text-sm text-red-600">
+                        {phoneValidationError ||
+                          "This phone number is already registered"}
+                      </p>
+                    </div>
+                  )}
+                  {phoneValidation === "available" && (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-green-600">
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                      <span>Phone number is available</span>
+                    </div>
+                  )}
+
                   {hasFieldError("phone") && (
                     <div className="mt-2">
                       {getFieldErrors("phone").map((error, index) => (
@@ -1562,14 +1952,26 @@ export default function SignUpPage() {
               <div className="pt-4 lg:pt-6">
                 <button
                   type="submit"
-                  disabled={isLoading || !isPhoneVerified || !isEmailVerified}
+                  disabled={
+                    isLoading ||
+                    !isPhoneVerified ||
+                    !isEmailVerified ||
+                    emailValidation === "exists" ||
+                    phoneValidation === "exists"
+                  }
                   className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 lg:py-4 px-6 text-base lg:text-lg rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                 >
                   {isLoading ? "Creating Account..." : "Sign Up"}
                 </button>
-                {(!isPhoneVerified || !isEmailVerified) && (
+                {(!isPhoneVerified ||
+                  !isEmailVerified ||
+                  emailValidation === "exists" ||
+                  phoneValidation === "exists") && (
                   <p className="mt-2 text-sm text-center text-gray-600">
-                    {!isEmailVerified && !isPhoneVerified
+                    {emailValidation === "exists" ||
+                    phoneValidation === "exists"
+                      ? "Please use a different email or phone number"
+                      : !isEmailVerified && !isPhoneVerified
                       ? "Please verify both your email and phone number before submitting"
                       : !isEmailVerified
                       ? "Please verify your email address before submitting"

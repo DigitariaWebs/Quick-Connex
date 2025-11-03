@@ -374,6 +374,7 @@ UserSchema.pre('validate', function(next) {
 // Note: email index is already created by unique: true, so we don't need to add it again
 UserSchema.index({ 'documents.fileId': 1 });
 UserSchema.index({ userType: 1, status: 1 });
+UserSchema.index({ phone: 1 }); // Index for phone availability checks
 
 // Instance methods
 UserSchema.methods.hasPermission = function(permission: Permission): boolean {
