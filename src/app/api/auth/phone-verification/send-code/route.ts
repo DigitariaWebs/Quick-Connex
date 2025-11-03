@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 // Validation schema
 const sendCodeSchema = z.object({
-  phone: z.string().min(7, 'Phone number is required').max(15, 'Phone number too long')
+  phone: z.string().min(7, 'Phone number is required').max(20, 'Phone number too long').regex(/^\+?[0-9]+$/, 'Invalid phone number format')
 });
 
 export async function POST(request: NextRequest) {
@@ -47,10 +47,13 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     if (error instanceof z.ZodError) {
+      const errorMessage = error.issues && error.issues.length > 0 
+        ? error.issues[0]?.message 
+        : 'Invalid request data';
       return NextResponse.json(
         { 
           success: false,
-          error: error.errors[0]?.message || 'Invalid request data'
+          error: errorMessage || 'Invalid request data'
         },
         { status: 400 }
       );

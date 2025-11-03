@@ -41,11 +41,14 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     if (error instanceof z.ZodError) {
+      const errorMessage = error.issues && error.issues.length > 0 
+        ? error.issues[0]?.message 
+        : 'Invalid request data';
       return NextResponse.json(
         { 
           success: false,
           verified: false,
-          error: error.errors[0]?.message || 'Invalid request data'
+          error: errorMessage || 'Invalid request data'
         },
         { status: 400 }
       );

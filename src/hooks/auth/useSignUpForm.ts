@@ -27,47 +27,46 @@ export function useSignUpForm() {
       
       // Basic validation
       const password = formData.get('password') as string;
-      const confirmPassword = formData.get('confirmPassword') as string;
+      const confirmPassword = formData.get('repeat-password') as string;
       
       if (password !== confirmPassword) {
         setMessage({ type: 'error', text: 'Passwords do not match' });
         return;
       }
       
-      const result = await signup({
-        firstName: formData.get('firstName') as string,
-        lastName: formData.get('lastName') as string,
-        email: formData.get('email') as string,
-        phone: formData.get('phone') as string,
-        password: password,
-        userType: userType as 'employee' | 'manager',
-        post: formData.get('post') as string || undefined,
-        ciusss: formData.get('ciusss') as string || undefined,
+      // Submit form data directly (using FormData for file uploads)
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        body: formData,
       });
-      
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || result.message || 'Signup failed');
+      }
+
       setMessage({ 
         type: 'success', 
-        text: 'Account created successfully! Your registration is pending approval. You will receive an email notification once approved.' 
+        text: 'Account created successfully! Please verify your email and phone number.' 
       });
       
-      // If user was approved and session was created, redirect to dashboard
-      if (result.session && result.user) {
-        console.log('✅ Signup: Session created for approved user');
-        
-        // Simple redirect logic based on user type
-        const redirectPath = result.user.userType === 'admin' || result.user.userType === 'super_admin' 
-          ? '/admin' 
-          : '/dashboard';
-        
-        setTimeout(() => {
-          router.replace(redirectPath);
-        }, 2000);
-      } else {
-        // Redirect to login page for pending approval
-        setTimeout(() => {
-          router.replace('/login?message=account-pending-approval');
-        }, 4000);
-      }
+      // Redirect to verification page with email and phone
+      const email = formData.get('email') as string;
+      const phoneInput = formData.get('phone') as string;
+      const countryCode = formData.get('countryCode') as string || '+1';
+      
+      // Combine country code with phone number
+      const phoneNumber = phoneInput?.replace(/\D/g, "") || "";
+      const fullPhone = `${countryCode}${phoneNumber}`;
+      
+      // Encode for URL
+      const encodedPhone = encodeURIComponent(fullPhone);
+      const encodedEmail = encodeURIComponent(email);
+      
+      setTimeout(() => {
+        router.replace(`/signup/verify?email=${encodedEmail}&phone=${encodedPhone}&countryCode=${encodeURIComponent(countryCode)}`);
+      }, 1500);
     } catch (error) {
       console.error('Signup error:', error);
       

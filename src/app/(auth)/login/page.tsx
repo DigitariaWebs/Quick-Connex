@@ -101,9 +101,6 @@ function LoginForm() {
               <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">
                 Sign In
               </h2>
-              <p className="text-base lg:text-lg text-gray-600">
-                Access your patient management account
-              </p>
             </div>
 
             {/* Success Message from Signup */}

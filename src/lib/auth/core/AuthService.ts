@@ -146,11 +146,7 @@ export class AuthService {
         throw new ValidationError('User already exists');
       }
       
-      // 3. Check phone verification (required before account creation)
-      const { PhoneVerificationService } = await import('@/lib/auth/phone-verification/PhoneVerificationService');
-      const { EmailVerificationService } = await import('@/lib/auth/email-verification/EmailVerificationService');
-      
-      // Normalize phone number for verification check
+      // 3. Normalize phone number for storage
       function normalizePhoneNumber(phone: string): string {
         let normalized = phone.replace(/[^\d+]/g, '');
         if (!normalized.startsWith('+') && normalized.startsWith('1')) {
@@ -161,34 +157,20 @@ export class AuthService {
         return normalized;
       }
       
-      // Check phone verification
-      const normalizedPhone = normalizePhoneNumber(validated.phone);
-      const isPhoneVerified = await PhoneVerificationService.isPhoneVerified(normalizedPhone, 10);
-      
-      if (!isPhoneVerified) {
-        throw new ValidationError('Phone number must be verified before creating an account. Please verify your phone number first.');
-      }
-      
-      // Check email verification (also required before account creation)
-      const normalizedEmail = validated.email.toLowerCase().trim();
-      const isEmailVerified = await EmailVerificationService.isEmailVerified(normalizedEmail, 10);
-      
-      if (!isEmailVerified) {
-        throw new ValidationError('Email address must be verified before creating an account. Please verify your email address first.');
-      }
-      
       // 4. Hash password
       const hashedPassword = await bcrypt.hash(validated.password, 12);
       
-      // 5. Create user with phone and email verification status
+      // 5. Create user in unverified state (verification happens on separate page)
+      const normalizedPhone = normalizePhoneNumber(validated.phone);
+      const normalizedEmail = validated.email.toLowerCase().trim();
+      
       const user = await DatabaseService.create(User, {
         ...validated,
         password: hashedPassword,
-        email: validated.email.toLowerCase(),
-        phoneVerified: true,
-        phoneVerifiedAt: new Date(),
-        emailVerified: true,
-        emailVerifiedAt: new Date()
+        email: normalizedEmail,
+        phone: normalizedPhone,
+        phoneVerified: false,
+        emailVerified: false
       });
       
       // 6. If approved, create session

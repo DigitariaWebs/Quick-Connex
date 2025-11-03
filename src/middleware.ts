@@ -13,7 +13,7 @@ interface AuthPayload {
 }
 
 function isPublicRoute(pathname: string): boolean {
-  const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/', '/approval-success', '/approval-error', '/template-manager'];
+  const publicRoutes = ['/login', '/signup', '/signup/verify', '/forgot-password', '/reset-password', '/', '/approval-success', '/approval-error', '/template-manager'];
   return publicRoutes.includes(pathname);
 }
 

@@ -4,14 +4,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useSignUpForm } from "@/hooks/auth/useSignUpForm";
-import { FormInput } from "@/components/shared/forms/FormInput";
-import { FileUpload } from "@/components/shared/forms/FileUpload";
-import { SelectInput } from "@/components/shared/forms/SelectInput";
 import { UserTypeButton } from "@/components/shared/forms/UserTypeButton";
-import { RoleSpecificFields } from "@/components/transfers/forms/RoleSpecificFields";
-import { SubmitButton } from "@/components/shared/forms/SubmitButton";
-import { Icon } from "@/components/shared/ui/icons/Icon";
-// Remove CIUSSS_OPTIONS import as we'll fetch from API
 import { TermsModal } from "@/components/shared/modals/TermsModal";
 
 // Validation status type
@@ -54,6 +47,7 @@ export default function SignUpPage() {
   const ciusssInputRef = useRef<HTMLInputElement>(null);
   const ciusssDropdownRef = useRef<HTMLDivElement>(null);
   const [postSearchTerm, setPostSearchTerm] = useState<string>("");
+  const [selectedPostValue, setSelectedPostValue] = useState<string>("");
   const [filteredPosts, setFilteredPosts] = useState<
     Array<{ value: string; label: string }>
   >([]);
@@ -728,9 +722,6 @@ export default function SignUpPage() {
               <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">
                 Sign Up
               </h2>
-              <p className="text-base lg:text-lg text-gray-600">
-                Your Patient Management Platform
-              </p>
             </div>
 
             {/* User Type Selection */}
@@ -799,26 +790,16 @@ export default function SignUpPage() {
                       name="email"
                       type="email"
                       required
-                      disabled={isEmailVerified}
                       className={`flex-1 px-4 lg:px-5 py-3 lg:py-4 text-base lg:text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
                         hasFieldError("email") || emailValidation === "exists"
                           ? "border-red-300 bg-red-50"
                           : emailValidation === "available"
                           ? "border-green-300 bg-green-50"
-                          : isEmailVerified
-                          ? "border-green-300 bg-green-50"
                           : "border-gray-200"
-                      } ${isEmailVerified ? "cursor-not-allowed" : ""}`}
+                      }`}
                       placeholder="Enter your email"
                       onChange={(e) => {
                         const email = e.target.value;
-                        // Reset verification if email changes
-                        if (isEmailVerified) {
-                          setIsEmailVerified(false);
-                          setEmailVerificationCode("");
-                          setEmailCodeExpirationTime(null);
-                        }
-
                         // Reset validation error when user starts typing
                         if (
                           emailValidation === "exists" ||
@@ -837,23 +818,6 @@ export default function SignUpPage() {
                         }, 500);
                       }}
                     />
-                    {isEmailVerified && (
-                      <div className="flex items-center px-4 bg-green-50 border border-green-300 rounded-xl">
-                        <svg
-                          className="w-6 h-6 text-green-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      </div>
-                    )}
                   </div>
 
                   {/* Real-time validation feedback */}
@@ -919,106 +883,6 @@ export default function SignUpPage() {
                     </div>
                   )}
                 </div>
-
-                {/* Email Verification Section */}
-                {!isEmailVerified && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-700">
-                        Verify your email address
-                      </p>
-                      {emailTimeRemaining > 0 && (
-                        <p className="text-sm text-gray-600">
-                          Code expires in:{" "}
-                          <span className="font-semibold">
-                            {formatTime(emailTimeRemaining)}
-                          </span>
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={handleSendEmailVerificationCode}
-                        disabled={
-                          isSendingEmailCode ||
-                          !emailVerificationStatus.canRequestNewCode
-                        }
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
-                      >
-                        {isSendingEmailCode ? "Sending..." : "Send Code"}
-                      </button>
-                      {!emailVerificationStatus.canRequestNewCode && (
-                        <span className="text-xs text-gray-600 self-center">
-                          {emailVerificationStatus.codesRemaining === 0
-                            ? "Rate limit reached. Please wait before requesting another code."
-                            : `${emailVerificationStatus.codesRemaining} codes remaining`}
-                        </span>
-                      )}
-                    </div>
-
-                    {emailCodeExpirationTime && (
-                      <div className="space-y-2">
-                        <input
-                          type="text"
-                          maxLength={6}
-                          value={emailVerificationCode}
-                          onChange={(e) => {
-                            const value = e.target.value
-                              .replace(/\D/g, "")
-                              .slice(0, 6);
-                            setEmailVerificationCode(value);
-                            setEmailVerificationError("");
-                          }}
-                          placeholder="Enter 6-digit code"
-                          className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center tracking-widest font-mono"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleVerifyEmailCode}
-                          disabled={
-                            isVerifyingEmailCode ||
-                            emailVerificationCode.length !== 6 ||
-                            emailTimeRemaining === 0
-                          }
-                          className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
-                        >
-                          {isVerifyingEmailCode
-                            ? "Verifying..."
-                            : "Verify Code"}
-                        </button>
-                      </div>
-                    )}
-
-                    {emailVerificationError && (
-                      <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">
-                        {emailVerificationError}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {isEmailVerified && (
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                    <p className="text-sm text-green-700 font-medium flex items-center gap-2">
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      Email address verified successfully
-                    </p>
-                  </div>
-                )}
               </div>
 
               <div>
@@ -1283,9 +1147,8 @@ export default function SignUpPage() {
                             : "border-gray-200"
                         }`}
                         autoComplete="off"
-                        disabled={isPhoneVerified}
                       />
-                      {isCountryCodeOpen && !isPhoneVerified && (
+                      {isCountryCodeOpen && (
                         <div
                           ref={countryCodeDropdownRef}
                           className="absolute z-50 w-64 mt-1 bg-white rounded-xl border border-gray-200 shadow-lg max-h-60 overflow-y-auto"
@@ -1300,12 +1163,6 @@ export default function SignUpPage() {
                                   setSelectedCountryCode(newCountryCode);
                                   setCountryCodeSearchTerm("");
                                   setIsCountryCodeOpen(false);
-                                  // Reset verification if country code changes
-                                  if (isPhoneVerified) {
-                                    setIsPhoneVerified(false);
-                                    setPhoneVerificationCode("");
-                                    setCodeExpirationTime(null);
-                                  }
                                   // Re-validate phone with new country code
                                   const phoneInput = document.getElementById(
                                     "phone"
@@ -1352,26 +1209,16 @@ export default function SignUpPage() {
                       name="phone"
                       type="tel"
                       required
-                      disabled={isPhoneVerified}
                       className={`flex-1 px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
                         hasFieldError("phone") || phoneValidation === "exists"
                           ? "border-red-300 bg-red-50"
                           : phoneValidation === "available"
                           ? "border-green-300 bg-green-50"
-                          : isPhoneVerified
-                          ? "border-green-300 bg-green-50"
                           : "border-gray-200"
-                      } ${isPhoneVerified ? "cursor-not-allowed" : ""}`}
+                      }`}
                       placeholder="(123) 456-7890"
                       onChange={(e) => {
                         const phone = e.target.value;
-                        // Reset verification if phone changes
-                        if (isPhoneVerified) {
-                          setIsPhoneVerified(false);
-                          setPhoneVerificationCode("");
-                          setCodeExpirationTime(null);
-                        }
-
                         // Reset validation error when user starts typing
                         if (
                           phoneValidation === "exists" ||
@@ -1390,23 +1237,6 @@ export default function SignUpPage() {
                         }, 500);
                       }}
                     />
-                    {isPhoneVerified && (
-                      <div className="flex items-center px-4 bg-green-50 border border-green-300 rounded-xl">
-                        <svg
-                          className="w-6 h-6 text-green-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      </div>
-                    )}
                   </div>
 
                   {/* Real-time validation feedback */}
@@ -1472,103 +1302,6 @@ export default function SignUpPage() {
                     </div>
                   )}
                 </div>
-
-                {/* Phone Verification Section */}
-                {!isPhoneVerified && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-700">
-                        Verify your phone number
-                      </p>
-                      {timeRemaining > 0 && (
-                        <p className="text-sm text-gray-600">
-                          Code expires in:{" "}
-                          <span className="font-semibold">
-                            {formatTime(timeRemaining)}
-                          </span>
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={handleSendVerificationCode}
-                        disabled={
-                          isSendingCode || !verificationStatus.canRequestNewCode
-                        }
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
-                      >
-                        {isSendingCode ? "Sending..." : "Send Code"}
-                      </button>
-                      {!verificationStatus.canRequestNewCode && (
-                        <span className="text-xs text-gray-600 self-center">
-                          {verificationStatus.codesRemaining === 0
-                            ? "Rate limit reached. Please wait before requesting another code."
-                            : `${verificationStatus.codesRemaining} codes remaining`}
-                        </span>
-                      )}
-                    </div>
-
-                    {codeExpirationTime && (
-                      <div className="space-y-2">
-                        <input
-                          type="text"
-                          maxLength={6}
-                          value={phoneVerificationCode}
-                          onChange={(e) => {
-                            const value = e.target.value
-                              .replace(/\D/g, "")
-                              .slice(0, 6);
-                            setPhoneVerificationCode(value);
-                            setVerificationError("");
-                          }}
-                          placeholder="Enter 6-digit code"
-                          className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center tracking-widest font-mono"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleVerifyCode}
-                          disabled={
-                            isVerifyingCode ||
-                            phoneVerificationCode.length !== 6 ||
-                            timeRemaining === 0
-                          }
-                          className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
-                        >
-                          {isVerifyingCode ? "Verifying..." : "Verify Code"}
-                        </button>
-                      </div>
-                    )}
-
-                    {verificationError && (
-                      <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">
-                        {verificationError}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {isPhoneVerified && (
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                    <p className="text-sm text-green-700 font-medium flex items-center gap-2">
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      Phone number verified successfully
-                    </p>
-                  </div>
-                )}
               </div>
 
               {/* Employee Specific Fields */}
@@ -1773,7 +1506,6 @@ export default function SignUpPage() {
                         ref={postInputRef}
                         type="text"
                         id="post"
-                        name="post"
                         value={postSearchTerm}
                         onChange={(e) => {
                           setPostSearchTerm(e.target.value);
@@ -1821,6 +1553,7 @@ export default function SignUpPage() {
                                   type="button"
                                   onClick={() => {
                                     setPostSearchTerm(opt.label);
+                                    setSelectedPostValue(opt.value);
                                     setIsPostOpen(false);
                                   }}
                                   className="w-full px-3 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
@@ -1839,7 +1572,11 @@ export default function SignUpPage() {
                         </div>
                       )}
                     </div>
-                    <input type="hidden" name="post" value={postSearchTerm} />
+                    <input
+                      type="hidden"
+                      name="post"
+                      value={selectedPostValue}
+                    />
                     {hasFieldError("post") && (
                       <div className="mt-2">
                         {getFieldErrors("post").map((error, index) => (
@@ -1949,13 +1686,21 @@ export default function SignUpPage() {
                 </>
               )}
 
+              {/* Hidden input for country code */}
+              <input
+                type="hidden"
+                name="countryCode"
+                value={selectedCountryCode}
+              />
+
+              {/* Hidden input for user type */}
+              <input type="hidden" name="userType" value={userType} />
+
               <div className="pt-4 lg:pt-6">
                 <button
                   type="submit"
                   disabled={
                     isLoading ||
-                    !isPhoneVerified ||
-                    !isEmailVerified ||
                     emailValidation === "exists" ||
                     phoneValidation === "exists"
                   }
@@ -1963,19 +1708,10 @@ export default function SignUpPage() {
                 >
                   {isLoading ? "Creating Account..." : "Sign Up"}
                 </button>
-                {(!isPhoneVerified ||
-                  !isEmailVerified ||
-                  emailValidation === "exists" ||
+                {(emailValidation === "exists" ||
                   phoneValidation === "exists") && (
                   <p className="mt-2 text-sm text-center text-gray-600">
-                    {emailValidation === "exists" ||
-                    phoneValidation === "exists"
-                      ? "Please use a different email or phone number"
-                      : !isEmailVerified && !isPhoneVerified
-                      ? "Please verify both your email and phone number before submitting"
-                      : !isEmailVerified
-                      ? "Please verify your email address before submitting"
-                      : "Please verify your phone number before submitting"}
+                    Please use a different email or phone number
                   </p>
                 )}
               </div>

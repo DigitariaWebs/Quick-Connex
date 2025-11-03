@@ -552,6 +552,9 @@ export class DatabaseService {
     update: any, 
     options: QueryOptions = {}
   ): Promise<T | null> {
+    // Ensure queryMonitor is initialized
+    DatabaseService.ensureQueryMonitor();
+    
     const startTime = Date.now();
     const validatedOptions = createQueryOptions(options);
     const validatedId = validateObjectId(id);
@@ -588,6 +591,9 @@ export class DatabaseService {
     update: any, 
     options: QueryOptions = {}
   ): Promise<T | null> {
+    // Ensure queryMonitor is initialized
+    DatabaseService.ensureQueryMonitor();
+    
     const startTime = Date.now();
     const validatedOptions = createQueryOptions(options);
     const sanitizedQuery = query;
