@@ -74,6 +74,23 @@ export default function SignUpPage() {
     codesRemaining: number;
   }>({ canRequestNewCode: true, codesRemaining: 3 });
 
+  // Email verification state
+  const [emailVerificationCode, setEmailVerificationCode] =
+    useState<string>("");
+  const [isEmailVerified, setIsEmailVerified] = useState<boolean>(false);
+  const [isSendingEmailCode, setIsSendingEmailCode] = useState<boolean>(false);
+  const [isVerifyingEmailCode, setIsVerifyingEmailCode] =
+    useState<boolean>(false);
+  const [emailCodeExpirationTime, setEmailCodeExpirationTime] =
+    useState<Date | null>(null);
+  const [emailTimeRemaining, setEmailTimeRemaining] = useState<number>(0);
+  const [emailVerificationError, setEmailVerificationError] =
+    useState<string>("");
+  const [emailVerificationStatus, setEmailVerificationStatus] = useState<{
+    canRequestNewCode: boolean;
+    codesRemaining: number;
+  }>({ canRequestNewCode: true, codesRemaining: 3 });
+
   // Country code state
   const [selectedCountryCode, setSelectedCountryCode] = useState<string>("+1");
   const [isCountryCodeOpen, setIsCountryCodeOpen] = useState<boolean>(false);
@@ -195,7 +212,7 @@ export default function SignUpPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Countdown timer for code expiration
+  // Countdown timer for phone code expiration
   useEffect(() => {
     if (!codeExpirationTime) return;
 
@@ -215,6 +232,26 @@ export default function SignUpPage() {
     return () => clearInterval(interval);
   }, [codeExpirationTime]);
 
+  // Countdown timer for email code expiration
+  useEffect(() => {
+    if (!emailCodeExpirationTime) return;
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      const remaining = Math.max(
+        0,
+        Math.floor((emailCodeExpirationTime.getTime() - now.getTime()) / 1000)
+      );
+      setEmailTimeRemaining(remaining);
+
+      if (remaining === 0) {
+        setEmailCodeExpirationTime(null);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [emailCodeExpirationTime]);
+
   // Country code search handler
   const handleCountryCodeSearch = (term: string) => {
     setCountryCodeSearchTerm(term);
@@ -226,6 +263,94 @@ export default function SignUpPage() {
           cc.country.toLowerCase().includes(searchTerm)
       )
     );
+  };
+
+  // Email verification handlers
+  const handleSendEmailVerificationCode = async () => {
+    const emailInput = document.getElementById("email") as HTMLInputElement;
+    const email = emailInput?.value;
+
+    if (!email || email.trim() === "") {
+      setEmailVerificationError("Please enter an email address first");
+      return;
+    }
+
+    setIsSendingEmailCode(true);
+    setEmailVerificationError("");
+
+    try {
+      const response = await fetch("/api/auth/email-verification/send-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Set expiration time (5 minutes from now)
+        const expiration = new Date(Date.now() + 5 * 60 * 1000);
+        setEmailCodeExpirationTime(expiration);
+        setEmailTimeRemaining(300); // 5 minutes in seconds
+        setEmailVerificationStatus({
+          canRequestNewCode: data.codesRemaining > 0,
+          codesRemaining: data.codesRemaining || 3,
+        });
+      } else {
+        setEmailVerificationError(
+          data.error || "Failed to send verification code"
+        );
+      }
+    } catch (error) {
+      setEmailVerificationError(
+        "Failed to send verification code. Please try again."
+      );
+    } finally {
+      setIsSendingEmailCode(false);
+    }
+  };
+
+  const handleVerifyEmailCode = async () => {
+    const emailInput = document.getElementById("email") as HTMLInputElement;
+    const email = emailInput?.value;
+
+    if (!email || email.trim() === "") {
+      setEmailVerificationError("Please enter an email address first");
+      return;
+    }
+
+    if (!emailVerificationCode || emailVerificationCode.length !== 6) {
+      setEmailVerificationError(
+        "Please enter a valid 6-digit verification code"
+      );
+      return;
+    }
+
+    setIsVerifyingEmailCode(true);
+    setEmailVerificationError("");
+
+    try {
+      const response = await fetch("/api/auth/email-verification/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code: emailVerificationCode }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.verified) {
+        setIsEmailVerified(true);
+        setEmailVerificationError("");
+        setEmailCodeExpirationTime(null);
+        setEmailTimeRemaining(0);
+      } else {
+        setEmailVerificationError(data.error || "Invalid verification code");
+      }
+    } catch (error) {
+      setEmailVerificationError("Failed to verify code. Please try again.");
+    } finally {
+      setIsVerifyingEmailCode(false);
+    }
   };
 
   // Phone verification handlers
@@ -442,32 +567,165 @@ export default function SignUpPage() {
                 }, 100);
               }}
             >
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
-                >
-                  Email
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  className={`w-full px-4 lg:px-5 py-3 lg:py-4 text-base lg:text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
-                    hasFieldError("email")
-                      ? "border-red-300 bg-red-50"
-                      : "border-gray-200"
-                  }`}
-                  placeholder="Enter your email"
-                />
-                {hasFieldError("email") && (
-                  <div className="mt-2">
-                    {getFieldErrors("email").map((error, index) => (
-                      <p key={index} className="text-sm text-red-600">
-                        {error}
+              {/* Email Field with Verification */}
+              <div className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
+                  >
+                    Email
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      required
+                      disabled={isEmailVerified}
+                      className={`flex-1 px-4 lg:px-5 py-3 lg:py-4 text-base lg:text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
+                        hasFieldError("email")
+                          ? "border-red-300 bg-red-50"
+                          : isEmailVerified
+                          ? "border-green-300 bg-green-50"
+                          : "border-gray-200"
+                      } ${isEmailVerified ? "cursor-not-allowed" : ""}`}
+                      placeholder="Enter your email"
+                      onChange={() => {
+                        // Reset verification if email changes
+                        if (isEmailVerified) {
+                          setIsEmailVerified(false);
+                          setEmailVerificationCode("");
+                          setEmailCodeExpirationTime(null);
+                        }
+                      }}
+                    />
+                    {isEmailVerified && (
+                      <div className="flex items-center px-4 bg-green-50 border border-green-300 rounded-xl">
+                        <svg
+                          className="w-6 h-6 text-green-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  {hasFieldError("email") && (
+                    <div className="mt-2">
+                      {getFieldErrors("email").map((error, index) => (
+                        <p key={index} className="text-sm text-red-600">
+                          {error}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Email Verification Section */}
+                {!isEmailVerified && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-700">
+                        Verify your email address
                       </p>
-                    ))}
+                      {emailTimeRemaining > 0 && (
+                        <p className="text-sm text-gray-600">
+                          Code expires in:{" "}
+                          <span className="font-semibold">
+                            {formatTime(emailTimeRemaining)}
+                          </span>
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSendEmailVerificationCode}
+                        disabled={
+                          isSendingEmailCode ||
+                          !emailVerificationStatus.canRequestNewCode
+                        }
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+                      >
+                        {isSendingEmailCode ? "Sending..." : "Send Code"}
+                      </button>
+                      {!emailVerificationStatus.canRequestNewCode && (
+                        <span className="text-xs text-gray-600 self-center">
+                          {emailVerificationStatus.codesRemaining === 0
+                            ? "Rate limit reached. Please wait before requesting another code."
+                            : `${emailVerificationStatus.codesRemaining} codes remaining`}
+                        </span>
+                      )}
+                    </div>
+
+                    {emailCodeExpirationTime && (
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          maxLength={6}
+                          value={emailVerificationCode}
+                          onChange={(e) => {
+                            const value = e.target.value
+                              .replace(/\D/g, "")
+                              .slice(0, 6);
+                            setEmailVerificationCode(value);
+                            setEmailVerificationError("");
+                          }}
+                          placeholder="Enter 6-digit code"
+                          className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center tracking-widest font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleVerifyEmailCode}
+                          disabled={
+                            isVerifyingEmailCode ||
+                            emailVerificationCode.length !== 6 ||
+                            emailTimeRemaining === 0
+                          }
+                          className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+                        >
+                          {isVerifyingEmailCode
+                            ? "Verifying..."
+                            : "Verify Code"}
+                        </button>
+                      </div>
+                    )}
+
+                    {emailVerificationError && (
+                      <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">
+                        {emailVerificationError}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {isEmailVerified && (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                    <p className="text-sm text-green-700 font-medium flex items-center gap-2">
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      Email address verified successfully
+                    </p>
                   </div>
                 )}
               </div>
@@ -1304,11 +1562,20 @@ export default function SignUpPage() {
               <div className="pt-4 lg:pt-6">
                 <button
                   type="submit"
-                  disabled={isLoading || !isPhoneVerified}
+                  disabled={isLoading || !isPhoneVerified || !isEmailVerified}
                   className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 lg:py-4 px-6 text-base lg:text-lg rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                 >
                   {isLoading ? "Creating Account..." : "Sign Up"}
                 </button>
+                {(!isPhoneVerified || !isEmailVerified) && (
+                  <p className="mt-2 text-sm text-center text-gray-600">
+                    {!isEmailVerified && !isPhoneVerified
+                      ? "Please verify both your email and phone number before submitting"
+                      : !isEmailVerified
+                      ? "Please verify your email address before submitting"
+                      : "Please verify your phone number before submitting"}
+                  </p>
+                )}
               </div>
             </form>
 

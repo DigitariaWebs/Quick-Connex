@@ -148,6 +148,7 @@ export class AuthService {
       
       // 3. Check phone verification (required before account creation)
       const { PhoneVerificationService } = await import('@/lib/auth/phone-verification/PhoneVerificationService');
+      const { EmailVerificationService } = await import('@/lib/auth/email-verification/EmailVerificationService');
       
       // Normalize phone number for verification check
       function normalizePhoneNumber(phone: string): string {
@@ -160,6 +161,7 @@ export class AuthService {
         return normalized;
       }
       
+      // Check phone verification
       const normalizedPhone = normalizePhoneNumber(validated.phone);
       const isPhoneVerified = await PhoneVerificationService.isPhoneVerified(normalizedPhone, 10);
       
@@ -167,16 +169,26 @@ export class AuthService {
         throw new ValidationError('Phone number must be verified before creating an account. Please verify your phone number first.');
       }
       
+      // Check email verification (also required before account creation)
+      const normalizedEmail = validated.email.toLowerCase().trim();
+      const isEmailVerified = await EmailVerificationService.isEmailVerified(normalizedEmail, 10);
+      
+      if (!isEmailVerified) {
+        throw new ValidationError('Email address must be verified before creating an account. Please verify your email address first.');
+      }
+      
       // 4. Hash password
       const hashedPassword = await bcrypt.hash(validated.password, 12);
       
-      // 5. Create user with phone verification status
+      // 5. Create user with phone and email verification status
       const user = await DatabaseService.create(User, {
         ...validated,
         password: hashedPassword,
         email: validated.email.toLowerCase(),
         phoneVerified: true,
-        phoneVerifiedAt: new Date()
+        phoneVerifiedAt: new Date(),
+        emailVerified: true,
+        emailVerifiedAt: new Date()
       });
       
       // 6. If approved, create session

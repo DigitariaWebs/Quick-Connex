@@ -106,6 +106,10 @@ export interface IUser extends Document {
   phoneVerified?: boolean;
   phoneVerifiedAt?: Date;
   
+  // Email verification fields
+  emailVerified?: boolean;
+  emailVerifiedAt?: Date;
+  
   createdAt: Date;
   updatedAt: Date;
   
@@ -293,6 +297,16 @@ const UserSchema = new Schema<IUser>({
     index: true
   },
   phoneVerifiedAt: {
+    type: Date
+  },
+  
+  // Email verification fields
+  emailVerified: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  emailVerifiedAt: {
     type: Date
   },
   
