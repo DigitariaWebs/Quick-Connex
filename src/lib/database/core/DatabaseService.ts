@@ -624,6 +624,9 @@ export class DatabaseService {
     update: any, 
     options: QueryOptions = {}
   ): Promise<{ modifiedCount: number }> {
+    // Ensure queryMonitor is initialized
+    DatabaseService.ensureQueryMonitor();
+    
     const startTime = Date.now();
     const validatedOptions = createQueryOptions(options);
     const sanitizedQuery = query;

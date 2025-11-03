@@ -146,17 +146,40 @@ export class AuthService {
         throw new ValidationError('User already exists');
       }
       
-      // 3. Hash password
+      // 3. Check phone verification (required before account creation)
+      const { PhoneVerificationService } = await import('@/lib/auth/phone-verification/PhoneVerificationService');
+      
+      // Normalize phone number for verification check
+      function normalizePhoneNumber(phone: string): string {
+        let normalized = phone.replace(/[^\d+]/g, '');
+        if (!normalized.startsWith('+') && normalized.startsWith('1')) {
+          normalized = '+' + normalized;
+        } else if (!normalized.startsWith('+')) {
+          normalized = '+1' + normalized;
+        }
+        return normalized;
+      }
+      
+      const normalizedPhone = normalizePhoneNumber(validated.phone);
+      const isPhoneVerified = await PhoneVerificationService.isPhoneVerified(normalizedPhone, 10);
+      
+      if (!isPhoneVerified) {
+        throw new ValidationError('Phone number must be verified before creating an account. Please verify your phone number first.');
+      }
+      
+      // 4. Hash password
       const hashedPassword = await bcrypt.hash(validated.password, 12);
       
-      // 4. Create user
+      // 5. Create user with phone verification status
       const user = await DatabaseService.create(User, {
         ...validated,
         password: hashedPassword,
-        email: validated.email.toLowerCase()
+        email: validated.email.toLowerCase(),
+        phoneVerified: true,
+        phoneVerifiedAt: new Date()
       });
       
-      // 5. If approved, create session
+      // 6. If approved, create session
       if (user.status === 'approved') {
         const ipAddress = extractIpAddress(request);
         const userAgent = request.headers.get('user-agent') || 'Unknown';
@@ -170,7 +193,7 @@ export class AuthService {
         );
       }
       
-      // 6. Pending users don't get session
+      // 7. Pending users don't get session
       return {
         success: true,
         user: transformUserForAuth({

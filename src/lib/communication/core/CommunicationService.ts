@@ -15,6 +15,7 @@ import Notification from '@/models/Notification';
 import { AuditAction, ActorType } from '@/models/AuditLog';
 import { 
   retry, 
+  retryWithCondition,
   withTimeout, 
   batchProcess 
 } from '@/lib/utils/async-helpers';
@@ -285,17 +286,41 @@ export class CommunicationService {
   }
 
   /**
-   * Send SMS message
+   * Send SMS message with retry logic for retriable errors
    */
   public async sendSMS(message: SMSMessage): Promise<CommunicationServiceResponse> {
     try {
       // Ensure providers are initialized
       await this.ensureInitialized();
 
-      // Validate message
+      // Validate message - don't retry validation errors
       const validation = validateSMSMessage(message);
       if (!validation.isValid) {
-        throw new ValidationError(`SMS validation failed: ${validation.errors.join(', ')}`);
+        const error = new ValidationError(`SMS validation failed: ${validation.errors.join(', ')}`);
+        log.warn('SMS validation failed (non-retriable):', {
+          messageId: message.id,
+          recipient: message.recipient,
+          errors: validation.errors
+        });
+        
+        // Handle communication event for failure
+        await this.handleCommunicationEvent({
+          eventType: CommunicationEventType.MESSAGE_FAILED,
+          messageId: message.id,
+          channel: 'sms',
+          status: 'failed',
+          recipient: message.recipient,
+          metadata: message.metadata,
+          error: error.message,
+          timestamp: new Date()
+        });
+
+        return {
+          success: false,
+          status: 'failed',
+          messageId: message.id,
+          error: error.message
+        };
       }
 
       // Format phone number
@@ -317,8 +342,81 @@ export class CommunicationService {
       // Get SMS provider
       const smsProvider = this.providerManager.getSMSProvider();
       
-      // Send SMS
-      const response = await smsProvider.send(formattedMessage);
+      // Send SMS with retry logic (only for retriable errors like network issues or server errors)
+      const response = await retryWithCondition(
+        async () => {
+          const result = await smsProvider.send(formattedMessage);
+          
+          // If result indicates failure, throw to trigger retry check
+          if (!result.success && result.error) {
+            throw new Error(result.error);
+          }
+          
+          return result;
+        },
+        // Only retry for retriable errors (server errors 5xx, network issues)
+        // Don't retry for client errors (4xx) or specific non-retriable errors
+        (error: Error) => {
+          const errorMessage = error.message.toLowerCase();
+          
+          // Check for HTTP status codes in error message (4xx = client errors, don't retry)
+          // Match patterns like "error: 400", "error 400", "400 -", "status 400", etc.
+          const statusCodeMatch = errorMessage.match(/(?:error|status|code)[:\s]+(\d{3})|\b(\d{3})\s*[-\s]/i);
+          if (statusCodeMatch) {
+            const statusCode = parseInt(statusCodeMatch[1] || statusCodeMatch[2]);
+            // 4xx errors are client errors and shouldn't be retried
+            if (statusCode >= 400 && statusCode < 500) {
+              return false;
+            }
+            // 5xx errors are server errors and can be retried
+            if (statusCode >= 500) {
+              return true;
+            }
+          }
+          
+          // Check for specific non-retriable error keywords
+          const nonRetriableKeywords = [
+            'validation',
+            'invalid',
+            'unverified',
+            'unauthorized',
+            'forbidden',
+            'not found',
+            'bad request',
+            'malformed',
+            'format',
+            'required'
+          ];
+          
+          const isNonRetriable = nonRetriableKeywords.some(keyword => 
+            errorMessage.includes(keyword)
+          );
+          
+          if (isNonRetriable) {
+            return false;
+          }
+          
+          // Check for ValidationError type
+          if (error instanceof ValidationError) {
+            return false;
+          }
+          
+          // For other errors (network issues, timeouts, etc.), allow retry
+          return true;
+        },
+        {
+          maxAttempts: 3,
+          baseDelay: 1000,
+          maxDelay: 5000,
+          backoffMultiplier: 2,
+          onRetry: (error, attempt) => {
+            log.warn(`Retrying SMS send (attempt ${attempt}/3):`, {
+              messageId: message.id,
+              error: error.message
+            });
+          }
+        }
+      );
       
       // Handle communication event
       await this.handleCommunicationEvent({
@@ -333,7 +431,7 @@ export class CommunicationService {
 
       return response;
     } catch (error) {
-      log.error('Error sending SMS:', error);
+      log.error('Error sending SMS (after retries):', error);
       
       // Handle communication event for failure
       await this.handleCommunicationEvent({

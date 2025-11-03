@@ -10,7 +10,6 @@
 import { CommunicationService } from '../core/CommunicationService';
 import { DatabaseService } from '@/lib/database';
 import User from '@/models/User';
-import Transfer from '@/models/Transfer';
 import { EmailMessage, SMSMessage } from '../core/types';
 import { TransferCategory } from '@/lib/transfers';
 import { TemplateLoader } from '../templates/core/TemplateLoader';
@@ -357,47 +356,21 @@ export class TransferNotificationService {
    */
   private async sendTransferApprovedToManager(manager: any, transferData: any): Promise<void> {
     try {
-      // Send email
-      const emailMessage: EmailMessage = {
-        id: `transfer_approved_manager_email_${Date.now()}`,
-        channel: 'email',
-        priority: 'medium',
-        status: 'pending',
-        recipient: {
-          email: manager.email,
-          name: `${manager.firstName} ${manager.lastName}`
-        },
-        content: {
-          subject: `✅ Transfer Approved - ${transferData.transferId}`,
-          text: this.generateTransferApprovedEmailText(transferData, 'manager'),
-          html: this.generateTransferApprovedEmailHTML(transferData, 'manager')
-        },
-        metadata: {
-          source: 'transfer_workflow',
-          category: 'transfer_approved',
-          transferId: transferData.transferId,
-        },
-        tracking: {},
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      await this.communicationService.sendEmail(emailMessage);
-
-      // Send SMS if phone number available
-      if (manager.phone) {
-        const smsMessage: SMSMessage = {
-          id: `transfer_approved_manager_sms_${Date.now()}`,
-          channel: 'sms',
+      // Send email (non-blocking - failures are logged but don't throw)
+      try {
+        const emailMessage: EmailMessage = {
+          id: `transfer_approved_manager_email_${Date.now()}`,
+          channel: 'email',
           priority: 'medium',
           status: 'pending',
           recipient: {
-            phone: manager.phone,
-            name: `${manager.firstName} ${manager.lastName}`,
-            countryCode: '1'
+            email: manager.email,
+            name: `${manager.firstName} ${manager.lastName}`
           },
           content: {
-            text: `Transfer ${transferData.transferId} approved: ${transferData.fromHospital} -> ${transferData.toHospital} [${transferData.priority}]`
+            subject: `✅ Transfer Approved - ${transferData.transferId}`,
+            text: this.generateTransferApprovedEmailText(transferData, 'manager'),
+            html: this.generateTransferApprovedEmailHTML(transferData, 'manager')
           },
           metadata: {
             source: 'transfer_workflow',
@@ -409,10 +382,53 @@ export class TransferNotificationService {
           updatedAt: new Date()
         };
 
-        await this.communicationService.sendSMS(smsMessage);
+        await this.communicationService.sendEmail(emailMessage);
+      } catch (emailError) {
+        console.error(`❌ Error sending email to manager ${manager._id}:`, emailError);
+        // Continue - don't let email failures block SMS or the process
+      }
+
+      // Send SMS if phone number available (non-blocking - failures are logged but don't throw)
+      if (manager.phone) {
+        try {
+          const smsMessage: SMSMessage = {
+            id: `transfer_approved_manager_sms_${Date.now()}`,
+            channel: 'sms',
+            priority: 'medium',
+            status: 'pending',
+            recipient: {
+              phone: manager.phone,
+              name: `${manager.firstName} ${manager.lastName}`,
+              countryCode: '1'
+            },
+            content: {
+              text: `Transfer ${transferData.transferId} approved: ${transferData.fromHospital} -> ${transferData.toHospital} [${transferData.priority}]`
+            },
+            metadata: {
+              source: 'transfer_workflow',
+              category: 'transfer_approved',
+              transferId: transferData.transferId,
+            },
+            tracking: {},
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+
+          const smsResult = await this.communicationService.sendSMS(smsMessage);
+          
+          // Log SMS result but don't throw if it fails
+          if (!smsResult.success) {
+            console.warn(`⚠️ SMS notification failed for manager ${manager._id} (${manager.phone}): ${smsResult.error || 'Unknown error'}`);
+          }
+        } catch (smsError) {
+          // SMS failures (like invalid phone numbers) are logged but don't block the approval process
+          console.warn(`⚠️ SMS notification error for manager ${manager._id} (${manager.phone}):`, 
+            smsError instanceof Error ? smsError.message : 'Unknown error');
+        }
       }
     } catch (error) {
-      console.error('❌ Error sending transfer approved notification to manager:', error);
+      // This catch block should rarely be hit now since email and SMS are individually wrapped
+      console.error('❌ Unexpected error sending transfer approved notification to manager:', error);
     }
   }
 
@@ -421,47 +437,21 @@ export class TransferNotificationService {
    */
   private async sendTransferApprovedToEmployee(employee: any, transferData: any): Promise<void> {
     try {
-      // Send email
-      const emailMessage: EmailMessage = {
-        id: `transfer_approved_employee_email_${Date.now()}_${employee._id}`,
-        channel: 'email',
-        priority: 'medium',
-        status: 'pending',
-        recipient: {
-          email: employee.email,
-          name: `${employee.firstName} ${employee.lastName}`
-        },
-        content: {
-          subject: `🚑 New Transfer Available - ${transferData.transferId}`,
-          text: this.generateTransferApprovedEmailText(transferData, 'employee'),
-          html: this.generateTransferApprovedEmailHTML(transferData, 'employee')
-        },
-        metadata: {
-          source: 'transfer_workflow',
-          category: 'transfer_approved',
-          transferId: transferData.transferId,
-        },
-        tracking: {},
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      await this.communicationService.sendEmail(emailMessage);
-
-      // Send SMS if phone number available
-      if (employee.phone) {
-        const smsMessage: SMSMessage = {
-          id: `transfer_approved_employee_sms_${Date.now()}_${employee._id}`,
-          channel: 'sms',
+      // Send email (non-blocking - failures are logged but don't throw)
+      try {
+        const emailMessage: EmailMessage = {
+          id: `transfer_approved_employee_email_${Date.now()}_${employee._id}`,
+          channel: 'email',
           priority: 'medium',
           status: 'pending',
           recipient: {
-            phone: employee.phone,
-            name: `${employee.firstName} ${employee.lastName}`,
-            countryCode: '1'
+            email: employee.email,
+            name: `${employee.firstName} ${employee.lastName}`
           },
           content: {
-            text: `New transfer posted ${transferData.transferId}: ${transferData.fromHospital} -> ${transferData.toHospital} [${transferData.priority}]`
+            subject: `🚑 New Transfer Available - ${transferData.transferId}`,
+            text: this.generateTransferApprovedEmailText(transferData, 'employee'),
+            html: this.generateTransferApprovedEmailHTML(transferData, 'employee')
           },
           metadata: {
             source: 'transfer_workflow',
@@ -473,10 +463,53 @@ export class TransferNotificationService {
           updatedAt: new Date()
         };
 
-        await this.communicationService.sendSMS(smsMessage);
+        await this.communicationService.sendEmail(emailMessage);
+      } catch (emailError) {
+        console.error(`❌ Error sending email to employee ${employee._id}:`, emailError);
+        // Continue - don't let email failures block SMS or the process
+      }
+
+      // Send SMS if phone number available (non-blocking - failures are logged but don't throw)
+      if (employee.phone) {
+        try {
+          const smsMessage: SMSMessage = {
+            id: `transfer_approved_employee_sms_${Date.now()}_${employee._id}`,
+            channel: 'sms',
+            priority: 'medium',
+            status: 'pending',
+            recipient: {
+              phone: employee.phone,
+              name: `${employee.firstName} ${employee.lastName}`,
+              countryCode: '1'
+            },
+            content: {
+              text: `New transfer posted ${transferData.transferId}: ${transferData.fromHospital} -> ${transferData.toHospital} [${transferData.priority}]`
+            },
+            metadata: {
+              source: 'transfer_workflow',
+              category: 'transfer_approved',
+              transferId: transferData.transferId,
+            },
+            tracking: {},
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+
+          const smsResult = await this.communicationService.sendSMS(smsMessage);
+          
+          // Log SMS result but don't throw if it fails
+          if (!smsResult.success) {
+            console.warn(`⚠️ SMS notification failed for employee ${employee._id} (${employee.phone}): ${smsResult.error || 'Unknown error'}`);
+          }
+        } catch (smsError) {
+          // SMS failures (like invalid phone numbers) are logged but don't block the approval process
+          console.warn(`⚠️ SMS notification error for employee ${employee._id} (${employee.phone}):`, 
+            smsError instanceof Error ? smsError.message : 'Unknown error');
+        }
       }
     } catch (error) {
-      console.error('❌ Error sending transfer approved notification to employee:', error);
+      // This catch block should rarely be hit now since email and SMS are individually wrapped
+      console.error('❌ Unexpected error sending transfer approved notification to employee:', error);
     }
   }
 

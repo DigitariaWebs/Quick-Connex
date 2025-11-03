@@ -102,6 +102,10 @@ export interface IUser extends Document {
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   
+  // Phone verification fields
+  phoneVerified?: boolean;
+  phoneVerifiedAt?: Date;
+  
   createdAt: Date;
   updatedAt: Date;
   
@@ -279,6 +283,16 @@ const UserSchema = new Schema<IUser>({
     trim: true
   },
   resetPasswordExpires: {
+    type: Date
+  },
+  
+  // Phone verification fields
+  phoneVerified: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  phoneVerifiedAt: {
     type: Date
   },
   
