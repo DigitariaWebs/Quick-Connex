@@ -703,8 +703,8 @@ export default function SignUpPage() {
             Fast, Efficient and Productive
           </h1>
           <p className="text-lg lg:text-xl text-black/80 leading-relaxed">
-            Join our patient management platform and streamline your healthcare
-            workflow
+            Join Quick Connex and streamline your healthcare workflow with our
+            fast and efficient patient management platform
           </p>
         </motion.div>
       </div>

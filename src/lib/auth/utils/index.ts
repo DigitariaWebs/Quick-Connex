@@ -60,7 +60,5 @@ export {
 // Privacy Utilities
 export {
   hashIpAddress,
-  truncateIpAddress,
-  isLoginHistoryExpired,
-  cleanExpiredLoginHistory
+  truncateIpAddress
 } from './privacy';

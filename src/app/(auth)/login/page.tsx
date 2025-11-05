@@ -82,8 +82,8 @@ function LoginForm() {
             Fast, Efficient and Productive
           </h1>
           <p className="text-lg lg:text-xl text-black/80 leading-relaxed">
-            Access your patient management account with our secure and
-            streamlined platform
+            Connect quickly and securely with Quick Connex - your trusted
+            patient management platform
           </p>
         </motion.div>
       </div>

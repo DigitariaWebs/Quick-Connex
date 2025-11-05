@@ -2,7 +2,7 @@
  * Privacy Utilities for Authentication
  * 
  * Handles privacy-focused operations for user data including
- * IP hashing, login history management, and data retention.
+ * IP hashing and data retention.
  */
 
 import crypto from 'crypto';
@@ -42,32 +42,5 @@ export function truncateIpAddress(ipAddress: string): string {
   }
   
   return 'xxx.xxx.xxx.xxx';
-}
-
-/**
- * Check if login history entry is older than retention period
- */
-export function isLoginHistoryExpired(
-  timestamp: Date, 
-  retentionDays: number = 90
-): boolean {
-  const now = new Date();
-  const retentionDate = new Date(now.getTime() - (retentionDays * 24 * 60 * 60 * 1000));
-  return timestamp < retentionDate;
-}
-
-/**
- * Clean expired login history entries
- */
-export function cleanExpiredLoginHistory(
-  loginHistory: any[], 
-  retentionDays: number = 90
-): any[] {
-  const cutoffDate = new Date(Date.now() - (retentionDays * 24 * 60 * 60 * 1000));
-  
-  return loginHistory.filter(entry => {
-    const entryDate = new Date(entry.timestamp);
-    return entryDate >= cutoffDate;
-  });
 }
 

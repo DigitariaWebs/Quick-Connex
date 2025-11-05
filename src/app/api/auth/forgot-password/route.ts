@@ -96,7 +96,7 @@ console.log('✅ API: MongoDB connection established');
           name: `${user.firstName} ${user.lastName}`
         },
         content: {
-          subject: 'Reset Your Password - Patient Management System',
+          subject: 'Password Reset Request - Quick Connex',
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="background: linear-gradient(135deg, #dbeafe 0%, #88f5c3 25%, #a7f3d0 50%, #bfdbfe 75%, #d4fce8 100%); padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 30px;">

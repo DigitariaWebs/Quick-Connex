@@ -480,6 +480,8 @@ AuditLogSchema.index({ 'securityContext.riskLevel': 1, timestamp: -1 });
 AuditLogSchema.index({ 'securityContext.isSensitive': 1, 'securityContext.requiresReview': 1 });
 AuditLogSchema.index({ 'requestInfo.ipAddress': 1, timestamp: -1 });
 AuditLogSchema.index({ 'requestInfo.sessionId': 1, timestamp: -1 });
+// Compound index for efficient login history queries
+AuditLogSchema.index({ actorId: 1, action: 1, category: 1, timestamp: -1 });
 
 // TTL index for automatic cleanup (2 years default)
 AuditLogSchema.index({ timestamp: 1 }, { expireAfterSeconds: 63072000 });

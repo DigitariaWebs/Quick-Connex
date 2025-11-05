@@ -94,6 +94,8 @@ export default function UserDetailsModal({
   const [error, setError] = useState<string | null>(null);
   const [userDocuments, setUserDocuments] = useState<any[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [loginHistory, setLoginHistory] = useState<any[]>([]);
+  const [loginHistoryLoading, setLoginHistoryLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   // Set mounted state for SSR compatibility
@@ -140,6 +142,26 @@ export default function UserDetailsModal({
         });
     }
   }, [isOpen, user?._id, user?.userType]);
+
+  // Fetch login history from AuditLog API
+  useEffect(() => {
+    if (isOpen && user?._id) {
+      setLoginHistoryLoading(true);
+      fetch(`/api/admin/users/${user._id}/login-history?limit=10`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.loginHistory) {
+            setLoginHistory(data.loginHistory);
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching login history:", error);
+        })
+        .finally(() => {
+          setLoginHistoryLoading(false);
+        });
+    }
+  }, [isOpen, user?._id]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -742,40 +764,47 @@ export default function UserDetailsModal({
                     </div>
 
                     {/* Login History */}
-                    {detailedUser?.loginHistory &&
-                      detailedUser.loginHistory.length > 0 && (
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                            Login History
-                          </h3>
-                          <div className="space-y-2 max-h-40 overflow-y-auto">
-                            {detailedUser.loginHistory
-                              .slice(0, 10)
-                              .map((login, index) => (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        Login History
+                      </h3>
+                      {loginHistoryLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        </div>
+                      ) : loginHistory.length > 0 ? (
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                          {loginHistory.map((login, index) => (
+                            <div
+                              key={`login-${login.timestamp}-${index}`}
+                              className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                            >
+                              <div className="flex items-center space-x-2">
                                 <div
-                                  key={`login-${login.timestamp}-${index}`}
-                                  className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                                >
-                                  <div className="flex items-center space-x-2">
-                                    <div
-                                      className={`w-2 h-2 rounded-full ${
-                                        login.success
-                                          ? "bg-green-500"
-                                          : "bg-red-500"
-                                      }`}
-                                    />
-                                    <span className="text-sm text-gray-700">
-                                      {login.success ? "Successful" : "Failed"}
-                                    </span>
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    {new Date(login.timestamp).toLocaleString()}
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
+                                  className={`w-2 h-2 rounded-full ${
+                                    login.success
+                                      ? "bg-green-500"
+                                      : "bg-red-500"
+                                  }`}
+                                />
+                                <span className="text-sm text-gray-700">
+                                  {login.success ? "Successful" : "Failed"}
+                                </span>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {new Date(login.timestamp).toLocaleString()}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4">
+                          <p className="text-gray-500 text-sm">
+                            No login history available
+                          </p>
                         </div>
                       )}
+                    </div>
 
                     {/* Employee Documents */}
                     {user?.userType === "employee" && (

@@ -58,14 +58,7 @@ export interface User {
   suspensionReason?: string;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
-  loginHistory?: Array<{
-    timestamp: Date;
-    ipAddress: string;
-    userAgent: string;
-    success: boolean;
-    location?: string;
-  }>;
-  // Calculated fields from loginHistory
+  // Calculated fields from AuditLog (computed on-demand)
   lastLogin?: Date | null;
   lastLoginIp?: string | null;
   recentFailedAttempts?: number;

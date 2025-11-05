@@ -565,7 +565,7 @@ export function transformSessionForAuth(session: any): any {
  */
 export function sanitizeUserForLogging(user: any): any {
   return omitFields(user, [
-    'password', 'loginHistory', 'failedAttempts', 
+    'password', 'failedAttempts', 
     'lastLoginAttempt', 'passwordResetToken', 'emailVerificationToken'
   ]);
 }

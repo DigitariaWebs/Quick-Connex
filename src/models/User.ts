@@ -1,5 +1,4 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
-import { hashIpAddress, truncateIpAddress, cleanExpiredLoginHistory } from '@/lib/auth';
 
 // Define the interface for document references
 export interface IDocumentReference {
@@ -49,15 +48,6 @@ export enum Permission {
   EXECUTE_QUERIES = 'execute_queries',
 }
 
-// Login history interface
-export interface ILoginHistory {
-  timestamp: Date;
-  ipAddress: string;
-  userAgent: string;
-  success: boolean;
-  location?: string;
-}
-
 // Define the interface for User document
 export interface IUser extends Document {
   userType: 'employee' | 'manager' | 'admin' | 'super_admin';
@@ -74,8 +64,7 @@ export interface IUser extends Document {
   // Admin-specific fields
   permissions?: Permission[]; // Granular permissions for admins
   
-  // Security & Activity tracking (simplified)
-  loginHistory?: ILoginHistory[];
+  // Security & Activity tracking
   accountLockedUntil?: Date;
   
   // Push notification subscription
@@ -117,7 +106,6 @@ export interface IUser extends Document {
   hasPermission(permission: Permission): boolean;
   hasAnyPermission(permissions: Permission[]): boolean;
   isAdmin(): boolean;
-  recordLogin(ipAddress: string, userAgent: string, success?: boolean): Promise<IUser>;
   isAccountLocked(): boolean;
 }
 
@@ -198,23 +186,7 @@ const UserSchema = new Schema<IUser>({
     enum: Object.values(Permission)
   }],
   
-  // Security & Activity tracking (simplified)
-  loginHistory: [{
-    timestamp: {
-      type: Date,
-      required: true,
-      default: Date.now
-    },
-    ipAddress: {
-      type: String,
-      required: true
-    },
-    success: {
-      type: Boolean,
-      required: true,
-      default: true
-    }
-  }],
+  // Security & Activity tracking
   accountLockedUntil: {
     type: Date
   },
@@ -352,11 +324,6 @@ UserSchema.pre('save', function(next) {
     this.approvedAt = new Date();
   }
   
-  // Limit login history to last 50 entries
-  if (this.loginHistory && this.loginHistory.length > 50) {
-    this.loginHistory = this.loginHistory.slice(-50);
-  }
-  
   next();
 });
 
@@ -399,107 +366,12 @@ UserSchema.methods.isAdmin = function(): boolean {
   return this.userType === 'admin' || this.userType === 'super_admin';
 };
 
-UserSchema.methods.recordLogin = function(ipAddress: string, userAgent: string, success: boolean = true) {
-  if (!this.loginHistory) {
-    this.loginHistory = [];
-  }
-  
-  // Clean expired entries before adding new one
-  const retentionDays = this.loginHistoryRetentionDays || 90;
-  this.loginHistory = cleanExpiredLoginHistory(this.loginHistory, retentionDays);
-  
-  // Hash IP address for privacy protection
-  const hashedIp = hashIpAddress(ipAddress);
-  
-  // Add new login entry
-  this.loginHistory.push({
-    timestamp: new Date(),
-    ipAddress: hashedIp,
-    success
-  });
-  
-  // Prepare update object
-  const updateData: any = {
-    loginHistory: this.loginHistory,
-    updatedAt: new Date()
-  };
-  
-  if (success) {
-    // Clear lockout on successful login
-    updateData.accountLockedUntil = undefined;
-  } else {
-    // Check if account should be locked (5 failed attempts in last 15 minutes)
-    const recentFailures = this.getRecentFailedAttempts(15); // 15 minutes
-    if (recentFailures >= 4) { // 4 previous + this one = 5 total
-      updateData.accountLockedUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-    }
-  }
-  
-  // Use updateOne to avoid triggering full document validation
-  const UserModel = mongoose.models.User || mongoose.model('User', UserSchema);
-  return UserModel.updateOne(
-    { _id: this._id },
-    { $set: updateData }
-  );
-};
-
 UserSchema.methods.isAccountLocked = function(): boolean {
   if (!this.accountLockedUntil) {
     return false;
   }
   
   return new Date() < this.accountLockedUntil;
-};
-
-// Ensure the method is properly attached
-UserSchema.methods.isAccountLocked = UserSchema.methods.isAccountLocked;
-
-// Method to clean up old login history
-UserSchema.methods.cleanupLoginHistory = function(): Promise<any> {
-  const retentionDays = 90; // Default retention period
-  this.loginHistory = cleanExpiredLoginHistory(this.loginHistory, retentionDays);
-  return this.save();
-};
-
-// Helper method to get recent failed attempts
-UserSchema.methods.getRecentFailedAttempts = function(minutes: number = 15): number {
-  if (!this.loginHistory) return 0;
-  
-  const cutoffTime = new Date(Date.now() - (minutes * 60 * 1000));
-  return this.loginHistory.filter((entry: any) => 
-    !entry.success && entry.timestamp >= cutoffTime
-  ).length;
-};
-
-// Helper method to get last successful login
-UserSchema.methods.getLastLogin = function(): Date | null {
-  if (!this.loginHistory) return null;
-  
-  const successfulLogins = this.loginHistory
-    .filter((entry: any) => entry.success)
-    .sort((a: any, b: any) => b.timestamp.getTime() - a.timestamp.getTime());
-  
-  return successfulLogins.length > 0 ? successfulLogins[0].timestamp : null;
-};
-
-// Helper method to get last login IP
-UserSchema.methods.getLastLoginIp = function(): string | null {
-  if (!this.loginHistory) return null;
-  
-  const successfulLogins = this.loginHistory
-    .filter((entry: any) => entry.success)
-    .sort((a: any, b: any) => b.timestamp.getTime() - a.timestamp.getTime());
-  
-  return successfulLogins.length > 0 ? successfulLogins[0].ipAddress : null;
-};
-
-// Method to get sanitized login history for admin display
-UserSchema.methods.getSanitizedLoginHistory = function() {
-  return this.loginHistory.map((entry: any) => ({
-    timestamp: entry.timestamp,
-    success: entry.success,
-    ipAddress: entry.ipAddress, // This is already hashed
-  }));
 };
 
 // Create the User model with proper method attachment

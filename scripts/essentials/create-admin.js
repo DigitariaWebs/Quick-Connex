@@ -40,12 +40,6 @@ const userSchema = new mongoose.Schema({
     status: { type: String, enum: ['pending', 'approved', 'rejected', 'suspended'], default: 'approved' },
     lastLogin: { type: Date },
     lastLoginIp: { type: String },
-    loginHistory: [{
-        timestamp: { type: Date },
-        ipAddress: { type: String },
-        userAgent: { type: String },
-        success: { type: Boolean }
-    }],
     failedLoginAttempts: { type: Number, default: 0 },
     accountLockedUntil: { type: Date },
     approvedAt: { type: Date },
@@ -220,4 +214,4 @@ createAdmin().catch(console.error);
 
 
 
- 
+

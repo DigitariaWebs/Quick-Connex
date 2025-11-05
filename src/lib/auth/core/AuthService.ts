@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { DatabaseService } from '@/lib/database';
 import Session from '@/models/Session';
 import User from '@/models/User';
+import AuditLog, { AuditAction, AuditCategory, RiskLevel, ActorType, TargetResourceType } from '@/models/AuditLog';
 import { AuditService } from '@/lib/audit';
 import { SessionService } from '../sessions';
 import { AUTH_CONFIG } from './config';
@@ -34,7 +35,6 @@ import {
   AuthConfig,
   UserRole
 } from './types';
-import { RiskLevel, AuditAction, ActorType, TargetResourceType } from '@/models/AuditLog';
 import { AuditAuthContext } from '@/lib/audit';
 import { signToken, verifyToken, getTokenFromCookies } from '../utils/jwt';
 import { 
@@ -265,20 +265,6 @@ export class AuthService {
       // Verify password
       const isPasswordValid = await bcrypt.compare(validatedCredentials.password, user.password);
       if (!isPasswordValid) {
-        // Record failed login attempt
-        await DatabaseService.updateOne(User, 
-          { _id: user._id }, 
-          { 
-            $push: { 
-              loginHistory: { 
-                timestamp: new Date(), 
-                ipAddress: ipAddress, 
-                success: false 
-              } 
-            },
-            updatedAt: new Date()
-          }
-        );
         await this.recordFailedAttempt(validatedCredentials.email, ipAddress);
         
         // Log failed login
@@ -296,25 +282,39 @@ export class AuthService {
           errorMessage: 'Invalid password'
         });
         
+        // Check if account should be locked (5 failed attempts in last 15 minutes)
+        const recentFailures = await this.getRecentFailedLoginAttempts((user._id as any).toString(), 15);
+        if (recentFailures >= 5) {
+          await DatabaseService.updateOne(User, 
+            { _id: user._id }, 
+            { 
+              $set: { 
+                accountLockedUntil: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+                updatedAt: new Date()
+              }
+            }
+          );
+        }
+        
         throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
       }
       
       // Check user status
       if (user.status !== 'approved') {
-        // Record failed login attempt for unapproved account
-        await DatabaseService.updateOne(User, 
-          { _id: user._id }, 
-          { 
-            $push: { 
-              loginHistory: { 
-                timestamp: new Date(), 
-                ipAddress: ipAddress, 
-                success: false 
-              } 
-            },
-            updatedAt: new Date()
-          }
-        );
+        // Log failed login attempt for unapproved account
+        await this.logAuthEvent({
+          actorId: (user._id as any).toString(),
+          actorType: ActorType.USER,
+          actorEmail: maskEmail(user.email),
+          actorName: `${user.firstName} ${user.lastName}`,
+          actorRole: user.userType,
+          action: AuditAction.LOGIN_FAILED,
+          description: `Failed login attempt for unapproved account: ${maskEmail(user.email)}`,
+          targetResourceId: (user._id as any).toString(),
+          requestInfo: this.extractRequestInfo(request),
+          success: false,
+          errorMessage: `Account status: ${user.status}`
+        });
         
         let message = 'Account not approved';
         if (user.status === 'suspended') message = 'Account suspended';
@@ -358,18 +358,11 @@ export class AuthService {
         sessionId: session.sessionId
       });
       
-      // Record successful login
+      // Clear any account lock on successful login
       await DatabaseService.updateOne(User, 
         { _id: user._id }, 
         { 
-          $push: { 
-            loginHistory: { 
-              timestamp: new Date(), 
-              ipAddress: ipAddress, 
-              success: true 
-            } 
-          },
-          $unset: { accountLockedUntil: 1 }, // Clear any account lock
+          $unset: { accountLockedUntil: 1 },
           updatedAt: new Date()
         }
       );
@@ -575,7 +568,7 @@ export class AuthService {
       const user = await DatabaseService.findById(User, payload.userId);
       if (user) {
         // Remove sensitive fields using omitFields
-        const safeUser = omitFields(user.toObject(), ['password', 'loginHistory', 'failedAttempts']);
+        const safeUser = omitFields(user.toObject(), ['password', 'failedAttempts']);
         Object.assign(user, safeUser);
       }
       if (!user) {
@@ -830,7 +823,7 @@ export class AuthService {
       const user = await DatabaseService.findById(User, session.userId.toString());
       if (user) {
         // Remove sensitive fields using omitFields
-        const safeUser = omitFields(user.toObject(), ['password', 'loginHistory', 'failedAttempts']);
+        const safeUser = omitFields(user.toObject(), ['password', 'failedAttempts']);
         Object.assign(user, safeUser);
       }
       if (!user || user.status !== 'approved') {
@@ -1049,13 +1042,33 @@ export class AuthService {
       attemptCount: current.count
     });
   }
+
+  /**
+   * Get recent failed login attempts from AuditLog
+   */
+  private static async getRecentFailedLoginAttempts(userId: string, minutes: number): Promise<number> {
+    try {
+      const cutoffTime = new Date(Date.now() - (minutes * 60 * 1000));
+      
+      const count = await DatabaseService.count(AuditLog, {
+        actorId: userId,
+        action: AuditAction.LOGIN_FAILED,
+        category: AuditCategory.AUTHENTICATION,
+        timestamp: { $gte: cutoffTime }
+      });
+      
+      return count;
+    } catch (error) {
+      logError('Failed to get recent failed login attempts', error, {
+        operation: 'getRecentFailedLoginAttempts',
+        userId,
+        minutes
+      });
+      return 0;
+    }
+  }
   
   // ===== UTILITY METHODS =====
-  
-  /**
-   * Extract IP address from request
-   */
-  
   /**
    * Extract request information
    */

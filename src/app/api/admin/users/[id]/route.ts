@@ -3,7 +3,8 @@ import { AuditService } from '@/lib/audit';
 import { UserAuditContext } from '@/lib/audit';
 import { DatabaseService } from '@/lib/database';
 import User from '@/models/User';
-import { ActorType, AuditAction, TargetResourceType } from '@/models/AuditLog';
+import AuditLog, { ActorType, AuditAction, TargetResourceType, AuditCategory } from '@/models/AuditLog';
+import { AuthService } from '@/lib/auth';
 /**
  * GET /api/admin/users/[id]
  * Get detailed user information
@@ -13,11 +14,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Verify admin access
+    const { user: adminUser } = await AuthService.requireAuth(request, {
+      roles: ['admin', 'super_admin'],
+      requireSession: true
+    });
+    
     const { id } = await params;
     
-    // Connect to database
-    // DatabaseService handles connection automatically
-// Get user details
+    // Get user details
     const user = await User.findById(id).select('-password');
     
     if (!user) {
@@ -27,51 +32,70 @@ export async function GET(
       );
     }
     
-    // Calculate login data from loginHistory (inline calculation for reliability)
-    const getLastLogin = () => {
-      if (!user.loginHistory) return null;
-      const successfulLogins = user.loginHistory
-        .filter((entry: any) => entry.success)
-        .sort((a: any, b: any) => b.timestamp.getTime() - a.timestamp.getTime());
-      return successfulLogins.length > 0 ? successfulLogins[0].timestamp : null;
+    // Get login data from AuditLog
+    const getLastLoginInfo = async () => {
+      const lastLogin = await DatabaseService.findOne(AuditLog, {
+        actorId: id,
+        action: AuditAction.LOGIN_SUCCESS,
+        category: AuditCategory.AUTHENTICATION
+      }, {
+        sort: { timestamp: -1 }
+      });
+      return {
+        timestamp: lastLogin?.timestamp || null,
+        ipAddress: lastLogin?.requestInfo?.ipAddress || null
+      };
     };
     
-    const getLastLoginIp = () => {
-      if (!user.loginHistory) return null;
-      const successfulLogins = user.loginHistory
-        .filter((entry: any) => entry.success)
-        .sort((a: any, b: any) => b.timestamp.getTime() - a.timestamp.getTime());
-      return successfulLogins.length > 0 ? successfulLogins[0].ipAddress : null;
-    };
-    
-    const getRecentFailedAttempts = (minutes = 15) => {
-      if (!user.loginHistory) return 0;
+    const getRecentFailedAttempts = async (minutes = 15) => {
       const cutoffTime = new Date(Date.now() - (minutes * 60 * 1000));
-      return user.loginHistory.filter((entry: any) => 
-        !entry.success && entry.timestamp >= cutoffTime
-      ).length;
+      const count = await DatabaseService.count(AuditLog, {
+        actorId: id,
+        action: AuditAction.LOGIN_FAILED,
+        category: AuditCategory.AUTHENTICATION,
+        timestamp: { $gte: cutoffTime }
+      });
+      return count;
     };
     
-    const getSanitizedLoginHistory = () => {
-      return user.loginHistory ? user.loginHistory.map((entry: any) => ({
-        timestamp: entry.timestamp,
-        success: entry.success,
-        ipAddress: entry.ipAddress, // This is already hashed
-      })) : [];
+    const getSanitizedLoginHistory = async () => {
+      const loginHistory = await DatabaseService.findMany(AuditLog, {
+        actorId: id,
+        action: { $in: [AuditAction.LOGIN_SUCCESS, AuditAction.LOGIN_FAILED] },
+        category: AuditCategory.AUTHENTICATION
+      }, {
+        sort: { timestamp: -1 },
+        limit: 50
+      });
+      
+      return loginHistory.map((log: any) => ({
+        timestamp: log.timestamp,
+        success: log.action === AuditAction.LOGIN_SUCCESS,
+        ipAddress: log.requestInfo?.ipAddress || 'unknown'
+      }));
     };
     
-    const sanitizedLoginHistory = getSanitizedLoginHistory();
+    const [lastLoginInfo, recentFailedAttempts, sanitizedLoginHistory] = await Promise.all([
+      getLastLoginInfo(),
+      getRecentFailedAttempts(),
+      getSanitizedLoginHistory()
+    ]);
     
-    // TODO: Extract admin info from session/token
-    const adminId = 'admin-id'; // Replace with actual admin ID from session
-    const adminEmail = 'admin@example.com'; // Replace with actual admin email
+    const lastLogin = lastLoginInfo.timestamp;
+    const lastLoginIp = lastLoginInfo.ipAddress;
+    
+    // Extract admin info from session
+    const adminId = (adminUser._id as any)?.toString() || 'unknown';
+    const adminEmail = adminUser.email || 'unknown';
     
     // Log admin access to user details
     const userContext: UserAuditContext = {
       actorId: adminId,
       actorType: ActorType.ADMIN,
       actorEmail: adminEmail,
-      actorName: 'Admin User',
+      actorName: adminUser.firstName && adminUser.lastName 
+        ? `${adminUser.firstName} ${adminUser.lastName}` 
+        : adminUser.email || 'Admin User',
       actorRole: 'admin',
       action: AuditAction.USER_PROFILE_VIEWED,
       description: `Admin viewed user profile for ${user.email}`,
@@ -81,7 +105,7 @@ export async function GET(
       metadata: {
         userType: user.userType,
         status: user.status,
-        loginHistoryCount: sanitizedLoginHistory.length
+        loginHistoryCount: sanitizedLoginHistory?.length || 0
       },
       requestInfo: AuditService.extractRequestInfo(request),
       success: true
@@ -99,9 +123,9 @@ export async function GET(
           email: user.email,
           userType: user.userType,
           status: user.status,
-          lastLogin: getLastLogin(),
-          lastLoginIp: getLastLoginIp(),
-          recentFailedAttempts: getRecentFailedAttempts(),
+          lastLogin: lastLogin,
+          lastLoginIp: lastLoginIp,
+          recentFailedAttempts: recentFailedAttempts,
           accountLockedUntil: user.accountLockedUntil,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt
