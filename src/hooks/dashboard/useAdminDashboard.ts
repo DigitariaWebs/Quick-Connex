@@ -3,7 +3,7 @@ import {
   DashboardStats, 
   DashboardError, 
   DashboardLoadingState 
-} from '@/types/dashboard';
+} from '@/types/dashboard/dashboard.types';
 
 /**
  * useAdminDashboard Hook

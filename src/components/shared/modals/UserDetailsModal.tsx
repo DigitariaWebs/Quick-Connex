@@ -45,7 +45,7 @@ import {
   getUserDisplayName,
   getUserInitials,
 } from "@/constants";
-import type { User, UserActivity } from "@/types/user";
+import type { User, UserActivity } from "@/types/auth/user.types";
 
 interface UserDetailsModalProps {
   isOpen: boolean;

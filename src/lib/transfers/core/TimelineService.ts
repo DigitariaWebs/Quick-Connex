@@ -7,8 +7,8 @@
  */
 
 
-import { TimelineEvent, TimelineEventType } from '@/types/transfer';
-import { TimelineItem, TimelineQueryOptions, TimelineResponse, TimelineStats } from '@/types/timeline';
+import { TimelineEvent, TimelineEventType } from '@/types/transfers/transfer.types';
+import { TimelineItem, TimelineQueryOptions, TimelineResponse, TimelineStats } from '@/types/transfers/timeline.types';
 import { DatabaseService } from '@/lib/database';
 import AuditLog from '@/models/AuditLog';
 import { 

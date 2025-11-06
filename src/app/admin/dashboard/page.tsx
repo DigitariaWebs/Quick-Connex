@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAdminDashboard } from "@/hooks/dashboard";
-import { StatCard } from "@/types/dashboard";
+import { StatCard } from "@/types/dashboard/dashboard.types";
 
 /**
  * Admin Dashboard - Main Overview

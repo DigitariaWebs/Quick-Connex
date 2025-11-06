@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       const existingEmail = await DatabaseService.findOne(
         User,
         { email: normalizedEmail },
-        { projection: { _id: 1 } }
+        { select: { _id: 1 } }
       );
       results.email = !existingEmail; // true if available, false if exists
     }
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       const existingPhone = await DatabaseService.findOne(
         User,
         { phone: normalizedPhone },
-        { projection: { _id: 1 } }
+        { select: { _id: 1 } }
       );
       results.phone = !existingPhone; // true if available, false if exists
     }
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           success: false,
-          error: error.errors[0]?.message || 'Invalid request data'
+          error: error.issues[0]?.message || 'Invalid request data'
         },
         { status: 400 }
       );

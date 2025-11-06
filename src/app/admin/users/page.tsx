@@ -53,12 +53,8 @@ import {
   getUserRoleConfig,
   USER_STAT_CARD_COLORS,
 } from "@/constants";
-import type {
-  User,
-  UserStats,
-  UserFilters,
-  UserListResponse,
-} from "@/types/user";
+import type { User, UserStats, UserFilters } from "@/types/auth/user.types";
+import type { UserListResponse } from "@/types/dto/user.dto";
 
 /**
  * Admin Users Page

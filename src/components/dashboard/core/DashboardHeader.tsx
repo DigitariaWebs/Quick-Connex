@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Plus, Search, Menu } from "lucide-react";
-import type { User } from "@/types/user";
+import type { User } from "@/types/auth/user.types";
 
 interface DashboardHeaderProps {
   user: User;

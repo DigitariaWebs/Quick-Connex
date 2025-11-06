@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TimelineService } from '@/lib/transfers';
-import { TimelineQueryOptions } from '@/types/timeline';
+import { TimelineQueryOptions } from '@/types/transfers/timeline.types';
 
 /**
  * GET /api/timeline/transfer/[transferId]

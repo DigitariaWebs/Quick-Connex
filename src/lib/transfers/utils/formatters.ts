@@ -10,7 +10,8 @@ import {
   STATUS_DISPLAY_INFO,
   PRIORITY_DISPLAY_INFO
 } from '../core/constants';
-import { TransferResponse, TransferCalendarEvent } from '@/types/transfer';
+import { TransferCalendarEvent } from '@/types/transfers/transfer.types';
+import { TransferResponse } from '@/types/dto/transfer.dto';
 
 /**
  * Transfer Display Utilities

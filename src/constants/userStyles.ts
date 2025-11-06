@@ -26,7 +26,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 
-import type { UserStatusConfig, UserRoleConfig, UserStatCard } from "@/types/user";
+import type { UserStatusConfig, UserRoleConfig, UserStatCard } from "@/types/auth/user.types";
 
 // User Status Configuration
 export const USER_STATUSES: Record<string, UserStatusConfig> = {

@@ -21,13 +21,17 @@ import { TRANSFER_CONFIG } from './config';
 import {
   ITransfer,
   TransferRequestData,
+  SchedulingConfig,
+  TransferStats
+} from '@/types/transfers/transfer.types';
+import {
   TransferResponse,
-  TransferStats,
+  TransferListResponse
+} from '@/types/dto/transfer.dto';
+import {
   TransferFilterOptions,
-  TransferQueryOptions,
-  TransferListResponse,
-  SchedulingConfig
-} from '@/types/transfer';
+  TransferQueryOptions
+} from '@/types/transfers/service.types';
 import { validateTransferData as validateTransferDataUtil } from '../utils/validation';
 import { log } from '@/lib/logging';
 

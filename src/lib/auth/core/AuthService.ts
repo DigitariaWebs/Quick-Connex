@@ -12,7 +12,7 @@ import { DatabaseService } from '@/lib/database';
 import Session from '@/models/Session';
 import User from '@/models/User';
 import AuditLog, { AuditAction, AuditCategory, RiskLevel, ActorType, TargetResourceType } from '@/models/AuditLog';
-import { AuditService } from '@/lib/audit';
+import { AuditService, AuditAuthContext } from '@/lib/audit';
 import { SessionService } from '../sessions';
 import { AUTH_CONFIG } from './config';
 import { 
@@ -30,12 +30,10 @@ import {
   RiskAssessment,
   DeviceInfo,
   RequestInfo,
-  AuthAuditContext,
   AuthErrorCode,
   AuthConfig,
   UserRole
 } from './types';
-import { AuditAuthContext } from '@/lib/audit';
 import { signToken, verifyToken, getTokenFromCookies } from '../utils/jwt';
 import { 
   AppError,

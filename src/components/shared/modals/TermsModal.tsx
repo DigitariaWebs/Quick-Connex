@@ -18,8 +18,8 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
             onClick={onClose}
+            className="fixed inset-0 bg-black/20 backdrop-blur-md z-50 flex items-center justify-center p-4"
           >
             {/* Modal */}
             <motion.div
@@ -33,7 +33,7 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gray-50">
                 <h2 className="text-2xl font-bold text-gray-900">
-                  Terms and Conditions
+                  Conditions d'utilisation
                 </h2>
                 <button
                   onClick={onClose}
@@ -46,187 +46,179 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
               {/* Content */}
               <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
                 <div className="prose prose-lg max-w-none">
-                  <p className="text-gray-600 mb-6">
-                    Last updated: {new Date().toLocaleDateString()}
-                  </p>
+                  <div className="mb-6 space-y-2">
+                    <p className="text-lg font-semibold text-gray-900">
+                      Employés exécutant les transferts
+                    </p>
+                    <p className="text-gray-600">
+                      <strong>Entreprise :</strong> Groupe BZ Service inc.
+                      Quickconnex
+                    </p>
+                    <p className="text-gray-600">
+                      <strong>Champ d'application :</strong> Employés et
+                      sous-traitants autorisés à utiliser la plateforme et à
+                      effectuer les transferts de patients.
+                    </p>
+                  </div>
 
                   <section className="mb-8">
                     <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                      1. Acceptance of Terms
+                      1. Objet
                     </h3>
                     <p className="text-gray-700 leading-relaxed mb-4">
-                      By accessing and using the Patient Management System, you
-                      accept and agree to be bound by the terms and provision of
-                      this agreement. If you do not agree to abide by the above,
-                      please do not use this service.
+                      Ces conditions définissent les règles et responsabilités
+                      des employés utilisant l'application et le site Phénix
+                      Transfert (ou le nom que tu choisiras) pour exécuter des
+                      missions de transfert de patients entre les établissements
+                      de santé.
                     </p>
                   </section>
 
                   <section className="mb-8">
                     <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                      2. Use License
+                      2. Inscription et accès
                     </h3>
                     <p className="text-gray-700 leading-relaxed mb-4">
-                      Permission is granted to temporarily use the Patient
-                      Management System for personal, non-commercial transitory
-                      viewing only. This is the grant of a license, not a
-                      transfer of title, and under this license you may not:
+                      L'accès à la plateforme est réservé aux employés autorisés
+                      et formés de l'Entreprise.
+                    </p>
+                    <p className="text-gray-700 leading-relaxed mb-4">
+                      Chaque employé reçoit un identifiant personnel ; il est
+                      responsable de la confidentialité de son mot de passe.
+                    </p>
+                    <p className="text-gray-700 leading-relaxed mb-4">
+                      Il est interdit de partager son compte ou d'utiliser celui
+                      d'un autre employé.
+                    </p>
+                  </section>
+
+                  <section className="mb-8">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                      3. Utilisation autorisée
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed mb-4">
+                      L'application doit être utilisée exclusivement pour
+                      accepter, gérer et exécuter les missions de transfert
+                      confiées par l'Entreprise.
+                    </p>
+                    <p className="text-gray-700 leading-relaxed mb-4">
+                      Toute utilisation à des fins personnelles, commerciales ou
+                      non autorisées est interdite.
+                    </p>
+                    <p className="text-gray-700 leading-relaxed mb-4">
+                      Les employés doivent respecter les protocoles cliniques,
+                      les normes de sécurité et la confidentialité des données
+                      des patients (Loi 25 au Québec, LPRPDE au Canada).
+                    </p>
+                  </section>
+
+                  <section className="mb-8">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                      4. Responsabilités de l'employé
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed mb-4">
+                      <strong>Compétence et conformité :</strong> maintenir ses
+                      certifications professionnelles à jour (ex. : Membre OPIQ,
+                      RCR, etc.).
+                    </p>
+                    <p className="text-gray-700 leading-relaxed mb-4">
+                      <strong>Respect des directives :</strong> suivre les
+                      procédures cliniques et les protocoles de l'Entreprise
+                      pour le transfert des patients.
+                    </p>
+                    <p className="text-gray-700 leading-relaxed mb-4">
+                      <strong>Protection des données :</strong> ne pas divulguer
+                      d'informations médicales ou personnelles obtenues durant
+                      les missions.
+                    </p>
+                    <p className="text-gray-700 leading-relaxed mb-4">
+                      <strong>Signalement :</strong> informer immédiatement le
+                      gestionnaire en cas d'incident, de défaillance technique
+                      ou d'urgence médicale.
+                    </p>
+                  </section>
+
+                  <section className="mb-8">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                      5. Comportement et éthique
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed mb-4">
+                      Respecter les principes de dignité, de sécurité et de
+                      confidentialité envers les patients et leurs familles.
+                    </p>
+                    <p className="text-gray-700 leading-relaxed mb-4">
+                      Interdiction de consommer de l'alcool, des drogues ou tout
+                      produit pouvant altérer les capacités de jugement durant
+                      le service.
+                    </p>
+                    <p className="text-gray-700 leading-relaxed mb-4">
+                      Toute forme de discrimination, harcèlement ou violence
+                      verbale ou physique est strictement interdite.
+                    </p>
+                  </section>
+
+                  <section className="mb-8">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                      6. Sécurité et conformité
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed mb-4">
+                      Respecter les lois et règlements applicables au transport
+                      des patients et des dispositifs médicaux.
+                    </p>
+                    <p className="text-gray-700 leading-relaxed mb-4">
+                      Maintenir les équipements (véhicules, dispositifs
+                      respiratoires, matériel d'urgence) en bon état et signaler
+                      tout problème.
+                    </p>
+                    <p className="text-gray-700 leading-relaxed mb-4">
+                      Porter l'équipement de protection individuelle (EPI)
+                      requis selon le type de transfert et la condition du
+                      patient.
+                    </p>
+                  </section>
+
+                  <section className="mb-8">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                      7. Suspension ou révocation d'accès
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed mb-4">
+                      L'Entreprise se réserve le droit de suspendre ou révoquer
+                      l'accès à la plateforme pour tout employé :
                     </p>
                     <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
-                      <li>Modify or copy the materials</li>
+                      <li>en cas de non-respect des présentes conditions,</li>
+                      <li>de comportement inapproprié ou dangereux,</li>
                       <li>
-                        Use the materials for any commercial purpose or for any
-                        public display
-                      </li>
-                      <li>
-                        Attempt to reverse engineer any software contained on
-                        the website
-                      </li>
-                      <li>
-                        Remove any copyright or other proprietary notations from
-                        the materials
+                        ou de violation de la confidentialité des données.
                       </li>
                     </ul>
                   </section>
 
                   <section className="mb-8">
                     <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                      3. Privacy and Data Protection
+                      8. Modifications des conditions
                     </h3>
                     <p className="text-gray-700 leading-relaxed mb-4">
-                      We are committed to protecting your privacy and the
-                      confidentiality of patient information. All data is
-                      handled in accordance with applicable healthcare privacy
-                      laws and regulations, including but not limited to HIPAA
-                      compliance where applicable.
+                      L'Entreprise peut mettre à jour ces conditions pour
+                      respecter les nouvelles lois, réglementations ou
+                      procédures internes.
                     </p>
                     <p className="text-gray-700 leading-relaxed mb-4">
-                      We collect and process personal information only as
-                      necessary to provide our services and in accordance with
-                      our Privacy Policy.
+                      Les employés seront informés et devront accepter les
+                      nouvelles conditions pour continuer à utiliser la
+                      plateforme.
                     </p>
                   </section>
 
                   <section className="mb-8">
                     <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                      4. User Responsibilities
+                      9. Acceptation
                     </h3>
                     <p className="text-gray-700 leading-relaxed mb-4">
-                      As a user of this system, you agree to:
+                      En s'inscrivant sur la plateforme et en acceptant une
+                      mission, l'employé reconnaît avoir lu, compris et accepté
+                      les présentes conditions d'utilisation.
                     </p>
-                    <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
-                      <li>Provide accurate and complete information</li>
-                      <li>
-                        Maintain the confidentiality of your account credentials
-                      </li>
-                      <li>Use the system only for lawful purposes</li>
-                      <li>Respect patient privacy and confidentiality</li>
-                      <li>
-                        Report any security breaches or suspicious activity
-                        immediately
-                      </li>
-                    </ul>
-                  </section>
-
-                  <section className="mb-8">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                      5. Prohibited Uses
-                    </h3>
-                    <p className="text-gray-700 leading-relaxed mb-4">
-                      You may not use our service:
-                    </p>
-                    <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
-                      <li>
-                        For any unlawful purpose or to solicit others to perform
-                        unlawful acts
-                      </li>
-                      <li>
-                        To violate any international, federal, provincial, or
-                        state regulations, rules, laws, or local ordinances
-                      </li>
-                      <li>
-                        To infringe upon or violate our intellectual property
-                        rights or the intellectual property rights of others
-                      </li>
-                      <li>
-                        To harass, abuse, insult, harm, defame, slander,
-                        disparage, intimidate, or discriminate
-                      </li>
-                      <li>To submit false or misleading information</li>
-                    </ul>
-                  </section>
-
-                  <section className="mb-8">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                      6. Service Availability
-                    </h3>
-                    <p className="text-gray-700 leading-relaxed mb-4">
-                      We strive to maintain high service availability, but we do
-                      not guarantee that the service will be available at all
-                      times. We may experience hardware, software, or other
-                      problems or need to perform maintenance related to the
-                      service, resulting in interruptions, delays, or errors.
-                    </p>
-                  </section>
-
-                  <section className="mb-8">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                      7. Limitation of Liability
-                    </h3>
-                    <p className="text-gray-700 leading-relaxed mb-4">
-                      In no event shall the Patient Management System, nor its
-                      directors, employees, partners, agents, suppliers, or
-                      affiliates, be liable for any indirect, incidental,
-                      special, consequential, or punitive damages, including
-                      without limitation, loss of profits, data, use, goodwill,
-                      or other intangible losses, resulting from your use of the
-                      service.
-                    </p>
-                  </section>
-
-                  <section className="mb-8">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                      8. Termination
-                    </h3>
-                    <p className="text-gray-700 leading-relaxed mb-4">
-                      We may terminate or suspend your account and bar access to
-                      the service immediately, without prior notice or
-                      liability, under our sole discretion, for any reason
-                      whatsoever and without limitation, including but not
-                      limited to a breach of the Terms.
-                    </p>
-                  </section>
-
-                  <section className="mb-8">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                      9. Changes to Terms
-                    </h3>
-                    <p className="text-gray-700 leading-relaxed mb-4">
-                      We reserve the right, at our sole discretion, to modify or
-                      replace these Terms at any time. If a revision is
-                      material, we will provide at least 30 days notice prior to
-                      any new terms taking effect.
-                    </p>
-                  </section>
-
-                  <section className="mb-8">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                      10. Contact Information
-                    </h3>
-                    <p className="text-gray-700 leading-relaxed mb-4">
-                      If you have any questions about these Terms and
-                      Conditions, please contact us at:
-                    </p>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="text-gray-700">
-                        <strong>Email:</strong> legal@patientmanagement.com
-                        <br />
-                        <strong>Phone:</strong> (555) 123-4567
-                        <br />
-                        <strong>Address:</strong> 123 Healthcare Ave, Medical
-                        City, MC 12345
-                      </p>
-                    </div>
                   </section>
                 </div>
               </div>

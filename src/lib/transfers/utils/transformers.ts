@@ -4,8 +4,8 @@
  * Functions for transforming audit logs to timeline items and mapping between types.
  */
 
-import { TimelineItem, TimelineQueryOptions } from '@/types/timeline';
-import { TimelineEventType } from '@/types/transfer';
+import { TimelineItem, TimelineQueryOptions } from '@/types/transfers/timeline.types';
+import { TimelineEventType } from '@/types/transfers/transfer.types';
 import { AuditAction } from '@/models/AuditLog';
 
 /**

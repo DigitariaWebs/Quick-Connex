@@ -25,13 +25,15 @@ export type {
   DeviceInfo,
   LocationInfo,
   RequestInfo,
-  AuthAuditContext,
   AuthConfig,
   UserRole,
   AuthErrorCode,
   AuthResponse,
   SessionInfo
 } from './types';
+
+// Audit types - imported from centralized types
+export type { AuthAuditContext } from '@/types/audit';
 
 // Constants
 export {

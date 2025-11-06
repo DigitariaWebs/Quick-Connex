@@ -25,7 +25,7 @@ async function requestJson<T>(input: RequestInfo, init?: RequestInit): Promise<T
   }
   return data as T;
 }
-import { User } from '../../types/user';
+import { User } from '@/types/auth/user.types';
 
 // Simplified Session interface for client responses
 export interface Session {

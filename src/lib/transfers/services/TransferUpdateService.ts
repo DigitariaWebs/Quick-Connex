@@ -12,7 +12,7 @@ import { validateStatusTransition } from '@/lib/transfers/utils/validation';
 import { TimelineService } from '@/lib/transfers/core/TimelineService';
 import { extractRequestInfo } from '@/lib/audit/utils/request';
 import { AuditRequestInfo } from '@/lib/audit/core/types';
-import { TimelineEventType } from '@/types/transfer';
+import { TimelineEventType } from '@/types/transfers/transfer.types';
 
 /**
  * Actor information for audit logging

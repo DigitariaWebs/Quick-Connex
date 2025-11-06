@@ -13,13 +13,15 @@ import {
 } from '../core/constants';
 import { TRANSFER_CONFIG } from '../core/config';
 import {
-  TransferResponse,
-  TransferStats,
-  TransferCalendarEvent,
   SchedulingConfig,
+  TransferCalendarEvent,
+  TransferStats
+} from '@/types/transfers/transfer.types';
+import { TransferResponse } from '@/types/dto/transfer.dto';
+import {
   TransferFilterOptions,
   TransferQueryOptions
-} from '@/types/transfer';
+} from '@/types/transfers/service.types';
 
 /**
  * Date and Time Utilities

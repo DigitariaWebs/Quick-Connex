@@ -1,15 +1,9 @@
 /**
  * Notification System Types
  * 
- * ⚠️ RESERVED FOR FUTURE IMPLEMENTATION
- * 
- * This file contains TypeScript interfaces and types for the in-app notification system.
- * These types are currently unused but preserved for future implementation.
- * 
+ * TypeScript interfaces and types for the in-app notification system.
  * Note: This is separate from the communication module's email/SMS notification system.
  */
-
-import { Types } from 'mongoose';
 
 /**
  * Notification Priority
@@ -37,7 +31,6 @@ export type NotificationType =
   | 'test_notification'
   | 'urgent_transfer'
   | 'notification_count_update';
-
 
 /**
  * Notification Data Interface
@@ -91,4 +84,3 @@ export interface UrgentTransfer {
   timestamp: string;
 }
 
-// Note: SSE system has been removed

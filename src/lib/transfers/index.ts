@@ -18,7 +18,7 @@ export * from './services';
 export * from './errors';
 
 // ===== TIMELINE TYPES =====
-export type { TimelineResponse, TimelineStats } from '@/types/timeline';
+export type { TimelineResponse, TimelineStats } from '@/types/transfers/timeline.types';
 
 // ===== CONSTANTS ONLY EXPORT =====
 // For client components that only need constants/enums

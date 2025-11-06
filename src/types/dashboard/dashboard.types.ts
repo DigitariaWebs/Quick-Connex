@@ -1,5 +1,5 @@
 /**
- * Dashboard Type Definitions
+ * Dashboard Types
  * 
  * Comprehensive types for the admin dashboard including:
  * - Dashboard statistics
@@ -137,29 +137,5 @@ export interface StatCard {
   color: string;
   bgColor: string;
   isLive?: boolean;
-}
-
-// API Response types
-export interface DashboardStatsResponse {
-  success: boolean;
-  data: DashboardStats;
-  message?: string;
-}
-
-export interface SSEStatsResponse {
-  success: boolean;
-  data: SSEStats;
-  message?: string;
-}
-
-export interface RecentActivityResponse {
-  success: boolean;
-  data: {
-    activities: RecentActivity[];
-    total: number;
-    page: number;
-    limit: number;
-  };
-  message?: string;
 }
 

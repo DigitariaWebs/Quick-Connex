@@ -165,25 +165,9 @@ export interface RequestInfo {
 }
 
 // ===== AUDIT TYPES =====
-
-export interface AuthAuditContext {
-  actorId: string;
-  actorType: 'admin' | 'user' | 'system' | 'api' | 'batch';
-  actorEmail?: string;
-  actorName?: string;
-  actorRole?: string;
-  action: string;
-  description: string;
-  targetResourceId?: string;
-  targetResourceType?: string;
-  metadata?: Record<string, any>;
-  requestInfo?: RequestInfo;
-  success?: boolean;
-  errorMessage?: string;
-  riskLevel?: RiskLevel;
-  isSensitive?: boolean;
-  requiresReview?: boolean;
-}
+// NOTE: AuthAuditContext has been moved to @/types/audit.ts
+// Import from '@/types/audit' instead
+// This ensures proper type hierarchy with BaseAuditContext and proper enum usage
 
 // ===== CONFIGURATION TYPES =====
 

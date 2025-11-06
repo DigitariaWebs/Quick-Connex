@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/lib/auth';
 import { DatabaseService } from '@/lib/database';
 import AuditLog from '@/models/AuditLog';
-import { RecentActivity } from '@/types/dashboard';
+import { RecentActivity } from '@/types/dashboard/dashboard.types';
 
 /**
  * Recent Activity API Endpoint

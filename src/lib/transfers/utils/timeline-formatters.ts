@@ -5,7 +5,7 @@
  */
 
 import { AuditAction, AuditCategory, ActorType, RiskLevel } from '@/models/AuditLog';
-import { TimelineItem, EVENT_KIND_MAPPING, BADGE_MAPPING, TAG_MAPPING } from '@/types/timeline';
+import { TimelineItem, EVENT_KIND_MAPPING, BADGE_MAPPING, TAG_MAPPING } from '@/types/transfers/timeline.types';
 
 export class TimelineFormatters {
   

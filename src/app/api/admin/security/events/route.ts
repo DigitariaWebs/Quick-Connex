@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
       }
     );
     
-    if (!updated || updated.modifiedCount === 0) {
+    if (!updated) {
       return NextResponse.json(
         { 
           success: false, 

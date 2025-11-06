@@ -4,7 +4,7 @@
  * Functions for filtering and processing timeline items.
  */
 
-import { TimelineItem, TimelineQueryOptions } from '@/types/timeline';
+import { TimelineItem, TimelineQueryOptions } from '@/types/transfers/timeline.types';
 
 /**
  * Apply filters and sorting to timeline items

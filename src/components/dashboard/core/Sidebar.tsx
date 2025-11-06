@@ -15,7 +15,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LogoutConfirmationModal from "@/components/shared/modals/LogoutConfirmationModal";
-import type { User as UserType } from "@/types/user";
+import type { User as UserType } from "@/types/auth/user.types";
 
 interface SidebarProps {
   user: UserType;

@@ -1,15 +1,17 @@
 /**
- * User Management Types
+ * User Types
  * 
- * Comprehensive type definitions for user management system
+ * User domain types and related interfaces.
  */
+
+export type UserRole = 'employee' | 'manager' | 'admin' | 'super_admin';
 
 export interface User {
   _id: string;
   firstName: string;
   lastName: string;
   email: string;
-  userType: 'employee' | 'manager' | 'admin' | 'super_admin';
+  userType: UserRole;
   status: 'pending' | 'approved' | 'rejected' | 'suspended';
   phone: string;
   post?: string;
@@ -73,6 +75,26 @@ export interface User {
   }>;
 }
 
+export interface AuthUser {
+  _id: string;
+  email: string;
+  userType: UserRole;
+  firstName: string;
+  lastName: string;
+  status: 'pending' | 'approved' | 'rejected' | 'suspended';
+}
+
+export interface IDocumentReference {
+  fileId: string;
+  documentType: 'cv' | 'opiqPermit' | 'rcr';
+  originalName: string;
+  mimeType: string;
+  size: number;
+  checksum: string;
+  uploadedAt: Date;
+}
+
+// User Management Types
 export interface UserStats {
   total: number;
   approved: number;
@@ -138,7 +160,8 @@ export interface UserPermission {
   level: 'read' | 'write' | 'admin';
 }
 
-export interface UserRole {
+// UserRole - Database role interface (different from UserRole type alias)
+export interface UserRoleInterface {
   _id: string;
   name: string;
   description: string;
@@ -165,29 +188,7 @@ export interface UserExportOptions {
   includePermissions: boolean;
 }
 
-export interface UserListResponse {
-  users: User[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrev: boolean;
-}
-
-export interface UserStatsResponse {
-  stats: UserStats;
-  lastUpdated: Date;
-}
-
-export interface UserActivityResponse {
-  activities: UserActivity[];
-  total: number;
-  page: number;
-  limit: number;
-}
-
-// User action types for the floating action menu
+// UI Configuration Types
 export interface UserAction {
   id: string;
   label: string;
@@ -198,7 +199,6 @@ export interface UserAction {
   permissions: string[];
 }
 
-// User status configuration for consistent styling
 export interface UserStatusConfig {
   label: string;
   color: string;
@@ -208,7 +208,7 @@ export interface UserStatusConfig {
   icon: any;
 }
 
-// User role configuration for consistent styling
+// User role configuration for consistent styling (UI configuration)
 export interface UserRoleConfig {
   label: string;
   color: string;
@@ -219,7 +219,6 @@ export interface UserRoleConfig {
   level: number;
 }
 
-// User statistics card configuration
 export interface UserStatCard {
   id: string;
   title: string;
@@ -234,3 +233,4 @@ export interface UserStatCard {
   iconColor: string;
   borderColor: string;
 }
+

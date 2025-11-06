@@ -1,7 +1,7 @@
 /**
- * Timeline Types and Interfaces
+ * Timeline Types
  * 
- * Defines the structure for timeline data and related types
+ * Timeline-related types for transfers.
  */
 
 import { AuditAction, AuditCategory, ActorType, RiskLevel } from '@/models/AuditLog';
@@ -234,3 +234,4 @@ export const TAG_MAPPING: Record<string, string[]> = {
   'system_maintenance': ['system', 'infrastructure'],
   'api_error': ['error', 'technical', 'api']
 };
+

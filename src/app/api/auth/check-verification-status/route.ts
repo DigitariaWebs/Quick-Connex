@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     const user = await DatabaseService.findOne(
       User,
       { $or: orConditions },
-      { projection: { emailVerified: 1, phoneVerified: 1 } }
+      { select: { emailVerified: 1, phoneVerified: 1 } }
     );
 
     if (!user) {
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           success: false,
-          error: error.errors[0]?.message || 'Invalid request data'
+          error: error.issues[0]?.message || 'Invalid request data'
         },
         { status: 400 }
       );

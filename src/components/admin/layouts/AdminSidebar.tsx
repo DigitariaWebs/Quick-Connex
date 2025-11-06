@@ -20,7 +20,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LogoutConfirmationModal from "@/components/shared/modals/LogoutConfirmationModal";
-import type { User } from "@/types/user";
+import type { User } from "@/types/auth/user.types";
 
 interface AdminSidebarProps {
   user: User;
