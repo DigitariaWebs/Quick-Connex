@@ -230,7 +230,11 @@ export default function EmployeeDashboard() {
                   acceptedCount={stats.totalAccepted}
                   scheduledToday={stats.scheduledToday}
                   onNewTransfer={() => setIsTransferModalOpen(true)}
-                  onViewPending={() => setIsPendingModalOpen(true)}
+                  onViewPending={
+                    user.userType === "manager"
+                      ? () => setIsPendingModalOpen(true)
+                      : undefined
+                  }
                   onViewUrgent={() => router.push("/transfers?priority=urgent")}
                   onViewAccepted={() => setIsMyTransfersModalOpen(true)}
                   onViewSchedule={() => setIsScheduleModalOpen(true)}
@@ -282,8 +286,8 @@ export default function EmployeeDashboard() {
         }}
       />
 
-      {/* Pending Transfers Modal */}
-      {user && (
+      {/* Pending Transfers Modal - Only for Managers */}
+      {user && user.userType === "manager" && (
         <PendingTransfersModal
           isOpen={isPendingModalOpen}
           onClose={() => setIsPendingModalOpen(false)}

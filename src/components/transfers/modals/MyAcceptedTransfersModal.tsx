@@ -7,7 +7,6 @@ import {
   Search,
   Filter,
   ChevronDown,
-  RefreshCw,
   Clock,
   CheckCircle2,
   AlertTriangle,
@@ -95,7 +94,6 @@ export default function MyAcceptedTransfersModal({
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [filter, setFilter] = useState<
     "all" | "in_progress" | "completed" | "cancelled"
   >("all");
@@ -216,17 +214,6 @@ export default function MyAcceptedTransfersModal({
     urgent: transfers.filter((t) => t.priority === "urgent").length,
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await fetchMyTransfers(filter);
-    } catch (error) {
-      console.error("Error refreshing transfers:", error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
   const handleTransferUpdate = (transferId: string) => {
     // Refresh the transfers list to get updated data from server
     fetchMyTransfers(filter);
@@ -307,16 +294,6 @@ export default function MyAcceptedTransfersModal({
                 </h2>
               </div>
               <div className="flex items-center space-x-3">
-                <button
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50"
-                >
-                  <RefreshCw
-                    size={20}
-                    className={isRefreshing ? "animate-spin" : ""}
-                  />
-                </button>
                 <button
                   onClick={onClose}
                   className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"

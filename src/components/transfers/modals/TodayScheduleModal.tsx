@@ -7,7 +7,6 @@ import {
   Search,
   Filter,
   ChevronDown,
-  RefreshCw,
   Clock,
   CheckCircle2,
   AlertTriangle,
@@ -105,7 +104,6 @@ export default function TodayScheduleModal({
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [filter, setFilter] = useState<
     "all" | "in_progress" | "completed" | "scheduled"
   >("all");
@@ -341,17 +339,6 @@ export default function TodayScheduleModal({
     urgent: transfers.filter((t) => t.priority === "urgent").length,
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await fetchTodayTransfers(filter);
-    } catch (error) {
-      console.error("Error refreshing transfers:", error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
   const handleTransferSelect = (transfer: TransferRequest) => {
     if (onSelectTransfer) {
       onSelectTransfer(transfer);
@@ -400,16 +387,6 @@ export default function TodayScheduleModal({
                 </p>
               </div>
               <div className="flex items-center space-x-3">
-                <button
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50"
-                >
-                  <RefreshCw
-                    size={20}
-                    className={isRefreshing ? "animate-spin" : ""}
-                  />
-                </button>
                 <button
                   onClick={onClose}
                   className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"

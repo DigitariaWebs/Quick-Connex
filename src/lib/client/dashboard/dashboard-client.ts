@@ -95,9 +95,41 @@ export class DashboardClient {
   }
 
   /**
+   * Fetch transfer metrics from audit logs
+   */
+  async fetchTransferMetrics(): Promise<{ averageProcessingTime: string; successRate: number }> {
+    try {
+      const result = await this.apiClient.get<{
+        averageProcessingTime: string;
+        successRate: number;
+        totalProcessed?: number;
+        completed?: number;
+        cancelled?: number;
+        sampleSize?: number;
+      }>('/api/dashboard/transfer-metrics');
+      return {
+        averageProcessingTime: result?.averageProcessingTime || '0h',
+        successRate: result?.successRate || 0,
+      };
+    } catch (error) {
+      console.error('Failed to fetch transfer metrics:', error);
+      // Return defaults on error
+      return {
+        averageProcessingTime: '0h',
+        successRate: 0,
+      };
+    }
+  }
+
+  /**
    * Calculate dashboard stats from transfers
    */
-  calculateStats(transfers: Transfer[], userType?: string, userId?: string): DashboardStats {
+  calculateStats(
+    transfers: Transfer[],
+    userType?: string,
+    userId?: string,
+    metrics?: { averageProcessingTime: string; successRate: number }
+  ): DashboardStats {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -114,8 +146,8 @@ export class DashboardClient {
         const scheduledDate = new Date(t.scheduledDate);
         return scheduledDate.toDateString() === today.toDateString();
       }).length,
-      averageProcessingTime: "0h", // This would need to be calculated from historical data
-      successRate: 0, // This would need to be calculated from historical data
+      averageProcessingTime: metrics?.averageProcessingTime || '0h',
+      successRate: metrics?.successRate || 0,
     };
 
     return stats;
@@ -208,18 +240,20 @@ export class DashboardClient {
    */
   async fetchDashboardData(userType?: string, userId?: string): Promise<DashboardData> {
     try {
-      // Fetch all data in parallel
-      const [transfersResult, profileResult] = await Promise.allSettled([
+      // Fetch all data in parallel (including transfer metrics from audit logs)
+      const [transfersResult, profileResult, metricsResult] = await Promise.allSettled([
         this.fetchTransfers({ status: 'all' }),
-        this.fetchProfile().catch(() => ({ stats: this.getDefaultStats(), recentActivity: [] }))
+        this.fetchProfile().catch(() => ({ stats: this.getDefaultStats(), recentActivity: [] })),
+        this.fetchTransferMetrics(),
       ]);
 
       // Process results with fallbacks
       const transfers = transfersResult.status === 'fulfilled' ? transfersResult.value : [];
       const profile = profileResult.status === 'fulfilled' ? profileResult.value : { stats: this.getDefaultStats(), recentActivity: [] };
+      const metrics = metricsResult.status === 'fulfilled' ? metricsResult.value : { averageProcessingTime: '0h', successRate: 0 };
 
-      // Calculate stats
-      const stats = this.calculateStats(transfers, userType, userId);
+      // Calculate stats with metrics from audit logs
+      const stats = this.calculateStats(transfers, userType, userId, metrics);
       const urgentTransfers = this.getUrgentTransfers(transfers);
       const recentActivity = this.processRecentActivity(profile.recentActivity || []);
 

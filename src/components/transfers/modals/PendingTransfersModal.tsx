@@ -7,7 +7,6 @@ import {
   Search,
   Filter,
   ChevronDown,
-  RefreshCw,
   Clock,
   CheckCircle2,
   AlertTriangle,
@@ -99,7 +98,6 @@ export default function PendingTransfersModal({
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [filter, setFilter] = useState<"all" | "urgent" | "low">("all");
 
   // Fetch pending transfers
@@ -121,9 +119,22 @@ export default function PendingTransfersModal({
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setTransfers(data.transfers || []);
+        const responseData = await response.json();
+        // Handle API response structure: { success: true, data: { transfers: [...] } }
+        const transfers =
+          responseData.data?.transfers || responseData.transfers || [];
+        console.log("Pending transfers fetched:", {
+          count: transfers.length,
+          responseStructure: responseData,
+          transfers: transfers.slice(0, 2), // Log first 2 for debugging
+        });
+        setTransfers(transfers);
       } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Failed to load pending transfers:", {
+          status: response.status,
+          error: errorData,
+        });
         setError("Failed to load pending transfers");
         setTransfers([]);
       }
@@ -277,17 +288,6 @@ export default function PendingTransfersModal({
     low: transfers.filter((t) => t.priority === "low").length,
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await fetchPendingTransfers(filter);
-    } catch (error) {
-      console.error("Error refreshing transfers:", error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
   const handleTransferSelect = (transfer: TransferRequest) => {
     if (onSelectTransfer) {
       onSelectTransfer(transfer);
@@ -330,16 +330,6 @@ export default function PendingTransfersModal({
                 </p>
               </div>
               <div className="flex items-center space-x-3">
-                <button
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50"
-                >
-                  <RefreshCw
-                    size={20}
-                    className={isRefreshing ? "animate-spin" : ""}
-                  />
-                </button>
                 <button
                   onClick={onClose}
                   className="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"

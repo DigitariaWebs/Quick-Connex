@@ -60,16 +60,6 @@ export default function QuickActions({
 }: QuickActionsProps) {
   const employeeActions: QuickAction[] = [
     {
-      id: "view-pending",
-      title: "Pending Transfers",
-      description: "Review transfers awaiting your confirmation",
-      icon: <Clock size={20} className="text-orange-600" />,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50 hover:bg-orange-100",
-      onClick: onViewPending || (() => {}),
-      badge: pendingCount,
-    },
-    {
       id: "view-accepted",
       title: "My Accepted Transfers",
       description: "View transfers you have accepted and are working on",
@@ -119,16 +109,6 @@ export default function QuickActions({
       bgColor: "bg-green-50 hover:bg-green-100",
       onClick: onViewPending || (() => {}),
       badge: pendingCount,
-    },
-    {
-      id: "view-urgent",
-      title: "Monitor Urgent",
-      description: "Oversee urgent and STAT transfers",
-      icon: <AlertTriangle size={20} className="text-red-600" />,
-      color: "text-red-600",
-      bgColor: "bg-red-50 hover:bg-red-100",
-      onClick: onViewUrgent || (() => {}),
-      badge: urgentCount,
     },
     {
       id: "generate-report",

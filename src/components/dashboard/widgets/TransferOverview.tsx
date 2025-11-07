@@ -5,7 +5,6 @@ import {
   Clock,
   CheckCircle,
   AlertTriangle,
-  TrendingUp,
   Hospital,
   Users,
   Calendar,
@@ -35,7 +34,6 @@ const StatCard = ({
   icon,
   color,
   bgColor,
-  trend,
 }: {
   title: string;
   value: string | number;
@@ -43,7 +41,6 @@ const StatCard = ({
   icon: React.ReactNode;
   color: string;
   bgColor: string;
-  trend?: "up" | "down" | "neutral";
 }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
@@ -58,31 +55,6 @@ const StatCard = ({
       </div>
       <div className="p-3">{icon}</div>
     </div>
-    {trend && (
-      <div className="mt-4 flex items-center">
-        <TrendingUp
-          size={16}
-          className={`mr-1 ${
-            trend === "up"
-              ? "text-green-500"
-              : trend === "down"
-              ? "text-red-500"
-              : "text-gray-500"
-          }`}
-        />
-        <span
-          className={`text-sm ${
-            trend === "up"
-              ? "text-green-600"
-              : trend === "down"
-              ? "text-red-600"
-              : "text-gray-600"
-          }`}
-        >
-          {trend === "up" ? "↑" : trend === "down" ? "↓" : "→"} vs last week
-        </span>
-      </div>
-    )}
   </motion.div>
 );
 
@@ -100,7 +72,6 @@ export default function TransferOverview({
       icon: <Clock size={24} className="text-amber-600" />,
       color: "text-amber-600",
       bgColor: "bg-amber-50",
-      trend: "neutral" as const,
     },
     {
       title: "Urgent Transfers",
@@ -109,7 +80,6 @@ export default function TransferOverview({
       icon: <AlertTriangle size={24} className="text-red-600" />,
       color: "text-red-600",
       bgColor: "bg-red-50",
-      trend: stats.urgent > 0 ? ("up" as const) : ("neutral" as const),
     },
     {
       title: "Completed Today",
@@ -118,7 +88,6 @@ export default function TransferOverview({
       icon: <CheckCircle size={24} className="text-green-600" />,
       color: "text-green-600",
       bgColor: "bg-green-50",
-      trend: "up" as const,
     },
     {
       title: "Success Rate",
@@ -127,7 +96,6 @@ export default function TransferOverview({
       icon: <Activity size={24} className="text-green-600" />,
       color: "text-green-600",
       bgColor: "bg-green-50",
-      trend: "up" as const,
     },
   ];
 
@@ -139,7 +107,6 @@ export default function TransferOverview({
       icon: <Hospital size={24} className="text-green-600" />,
       color: "text-green-600",
       bgColor: "bg-green-50",
-      trend: "up" as const,
     },
     {
       title: "Avg Processing Time",
@@ -148,7 +115,6 @@ export default function TransferOverview({
       icon: <Clock size={24} className="text-purple-600" />,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
-      trend: "down" as const,
     },
     {
       title: "Success Rate",
@@ -157,7 +123,6 @@ export default function TransferOverview({
       icon: <CheckCircle size={24} className="text-green-600" />,
       color: "text-green-600",
       bgColor: "bg-green-50",
-      trend: "up" as const,
     },
     {
       title: "Today's Schedule",
@@ -166,7 +131,6 @@ export default function TransferOverview({
       icon: <Calendar size={24} className="text-green-600" />,
       color: "text-green-600",
       bgColor: "bg-green-50",
-      trend: "neutral" as const,
     },
   ];
 

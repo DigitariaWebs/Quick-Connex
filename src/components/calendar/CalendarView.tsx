@@ -534,7 +534,7 @@ export default function CalendarView({
             </div>
           </div>
 
-          {/* View Controls and Refresh */}
+          {/* View Controls */}
           <div className="flex items-center justify-between lg:justify-end lg:space-x-2">
             <div className="flex items-center space-x-1 lg:space-x-2">
               {(["month", "week", "day"] as const).map((viewType) => (
@@ -543,7 +543,7 @@ export default function CalendarView({
                   onClick={() => setView(viewType)}
                   className={`w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
                     view === viewType
-                      ? "bg-blue-600 text-white shadow-sm"
+                      ? "bg-green-600 text-white shadow-sm"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
@@ -551,13 +551,6 @@ export default function CalendarView({
                 </button>
               ))}
             </div>
-
-            <button
-              onClick={fetchCalendarEvents}
-              className="w-8 h-8 lg:w-10 lg:h-10 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full flex items-center justify-center transition-colors"
-            >
-              <RefreshCw size={14} className="lg:w-4 lg:h-4" />
-            </button>
           </div>
         </div>
       </div>

@@ -48,25 +48,24 @@ export async function GET(request: NextRequest) {
         if (status === TransferStatus.PENDING) {
           // Employees cannot see pending transfers
           return NextResponse.json({
-      success: true,
-      data: {
-            transfers: [],
-            count: 0
-          
-      }
-    });
+            success: true,
+            data: {
+              transfers: [],
+              count: 0
+            }
+          });
         }
         query.status = status;
       } else {
         // Default: only show approved and active transfers to employees
         query.status = { $in: [TransferStatus.ACCEPTED, TransferStatus.IN_PROGRESS, TransferStatus.COMPLETED, TransferStatus.CANCELLED] };
       }
-    } else if (user.userType === 'manager') {
-      // Managers can see all transfers including pending ones
+    } else if (user.userType === 'manager' || user.userType === 'admin' || user.userType === 'super_admin') {
+      // Managers, admins, and super admins can see all transfers including pending ones
       if (status && status !== 'all') {
         query.status = status;
       }
-      // If no status specified, get all transfers for managers
+      // If no status specified, get all transfers for managers/admins
     }
 
     // Get transfers with populated data using DatabaseService
