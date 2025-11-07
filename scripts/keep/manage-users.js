@@ -8,14 +8,16 @@
  * 2. Filter users by type (managers, employees, admin, super_admin)
  * 3. Delete a specific user by ID
  * 4. Delete multiple users by type
+ * 5. Create a new user (any role) with verified email and phone
  * 
  * Usage:
- *   node scripts/essentials/manage-users.js
+ *   node scripts/keep/manage-users.js
  */
 
 const mongoose = require('mongoose');
 const readline = require('readline');
 const { MongoClient, GridFSBucket } = require('mongodb');
+const bcrypt = require('bcryptjs');
 require('dotenv').config({ path: '.env.local' });
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/patients_management';
@@ -75,6 +77,16 @@ function question(query) {
     });
 }
 
+function normalizePhoneNumber(phone) {
+    let normalized = phone.replace(/[^\d+]/g, '');
+    if (!normalized.startsWith('+') && normalized.startsWith('1')) {
+        normalized = '+' + normalized;
+    } else if (!normalized.startsWith('+')) {
+        normalized = '+1' + normalized;
+    }
+    return normalized;
+}
+
 async function displayMainMenu() {
     console.log('\n' + '='.repeat(80));
     console.log('👥 USER MANAGEMENT SYSTEM');
@@ -84,6 +96,7 @@ async function displayMainMenu() {
     console.log('3. Delete a specific user by ID');
     console.log('4. Delete multiple users by type');
     console.log('5. Show statistics');
+    console.log('6. Create a new user');
     console.log('0. Exit');
     console.log('='.repeat(80));
 }
@@ -379,6 +392,182 @@ async function showStatistics() {
     }
 }
 
+async function createUser() {
+    try {
+        console.log('\n' + '='.repeat(80));
+        console.log('➕ CREATE NEW USER');
+        console.log('='.repeat(80));
+
+        // Get user type
+        console.log('\nUser Types:');
+        console.log('1. employee');
+        console.log('2. manager');
+        console.log('3. admin');
+        console.log('4. super_admin');
+        const typeChoice = await question('\nSelect user type (1-4 or type name): ');
+
+        let userType;
+        if (typeChoice === '1') userType = 'employee';
+        else if (typeChoice === '2') userType = 'manager';
+        else if (typeChoice === '3') userType = 'admin';
+        else if (typeChoice === '4') userType = 'super_admin';
+        else userType = typeChoice.trim().toLowerCase();
+
+        const validTypes = ['employee', 'manager', 'admin', 'super_admin'];
+        if (!validTypes.includes(userType)) {
+            console.log(`\n❌ Invalid user type: ${userType}`);
+            console.log(`Valid types: ${validTypes.join(', ')}`);
+            return false;
+        }
+
+        // Get basic information
+        const firstName = await question('First Name: ');
+        const lastName = await question('Last Name: ');
+        const email = await question('Email: ');
+        const phone = await question('Phone: ');
+        const password = await question('Password (min 6 characters): ');
+
+        // Validate required fields
+        if (!firstName || !lastName || !email || !phone || !password) {
+            console.log('\n❌ All fields are required.');
+            return false;
+        }
+
+        if (password.length < 6) {
+            console.log('\n❌ Password must be at least 6 characters long.');
+            return false;
+        }
+
+        // Normalize email and phone
+        const normalizedEmail = email.toLowerCase().trim();
+        const normalizedPhone = normalizePhoneNumber(phone);
+
+        // Check for existing user
+        const existingUser = await User.findOne({
+            $or: [
+                { email: normalizedEmail },
+                { phone: normalizedPhone }
+            ]
+        });
+
+        if (existingUser) {
+            console.log('\n❌ User with this email or phone already exists.');
+            if (existingUser.email === normalizedEmail) {
+                console.log(`   Email: ${existingUser.email}`);
+            }
+            if (existingUser.phone === normalizedPhone) {
+                console.log(`   Phone: ${existingUser.phone}`);
+            }
+            return false;
+        }
+
+        // Get role-specific fields
+        let post = null;
+        let ciusss = null;
+        let hospital = null;
+
+        if (userType === 'manager') {
+            post = await question('Post/Position (optional, press Enter to skip): ');
+            if (post && post.trim()) {
+                post = post.trim();
+            } else {
+                post = null;
+            }
+
+            const ciusssInput = await question('CIUSSS ID (optional, press Enter to skip): ');
+            if (ciusssInput && ciusssInput.trim() && mongoose.Types.ObjectId.isValid(ciusssInput.trim())) {
+                ciusss = new mongoose.Types.ObjectId(ciusssInput.trim());
+            }
+
+            const hospitalInput = await question('Hospital ID (optional, press Enter to skip): ');
+            if (hospitalInput && hospitalInput.trim() && mongoose.Types.ObjectId.isValid(hospitalInput.trim())) {
+                hospital = new mongoose.Types.ObjectId(hospitalInput.trim());
+            }
+        }
+
+        // Get status
+        console.log('\nStatus options:');
+        console.log('1. pending');
+        console.log('2. approved');
+        console.log('3. rejected');
+        const statusChoice = await question('Select status (1-3, default: approved): ');
+
+        let status = 'approved';
+        if (statusChoice === '1') status = 'pending';
+        else if (statusChoice === '2') status = 'approved';
+        else if (statusChoice === '3') status = 'rejected';
+
+        // Hash password
+        console.log('\n🔐 Hashing password...');
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        // Prepare user document
+        const now = new Date();
+        const userDoc = {
+            userType,
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            email: normalizedEmail,
+            phone: normalizedPhone,
+            password: hashedPassword,
+            status,
+            emailVerified: true,
+            phoneVerified: true,
+            emailVerifiedAt: now,
+            phoneVerifiedAt: now,
+            documents: []
+        };
+
+        // Add role-specific fields
+        if (userType === 'manager' && post) {
+            userDoc.post = post;
+        }
+        if (ciusss) {
+            userDoc.ciusss = ciusss;
+        }
+        if (hospital) {
+            userDoc.hospital = hospital;
+        }
+
+        // Add approval info if approved
+        if (status === 'approved') {
+            userDoc.approvedBy = 'system';
+            userDoc.approvedAt = now;
+        }
+
+        // Create user
+        console.log('\n📝 Creating user...');
+        const user = new User(userDoc);
+        const savedUser = await user.save();
+
+        console.log('\n' + '='.repeat(80));
+        console.log('✅ USER CREATED SUCCESSFULLY');
+        console.log('='.repeat(80));
+        console.log(`🆔 ID: ${savedUser._id}`);
+        console.log(`👤 Name: ${savedUser.firstName} ${savedUser.lastName}`);
+        console.log(`📧 Email: ${savedUser.email}`);
+        console.log(`📱 Phone: ${savedUser.phone}`);
+        console.log(`👤 Type: ${savedUser.userType}`);
+        console.log(`📊 Status: ${savedUser.status}`);
+        console.log(`✉️  Email Verified: ✅ Yes`);
+        console.log(`📱 Phone Verified: ✅ Yes`);
+        if (savedUser.post) {
+            console.log(`💼 Post: ${savedUser.post}`);
+        }
+        console.log('='.repeat(80));
+
+        return true;
+
+    } catch (error) {
+        if (error.code === 11000) {
+            console.error('\n❌ Error: User with this email or phone already exists.');
+        } else {
+            console.error('\n❌ Error creating user:', error.message);
+        }
+        throw error;
+    }
+}
+
 async function main() {
     try {
         console.log('🔌 Connecting to MongoDB...');
@@ -447,6 +636,11 @@ async function main() {
                     await question('\nPress Enter to continue...');
                     break;
 
+                case '6':
+                    await createUser();
+                    await question('\nPress Enter to continue...');
+                    break;
+
                 case '0':
                     running = false;
                     console.log('\n👋 Goodbye!');
@@ -473,5 +667,5 @@ if (require.main === module) {
     main().catch(console.error);
 }
 
-module.exports = { listAllUsers, listUsersByType, deleteUserById, deleteUsersByType, showStatistics };
+module.exports = { listAllUsers, listUsersByType, deleteUserById, deleteUsersByType, showStatistics, createUser };
 
