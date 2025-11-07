@@ -15,3 +15,6 @@ export * from './transferStyles';
 
 // User Styles
 export * from './userStyles';
+
+// Assets
+export * from './assets';

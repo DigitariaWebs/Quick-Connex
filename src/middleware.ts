@@ -46,6 +46,16 @@ function getLoginRedirectRoute(userType: string): string {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Skip middleware for static files (images, uploads, etc.)
+  if (
+    pathname.startsWith('/images/') ||
+    pathname.startsWith('/uploads/') ||
+    pathname === '/sw.js' ||
+    /\.(png|jpg|jpeg|gif|svg|ico|webp|pdf|css|js|woff|woff2|ttf|eot)$/i.test(pathname)
+  ) {
+    return NextResponse.next();
+  }
+
   // Check if route is public
   if (isPublicRoute(pathname) || isPublicApiRoute(pathname) || isTransferApprovalRoute(pathname)) {
     return NextResponse.next();
@@ -127,6 +137,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * 
+     * Note: Static files in /images/ and /uploads/ are handled in the middleware function itself
      */
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],

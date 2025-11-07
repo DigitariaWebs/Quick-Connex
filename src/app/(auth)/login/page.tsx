@@ -8,6 +8,7 @@ import { useLoginForm } from "@/hooks/auth/useLoginForm";
 import { FormInput } from "@/components/shared/forms/FormInput";
 import { SubmitButton } from "@/components/shared/forms/SubmitButton";
 import { Icon } from "@/components/shared/ui/icons/Icon";
+import { LOGO_PATH } from "@/constants";
 
 function LoginForm() {
   const router = useRouter();
@@ -98,6 +99,13 @@ function LoginForm() {
         >
           <div className="bg-white rounded-2xl lg:rounded-3xl p-6 lg:p-12 shadow-2xl max-h-[90vh] min-h-screen lg:min-h-[700px] overflow-y-auto">
             <div className="text-center mb-6 lg:mb-10">
+              <div className="flex justify-center mb-4 lg:mb-6">
+                <img
+                  src={LOGO_PATH}
+                  alt="Quick Connex Logo"
+                  className="h-auto w-auto max-w-[200px]"
+                />
+              </div>
               <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">
                 Sign In
               </h2>

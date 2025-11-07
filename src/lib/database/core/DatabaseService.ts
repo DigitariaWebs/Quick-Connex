@@ -174,19 +174,56 @@ export class DatabaseService {
 
   /**
    * Ensure database connection before operations
+   * Waits for in-progress connections and verifies connection is ready
    */
   private static async ensureConnection(): Promise<void> {
     const instance = DatabaseService.getInstance();
     
-    if (!instance.connection || instance.connection.readyState !== 1) {
-      try {
-        log.database('Ensuring connection', { operation: 'ensure_connection' });
-        await instance.performConnection();
-        log.database('Connection ensured', { operation: 'ensure_connection' });
-      } catch (error) {
-        log.error('Failed to ensure connection', error, { operation: 'ensure_connection' });
-        throw new DatabaseError(`Database connection failed: ${error instanceof Error ? error.message : String(error)}`);
+    // If connection is ready, return immediately
+    if (instance.connection && instance.connection.readyState === 1) {
+      return;
+    }
+    
+    try {
+      log.database('Ensuring connection', { 
+        operation: 'ensure_connection',
+        currentState: instance.connection?.readyState || 'no_connection',
+        isConnecting: instance.isConnecting
+      });
+      
+      // Wait for connection (this will wait for in-progress connections or start a new one)
+      const connection = await instance.performConnection();
+      
+      // Verify connection is actually ready after waiting
+      if (!connection || connection.readyState !== 1) {
+        // Connection might be in a transitional state, wait a bit and retry
+        await sleep(100);
+        
+        // Check again after brief wait
+        if (!instance.connection || instance.connection.readyState !== 1) {
+          // If still not ready and there's a connection promise, wait for it
+          if (instance.isConnecting && instance.connectionPromise) {
+            await instance.connectionPromise;
+          }
+          
+          // Final verification
+          if (!instance.connection || instance.connection.readyState !== 1) {
+            throw new DatabaseError(
+              `Connection not ready after establishment. State: ${instance.connection?.readyState || 'no_connection'}`
+            );
+          }
+        }
       }
+      
+      log.database('Connection ensured', { 
+        operation: 'ensure_connection',
+        readyState: instance.connection?.readyState
+      });
+    } catch (error) {
+      log.error('Failed to ensure connection', error, { operation: 'ensure_connection' });
+      throw new DatabaseError(
+        `Database connection failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -369,6 +406,9 @@ export class DatabaseService {
     // Ensure queryMonitor is initialized
     DatabaseService.ensureQueryMonitor();
     
+    // Ensure database connection
+    await DatabaseService.ensureConnection();
+    
     try {
       const query = model.findById(validatedId);
       
@@ -462,6 +502,9 @@ export class DatabaseService {
     // Ensure queryMonitor is initialized
     DatabaseService.ensureQueryMonitor();
     
+    // Ensure database connection
+    await DatabaseService.ensureConnection();
+    
     try {
       const mongoQuery = model.find(sanitizedQuery);
       
@@ -515,6 +558,12 @@ export class DatabaseService {
     const validatedOptions = createQueryOptions(options);
     const sanitizedQuery = query;
     const paginationParams = pagination;
+    
+    // Ensure queryMonitor is initialized
+    DatabaseService.ensureQueryMonitor();
+    
+    // Ensure database connection
+    await DatabaseService.ensureConnection();
     
     try {
       const [data, totalCount] = await Promise.all([
@@ -752,6 +801,12 @@ export class DatabaseService {
     const validatedOptions = createQueryOptions(options);
     const sanitizedQuery = query;
     
+    // Ensure queryMonitor is initialized
+    DatabaseService.ensureQueryMonitor();
+    
+    // Ensure database connection
+    await DatabaseService.ensureConnection();
+    
     try {
       const result = await model.countDocuments(sanitizedQuery, { 
         session: validatedOptions.session 
@@ -778,6 +833,12 @@ export class DatabaseService {
     const startTime = Date.now();
     const sanitizedQuery = query;
     
+    // Ensure queryMonitor is initialized
+    DatabaseService.ensureQueryMonitor();
+    
+    // Ensure database connection
+    await DatabaseService.ensureConnection();
+    
     try {
       const result = await model.exists(sanitizedQuery).exec();
       
@@ -802,6 +863,12 @@ export class DatabaseService {
   ): Promise<any[]> {
     const startTime = Date.now();
     const sanitizedPipeline = pipeline;
+    
+    // Ensure queryMonitor is initialized
+    DatabaseService.ensureQueryMonitor();
+    
+    // Ensure database connection
+    await DatabaseService.ensureConnection();
     
     try {
       const result = await model.aggregate(sanitizedPipeline, options).exec();

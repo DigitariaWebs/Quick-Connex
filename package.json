@@ -13,6 +13,7 @@
     "dev:standard": "next dev --turbopack",
     "dev:verbose": "next dev",
     "build:analyze": "ANALYZE=true next build --turbopack",
+    "manage-users": "node scripts/keep/manage-users.js",
     "create-admin": "node scripts/essentials/create-admin.js",
     "create-super-admin": "node scripts/essentials/create-admin.js --super",
     "approve-user": "node scripts/essentials/approve-user.js",

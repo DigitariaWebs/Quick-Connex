@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { useSignUpForm } from "@/hooks/auth/useSignUpForm";
 import { UserTypeButton } from "@/components/shared/forms/UserTypeButton";
 import { TermsModal } from "@/components/shared/modals/TermsModal";
+import { LOGO_PATH } from "@/constants";
 
 // Validation status type
 type ValidationStatus = "idle" | "checking" | "exists" | "available" | "error";
@@ -719,6 +720,13 @@ export default function SignUpPage() {
         >
           <div className="bg-white rounded-2xl lg:rounded-3xl p-6 lg:p-12 shadow-2xl max-h-[90vh] min-h-screen lg:min-h-[700px] overflow-y-auto hide-scrollbar">
             <div className="text-center mb-6 lg:mb-8">
+              <div className="flex justify-center mb-4 lg:mb-6">
+                <img
+                  src={LOGO_PATH}
+                  alt="Quick Connex Logo"
+                  className="h-auto w-auto max-w-[200px]"
+                />
+              </div>
               <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">
                 Sign Up
               </h2>
