@@ -9,36 +9,20 @@ import DashboardHeader from "@/components/dashboard/core/DashboardHeader";
 
 export default function NursesPage() {
   const router = useRouter();
-  const {
-    user,
-    isLoading: authLoading,
-    isAuthenticated,
-    logout,
-  } = useSession();
+  const { user, isLoading: authLoading, logout } = useSession();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push("/login");
-    }
-  }, [authLoading, isAuthenticated, router]);
-
-  // Show loading spinner while checking authentication
+  // Show loading spinner while fetching user data
+  // Middleware handles authentication, so we trust user is authenticated if page loads
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Verifying authentication...</p>
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     );
-  }
-
-  // Don't render page if not authenticated
-  if (!isAuthenticated) {
-    return null;
   }
 
   return (

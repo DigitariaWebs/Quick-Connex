@@ -20,89 +20,23 @@ export default function AdminLayout({
   showBackButton = false,
 }: AdminLayoutProps) {
   const router = useRouter();
-  const { user, isLoading, isAuthenticated, logout } = useSession();
+  const { user, isLoading, logout } = useSession();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Handle authentication and authorization checks
-  // Add a delay to prevent race condition where SessionContext hasn't finished initial check yet
-  useEffect(() => {
-    // Don't redirect while still loading
-    if (isLoading) {
-      return;
-    }
-
-    // Give SessionContext a moment to complete its initial auth check
-    // This prevents premature redirects after login
-    const checkTimer = setTimeout(() => {
-      // If not authenticated, redirect to login
-      if (!isAuthenticated) {
-        console.log(
-          "🔒 AdminLayout: User not authenticated, redirecting to login",
-          {
-            isLoading,
-            isAuthenticated,
-            hasUser: !!user,
-          }
-        );
-        router.push("/login");
-        return;
-      }
-
-      // If authenticated but no user data yet, wait
-      if (!user) {
-        console.log("⏳ AdminLayout: Waiting for user data...");
-        return;
-      }
-
-      // Check if user is admin
-      const isAdmin =
-        user?.userType === "admin" || user?.userType === "super_admin";
-
-      if (!isAdmin) {
-        console.log(
-          "🔒 AdminLayout: User is not admin, redirecting to dashboard"
-        );
-        router.push("/dashboard");
-      } else {
-        console.log("✅ AdminLayout: User is admin, allowing access");
-      }
-    }, 500); // Small delay to allow SessionContext to finish
-
-    return () => clearTimeout(checkTimer);
-  }, [isLoading, isAuthenticated, user, router]);
-
-  // Debug authentication state
-  useEffect(() => {
-    console.log("🔍 AdminLayout: Auth state debug:", {
-      isLoading,
-      isAuthenticated,
-      hasUser: !!user,
-      userType: user?.userType,
-    });
-  }, [isLoading, isAuthenticated, user]);
-
-  // Show loading spinner while checking authentication
-  if (isLoading) {
+  // Show loading spinner while fetching user data
+  // Middleware handles authentication and admin role verification, so we trust user is authenticated and authorized if page loads
+  if (isLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-800">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto"></div>
           <p className="mt-6 text-white text-lg font-medium">
-            Verifying admin access...
+            Loading admin dashboard...
           </p>
         </div>
       </div>
     );
-  }
-
-  // Don't render if not authenticated or not admin
-  if (!isAuthenticated || !user) {
-    return null;
-  }
-
-  if (user.userType !== "admin" && user.userType !== "super_admin") {
-    return null;
   }
 
   return (

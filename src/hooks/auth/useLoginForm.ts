@@ -1,7 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { authClient } from '@/lib/client';
 import { ApiError } from '@/lib/client';
-import { verifyAuthCookie } from '@/lib/auth/utils/cookie-verification';
 import { toUserError } from '@/lib/utils/error-handling';
 
 /**
@@ -31,36 +30,24 @@ export function useLoginForm() {
       console.log('👤 User data:', result.user);
       console.log('👤 User type:', result.user.userType);
       
-      // Verify cookie is actually set before redirecting
-      setMessage({ type: 'success', text: 'Login successful! Verifying...' });
-      console.log('🔍 Verifying authentication cookie before redirect...');
-      
-      const cookieVerified = await verifyAuthCookie(3, 200);
-      
-      if (!cookieVerified) {
-        console.error('❌ Cookie verification failed - cannot redirect safely');
-        setMessage({ 
-          type: 'error', 
-          text: 'Authentication cookie not available. Please try logging in again.' 
-        });
-        setIsLoading(false);
-        return;
-      }
-      
       // Get redirect path using AuthClient business logic
       const redirectPath = authClient.getRedirectPath(result.user.userType);
       
-      console.log(`✅ Cookie verified - Redirecting ${result.user.userType} to ${redirectPath}`);
+      console.log(`✅ Redirecting ${result.user.userType} to ${redirectPath}`);
       
-      // Use full page reload to ensure cookie is available when SessionContext initializes
-      // This prevents race conditions where the dashboard checks auth before SessionContext finishes
+      // Show success message
       setMessage({ type: 'success', text: 'Login successful! Redirecting...' });
       
-      // Small delay to show success message, then full page reload
-      setTimeout(() => {
-        console.log('🚀 Executing redirect with full page reload to:', redirectPath);
-        window.location.href = redirectPath;
-      }, 300);
+      // Delay to ensure cookie is fully set in browser before redirect
+      // This prevents race conditions where middleware doesn't see the cookie
+      // Increased delay to ensure cookie is available for subsequent requests
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log('🚀 Performing redirect to:', redirectPath);
+      console.log('🍪 Cookie should be set by now');
+      
+      // Use full page reload to ensure clean state and cookie availability
+      window.location.href = redirectPath;
       
     } catch (error) {
       console.error('Login error:', error);

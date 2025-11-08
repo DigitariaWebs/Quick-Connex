@@ -87,12 +87,7 @@ interface TransferRequest {
 
 export default function MyTransfersPage() {
   const router = useRouter();
-  const {
-    user,
-    isLoading: authLoading,
-    isAuthenticated,
-    logout,
-  } = useSession();
+  const { user, isLoading: authLoading, logout } = useSession();
   const [transfers, setTransfers] = useState<TransferRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,17 +103,8 @@ export default function MyTransfersPage() {
   const [selectedTransfer, setSelectedTransfer] =
     useState<TransferRequest | null>(null);
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push("/login");
-    }
-  }, [authLoading, isAuthenticated, router]);
-
   // Fetch accepted transfers from API
   const fetchMyTransfers = async (statusFilter?: string) => {
-    if (!isAuthenticated) return; // Don't fetch if not authenticated
-
     setLoading(true);
     setError(null);
 
@@ -158,19 +144,15 @@ export default function MyTransfersPage() {
     }
   };
 
-  // Initial fetch when authenticated
+  // Initial fetch on mount
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchMyTransfers();
-    }
-  }, [isAuthenticated]);
+    fetchMyTransfers();
+  }, []);
 
   // Refetch when filter changes
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchMyTransfers(filter);
-    }
-  }, [filter, isAuthenticated]);
+    fetchMyTransfers(filter);
+  }, [filter]);
 
   // Filter transfers based on priority and search term (status filtering is done server-side)
   let filteredTransfers = transfers.filter((transfer) => {
@@ -282,21 +264,17 @@ export default function MyTransfersPage() {
     show: { opacity: 1, y: 0 },
   };
 
-  // Show loading spinner while checking authentication
+  // Show loading spinner while fetching user data
+  // Middleware handles authentication, so we trust user is authenticated if page loads
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Verifying authentication...</p>
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     );
-  }
-
-  // Don't render page if not authenticated
-  if (!isAuthenticated) {
-    return null;
   }
 
   return (

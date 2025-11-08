@@ -64,7 +64,6 @@ export interface User {
 export interface SessionContextType {
   user: User | null;
   session: SessionInfo | null;
-  isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
   checkAuth: () => Promise<void>;
@@ -81,7 +80,6 @@ const SessionContext = createContext<SessionContextType | undefined>(undefined);
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<SessionInfo | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -111,7 +109,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const data = await response.json();
 
         if (data.success && data.user) {
-          log.info("User authenticated successfully", {
+          log.info("User data fetched successfully", {
             operation: "auth_check_success",
             email: data.user.email,
             userType: data.user.userType,
@@ -120,14 +118,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
           setUser(data.user);
           setSession(data.session || null);
-          setIsAuthenticated(true);
 
           // Set up automatic session refresh
           if (data.session) {
             scheduleSessionRefresh(data.session.remainingTime);
           }
         } else {
-          log.debug("Authentication failed - no user data", {
+          log.debug("No user data available", {
             operation: "auth_check_failed",
             reason: "no_user_data",
             timestamp: new Date(),
@@ -135,10 +132,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
           setUser(null);
           setSession(null);
-          setIsAuthenticated(false);
         }
       } else {
-        log.debug("Authentication failed - server error", {
+        log.debug("Failed to fetch user data - server error", {
           operation: "auth_check_failed",
           status: response.status,
           statusText: response.statusText,
@@ -147,18 +143,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
         setUser(null);
         setSession(null);
-        setIsAuthenticated(false);
       }
     } catch (error) {
-      log.error("Authentication check error", error, {
+      log.error("Error fetching user data", error, {
         operation: "auth_check_error",
         timestamp: new Date(),
       });
 
       setUser(null);
       setSession(null);
-      setIsAuthenticated(false);
-      setError("Authentication check failed");
+      setError("Failed to fetch user data");
     } finally {
       setIsLoading(false);
     }
@@ -167,13 +161,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   // Refresh session before expiration
   const refreshSession = useCallback(async (): Promise<boolean> => {
     try {
-      // Don't refresh if not authenticated
-      if (!isAuthenticated) {
+      // Don't refresh if no user or session
+      if (!user || !session) {
         return false;
       }
 
       // Don't refresh if session is brand new (within first 2 minutes)
-      if (session && session.sessionAge < 2) {
+      if (session.sessionAge < 2) {
         log.debug("Skipping refresh for new session", {
           operation: "session_refresh_skipped",
           sessionAge: session.sessionAge,
@@ -207,7 +201,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           return true;
         }
       } else if (response.status === 401) {
-        // Session is invalid, clear state and redirect
+        // Session is invalid, clear state
+        // Middleware will handle redirect to login
         log.debug("Session invalid, clearing state", {
           operation: "session_refresh_failed",
           reason: "session_invalid",
@@ -216,8 +211,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
         setUser(null);
         setSession(null);
-        setIsAuthenticated(false);
-        router.push("/login");
         return false;
       }
 
@@ -231,7 +224,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setError("Session refresh failed");
       return false;
     }
-  }, [isAuthenticated, router]);
+  }, [user, session, router]);
 
   // Logout current session
   const logout = useCallback(async () => {
@@ -244,7 +237,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       // Clear state first to stop any ongoing refresh calls
       setUser(null);
       setSession(null);
-      setIsAuthenticated(false);
       setError(null);
 
       // Call the new backend logout endpoint
@@ -262,10 +254,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
       setError("Logout failed");
     } finally {
-      // Ensure state is cleared and redirect
+      // Ensure state is cleared
+      // Middleware will handle redirect to login
       setUser(null);
       setSession(null);
-      setIsAuthenticated(false);
       router.push("/login");
     }
   }, [router]);
@@ -281,7 +273,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       // Clear state first to stop any ongoing refresh calls
       setUser(null);
       setSession(null);
-      setIsAuthenticated(false);
       setError(null);
 
       // Call the new backend logout endpoint (which handles all sessions)
@@ -299,10 +290,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
       setError("Logout all sessions failed");
     } finally {
-      // Ensure state is cleared and redirect
+      // Ensure state is cleared
+      // Middleware will handle redirect to login
       setUser(null);
       setSession(null);
-      setIsAuthenticated(false);
       router.push("/login");
     }
   }, [router]);
@@ -498,23 +489,22 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     checkAuth();
   }, [checkAuth]);
 
-  // Set up periodic auth checks (every 5 minutes) - only when authenticated
+  // Set up periodic user data refresh (every 5 minutes) - only when user exists
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!user) return;
 
     const interval = setInterval(() => {
-      if (isAuthenticated) {
+      if (user) {
         checkAuth();
       }
     }, 5 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [checkAuth, isAuthenticated]);
+  }, [checkAuth, user]);
 
   const value: SessionContextType = {
     user,
     session,
-    isAuthenticated,
     isLoading,
     error,
     checkAuth,

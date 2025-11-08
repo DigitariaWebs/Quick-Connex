@@ -21,7 +21,7 @@ interface RecentActivityData {
 }
 
 export function useRecentActivity(maxItems: number = 5) {
-  const { user, isAuthenticated } = useSession();
+  const { user } = useSession();
   const [data, setData] = useState<RecentActivityData>({
     activities: [],
     loading: true,
@@ -29,7 +29,7 @@ export function useRecentActivity(maxItems: number = 5) {
   });
 
   const fetchRecentActivity = async (showLoading = false) => {
-    if (!isAuthenticated || !user) return;
+    if (!user) return;
 
     try {
       setData(prev => ({ ...prev, loading: showLoading, error: null }));
@@ -123,8 +123,11 @@ export function useRecentActivity(maxItems: number = 5) {
 
   useEffect(() => {
     // Initial load with loading state
-    fetchRecentActivity(true);
-  }, [isAuthenticated, user, maxItems]);
+    // Middleware protects routes, so if page loads, user should be authenticated
+    if (user) {
+      fetchRecentActivity(true);
+    }
+  }, [user, maxItems]);
 
   return {
     ...data,

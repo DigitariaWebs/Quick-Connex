@@ -10,7 +10,7 @@ import { DashboardData } from '@/lib/client';
  * Follows Clean Architecture by separating UI concerns from business logic.
  */
 export function useDashboardData() {
-  const { user, isAuthenticated } = useSession();
+  const { user } = useSession();
   const [data, setData] = useState<DashboardData>({
     stats: {
       totalPending: 0,
@@ -29,8 +29,8 @@ export function useDashboardData() {
   });
 
   const fetchData = useCallback(async () => {
-    if (!isAuthenticated || !user) {
-      console.log('🔄 Dashboard: No user or not authenticated, skipping fetch');
+    if (!user) {
+      console.log('🔄 Dashboard: No user, skipping fetch');
       return;
     }
     
@@ -51,16 +51,17 @@ export function useDashboardData() {
         error: error instanceof Error ? error.message : 'Failed to fetch dashboard data' 
       }));
     }
-  }, [isAuthenticated, user]);
+  }, [user]);
 
   // Realtime removed: no listeners; future realtime can be reintroduced cleanly
 
   // Initial data fetch
+  // Middleware protects routes, so if page loads, user should be authenticated
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (user) {
       fetchData();
     }
-  }, [isAuthenticated, user, fetchData]);
+  }, [user, fetchData]);
 
   return {
     ...data,

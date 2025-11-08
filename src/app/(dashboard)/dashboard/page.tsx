@@ -30,12 +30,7 @@ interface User {
 
 export default function EmployeeDashboard() {
   const router = useRouter();
-  const {
-    user,
-    isLoading: authLoading,
-    isAuthenticated,
-    logout,
-  } = useSession();
+  const { user, isLoading: authLoading, logout } = useSession();
   const {
     stats,
     urgentTransfers,
@@ -52,52 +47,17 @@ export default function EmployeeDashboard() {
   const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
-  // Redirect to login if not authenticated
-  // Add a small delay to prevent race condition where SessionContext hasn't finished initial check yet
-  useEffect(() => {
-    // Don't redirect while still loading
-    if (authLoading) {
-      return;
-    }
-
-    // Give SessionContext a moment to complete its initial auth check
-    // This prevents premature redirects after login
-    const checkTimer = setTimeout(() => {
-      if (!isAuthenticated) {
-        console.log(
-          "🔒 Dashboard: User not authenticated, redirecting to login",
-          {
-            authLoading,
-            isAuthenticated,
-            hasUser: !!user,
-          }
-        );
-        router.push("/login");
-      }
-    }, 500); // Small delay to allow SessionContext to finish
-
-    return () => clearTimeout(checkTimer);
-  }, [authLoading, isAuthenticated, router, user]);
-
-  // Show loading spinner only for authentication or initial data load
+  // Show loading spinner only for initial data load
+  // Middleware handles authentication, so we trust user is authenticated if page loads
   if (authLoading || (dataLoading && !user)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">
-            {authLoading
-              ? "Verifying authentication..."
-              : "Loading dashboard data..."}
-          </p>
+          <p className="mt-4 text-gray-600">Loading dashboard data...</p>
         </div>
       </div>
     );
-  }
-
-  // Don't render dashboard if not authenticated
-  if (!isAuthenticated) {
-    return null;
   }
 
   // Show error state if data loading failed
