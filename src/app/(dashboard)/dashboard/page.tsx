@@ -170,16 +170,6 @@ export default function EmployeeDashboard() {
           />
         )}
 
-        {/* Background refresh indicator */}
-        {dataLoading && user && (
-          <div className="fixed top-4 right-4 z-50">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 flex items-center space-x-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              <span className="text-blue-700 text-sm">Updating data...</span>
-            </div>
-          </div>
-        )}
-
         <div className="p-4 lg:p-6">
           {/* Urgent Alerts - DISABLED */}
           {/* {user && urgentTransfers.length > 0 && (

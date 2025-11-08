@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { useSignUpForm } from "@/hooks/auth/useSignUpForm";
 import { UserTypeButton } from "@/components/shared/forms/UserTypeButton";
 import { TermsModal } from "@/components/shared/modals/TermsModal";
-import { LOGO_PATH } from "@/constants";
+import { LOGO_PATH, ASSETS } from "@/constants";
 
 // Validation status type
 type ValidationStatus = "idle" | "checking" | "exists" | "available" | "error";
@@ -673,24 +673,15 @@ export default function SignUpPage() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row relative">
-      {/* Animated Gradient Background */}
-      <motion.div
-        className="absolute inset-0 z-0"
+      {/* Background Image */}
+      <div
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
         style={{
-          background:
-            "linear-gradient(135deg, #dbeafe 0%, #88f5c3 25%, #a7f3d0 50%, #bfdbfe 75%, #d4fce8 100%)",
-          backgroundSize: "400% 400%",
-        }}
-        animate={{
-          backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          repeatType: "mirror",
-          ease: "easeInOut",
+          backgroundImage: `url(${ASSETS.images.background})`,
         }}
       />
+      {/* Dark Overlay for better text readability */}
+      <div className="absolute inset-0 z-0 bg-black/40" />
 
       {/* Left Side Content - Hidden on mobile, shown on desktop */}
       <div className="hidden lg:flex flex-1 items-center justify-center px-8 lg:px-16 z-10">
@@ -698,12 +689,12 @@ export default function SignUpPage() {
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="max-w-lg text-black"
+          className="max-w-lg text-white"
         >
-          <h1 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight">
+          <h1 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight drop-shadow-lg">
             Fast, Efficient and Productive
           </h1>
-          <p className="text-lg lg:text-xl text-black/80 leading-relaxed">
+          <p className="text-lg lg:text-xl text-white/90 leading-relaxed drop-shadow-md">
             Join Quick Connex and streamline your healthcare workflow with our
             fast and efficient patient management platform
           </p>
