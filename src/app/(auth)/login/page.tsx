@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useLoginForm } from "@/hooks/auth/useLoginForm";
-import { useSession } from "@/contexts/SessionContext";
 import { FormInput } from "@/components/shared/forms/FormInput";
 import { SubmitButton } from "@/components/shared/forms/SubmitButton";
 import { Icon } from "@/components/shared/ui/icons/Icon";
@@ -15,24 +14,11 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isLoading, message, handleSubmit } = useLoginForm();
-  const { user, isLoading: authLoading } = useSession();
   const [showPassword, setShowPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
-  // Redirect authenticated users away from login page
-  useEffect(() => {
-    if (!authLoading && user) {
-      const redirectPath =
-        user.userType === "admin" || user.userType === "super_admin"
-          ? "/admin/dashboard"
-          : "/dashboard";
-      console.log(
-        "🔐 User already authenticated, redirecting to:",
-        redirectPath
-      );
-      router.replace(redirectPath);
-    }
-  }, [user, authLoading, router]);
+  // Authentication check is handled by middleware
+  // If user is already authenticated, middleware will redirect them
 
   // Check for success message from signup
   useEffect(() => {

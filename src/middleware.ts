@@ -56,21 +56,51 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check if route is public
+  // For API routes, let them handle their own authentication
+  if (pathname.startsWith('/api/')) {
+    // Check if it's a public API route
+    if (isPublicApiRoute(pathname) || isTransferApprovalRoute(pathname)) {
+      return NextResponse.next();
+    }
+    // For protected API routes, they handle their own auth
+    return NextResponse.next();
+  }
+
+  // Check for authentication token (even on public routes, to redirect authenticated users)
+  const token = request.cookies.get('auth-token')?.value;
+  let payload: AuthPayload | null = null;
+
+  // If token exists, verify it (even for public routes)
+  if (token) {
+    try {
+      const jwtPayload = await verifyToken(token);
+      payload = jwtPayload ? {
+        userId: jwtPayload.userId,
+        email: jwtPayload.email,
+        userType: jwtPayload.userType as AuthPayload['userType'],
+        sessionId: jwtPayload.sessionId || '',
+        iat: jwtPayload.iat || 0,
+        exp: jwtPayload.exp || 0
+      } : null;
+    } catch (error) {
+      // Token verification failed, but continue for public routes
+      payload = null;
+    }
+  }
+
+  // If user is authenticated and trying to access login page, redirect to dashboard
+  if (pathname === '/login' && payload) {
+    const redirectPath = getLoginRedirectRoute(payload.userType);
+    return NextResponse.redirect(new URL(redirectPath, request.url));
+  }
+
+  // If route is public and user is not authenticated (or no token), allow access
   if (isPublicRoute(pathname) || isPublicApiRoute(pathname) || isTransferApprovalRoute(pathname)) {
     return NextResponse.next();
   }
 
-  // For API routes, let them handle their own authentication
-  if (pathname.startsWith('/api/')) {
-    return NextResponse.next();
-  }
-
-  // For page routes, do basic JWT verification only
-  const token = request.cookies.get('auth-token')?.value;
-
+  // For protected routes, require authentication
   if (!token) {
-    // Log cookie detection failure for debugging
     console.log('🔍 Middleware: No auth-token cookie found', {
       pathname,
       cookiesPresent: Array.from(request.cookies.getAll()).map(c => c.name),
@@ -79,55 +109,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  try {
-    // Only verify JWT token (no database calls)
-    const jwtPayload = await verifyToken(token);
-    const payload: AuthPayload | null = jwtPayload ? {
-      userId: jwtPayload.userId,
-      email: jwtPayload.email,
-      userType: jwtPayload.userType as AuthPayload['userType'],
-      sessionId: jwtPayload.sessionId || '',
-      iat: jwtPayload.iat || 0,
-      exp: jwtPayload.exp || 0
-    } : null;
-    
-    if (!payload) {
-      console.log('🔍 Middleware: Token verification failed - invalid payload', {
-        pathname,
-        tokenPresent: !!token,
-        tokenLength: token.length
-      });
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-    
-    // Check admin routes - require admin or super_admin role
-    if (isAdminRoute(pathname)) {
-      if (!['admin', 'super_admin'].includes(payload.userType)) {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
-    }
-    
-    // Check if user is trying to access login page while authenticated
-    if (pathname === '/login' && payload) {
-      // Redirect authenticated users to their appropriate dashboard
-      const redirectPath = getLoginRedirectRoute(payload.userType);
-      return NextResponse.redirect(new URL(redirectPath, request.url));
-    }
-    
-    return NextResponse.next();
-    
-  } catch (error) {
-    // Enhanced error logging for debugging cookie/token issues
-    console.error('🔍 Middleware authentication error:', {
-      error: error instanceof Error ? error.message : String(error),
+  if (!payload) {
+    console.log('🔍 Middleware: Token verification failed - invalid payload', {
       pathname,
       tokenPresent: !!token,
-      tokenLength: token?.length || 0,
-      cookiesPresent: Array.from(request.cookies.getAll()).map(c => c.name),
-      stack: error instanceof Error ? error.stack : undefined
+      tokenLength: token.length
     });
     return NextResponse.redirect(new URL('/login', request.url));
   }
+  
+  // Check admin routes - require admin or super_admin role
+  if (isAdminRoute(pathname)) {
+    if (!['admin', 'super_admin'].includes(payload.userType)) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+  }
+  
+  return NextResponse.next();
 }
 
 export const config = {
