@@ -36,10 +36,32 @@ A modern web application for managing patients and healthcare staff, built with 
 
 4. **Configure Environment Variables**:
    - Create a `.env.local` file in the project root
-   - Add your MongoDB connection string:
+   - Add your MongoDB connection strings:
+   
+   **Option 1: Separate Development and Production Databases (Recommended)**
+   ```
+   # Development/Test database
+   MONGODB_URI_DEV=mongodb+srv://your_username:your_password@your_cluster.mongodb.net/test?retryWrites=true&w=majority
+   
+   # Production database
+   MONGODB_URI_PROD=mongodb+srv://your_username:your_password@your_cluster.mongodb.net/patients_management?retryWrites=true&w=majority
+   
+   # Optional: Manual database selection override
+   # Values: 'development', 'production', or 'auto' (default: 'auto')
+   # If set to 'auto', uses NODE_ENV to determine which database to use
+   DATABASE_ENV=auto
+   ```
+   
+   **Option 2: Single Database (Backward Compatible)**
    ```
    MONGODB_URI=mongodb+srv://your_username:your_password@your_cluster.mongodb.net/patients_management?retryWrites=true&w=majority
    ```
+   
+   **Database Selection Logic:**
+   - If `DATABASE_ENV` is set to `'development'` or `'production'`, that database will be used
+   - If `DATABASE_ENV` is `'auto'` or not set, the system uses `NODE_ENV`:
+     - `NODE_ENV=development` → uses `MONGODB_URI_DEV` (or `MONGODB_URI` as fallback)
+     - `NODE_ENV=production` → uses `MONGODB_URI_PROD` (or `MONGODB_URI` as fallback)
 
 ### Installation
 

@@ -106,7 +106,9 @@ import {
   validateDatabaseConfig,
   getConnectionString,
   isMonitoringEnabled,
-  isCachingEnabled
+  isCachingEnabled,
+  getDatabaseEnvironment,
+  getDatabaseName
 } from './config';
 
 // ===== CONFIGURATION =====
@@ -1105,8 +1107,13 @@ export class DatabaseService {
       throw new DatabaseError('MongoDB URI is required');
     }
 
+    const dbEnv = getDatabaseEnvironment();
+    const dbName = getDatabaseName(uri);
+
     log.database('Connecting to MongoDB', { 
       operation: 'connect',
+      environment: dbEnv,
+      database: dbName,
       uri: uri.replace(/\/\/.*@/, '//***@')
     });
 
@@ -1116,7 +1123,9 @@ export class DatabaseService {
           const conn = await mongoose.connect(uri, options);
           log.database('Successfully connected to MongoDB', {
             operation: 'connect',
+            environment: dbEnv,
             database: conn.connection.name,
+            databaseName: dbName,
             host: `${conn.connection.host}:${conn.connection.port}`
           });
           

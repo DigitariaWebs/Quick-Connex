@@ -163,16 +163,81 @@ export const PERFORMANCE_SETTINGS = {
 // ===== HELPER FUNCTIONS =====
 
 /**
+ * Get the current database environment
+ * Returns 'development' or 'production' based on DATABASE_ENV override or NODE_ENV
+ */
+export function getDatabaseEnvironment(): 'development' | 'production' {
+  const dbEnv = process.env.DATABASE_ENV?.toLowerCase();
+  
+  // Manual override takes precedence
+  if (dbEnv === 'development' || dbEnv === 'production') {
+    return dbEnv;
+  }
+  
+  // If DATABASE_ENV is 'auto' or not set, use NODE_ENV
+  const nodeEnv = process.env.NODE_ENV?.toLowerCase();
+  return nodeEnv === 'production' ? 'production' : 'development';
+}
+
+/**
+ * Extract database name from MongoDB connection string
+ */
+export function getDatabaseName(uri: string): string | null {
+  try {
+    // Match database name in connection string
+    // Format: mongodb://host:port/database or mongodb+srv://host/database
+    const match = uri.match(/\/([^\/\?]+)(\?|$)/);
+    if (match && match[1]) {
+      return match[1];
+    }
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Get the appropriate MongoDB URI based on environment
+ */
+function getMongoDbUri(): string {
+  const dbEnv = getDatabaseEnvironment();
+  
+  // Try environment-specific URI first
+  if (dbEnv === 'development') {
+    if (process.env.MONGODB_URI_DEV) {
+      return process.env.MONGODB_URI_DEV;
+    }
+  } else {
+    if (process.env.MONGODB_URI_PROD) {
+      return process.env.MONGODB_URI_PROD;
+    }
+  }
+  
+  // Fallback to generic MONGODB_URI for backward compatibility
+  if (process.env.MONGODB_URI) {
+    return process.env.MONGODB_URI;
+  }
+  
+  // Final fallback to default
+  return dbEnv === 'production' 
+    ? 'mongodb://localhost:27017/patients_management'
+    : 'mongodb://localhost:27017/patients_management';
+}
+
+/**
  * Get database configuration based on environment
  */
 export function getDatabaseConfig(): DatabaseConfig {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const dbEnv = getDatabaseEnvironment();
+  const isProduction = dbEnv === 'production';
   const baseConfig = isProduction ? PRODUCTION_DATABASE_CONFIG : DEFAULT_DATABASE_CONFIG;
   
-  // Override URI with current environment variable (in case it was set after module load)
+  // Get the appropriate URI based on environment
+  const uri = getMongoDbUri();
+  
   return {
     ...baseConfig,
-    uri: process.env.MONGODB_URI || baseConfig.uri
+    uri
   };
 }
 
@@ -222,11 +287,36 @@ export function validateDatabaseConfig(config: DatabaseConfig): string[] {
  * Get connection string with environment variables
  */
 export function getConnectionString(): string {
-  const uri = process.env.MONGODB_URI;
-  if (!uri) {
-    throw new Error('MONGODB_URI environment variable is required');
+  const config = getDatabaseConfig();
+  if (!config.uri) {
+    throw new Error('MongoDB URI is required. Please set MONGODB_URI_DEV, MONGODB_URI_PROD, or MONGODB_URI environment variable.');
   }
-  return uri;
+  return config.uri;
+}
+
+/**
+ * Validate database environment configuration
+ */
+export function validateDatabaseEnvironment(): string[] {
+  const errors: string[] = [];
+  const dbEnv = getDatabaseEnvironment();
+  
+  // Check if environment-specific URI is set
+  if (dbEnv === 'development' && !process.env.MONGODB_URI_DEV && !process.env.MONGODB_URI) {
+    errors.push('MONGODB_URI_DEV or MONGODB_URI environment variable is required for development environment');
+  }
+  
+  if (dbEnv === 'production' && !process.env.MONGODB_URI_PROD && !process.env.MONGODB_URI) {
+    errors.push('MONGODB_URI_PROD or MONGODB_URI environment variable is required for production environment');
+  }
+  
+  // Validate DATABASE_ENV if set
+  const dbEnvOverride = process.env.DATABASE_ENV?.toLowerCase();
+  if (dbEnvOverride && !['development', 'production', 'auto'].includes(dbEnvOverride)) {
+    errors.push(`Invalid DATABASE_ENV value: ${dbEnvOverride}. Must be 'development', 'production', or 'auto'`);
+  }
+  
+  return errors;
 }
 
 /**
