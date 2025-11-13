@@ -6,13 +6,12 @@ import {
   Users,
   ArrowRightLeft,
   Bell,
-  TrendingUp,
-  TrendingDown,
-  Minus,
   AlertCircle,
   CheckCircle,
   XCircle,
   Clock,
+  UserCheck,
+  UserCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAdminDashboard } from "@/hooks/dashboard";
@@ -26,13 +25,13 @@ import { StatCard } from "@/types/dashboard/dashboard.types";
  * - Key metrics with live data
  * - Recent activity feed from audit logs
  * - Active SSE connections count
- * - Live updates every 10 seconds
+ * - Live updates every 1 minute
  */
 
 export default function AdminDashboard() {
   // Fetch dashboard data with automatic polling
   const { data, loading, error, refresh } = useAdminDashboard({
-    pollInterval: 10000, // Poll every 10 seconds
+    pollInterval: 60000, // Poll every 1 minute
     enablePolling: true,
   });
 
@@ -41,66 +40,41 @@ export default function AdminDashboard() {
     return num.toLocaleString();
   };
 
-  // Get trend icon
-  const getTrendIcon = (trend: "up" | "down" | "stable") => {
-    switch (trend) {
-      case "up":
-        return <TrendingUp className="w-4 h-4 text-green-500" />;
-      case "down":
-        return <TrendingDown className="w-4 h-4 text-red-500" />;
-      default:
-        return <Minus className="w-4 h-4 text-gray-500" />;
-    }
-  };
-
-  // Get trend color
-  const getTrendColor = (trend: "up" | "down" | "stable") => {
-    switch (trend) {
-      case "up":
-        return "text-green-600";
-      case "down":
-        return "text-red-600";
-      default:
-        return "text-gray-600";
-    }
-  };
-
   // Prepare stat cards from real data
   const stats: StatCard[] = data
     ? [
         {
-          name: "Active Users",
-          value: formatNumber(data.activeUsers),
-          change: data.trends.activeUsers.change,
-          trend: data.trends.activeUsers.trend,
-          icon: Users,
-          color: "text-blue-600",
-          bgColor: "bg-blue-50",
-          isLive: true, // Special indicator for live data
+          name: "Pending Approvals",
+          value: formatNumber(data.pendingApprovals),
+          change: "0%",
+          trend: "stable",
+          icon: UserCheck,
+          color: "text-amber-600",
+          bgColor: "bg-amber-50",
         },
         {
           name: "Transfers Today",
           value: formatNumber(data.transfersToday),
-          change: data.trends.transfers.change,
-          trend: data.trends.transfers.trend,
+          change: "0%",
+          trend: "stable",
           icon: ArrowRightLeft,
           color: "text-purple-600",
           bgColor: "bg-purple-50",
         },
         {
-          name: "Notifications Sent",
-          value: formatNumber(data.notificationsSent),
-          change: data.trends.notifications.change,
-          trend: data.trends.notifications.trend,
-          icon: Bell,
-          color: "text-orange-600",
-          bgColor: "bg-orange-50",
+          name: "Total Users",
+          value: formatNumber(data.totalUsers),
+          change: "0%",
+          trend: "stable",
+          icon: UserCircle,
+          color: "text-indigo-600",
+          bgColor: "bg-indigo-50",
         },
         {
           name: "System Health",
           value: `${data.systemHealth.overallScore}%`,
-          change: data.trends.systemHealth.change,
-          trend: data.trends.systemHealth.trend,
+          change: "0%",
+          trend: "stable",
           icon: Activity,
           color: "text-green-600",
           bgColor: "bg-green-50",
@@ -237,20 +211,10 @@ export default function AdminDashboard() {
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between mb-3 lg:mb-4">
-                    <div className={`p-2 lg:p-3 rounded-xl ${stat.bgColor}`}>
-                      <StatIcon
-                        className={`w-5 h-5 lg:w-6 lg:h-6 ${stat.color}`}
-                      />
-                    </div>
-                    <div className="flex items-center space-x-1 text-xs lg:text-sm">
-                      {getTrendIcon(stat.trend)}
-                      <span
-                        className={`font-medium ${getTrendColor(stat.trend)}`}
-                      >
-                        {stat.change}
-                      </span>
-                    </div>
+                  <div className="flex items-center mb-3 lg:mb-4">
+                    <StatIcon
+                      className={`w-5 h-5 lg:w-6 lg:h-6 ${stat.color}`}
+                    />
                   </div>
                   <h3 className="text-gray-600 text-xs lg:text-sm font-medium mb-1">
                     {stat.name}
@@ -382,13 +346,9 @@ export default function AdminDashboard() {
                           : ""
                       }`}
                     >
-                      <div
-                        className={`p-1.5 lg:p-2 ${colors.bg} rounded-lg flex-shrink-0`}
-                      >
-                        <ActivityIcon
-                          className={`w-3 h-3 lg:w-4 lg:h-4 ${colors.text}`}
-                        />
-                      </div>
+                      <ActivityIcon
+                        className={`w-3 h-3 lg:w-4 lg:h-4 ${colors.text} flex-shrink-0`}
+                      />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs lg:text-sm font-medium text-gray-900 truncate">
                           {activity.action}

@@ -32,8 +32,6 @@ export interface SystemHealth {
 export interface ServiceHealthMap {
   database: ServiceHealth;
   api: ServiceHealth;
-  sse: ServiceHealth;
-  email: ServiceHealth;
 }
 
 export interface ServiceHealth {
@@ -74,7 +72,7 @@ export interface TrendData {
   activeUsers: {
     current: number;
     previous: number;
-    change: string; // e.g., "+12%"
+    change: string;
     trend: 'up' | 'down' | 'stable';
   };
   transfers: {
@@ -90,6 +88,18 @@ export interface TrendData {
     trend: 'up' | 'down' | 'stable';
   };
   systemHealth: {
+    current: number;
+    previous: number;
+    change: string;
+    trend: 'up' | 'down' | 'stable';
+  };
+  totalUsers: {
+    current: number;
+    previous: number;
+    change: string;
+    trend: 'up' | 'down' | 'stable';
+  };
+  pendingApprovals: {
     current: number;
     previous: number;
     change: string;
