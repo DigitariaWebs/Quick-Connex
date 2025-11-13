@@ -18,27 +18,30 @@ export async function sendUserNotificationEmail(user: any, action: string) {
         email: user.email,
         name: `${user.firstName} ${user.lastName}`
       },
-      content: {
-        subject: action === 'approve'
-          ? '🎉 Your Account Has Been Approved!'
-          : '❌ Account Application Update',
-        html: (() => {
-          const templateLoader = TemplateLoader.getInstance();
-          const templateData = {
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            userType: user.userType,
-            baseUrl
-          };
-          return action === 'approve'
-            ? templateLoader.renderTemplate('email/user/account-approved.html', templateData)
-            : templateLoader.renderTemplate('email/user/account-rejected.html', templateData);
-        })(),
-        text: action === 'approve'
-          ? generateApprovalEmailText(user, baseUrl)
-          : generateRejectionEmailText(user, baseUrl)
-      },
+      content: (() => {
+        const templateLoader = TemplateLoader.getInstance();
+        const templateData = {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          userType: user.userType,
+          baseUrl
+        };
+        
+        const templatePath = action === 'approve' 
+          ? 'email/user/account-approved.html' 
+          : 'email/user/account-rejected.html';
+        
+        const { html, text } = templateLoader.renderTemplateWithText(templatePath, templateData);
+        
+        return {
+          subject: action === 'approve'
+            ? 'Your Account Has Been Approved!'
+            : 'Account Application Update',
+          html,
+          text
+        };
+      })(),
       metadata: {
         source: 'user-approval-system',
         category: 'user-notification',
@@ -55,65 +58,4 @@ export async function sendUserNotificationEmail(user: any, action: string) {
     console.error('❌ Failed to send notification email:', error);
     throw error;
   }
-}
-
-
-/**
- * Generate approval email text
- */
-function generateApprovalEmailText(user: any, baseUrl: string): string {
-  return `
-🎉 Account Approved!
-
-Congratulations, ${user.firstName}!
-
-Your account has been successfully approved by our administrators. You can now access the Patient Management System and start using all available features.
-
-Your Account Details:
-- Name: ${user.firstName} ${user.lastName}
-- Email: ${user.email}
-- Role: ${user.userType}
-- Status: Active
-
-What's Next?
-- Log in to your account using your email and password
-- Complete your profile setup if needed
-- Explore the dashboard and available features
-- Contact support if you have any questions
-
-Access your account: ${baseUrl}/login
-
-If you have any questions or need assistance, please don't hesitate to contact our support team.
-
-This is an automated message from the Patient Management System.
-Please do not reply to this email.
-  `.trim();
-}
-
-/**
- * Generate rejection email text
- */
-function generateRejectionEmailText(user: any, baseUrl: string): string {
-  return `
-❌ Account Application Update
-
-Dear ${user.firstName},
-
-Thank you for your interest in the Patient Management System. After careful review, we regret to inform you that your account application has not been approved at this time.
-
-Application Details:
-- Name: ${user.firstName} ${user.lastName}
-- Email: ${user.email}
-- Status: Rejected
-
-Next Steps:
-- You may reapply in the future if your circumstances change
-- Contact our support team if you have questions about the decision
-- Consider reaching out to your organization's administrator
-
-If you believe this decision was made in error or have additional information to provide, please contact our support team.
-
-This is an automated message from the Patient Management System.
-Please do not reply to this email.
-  `.trim();
 }

@@ -144,7 +144,7 @@ function ApprovalErrorContent() {
         >
           <p className="text-xs text-gray-500">
             This is an automated notification from the{" "}
-            <span className="font-semibold">Patient Management System</span>
+            <span className="font-semibold">Quick Connex</span>
           </p>
         </motion.div>
       </motion.div>

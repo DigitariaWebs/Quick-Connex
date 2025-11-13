@@ -167,14 +167,15 @@ async function sendTransferRejectionNotification(transfer: any, admin: any, reas
         email: transfer.requestedBy.email,
         name: `${transfer.requestedBy.firstName} ${transfer.requestedBy.lastName}`
       },
-      content: {
-        subject: `❌ Transfer Rejected - ${transferData.transferId}`,
-        text: generateTransferRejectionEmailText(transferData),
-        html: (() => {
-          const templateLoader = TemplateLoader.getInstance();
-          return templateLoader.renderTemplate('email/transfer/rejected.html', transferData);
-        })()
-      },
+      content: (() => {
+        const templateLoader = TemplateLoader.getInstance();
+        const { html, text } = templateLoader.renderTemplateWithText('email/transfer/rejected.html', transferData);
+        return {
+          subject: `Transfer Rejected - ${transferData.transferId}`,
+          html,
+          text
+        };
+      })(),
       metadata: {
         source: 'transfer_workflow',
         category: 'transfer_rejected',
@@ -210,29 +211,3 @@ async function sendTransferRejectionNotification(transfer: any, admin: any, reas
   }
 }
 
-/**
- * Generate email text for transfer rejection
- */
-function generateTransferRejectionEmailText(transferData: any): string {
-  return `
-❌ TRANSFER REJECTED
-
-Your transfer request has been rejected by the administrator.
-
-Transfer Details:
-- Transfer ID: ${transferData.transferId}
-- Patient: ${transferData.patientName}
-- From: ${transferData.fromHospital}
-- To: ${transferData.toHospital}
-- Priority: ${transferData.priority}
-
-Rejection Details:
-- Rejected by: ${transferData.rejectedBy}
-- Rejected at: ${transferData.rejectedAt}
-- Reason: ${transferData.reason}
-
-If you have any questions about this rejection, please contact the administrator.
-
-You can create a new transfer request if needed.
-  `.trim();
-}

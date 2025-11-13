@@ -1855,13 +1855,37 @@ async function clearCollection(collectionName) {
 async function clearAllData() {
     try {
         await ensureConnection();
-        const userCount = await User.countDocuments();
-        const transferCount = await Transfer.countDocuments();
-        const ciusssCount = await CIUSSS.countDocuments();
-        const hospitalCount = await Hospital.countDocuments();
-        const total = userCount + transferCount + ciusssCount + hospitalCount;
 
-        if (total === 0) {
+        // Get all collections from the database
+        const db = mongoose.connection.db;
+        const collections = await db.listCollections().toArray();
+
+        if (collections.length === 0) {
+            console.log('\n⚠️  Database has no collections.');
+            return false;
+        }
+
+        // Count documents in each collection
+        const collectionStats = [];
+        let totalDocuments = 0;
+
+        for (const collectionInfo of collections) {
+            const collectionName = collectionInfo.name;
+            // Skip system collections
+            if (collectionName.startsWith('system.')) {
+                continue;
+            }
+
+            const collection = db.collection(collectionName);
+            const count = await collection.countDocuments();
+
+            if (count > 0) {
+                collectionStats.push({ name: collectionName, count });
+                totalDocuments += count;
+            }
+        }
+
+        if (totalDocuments === 0) {
             console.log('\n⚠️  Database is already empty.');
             return false;
         }
@@ -1869,13 +1893,12 @@ async function clearAllData() {
         console.log('\n' + '='.repeat(80));
         console.log('⚠️  ⚠️  ⚠️  CRITICAL WARNING ⚠️  ⚠️  ⚠️');
         console.log('='.repeat(80));
-        console.log('This will DELETE ALL DATA from the database!');
-        console.log('\nRecords to be deleted:');
-        console.log(`  Users: ${userCount}`);
-        console.log(`  Transfers: ${transferCount}`);
-        console.log(`  CIUSSS: ${ciusssCount}`);
-        console.log(`  Hospitals: ${hospitalCount}`);
-        console.log(`  TOTAL: ${total} records`);
+        console.log('This will DELETE ALL DATA from ALL COLLECTIONS in the database!');
+        console.log('\nCollections and records to be deleted:');
+        collectionStats.forEach(stat => {
+            console.log(`  ${stat.name}: ${stat.count} record(s)`);
+        });
+        console.log(`\n  TOTAL: ${totalDocuments} records across ${collectionStats.length} collection(s)`);
         console.log('='.repeat(80));
 
         const confirm1 = await question('\n⚠️  Are you ABSOLUTELY SURE? Type "DELETE ALL" to confirm: ');
@@ -1892,19 +1915,23 @@ async function clearAllData() {
             return false;
         }
 
-        console.log('\n🗑️  Deleting all data...');
-        const results = await Promise.all([
-            User.deleteMany({}),
-            Transfer.deleteMany({}),
-            CIUSSS.deleteMany({}),
-            Hospital.deleteMany({})
-        ]);
+        console.log('\n🗑️  Deleting all data from all collections...');
+
+        // Delete all documents from each collection
+        const deleteResults = [];
+        for (const stat of collectionStats) {
+            const collection = db.collection(stat.name);
+            const result = await collection.deleteMany({});
+            deleteResults.push({ name: stat.name, deletedCount: result.deletedCount });
+        }
 
         console.log(`\n✅ Successfully deleted all data:`);
-        console.log(`  Users: ${results[0].deletedCount}`);
-        console.log(`  Transfers: ${results[1].deletedCount}`);
-        console.log(`  CIUSSS: ${results[2].deletedCount}`);
-        console.log(`  Hospitals: ${results[3].deletedCount}`);
+        deleteResults.forEach(result => {
+            console.log(`  ${result.name}: ${result.deletedCount} record(s) deleted`);
+        });
+
+        const totalDeleted = deleteResults.reduce((sum, r) => sum + r.deletedCount, 0);
+        console.log(`\n  TOTAL: ${totalDeleted} record(s) deleted from ${deleteResults.length} collection(s)`);
 
         return true;
     } catch (error) {

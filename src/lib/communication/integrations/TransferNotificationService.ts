@@ -197,10 +197,10 @@ export class TransferNotificationService {
         priorityGradient: transfer.priority.toUpperCase() === 'URGENT' 
           ? 'linear-gradient(135deg, #fef2f2 0%, #fecaca 25%, #fca5a5 50%, #f87171 75%, #ef4444 100%)'
           : 'linear-gradient(135deg, #dbeafe 0%, #88f5c3 25%, #a7f3d0 50%, #bfdbfe 75%, #d4fce8 100%)',
-        priorityIcon: transfer.priority.toUpperCase() === 'URGENT' ? '🚨' : '🚑',
+        priorityIcon: '', // Removed emoji
         urgentAlert: transfer.priority.toUpperCase() === 'URGENT' 
           ? `<div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b; padding: 20px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #f59e0b;">
-               <h3 style="margin: 0 0 8px 0; color: #92400e; font-size: 18px; font-weight: 600;">⚠️ URGENT ACTION REQUIRED</h3>
+               <h3 style="margin: 0 0 8px 0; color: #92400e; font-size: 18px; font-weight: 600;">URGENT ACTION REQUIRED</h3>
                <p style="margin: 0; color: #92400e;">This is an urgent transfer request that requires immediate attention and approval.</p>
              </div>`
           : '',
@@ -242,7 +242,7 @@ export class TransferNotificationService {
           name: adminContact.name
         },
         content: {
-          subject: `🚑 ${transferData.priority} Transfer Request - ${transferData.transferId}`,
+          subject: `${transferData.priority} Transfer Request - ${transferData.transferId}`,
           text: this.generateTransferRequestEmailText(transferData),
           html: this.generateTransferRequestEmailHTML(transferData)
         },
@@ -368,7 +368,7 @@ export class TransferNotificationService {
             name: `${manager.firstName} ${manager.lastName}`
           },
           content: {
-            subject: `✅ Transfer Approved - ${transferData.transferId}`,
+            subject: `Transfer Approved - ${transferData.transferId}`,
             text: this.generateTransferApprovedEmailText(transferData, 'manager'),
             html: this.generateTransferApprovedEmailHTML(transferData, 'manager')
           },
@@ -449,7 +449,7 @@ export class TransferNotificationService {
             name: `${employee.firstName} ${employee.lastName}`
           },
           content: {
-            subject: `🚑 New Transfer Available - ${transferData.transferId}`,
+            subject: `New Transfer Available - ${transferData.transferId}`,
             text: this.generateTransferApprovedEmailText(transferData, 'employee'),
             html: this.generateTransferApprovedEmailHTML(transferData, 'employee')
           },
@@ -518,7 +518,7 @@ export class TransferNotificationService {
    */
   private generateTransferRequestEmailText(transferData: any): string {
     return `
-🚑 ${transferData.priority} TRANSFER REQUEST
+${transferData.priority} TRANSFER REQUEST
 
 Transfer ID: ${transferData.transferId}
 Patient: ${transferData.patientName} (${transferData.patientAge} years)
@@ -548,7 +548,7 @@ Please log into the admin dashboard to review and approve/reject this transfer r
       ? 'linear-gradient(135deg, #fef2f2 0%, #fecaca 25%, #fca5a5 50%, #f87171 75%, #ef4444 100%)'
       : 'linear-gradient(135deg, #dbeafe 0%, #88f5c3 25%, #a7f3d0 50%, #bfdbfe 75%, #d4fce8 100%)';
     
-    const priorityIcon = transferData.priority === 'URGENT' ? '🚨' : '🚑';
+    const priorityIcon = ''; // Removed emoji
     const priorityText = transferData.priority === 'URGENT' ? 'URGENT TRANSFER REQUEST' : 'TRANSFER REQUEST';
     const priorityBadgeGradient = transferData.priority === 'URGENT' 
       ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' 
@@ -571,7 +571,7 @@ Please log into the admin dashboard to review and approve/reject this transfer r
    * Generate SMS text for transfer request
    */
   private generateTransferRequestSMSText(transferData: any): string {
-    return `🚑 ${transferData.priority} TRANSFER REQUEST
+    return `${transferData.priority} TRANSFER REQUEST
 ID: ${transferData.transferId}
 Patient: ${transferData.patientName} (${transferData.patientAge}y)
 From: ${transferData.fromHospital}
@@ -613,7 +613,7 @@ Please log into the system to view full details and take appropriate action.
     const message = recipientType === 'manager' 
       ? 'Your transfer request has been approved by the administrator.'
       : 'A new transfer has been approved and is now available for assignment.';
-    const icon = recipientType === 'manager' ? '✅' : transferData.transferIcon || '🚑';
+    const icon = ''; // Removed emoji
     const actionText = recipientType === 'manager' 
       ? 'You can now track the transfer progress in your dashboard.'
       : 'Log into the system to view details and accept the transfer assignment.';
@@ -683,7 +683,7 @@ Please log into the system to view full details and take appropriate action.
           name: `${manager.firstName} ${manager.lastName}`
         },
         content: {
-          subject: `✅ Transfer Accepted - ${transferData.transferId}`,
+          subject: `Transfer Accepted - ${transferData.transferId}`,
           text: this.generateTransferAcceptedEmailText(transferData, 'manager'),
           html: this.generateTransferAcceptedEmailHTML(transferData, 'manager')
         },
@@ -755,10 +755,10 @@ Transfer Details:
 
 The transfer is now being handled by the assigned employee. You will receive updates as the transfer progresses.
 
-Thank you for using the Patient Management System.
+Thank you for using Quick Connex.
 
 Best regards,
-Patient Management System
+Quick Connex
     `.trim();
   }
 

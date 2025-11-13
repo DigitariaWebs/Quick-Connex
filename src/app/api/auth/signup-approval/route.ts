@@ -99,7 +99,10 @@ const { userId } = await request.json();
       content: {
         subject: `New User Registration - ${userDetails.name} (${userDetails.userType})`,
         html: emailHtml,
-        text: generateApprovalEmailText(userDetails),
+        text: (() => {
+          const templateLoader = TemplateLoader.getInstance();
+          return templateLoader.htmlToText(emailHtml);
+        })(),
         attachments: attachments
       },
       metadata: {
@@ -138,41 +141,3 @@ const { userId } = await request.json();
 }
 
 
-/**
- * Generate plain text email content for approval request
- */
-function generateApprovalEmailText(userDetails: any): string {
-  return `
-NEW USER REGISTRATION - APPROVAL REQUIRED
-
-A new user has registered and requires your approval to access Groupe BZ Services.
-
-USER INFORMATION:
-- Name: ${userDetails.name}
-- Email: ${userDetails.email}
-- Phone: ${userDetails.phone}
-- User Type: ${userDetails.userType.charAt(0).toUpperCase() + userDetails.userType.slice(1)}
-- Registration Date: ${userDetails.signupDate}
-${userDetails.userType === 'manager' ? `
-- Position: ${userDetails.post}
-- CIUSSS: ${userDetails.ciusss}
-` : ''}
-
-${userDetails.documents.length > 0 ? `
-SUBMITTED DOCUMENTS:
-Note: All documents are attached to this email for your review. You can also download them directly using the links below.
-${userDetails.documents.map((doc: any) => `- ${doc.type.toUpperCase()}: ${doc.name} (${doc.size})
-  Download: ${doc.downloadUrl}`).join('\n')}
-` : ''}
-
-ACTION REQUIRED:
-Please review the user's information and documents carefully before making a decision.
-
-REVIEW IN ADMIN DASHBOARD: ${userDetails.dashboardUrl}
-
-Note: You can approve or reject this user directly from the admin dashboard. Once approved, the user will receive an email notification and can access Groupe BZ Services.
-
-This is an automated message from Groupe BZ Services.
-If you have any questions, please contact the system administrator.
-  `;
-}

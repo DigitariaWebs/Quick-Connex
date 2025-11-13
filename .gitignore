@@ -46,6 +46,7 @@ next-env.d.ts
 /dist
 
 data.txt
+production_credentials.txt
 cookies.txt
 things.txt
 secrets.txt

@@ -69,7 +69,7 @@ function getEmailProviderConfig() {
   const baseConfig = {
     provider,
     fromEmail: process.env.EMAIL_FROM || 'noreply@patientsmanagement.com',
-    fromName: process.env.EMAIL_FROM_NAME || 'Patient Management System',
+    fromName: process.env.EMAIL_FROM_NAME || 'Quick Connex',
     replyTo: process.env.EMAIL_REPLY_TO || process.env.EMAIL_FROM,
   };
 
@@ -338,7 +338,7 @@ export function getDevelopmentConfig(): Partial<CommunicationConfig> {
       email: {
         provider: 'nodemailer',
         fromEmail: 'dev@patientsmanagement.local',
-        fromName: 'Patient Management Dev',
+        fromName: 'Quick Connex Dev',
       },
       sms: {
         provider: 'twilio',

@@ -128,7 +128,7 @@ export class GmailSMTPProvider extends BaseEmailProvider {
    */
   private prepareSMTPMessage(message: EmailMessage): any {
     const smtpMessage: any = {
-      from: `${this.fromName || 'Patient Management'} <${this.fromEmail}>`,
+      from: `${this.fromName || 'Quick Connex'} <${this.fromEmail}>`,
       to: message.recipient.email,
       subject: message.content.subject,
       text: message.content.text,

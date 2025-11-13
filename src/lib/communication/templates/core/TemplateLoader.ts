@@ -87,6 +87,67 @@ export class TemplateLoader {
   }
 
   /**
+   * Convert HTML to plain text for email fallback
+   * Handles common HTML elements and converts them to readable text
+   */
+  public htmlToText(html: string): string {
+    let text = html;
+    
+    // Convert links to plain text with URL
+    text = text.replace(/<a[^>]+href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi, '$2 ($1)');
+    
+    // Convert headings to plain text with line breaks
+    text = text.replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n$1\n');
+    
+    // Convert paragraphs to text with line breaks
+    text = text.replace(/<p[^>]*>(.*?)<\/p>/gi, '\n$1\n');
+    
+    // Convert line breaks
+    text = text.replace(/<br\s*\/?>/gi, '\n');
+    
+    // Convert lists
+    text = text.replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n');
+    text = text.replace(/<ul[^>]*>|<\/ul>|<ol[^>]*>|<\/ol>/gi, '\n');
+    
+    // Convert divs with line breaks
+    text = text.replace(/<\/div>/gi, '\n');
+    
+    // Convert strong/bold
+    text = text.replace(/<(strong|b)[^>]*>(.*?)<\/\1>/gi, '**$2**');
+    
+    // Convert emphasis/italic
+    text = text.replace(/<(em|i)[^>]*>(.*?)<\/\1>/gi, '_$2_');
+    
+    // Remove all remaining HTML tags
+    text = text.replace(/<[^>]*>/g, '');
+    
+    // Decode HTML entities
+    text = text
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
+    
+    // Normalize whitespace - collapse multiple spaces/newlines
+    text = text.replace(/[ \t]+/g, ' '); // Multiple spaces to single
+    text = text.replace(/\n\s*\n\s*\n+/g, '\n\n'); // Multiple newlines to double
+    text = text.replace(/^\s+|\s+$/gm, ''); // Trim each line
+    
+    return text.trim();
+  }
+
+  /**
+   * Render template and return both HTML and plain text versions
+   */
+  public renderTemplateWithText(templatePath: string, data: Record<string, any>): { html: string; text: string } {
+    const html = this.renderTemplate(templatePath, data);
+    const text = this.htmlToText(html);
+    return { html, text };
+  }
+
+  /**
    * Clear template cache (useful for development)
    */
   public clearCache(): void {

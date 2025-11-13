@@ -112,7 +112,7 @@ console.log('✅ API: MongoDB connection established');
           html: emailHtml,
           text: `Hello ${user.firstName} ${user.lastName},
 
-We received a request to reset your password for your Patient Management System account.
+We received a request to reset your password for your Quick Connex account.
 
 Click the link below to reset your password:
 ${resetUrl}
@@ -121,7 +121,7 @@ This link will expire in 1 hour.
 
 If you didn't request this password reset, please ignore this email.
 
-This is an automated message from the Patient Management System.`
+This is an automated message from Quick Connex.`
         },
         metadata: {
           source: 'password-reset-system',
