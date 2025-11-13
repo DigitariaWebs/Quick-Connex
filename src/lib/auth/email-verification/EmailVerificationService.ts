@@ -9,6 +9,7 @@ import EmailVerification, { IEmailVerification } from '@/models/EmailVerificatio
 import { CommunicationService } from '@/lib/communication';
 import { EmailMessage } from '@/lib/communication/core/types';
 import { AppError, ValidationError } from '@/lib/utils/error-handling';
+import { TemplateLoader } from '@/lib/communication/templates/core/TemplateLoader';
 
 // Constants (same as phone verification)
 const CODE_LENGTH = 6;
@@ -30,59 +31,6 @@ function normalizeEmail(email: string): string {
   return email.toLowerCase().trim();
 }
 
-/**
- * Generate HTML email template for verification code
- */
-function generateEmailTemplate(code: string, expirationMinutes: number): string {
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Email Verification Code</title>
-</head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #88f5c3 0%, #bfdbfe 100%); padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
-    <h1 style="color: #1a1a1a; margin: 0;">Email Verification</h1>
-  </div>
-  
-  <div style="background: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-    <p style="font-size: 16px; margin-bottom: 20px;">Hello,</p>
-    
-    <p style="font-size: 16px; margin-bottom: 20px;">
-      Your email verification code is:
-    </p>
-    
-    <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; text-align: center; margin: 30px 0;">
-      <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #059669; font-family: 'Courier New', monospace;">
-        ${code}
-      </span>
-    </div>
-    
-    <p style="font-size: 14px; color: #666; margin-bottom: 20px;">
-      This code will expire in <strong>${expirationMinutes} minutes</strong>.
-    </p>
-    
-    <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;">
-      <p style="font-size: 14px; color: #856404; margin: 0;">
-        <strong>Security Notice:</strong> Never share this code with anyone. Our team will never ask for your verification code.
-      </p>
-    </div>
-    
-    <p style="font-size: 14px; color: #666; margin-top: 30px;">
-      If you didn't request this code, please ignore this email.
-    </p>
-  </div>
-  
-  <div style="text-align: center; margin-top: 30px; color: #666; font-size: 12px;">
-    <p>This is an automated message, please do not reply.</p>
-    <p>&copy; ${new Date().getFullYear()} Patient Management System. All rights reserved.</p>
-  </div>
-</body>
-</html>
-  `.trim();
-}
 
 /**
  * Email Verification Service
@@ -172,7 +120,15 @@ export class EmailVerificationService {
       console.log('📧 [EmailVerification] CommunicationService instance obtained');
       
       const verificationId = (verification._id as any)?.toString() || String(verification._id);
-      const emailTemplate = generateEmailTemplate(code, CODE_EXPIRATION_MINUTES);
+      
+      // Use TemplateLoader to render email verification template
+      const templateLoader = TemplateLoader.getInstance();
+      const templateData = {
+        code,
+        expirationMinutes: CODE_EXPIRATION_MINUTES,
+        currentYear: new Date().getFullYear()
+      };
+      const emailTemplate = templateLoader.renderTemplate('email/auth/email-verification.html', templateData);
       
       const emailMessage: EmailMessage = {
         id: `email_verification_${verificationId}`,

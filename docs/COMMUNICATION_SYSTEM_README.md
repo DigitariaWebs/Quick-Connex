@@ -246,15 +246,35 @@ POST /api/communication/templates
 The system includes built-in templates for common use cases:
 
 ### Email Templates
-- `transfer_notification` - Transfer status updates
-- `urgent_alert` - Urgent transfer alerts
-- `system_notification` - System messages
+
+**Transfer Templates:**
+- `transfer_request_email` - New transfer request notifications
+- `transfer_approved_email` - Transfer approval notifications
+- `transfer_rejected_email` - Transfer rejection notifications
+- Transfer templates are located in `src/lib/communication/templates/files/email/transfer/`
+
+**Auth Templates:**
+- `password_reset_email` - Password reset emails
+- `email_verification_email` - Email verification code emails
+- Auth templates are located in `src/lib/communication/templates/files/email/auth/`
+
+**User Templates:**
+- `user_approval_request_email` - User approval request emails (sent to admin)
+- `account_approved_email` - Account approved notification emails
+- `account_rejected_email` - Account rejected notification emails
+- User templates are located in `src/lib/communication/templates/files/email/user/`
 
 ### SMS Templates
-- `transfer_notification_sms` - Transfer updates via SMS
-- `urgent_alert_sms` - Urgent alerts via SMS
-- `system_notification_sms` - System messages via SMS
-- `transfer_reminder_sms` - Transfer reminders
+- `new_transfer_request_sms` - New transfer request notifications
+- `transfer_approved_sms` - Transfer approved notifications
+- `transfer_rejected_sms` - Transfer rejected notifications
+- `transfer_accepted_sms` - Transfer accepted notifications
+- `transfer_completed_sms` - Transfer completed notifications
+- `urgent_transfer_sms` - Urgent transfer alerts
+- `system_maintenance_sms` - System maintenance notifications
+- `password_reset_sms` - Password reset codes
+
+All templates use Handlebars syntax for variable substitution. See [TEMPLATE_SYSTEM_README.md](./TEMPLATE_SYSTEM_README.md) for detailed documentation.
 
 ## Features
 

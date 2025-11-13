@@ -10,13 +10,30 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { TokenPayload } from '../core/types';
 
-const secretKey = process.env.JWT_SECRET_KEY;
-const encodedKey = new TextEncoder().encode(secretKey);
+// Memoize secret key and encoded key to avoid repeated process.env reads
+let cachedSecretKey: string | undefined = undefined;
+let cachedEncodedKey: Uint8Array | null = null;
+
+function getSecretKey(): string | undefined {
+  if (cachedSecretKey === undefined) {
+    cachedSecretKey = process.env.JWT_SECRET_KEY;
+  }
+  return cachedSecretKey;
+}
+
+function getEncodedKey(): Uint8Array {
+  if (cachedEncodedKey === null) {
+    const secretKey = getSecretKey();
+    cachedEncodedKey = new TextEncoder().encode(secretKey);
+  }
+  return cachedEncodedKey;
+}
 
 /**
  * Sign a JWT token
  */
 export async function signToken(payload: Omit<TokenPayload, 'iat' | 'exp'>): Promise<string> {
+  const secretKey = getSecretKey();
   if (!secretKey) {
     throw new Error('JWT_SECRET_KEY environment variable is not set');
   }
@@ -25,20 +42,21 @@ export async function signToken(payload: Omit<TokenPayload, 'iat' | 'exp'>): Pro
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('24h') // Token expires in 24 hours
-    .sign(encodedKey);
+    .sign(getEncodedKey());
 }
 
 /**
  * Verify a JWT token
  */
 export async function verifyToken(token: string): Promise<TokenPayload | null> {
+  const secretKey = getSecretKey();
   if (!secretKey) {
     console.error('JWT_SECRET_KEY environment variable is not set');
     return null;
   }
 
   try {
-    const { payload } = await jwtVerify(token, encodedKey, {
+    const { payload } = await jwtVerify(token, getEncodedKey(), {
       algorithms: ['HS256'],
     });
     return payload as unknown as TokenPayload;

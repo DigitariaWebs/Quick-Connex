@@ -33,8 +33,33 @@ const nextConfig: NextConfig = {
     adminEmail: process.env.ADMIN_EMAIL,
   },
   
-  // Webpack configuration for build-time variables
+  // Webpack configuration for build-time variables and file watching
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    // Exclude public directory from file watching in development
+    // Static assets don't need to trigger recompilation
+    if (dev) {
+      // Collect existing ignored patterns and filter out invalid values
+      const existingIgnored = Array.isArray(config.watchOptions?.ignored)
+        ? config.watchOptions.ignored.filter((pattern: any): pattern is string => 
+            typeof pattern === 'string' && pattern.length > 0
+          )
+        : config.watchOptions?.ignored && typeof config.watchOptions.ignored === 'string' && config.watchOptions.ignored.length > 0
+          ? [config.watchOptions.ignored]
+          : [];
+
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: [
+          '**/public/**',  // Exclude public directory - static assets don't need recompilation
+          '**/node_modules/**',
+          '**/.next/**',
+          ...existingIgnored,
+        ],
+        aggregateTimeout: 300,
+        poll: false,
+      };
+    }
+    
     // Add build-time environment variables
     config.plugins.push(
       new webpack.DefinePlugin({

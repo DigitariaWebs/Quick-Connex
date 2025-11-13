@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import { rateLimit } from '@/lib/auth';
 import { CommunicationService } from '@/lib/communication';
 import { EmailMessage } from '@/lib/communication';
+import { TemplateLoader } from '@/lib/communication/templates/core/TemplateLoader';
 
 export async function POST(request: NextRequest) {
   try {
@@ -87,6 +88,17 @@ console.log('✅ API: MongoDB connection established');
       const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
       console.log('🔗 API: Reset URL generated:', resetUrl);
       
+      // Use TemplateLoader to render password reset email
+      const templateLoader = TemplateLoader.getInstance();
+      const templateData = {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        resetUrl,
+        expirationMinutes: 1
+      };
+      
+      const emailHtml = templateLoader.renderTemplate('email/auth/password-reset.html', templateData);
+      
       const emailMessage: EmailMessage = {
         id: `reset-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         channel: 'email',
@@ -97,46 +109,7 @@ console.log('✅ API: MongoDB connection established');
         },
         content: {
           subject: 'Password Reset Request - Quick Connex',
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <div style="background: linear-gradient(135deg, #dbeafe 0%, #88f5c3 25%, #a7f3d0 50%, #bfdbfe 75%, #d4fce8 100%); padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #1f2937; margin: 0; font-size: 28px;">Password Reset Request</h1>
-              </div>
-              
-              <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                <h2 style="color: #1f2937; margin-bottom: 20px;">Hello ${user.firstName} ${user.lastName},</h2>
-                
-                <p style="color: #4b5563; line-height: 1.6; margin-bottom: 20px;">
-                  We received a request to reset your password for your Patient Management System account.
-                </p>
-                
-                <p style="color: #4b5563; line-height: 1.6; margin-bottom: 30px;">
-                  Click the button below to reset your password:
-                </p>
-                
-                <div style="text-align: center; margin: 30px 0;">
-                  <a href="${resetUrl}" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);">
-                    Reset Password
-                  </a>
-                </div>
-                
-                <p style="color: #6b7280; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
-                  <strong>Important:</strong> This link will expire in 1 hour. If you don't reset your password within this time, you'll need to request a new reset link.
-                </p>
-                
-                <p style="color: #6b7280; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
-                  If you didn't request this password reset, please ignore this email. Your password will remain unchanged.
-                </p>
-                
-                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-                
-                <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
-                  This is an automated message from the Patient Management System.<br>
-                  If you have any questions, please contact your system administrator.
-                </p>
-              </div>
-            </div>
-          `,
+          html: emailHtml,
           text: `Hello ${user.firstName} ${user.lastName},
 
 We received a request to reset your password for your Patient Management System account.

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Account Application Update</title>
+  </head>
+  <body
+    style="
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f8f9fa;
+    "
+  >
+    <div
+      style="
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        padding: 30px;
+        border-radius: 12px;
+        text-align: center;
+        margin-bottom: 30px;
+      "
+    >
+      <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600">
+        ❌ Account Application Update
+      </h1>
+      <p style="color: #fecaca; margin: 10px 0 0 0; font-size: 16px">
+        Your account application has been reviewed
+      </p>
+    </div>
+
+    <div
+      style="
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      "
+    >
+      <h2 style="color: #1f2937; margin: 0 0 20px 0; font-size: 24px">
+        Dear {{firstName}},
+      </h2>
+
+      <p
+        style="
+          color: #4b5563;
+          font-size: 16px;
+          line-height: 1.6;
+          margin: 0 0 20px 0;
+        "
+      >
+        Thank you for your interest in the Patient Management System. After
+        careful review, we regret to inform you that your account application
+        has not been approved at this time.
+      </p>
+
+      <div
+        style="
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          border-radius: 8px;
+          padding: 20px;
+          margin: 20px 0;
+        "
+      >
+        <h3 style="color: #dc2626; margin: 0 0 10px 0; font-size: 18px">
+          Application Details
+        </h3>
+        <p style="color: #dc2626; margin: 0; font-size: 14px">
+          <strong>Name:</strong> {{firstName}} {{lastName}}
+        </p>
+        <p style="color: #dc2626; margin: 5px 0 0 0; font-size: 14px">
+          <strong>Email:</strong> {{email}}
+        </p>
+        <p style="color: #dc2626; margin: 5px 0 0 0; font-size: 14px">
+          <strong>Status:</strong> Rejected
+        </p>
+      </div>
+
+      <div
+        style="
+          background: #f8fafc;
+          border-radius: 8px;
+          padding: 20px;
+          margin: 20px 0;
+        "
+      >
+        <h3 style="color: #1f2937; margin: 0 0 15px 0; font-size: 18px">
+          Next Steps
+        </h3>
+        <ul
+          style="
+            color: #4b5563;
+            margin: 0;
+            padding-left: 20px;
+            line-height: 1.6;
+          "
+        >
+          <li>You may reapply in the future if your circumstances change</li>
+          <li>
+            Contact our support team if you have questions about the decision
+          </li>
+          <li>Consider reaching out to your organization's administrator</li>
+        </ul>
+      </div>
+
+      <p
+        style="
+          color: #6b7280;
+          font-size: 14px;
+          line-height: 1.6;
+          margin: 20px 0 0 0;
+        "
+      >
+        If you believe this decision was made in error or have additional
+        information to provide, please contact our support team.
+      </p>
+    </div>
+
+    <div
+      style="
+        text-align: center;
+        margin-top: 30px;
+        padding: 20px;
+        color: #6b7280;
+        font-size: 14px;
+      "
+    >
+      <p style="margin: 0">
+        This is an automated message from the Patient Management System.
+      </p>
+      <p style="margin: 5px 0 0 0">Please do not reply to this email.</p>
+    </div>
+  </body>
+</html>
+

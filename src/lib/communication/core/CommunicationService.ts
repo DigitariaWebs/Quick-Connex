@@ -120,9 +120,7 @@ import {
   generateSMSText,
   getSMSTemplates,
   renderEmailTemplate,
-  renderSMSTemplate,
-  generateTransferRequestEmailHTML,
-  generateTransferApprovedEmailHTML
+  renderSMSTemplate
 } from '../templates';
 
 import {

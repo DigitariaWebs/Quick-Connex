@@ -8,7 +8,7 @@
 export const ASSETS = {
   images: {
     logo: "/images/logo.png",
-    background: "/images/background.jpg",
+    background: "/images/background.webp",
   },
 } as const;
 

@@ -8,76 +8,128 @@
 import { DatabaseConfig, MonitoringConfig, CacheConfig } from './types';
 
 // ===== DEFAULT CONFIGURATIONS =====
+// Note: These are now lazy-loaded to avoid process.env reads at module load time
 
-export const DEFAULT_DATABASE_CONFIG: DatabaseConfig = {
-  uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/patients_management',
-  options: {
-    bufferCommands: false,
-    maxPoolSize: parseInt(process.env.DATABASE_POOL_SIZE || '10'),
-    minPoolSize: 2,
-    maxIdleTimeMS: 30000,
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
-    connectTimeoutMS: 10000,
-    retryWrites: true,
-    retryReads: true,
-    readPreference: 'primary',
-    writeConcern: {
-      w: 'majority',
-      j: true,
-      wtimeout: 10000
-    }
-  },
-  monitoring: {
-    enabled: process.env.NODE_ENV === 'development' || process.env.DATABASE_MONITORING === 'true',
-    slowQueryThreshold: 1000,
-    maxQueryHistory: 1000,
-    trackConnectionPool: true,
-    trackMemoryUsage: true,
-    logLevel: 'info'
-  },
-  cache: {
-    enabled: process.env.DATABASE_CACHE === 'true',
-    defaultTTL: 300, // 5 minutes
-    maxSize: 1000,
-    cleanupInterval: 60 // 1 minute
-  }
-};
+let cachedDefaultConfig: DatabaseConfig | null = null;
+let cachedProductionConfig: DatabaseConfig | null = null;
 
-export const PRODUCTION_DATABASE_CONFIG: DatabaseConfig = {
-  uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/patients_management',
-  options: {
-    bufferCommands: false,
-    maxPoolSize: parseInt(process.env.DATABASE_POOL_SIZE || '20'),
-    minPoolSize: 5,
-    maxIdleTimeMS: 60000,
-    serverSelectionTimeoutMS: 10000,
-    socketTimeoutMS: 60000,
-    connectTimeoutMS: 15000,
-    retryWrites: true,
-    retryReads: true,
-    readPreference: 'primary',
-    writeConcern: {
-      w: 'majority',
-      j: true,
-      wtimeout: 15000
-    }
-  },
-  monitoring: {
-    enabled: true,
-    slowQueryThreshold: 2000,
-    maxQueryHistory: 500,
-    trackConnectionPool: true,
-    trackMemoryUsage: true,
-    logLevel: 'warn'
-  },
-  cache: {
-    enabled: true,
-    defaultTTL: 600, // 10 minutes
-    maxSize: 2000,
-    cleanupInterval: 120 // 2 minutes
+function getDefaultDatabaseConfig(): DatabaseConfig {
+  if (cachedDefaultConfig !== null) {
+    return cachedDefaultConfig;
   }
-};
+  
+  cachedDefaultConfig = {
+    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/patients_management',
+    options: {
+      bufferCommands: false,
+      maxPoolSize: parseInt(process.env.DATABASE_POOL_SIZE || '10'),
+      minPoolSize: 2,
+      maxIdleTimeMS: 30000,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 10000,
+      retryWrites: true,
+      retryReads: true,
+      readPreference: 'primary',
+      writeConcern: {
+        w: 'majority',
+        j: true,
+        wtimeout: 10000
+      }
+    },
+    monitoring: {
+      enabled: process.env.NODE_ENV === 'development' || process.env.DATABASE_MONITORING === 'true',
+      slowQueryThreshold: 1000,
+      maxQueryHistory: 1000,
+      trackConnectionPool: true,
+      trackMemoryUsage: true,
+      logLevel: 'info'
+    },
+    cache: {
+      enabled: process.env.DATABASE_CACHE === 'true',
+      defaultTTL: 300, // 5 minutes
+      maxSize: 1000,
+      cleanupInterval: 60 // 1 minute
+    }
+  };
+  
+  return cachedDefaultConfig;
+}
+
+function getProductionDatabaseConfig(): DatabaseConfig {
+  if (cachedProductionConfig !== null) {
+    return cachedProductionConfig;
+  }
+  
+  cachedProductionConfig = {
+    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/patients_management',
+    options: {
+      bufferCommands: false,
+      maxPoolSize: parseInt(process.env.DATABASE_POOL_SIZE || '20'),
+      minPoolSize: 5,
+      maxIdleTimeMS: 60000,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 60000,
+      connectTimeoutMS: 15000,
+      retryWrites: true,
+      retryReads: true,
+      readPreference: 'primary',
+      writeConcern: {
+        w: 'majority',
+        j: true,
+        wtimeout: 15000
+      }
+    },
+    monitoring: {
+      enabled: true,
+      slowQueryThreshold: 2000,
+      maxQueryHistory: 500,
+      trackConnectionPool: true,
+      trackMemoryUsage: true,
+      logLevel: 'warn'
+    },
+    cache: {
+      enabled: true,
+      defaultTTL: 600, // 10 minutes
+      maxSize: 2000,
+      cleanupInterval: 120 // 2 minutes
+    }
+  };
+  
+  return cachedProductionConfig;
+}
+
+// Export as getters to maintain backward compatibility
+// Using Proxy to lazy-load config while maintaining the same API
+export const DEFAULT_DATABASE_CONFIG = new Proxy({} as DatabaseConfig, {
+  get(_target, prop) {
+    const config = getDefaultDatabaseConfig();
+    return config[prop as keyof DatabaseConfig];
+  },
+  ownKeys() {
+    const config = getDefaultDatabaseConfig();
+    return Reflect.ownKeys(config);
+  },
+  getOwnPropertyDescriptor(_target, prop) {
+    const config = getDefaultDatabaseConfig();
+    return Reflect.getOwnPropertyDescriptor(config, prop);
+  }
+});
+
+export const PRODUCTION_DATABASE_CONFIG = new Proxy({} as DatabaseConfig, {
+  get(_target, prop) {
+    const config = getProductionDatabaseConfig();
+    return config[prop as keyof DatabaseConfig];
+  },
+  ownKeys() {
+    const config = getProductionDatabaseConfig();
+    return Reflect.ownKeys(config);
+  },
+  getOwnPropertyDescriptor(_target, prop) {
+    const config = getProductionDatabaseConfig();
+    return Reflect.getOwnPropertyDescriptor(config, prop);
+  }
+});
 
 // ===== CONNECTION SETTINGS =====
 
@@ -162,21 +214,35 @@ export const PERFORMANCE_SETTINGS = {
 
 // ===== HELPER FUNCTIONS =====
 
+// Memoization cache for config values (computed once per process)
+let cachedDatabaseEnvironment: 'development' | 'production' | null = null;
+let cachedMongoDbUri: string | null = null;
+let cachedDatabaseConfig: DatabaseConfig | null = null;
+let cachedMonitoringConfig: MonitoringConfig | null = null;
+let cachedCacheConfig: CacheConfig | null = null;
+
 /**
  * Get the current database environment
  * Returns 'development' or 'production' based on DATABASE_ENV override or NODE_ENV
+ * Memoized to avoid repeated process.env reads
  */
 export function getDatabaseEnvironment(): 'development' | 'production' {
+  if (cachedDatabaseEnvironment !== null) {
+    return cachedDatabaseEnvironment;
+  }
+  
   const dbEnv = process.env.DATABASE_ENV?.toLowerCase();
   
   // Manual override takes precedence
   if (dbEnv === 'development' || dbEnv === 'production') {
-    return dbEnv;
+    cachedDatabaseEnvironment = dbEnv;
+    return cachedDatabaseEnvironment;
   }
   
   // If DATABASE_ENV is 'auto' or not set, use NODE_ENV
   const nodeEnv = process.env.NODE_ENV?.toLowerCase();
-  return nodeEnv === 'production' ? 'production' : 'development';
+  cachedDatabaseEnvironment = nodeEnv === 'production' ? 'production' : 'development';
+  return cachedDatabaseEnvironment;
 }
 
 /**
@@ -198,63 +264,89 @@ export function getDatabaseName(uri: string): string | null {
 
 /**
  * Get the appropriate MongoDB URI based on environment
+ * Memoized to avoid repeated process.env reads
  */
 function getMongoDbUri(): string {
+  if (cachedMongoDbUri !== null) {
+    return cachedMongoDbUri;
+  }
+  
   const dbEnv = getDatabaseEnvironment();
   
   // Try environment-specific URI first
   if (dbEnv === 'development') {
     if (process.env.MONGODB_URI_DEV) {
-      return process.env.MONGODB_URI_DEV;
+      cachedMongoDbUri = process.env.MONGODB_URI_DEV;
+      return cachedMongoDbUri;
     }
   } else {
     if (process.env.MONGODB_URI_PROD) {
-      return process.env.MONGODB_URI_PROD;
+      cachedMongoDbUri = process.env.MONGODB_URI_PROD;
+      return cachedMongoDbUri;
     }
   }
   
   // Fallback to generic MONGODB_URI for backward compatibility
   if (process.env.MONGODB_URI) {
-    return process.env.MONGODB_URI;
+    cachedMongoDbUri = process.env.MONGODB_URI;
+    return cachedMongoDbUri;
   }
   
   // Final fallback to default
-  return dbEnv === 'production' 
-    ? 'mongodb://localhost:27017/patients_management'
-    : 'mongodb://localhost:27017/patients_management';
+  cachedMongoDbUri = 'mongodb://localhost:27017/patients_management';
+  return cachedMongoDbUri;
 }
 
 /**
  * Get database configuration based on environment
+ * Memoized to avoid repeated computation and process.env reads
  */
 export function getDatabaseConfig(): DatabaseConfig {
+  if (cachedDatabaseConfig !== null) {
+    return cachedDatabaseConfig;
+  }
+  
   const dbEnv = getDatabaseEnvironment();
   const isProduction = dbEnv === 'production';
-  const baseConfig = isProduction ? PRODUCTION_DATABASE_CONFIG : DEFAULT_DATABASE_CONFIG;
+  const baseConfig = isProduction ? getProductionDatabaseConfig() : getDefaultDatabaseConfig();
   
   // Get the appropriate URI based on environment
   const uri = getMongoDbUri();
   
-  return {
+  cachedDatabaseConfig = {
     ...baseConfig,
     uri
   };
+  
+  return cachedDatabaseConfig;
 }
 
 /**
  * Get monitoring configuration
+ * Memoized to avoid repeated computation
  */
 export function getMonitoringConfig(): MonitoringConfig {
+  if (cachedMonitoringConfig !== null) {
+    return cachedMonitoringConfig;
+  }
+  
   const config = getDatabaseConfig();
-  return config.monitoring || DEFAULT_DATABASE_CONFIG.monitoring!;
+  cachedMonitoringConfig = config.monitoring || getDefaultDatabaseConfig().monitoring!;
+  return cachedMonitoringConfig;
 }
 
 /**
  * Get cache configuration
+ * Memoized to avoid repeated computation
  */
 export function getCacheConfig(): CacheConfig {
+  if (cachedCacheConfig !== null) {
+    return cachedCacheConfig;
+  }
+  
   const config = getDatabaseConfig();
-  return config.cache || DEFAULT_DATABASE_CONFIG.cache!;
+  cachedCacheConfig = config.cache || getDefaultDatabaseConfig().cache!;
+  return cachedCacheConfig;
 }
 
 /**

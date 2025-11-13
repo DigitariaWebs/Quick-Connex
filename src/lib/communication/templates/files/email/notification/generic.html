@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{title}}</title>
+  </head>
+  <body>
+    <div
+      style="
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      border: 2px solid {{borderColor}};
+      padding: 20px;
+    "
+    >
+      <h2 style="color: {{headerColor}}">{{title}}</h2>
+      <p>{{message}}</p>
+      {{#if hasTransferData}}
+      <div
+        style="
+          background-color: #f8f9fa;
+          padding: 15px;
+          border-radius: 5px;
+          margin: 15px 0;
+        "
+      >
+        <h3>Transfer Details</h3>
+        <p><strong>Patient:</strong> {{transferPatientName}}</p>
+        <p><strong>From:</strong> {{transferFromHospital}}</p>
+        <p><strong>To:</strong> {{transferToHospital}}</p>
+        <p><strong>Status:</strong> {{transferStatus}}</p>
+        <p><strong>Priority:</strong> {{transferPriority}}</p>
+      </div>
+      {{/if}}
+      <hr />
+      <p>
+        <small
+          >This is an automated message from the Patient Management
+          System.</small
+        >
+      </p>
+    </div>
+  </body>
+</html>
+

@@ -12,6 +12,7 @@ import {
   CommunicationChannel,
   CommunicationServiceResponse,
 } from '../core/types';
+import { TemplateLoader } from '../templates/core/TemplateLoader';
 
 /**
  * Notification Integration Service
@@ -204,25 +205,31 @@ export class NotificationIntegrationService {
     const isUrgent = notification.priority === 'urgent';
     const borderColor = isUrgent ? '#ff0000' : '#007bff';
     const headerColor = isUrgent ? '#ff0000' : '#333333';
-
-    return `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid ${borderColor}; padding: 20px;">
-        <h2 style="color: ${headerColor};">${notification.title}</h2>
-        <p>${notification.message}</p>
-        ${notification.data?.transfer ? `
-          <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
-            <h3>Transfer Details</h3>
-            <p><strong>Patient:</strong> ${notification.data.transfer.patient?.firstName} ${notification.data.transfer.patient?.lastName}</p>
-            <p><strong>From:</strong> ${notification.data.transfer.fromHospitalName || notification.data.transfer.fromHospital}</p>
-            <p><strong>To:</strong> ${notification.data.transfer.toHospitalName || notification.data.transfer.toHospital}</p>
-            <p><strong>Status:</strong> ${notification.data.transfer.status}</p>
-            <p><strong>Priority:</strong> ${notification.data.transfer.priority}</p>
-          </div>
-        ` : ''}
-        <hr>
-        <p><small>This is an automated message from the Patient Management System.</small></p>
-      </div>
-    `;
+    
+    const transfer = notification.data?.transfer;
+    const hasTransferData = !!transfer;
+    
+    const templateData = {
+      title: notification.title,
+      message: notification.message,
+      borderColor,
+      headerColor,
+      hasTransferData,
+      transferPatientName: hasTransferData 
+        ? `${transfer.patient?.firstName || ''} ${transfer.patient?.lastName || ''}`.trim() || 'N/A'
+        : '',
+      transferFromHospital: hasTransferData 
+        ? (transfer.fromHospitalName || transfer.fromHospital || 'N/A')
+        : '',
+      transferToHospital: hasTransferData 
+        ? (transfer.toHospitalName || transfer.toHospital || 'N/A')
+        : '',
+      transferStatus: hasTransferData ? (transfer.status || 'N/A') : '',
+      transferPriority: hasTransferData ? (transfer.priority || 'N/A') : ''
+    };
+    
+    const templateLoader = TemplateLoader.getInstance();
+    return templateLoader.renderTemplate('email/notification/generic.html', templateData);
   }
 
   /**

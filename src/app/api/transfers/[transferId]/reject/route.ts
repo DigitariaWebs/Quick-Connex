@@ -16,6 +16,7 @@ import { EmailMessage } from '@/lib/communication';
 import { TransferStatus, TransferUpdateService, ActorInfo, TimelineService } from '@/lib/transfers';
 import { extractRequestInfo } from '@/lib/audit/utils/request';
 import { log } from '@/lib/logging';
+import { TemplateLoader } from '@/lib/communication/templates/core/TemplateLoader';
 
 
 export async function POST(
@@ -169,7 +170,10 @@ async function sendTransferRejectionNotification(transfer: any, admin: any, reas
       content: {
         subject: `❌ Transfer Rejected - ${transferData.transferId}`,
         text: generateTransferRejectionEmailText(transferData),
-        html: generateTransferRejectionEmailHTML(transferData)
+        html: (() => {
+          const templateLoader = TemplateLoader.getInstance();
+          return templateLoader.renderTemplate('email/transfer/rejected.html', transferData);
+        })()
       },
       metadata: {
         source: 'transfer_workflow',
@@ -231,62 +235,4 @@ If you have any questions about this rejection, please contact the administrator
 
 You can create a new transfer request if needed.
   `.trim();
-}
-
-/**
- * Generate email HTML for transfer rejection
- */
-function generateTransferRejectionEmailHTML(transferData: any): string {
-  return `
-  <!DOCTYPE html>
-  <html>
-  <head>
-      <meta charset="utf-8">
-      <title>Transfer Rejected - ${transferData.transferId}</title>
-      <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: #dc3545; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
-          .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; }
-          .transfer-info { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #dc3545; }
-          .rejection-info { background: #fff3cd; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #ffc107; }
-          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-      </style>
-  </head>
-  <body>
-      <div class="container">
-          <div class="header">
-              <h1>❌ TRANSFER REJECTED</h1>
-              <p>Transfer ID: ${transferData.transferId}</p>
-          </div>
-          
-          <div class="content">
-              <p>Your transfer request has been rejected by the administrator.</p>
-              
-              <div class="transfer-info">
-                  <h3>Transfer Details</h3>
-                  <p><strong>Patient:</strong> ${transferData.patientName}</p>
-                  <p><strong>From:</strong> ${transferData.fromHospital}</p>
-                  <p><strong>To:</strong> ${transferData.toHospital}</p>
-                  <p><strong>Priority:</strong> ${transferData.priority}</p>
-              </div>
-              
-              <div class="rejection-info">
-                  <h3>Rejection Details</h3>
-                  <p><strong>Rejected by:</strong> ${transferData.rejectedBy}</p>
-                  <p><strong>Rejected at:</strong> ${transferData.rejectedAt}</p>
-                  <p><strong>Reason:</strong> ${transferData.reason}</p>
-              </div>
-              
-              <p>If you have any questions about this rejection, please contact the administrator.</p>
-              <p><strong>You can create a new transfer request if needed.</strong></p>
-          </div>
-          
-          <div class="footer">
-              <p>This is an automated notification from the Patient Management System.</p>
-          </div>
-      </div>
-  </body>
-  </html>
-  `;
 }
