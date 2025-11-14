@@ -105,7 +105,7 @@ export interface PaginationOptions {
 
 export interface GridFSFileMetadata {
   userId: string;
-  documentType: 'cv' | 'opiqPermit' | 'rcr' | 'other';
+  documentType: 'cv' | 'opiqPermit' | 'rcr';
   originalName: string;
   mimeType: string;
   size: number;

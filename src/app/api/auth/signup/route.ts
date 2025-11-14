@@ -10,7 +10,12 @@ import {
 // Helper function to process file upload to GridFS
 const processFileUpload = async (file: File, documentType: 'cv' | 'opiqPermit' | 'rcr'): Promise<{
   fileId: string;
-  metadata: GridFSFileMetadata;
+  documentType: 'cv' | 'opiqPermit' | 'rcr';
+  originalName: string;
+  mimeType: string;
+  size: number;
+  checksum: string;
+  uploadedAt?: Date;
 }> => {
   const buffer = await file.arrayBuffer();
   const fileBuffer = Buffer.from(buffer);
@@ -27,9 +32,22 @@ const processFileUpload = async (file: File, documentType: 'cv' | 'opiqPermit' |
   
   const fileId = await GridFSService.uploadFile(fileBuffer, file.name, metadata);
   
+  // Get the actual metadata from GridFS (includes calculated checksum)
+  const fileMetadata = await GridFSService.getFileMetadata(fileId);
+  
+  if (!fileMetadata) {
+    throw new Error(`Failed to retrieve metadata for uploaded file: ${fileId}`);
+  }
+  
+  // Return in the format expected by the signup schema
   return {
     fileId: fileId.toString(),
-    metadata
+    documentType: fileMetadata.documentType,
+    originalName: fileMetadata.originalName,
+    mimeType: fileMetadata.mimeType,
+    size: fileMetadata.size,
+    checksum: fileMetadata.checksum || '',
+    uploadedAt: fileMetadata.uploadedAt
   };
 };
 

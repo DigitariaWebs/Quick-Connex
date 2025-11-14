@@ -56,6 +56,9 @@ export class GridFSService {
    */
   private static async getBucket(): Promise<GridFSBucket> {
     if (!this.bucket) {
+      // Ensure connection is established before getting it
+      await DatabaseService.connect();
+      
       const connection = DatabaseService.getConnection();
       if (!connection) {
         throw new DatabaseError('No active database connection for GridFS');
@@ -313,6 +316,9 @@ export class GridFSService {
       const updatedMetadata = { ...currentFile.metadata, ...updates };
       
       // Update the metadata in the files collection
+      // Ensure connection is established (getBucket already does this, but being explicit)
+      await DatabaseService.connect();
+      
       const connection = DatabaseService.getConnection();
       if (!connection) {
         throw new DatabaseError('No active database connection');
@@ -575,7 +581,7 @@ export class GridFSService {
    */
   static createUploadMetadata(
     userId: string,
-    documentType: 'cv' | 'opiqPermit' | 'rcr' | 'other',
+    documentType: 'cv' | 'opiqPermit' | 'rcr',
     originalName: string,
     mimeType: string,
     size: number,

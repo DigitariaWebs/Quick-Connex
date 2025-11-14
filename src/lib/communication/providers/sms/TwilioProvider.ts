@@ -42,28 +42,81 @@ export class TwilioProvider extends BaseSMSProvider {
         throw new Error('Twilio Account SID and Auth Token are required');
       }
 
+      if (!this.fromNumber) {
+        throw new Error('Twilio From Number (SMS_FROM_NUMBER) is required');
+      }
+
       // Prepare Twilio message
       const twilioMessage = this.prepareTwilioMessage(message);
 
+      console.log('📱 [Twilio] Attempting to send SMS:', {
+        to: twilioMessage.To,
+        from: twilioMessage.From,
+        messageLength: twilioMessage.Body?.length || 0
+      });
+
       // Send via Twilio API
       const response = await this.sendViaAPI(twilioMessage);
+
+      console.log('📱 [Twilio] SMS API response:', {
+        sid: response.sid,
+        status: response.status,
+        to: response.to,
+        from: response.from,
+        errorCode: response.error_code,
+        errorMessage: response.error_message,
+        price: response.price,
+        priceUnit: response.price_unit
+      });
+
+      // Check if Twilio returned an error status
+      if (response.status === 'failed' || response.error_code) {
+        const errorMsg = response.error_message || `Twilio error: ${response.error_code}`;
+        console.error('❌ [Twilio] SMS failed:', {
+          sid: response.sid,
+          errorCode: response.error_code,
+          errorMessage: response.error_message,
+          status: response.status
+        });
+        return {
+          success: false,
+          messageId: message.id,
+          providerId: response.sid,
+          status: 'failed',
+          error: errorMsg,
+        };
+      }
+
+      // Warn if price is null - this often indicates trial account restrictions
+      if (response.price === null && response.status === 'queued') {
+        console.warn('⚠️ [Twilio] SMS queued but price is null - this may indicate:');
+        console.warn('   1. Trial account restriction (number not verified)');
+        console.warn('   2. Message may fail after queuing');
+        console.warn(`   Check Twilio dashboard for Message SID: ${response.sid}`);
+        console.warn(`   Verify recipient number ${response.to} in Twilio console if using trial account`);
+      }
 
       return {
         success: true,
         messageId: message.id,
         providerId: response.sid,
-        status: 'sent',
+        status: response.status || 'sent',
         cost: this.calculateCost(message),
         currency: 'USD',
       };
 
     } catch (error) {
-      console.error('Twilio send error:', error);
+      console.error('❌ [Twilio] Send error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('❌ [Twilio] Error details:', {
+        message: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return {
         success: false,
         messageId: message.id,
         status: 'failed',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMessage,
       };
     }
   }
@@ -177,13 +230,20 @@ export class TwilioProvider extends BaseSMSProvider {
       }
     );
 
+    const responseData = await response.json();
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`Twilio API error: ${response.status} - ${errorData.message || 'Unknown error'}`);
+      console.error('❌ [Twilio] API error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorCode: responseData.code,
+        errorMessage: responseData.message,
+        moreInfo: responseData.more_info
+      });
+      throw new Error(`Twilio API error: ${response.status} - ${responseData.message || 'Unknown error'} (Code: ${responseData.code || 'N/A'})`);
     }
 
-    const data = await response.json();
-    return data;
+    return responseData;
   }
 
   /**

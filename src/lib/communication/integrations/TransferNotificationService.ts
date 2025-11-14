@@ -323,9 +323,21 @@ export class TransferNotificationService {
 
       const result = await this.communicationService.sendSMS(smsMessage);
       if (result.success) {
-        console.log(`📱 Transfer request SMS sent to admin: ${adminContact.phone}`);
+        console.log(`📱 Transfer request SMS sent to admin: ${adminContact.phone}`, {
+          providerId: result.providerId,
+          status: result.status
+        });
+        
+        // If we have a providerId (Twilio message SID), log it for tracking
+        if (result.providerId) {
+          console.log(`📱 Twilio Message SID: ${result.providerId} - Check Twilio dashboard for delivery status`);
+        }
       } else {
-        console.error(`❌ Failed to send transfer request SMS:`, result.error);
+        console.error(`❌ Failed to send transfer request SMS to ${adminContact.phone}:`, {
+          error: result.error,
+          status: result.status,
+          providerId: result.providerId
+        });
       }
     } catch (error) {
       console.error('❌ Error sending transfer request SMS:', error);
