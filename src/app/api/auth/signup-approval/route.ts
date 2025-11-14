@@ -29,17 +29,25 @@ const { userId } = await request.json();
       );
     }
 
-    // Get admin email from environment
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const adminName = process.env.ADMIN_NAME || 'System Administrator';
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    // Query database for all admin users (userType: 'admin' or 'super_admin')
+    const adminUsers = await User.find({ 
+      userType: { $in: ['admin', 'super_admin'] } 
+    })
+      .select('firstName lastName email')
+      .lean();
 
-    if (!adminEmail) {
+    // Check if any admins found
+    if (!adminUsers || adminUsers.length === 0) {
+      console.error('❌ No admin users found in database. Cannot send approval request notifications.');
       return NextResponse.json(
-        { error: 'Admin email not configured' },
+        { error: 'No admin users found in database. Cannot send approval request notifications.' },
         { status: 500 }
       );
     }
+
+    console.log(`📧 Found ${adminUsers.length} admin user(s) to notify for user approval`);
+
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
 
     // Create email service instance
     const communicationService = CommunicationService.getInstance();
@@ -86,47 +94,81 @@ const { userId } = await request.json();
       dashboardUrl: userDetails.dashboardUrl
     };
     const emailHtml = templateLoader.renderTemplate('email/user/approval-request.html', templateData);
+    const emailText = templateLoader.htmlToText(emailHtml);
 
-    // Create email message
-    const emailMessage: EmailMessage = {
-      id: `approval-${userId}-${Date.now()}`,
-      channel: 'email',
-      status: 'pending',
-      recipient: {
-        email: adminEmail,
-        name: adminName
-      },
-      content: {
-        subject: `New User Registration - ${userDetails.name} (${userDetails.userType})`,
-        html: emailHtml,
-        text: (() => {
-          const templateLoader = TemplateLoader.getInstance();
-          return templateLoader.htmlToText(emailHtml);
-        })(),
-        attachments: attachments
-      },
-      metadata: {
-        source: 'user-approval-system',
-        category: 'user-approval',
-        userId: userId,
-      },
-      priority: 'high',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+    // Send emails to all admin users
+    let emailCount = 0;
+    const errors: string[] = [];
 
-    // Send email
-    const result = await communicationService.sendEmail(emailMessage);
+    for (const adminUser of adminUsers) {
+      const adminContact = {
+        email: adminUser.email,
+        name: `${adminUser.firstName || ''} ${adminUser.lastName || ''}`.trim() || 'System Administrator'
+      };
 
-    if (result.success) {
+      // Skip if admin doesn't have email
+      if (!adminContact.email) {
+        console.warn(`⚠️ Skipping email for admin ${adminContact.name} - no email address`);
+        continue;
+      }
+
+      try {
+        // Create email message for this admin
+        const emailMessage: EmailMessage = {
+          id: `approval-${userId}-${Date.now()}-${adminUser._id?.toString() || 'unknown'}`,
+          channel: 'email',
+          status: 'pending',
+          recipient: {
+            email: adminContact.email,
+            name: adminContact.name
+          },
+          content: {
+            subject: `New User Registration - ${userDetails.name} (${userDetails.userType})`,
+            html: emailHtml,
+            text: emailText,
+            attachments: attachments
+          },
+          metadata: {
+            source: 'user-approval-system',
+            category: 'user-approval',
+            userId: userId,
+          },
+          priority: 'high',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        // Send email
+        const result = await communicationService.sendEmail(emailMessage);
+
+        if (result.success) {
+          emailCount++;
+          console.log(`📧 Approval request email sent to admin: ${adminContact.email}`);
+        } else {
+          errors.push(`Failed to send email to ${adminContact.email}: ${result.error || 'Unknown error'}`);
+          console.error(`❌ Failed to send email to admin ${adminContact.email}:`, result.error);
+        }
+      } catch (emailError) {
+        errors.push(`Error sending email to ${adminContact.email}: ${emailError instanceof Error ? emailError.message : 'Unknown error'}`);
+        console.error(`❌ Error sending email to admin ${adminContact.email}:`, emailError);
+      }
+    }
+
+    // Return success if at least one email was sent
+    if (emailCount > 0) {
       return NextResponse.json({
         success: true,
-        message: 'Approval email sent successfully',
-        messageId: result.messageId
+        message: `Approval email sent successfully to ${emailCount} admin(s)`,
+        emailsSent: emailCount,
+        totalAdmins: adminUsers.length,
+        errors: errors.length > 0 ? errors : undefined
       });
     } else {
       return NextResponse.json(
-        { error: 'Failed to send approval email', details: result.error },
+        { 
+          error: 'Failed to send approval emails to any admin',
+          details: errors.length > 0 ? errors : 'No admin users have email addresses configured'
+        },
         { status: 500 }
       );
     }
