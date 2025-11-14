@@ -16,6 +16,7 @@ import {
   LogOut,
   Menu,
   X,
+  FileBarChart,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -115,6 +116,18 @@ const navigation: NavigationSection[] = [
         icon: Users,
         color: "text-pink-600",
         bgColor: "bg-pink-50",
+      },
+    ],
+  },
+  {
+    section: "Reports",
+    items: [
+      {
+        name: "Reports",
+        href: "/admin/reports",
+        icon: FileBarChart,
+        color: "text-teal-600",
+        bgColor: "bg-teal-50",
       },
     ],
   },

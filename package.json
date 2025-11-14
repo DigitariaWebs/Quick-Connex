@@ -57,7 +57,6 @@
     "test:realtime:health": "node scripts/test-realtime.js health"
   },
   "dependencies": {
-    "ably": "^1.2.49",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.3",
     "@types/bcryptjs": "^2.4.6",
@@ -65,9 +64,11 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node-fetch": "^2.6.13",
     "@types/nodemailer": "^7.0.1",
+    "@types/pdfkit": "^0.17.3",
     "@types/react-datepicker": "^6.2.0",
     "@types/uuid": "^10.0.0",
     "@vercel/speed-insights": "^1.2.0",
+    "ably": "^1.2.49",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -87,6 +88,7 @@
     "next": "15.5.3",
     "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.6",
+    "pdfkit": "^0.17.2",
     "react": "19.1.0",
     "react-datepicker": "^8.7.0",
     "react-dom": "19.1.0",
