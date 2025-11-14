@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
+import { LOGO_PATH, ASSETS } from "@/constants";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -96,57 +97,58 @@ function ResetPasswordForm() {
   };
 
   return (
-    <div className="min-h-screen flex relative">
-      {/* Animated Gradient Background */}
-      <motion.div
-        className="absolute inset-0 z-0"
+    <div className="min-h-screen flex flex-col lg:flex-row relative">
+      {/* Background Image */}
+      <div
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
         style={{
-          background:
-            "linear-gradient(135deg, #dbeafe 0%, #88f5c3 25%, #a7f3d0 50%, #bfdbfe 75%, #d4fce8 100%)",
-          backgroundSize: "400% 400%",
-        }}
-        animate={{
-          backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          repeatType: "mirror",
-          ease: "easeInOut",
+          backgroundImage: `url(${ASSETS.images.background})`,
         }}
       />
+      {/* Dark Overlay for better text readability */}
+      <div className="absolute inset-0 z-0 bg-black/40" />
 
-      {/* Left Side Content */}
-      <div className="flex-1 flex items-center justify-center px-8 lg:px-16 z-10">
+      {/* Left Side Content - Hidden on mobile, shown on desktop */}
+      <div className="hidden lg:flex flex-1 items-center justify-center px-8 lg:px-16 z-10">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="max-w-lg text-black"
+          className="max-w-lg text-white"
         >
-          <h1 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight">
+          <h1 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight drop-shadow-lg">
             Set New Password
           </h1>
-          <p className="text-lg lg:text-xl text-black/80 leading-relaxed">
-            Enter your new password below to complete the reset process
+          <p className="text-lg lg:text-xl text-white/90 leading-relaxed drop-shadow-md">
+            Enter your new password below to complete the reset process and
+            regain access to your account
           </p>
         </motion.div>
       </div>
 
-      {/* Right Side - Reset Password Form */}
-      <div className="w-1/2 flex items-center justify-center px-8 lg:px-16 z-10">
+      {/* Reset Password Form - Full width on mobile, half width on desktop */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-4 lg:px-8 xl:px-16 z-10 min-h-screen lg:min-h-0">
         <motion.div
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
           className="w-full max-w-2xl"
         >
-          <div className="bg-white rounded-3xl p-12 shadow-2xl max-h-[90vh] min-h-[600px] overflow-y-auto">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold text-gray-900 mb-3">
+          <div className="bg-white rounded-2xl lg:rounded-3xl p-6 lg:p-12 shadow-2xl max-h-[90vh] min-h-screen lg:min-h-[700px] overflow-y-auto">
+            <div className="text-center mb-6 lg:mb-10">
+              <div className="flex justify-center mb-4 lg:mb-6">
+                <img
+                  src={LOGO_PATH}
+                  alt="Quick Connex Logo"
+                  className="h-auto w-auto max-w-[200px]"
+                />
+              </div>
+              <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">
                 Reset Password
               </h2>
-              <p className="text-lg text-gray-600">Enter your new password</p>
+              <p className="text-sm lg:text-base text-gray-600">
+                Enter your new password
+              </p>
             </div>
 
             {/* Status Message */}
@@ -163,11 +165,11 @@ function ResetPasswordForm() {
             )}
 
             {token ? (
-              <form className="space-y-6" onSubmit={handleSubmit}>
+              <form className="space-y-4 lg:space-y-6" onSubmit={handleSubmit}>
                 <div>
                   <label
                     htmlFor="password"
-                    className="block text-base font-medium text-gray-700 mb-3"
+                    className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
                   >
                     New Password
                   </label>
@@ -179,7 +181,7 @@ function ResetPasswordForm() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-5 py-4 text-lg border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-12 placeholder:text-gray-500 text-black"
+                      className="w-full px-4 lg:px-5 py-3 lg:py-4 text-base lg:text-lg border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-12 placeholder:text-gray-500 text-black"
                       placeholder="Enter your new password"
                     />
                     <button
@@ -232,7 +234,7 @@ function ResetPasswordForm() {
                 <div>
                   <label
                     htmlFor="confirm-password"
-                    className="block text-base font-medium text-gray-700 mb-3"
+                    className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
                   >
                     Confirm New Password
                   </label>
@@ -244,7 +246,7 @@ function ResetPasswordForm() {
                       required
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full px-5 py-4 text-lg border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-12 placeholder:text-gray-500 text-black"
+                      className="w-full px-4 lg:px-5 py-3 lg:py-4 text-base lg:text-lg border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-12 placeholder:text-gray-500 text-black"
                       placeholder="Confirm your new password"
                     />
                     <button
@@ -293,11 +295,11 @@ function ResetPasswordForm() {
                   </div>
                 </div>
 
-                <div className="pt-6">
+                <div className="pt-4 lg:pt-6">
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-6 text-lg rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 lg:py-4 px-6 text-base lg:text-lg rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                   >
                     {isLoading ? "Resetting Password..." : "Reset Password"}
                   </button>
@@ -305,20 +307,20 @@ function ResetPasswordForm() {
               </form>
             ) : (
               <div className="text-center">
-                <p className="text-gray-600 mb-6">
+                <p className="text-sm lg:text-base text-gray-600 mb-6">
                   Please request a new password reset link.
                 </p>
                 <Link
                   href="/forgot-password"
-                  className="inline-block bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 text-lg rounded-xl transition-colors duration-200"
+                  className="inline-block bg-green-500 hover:bg-green-600 text-white font-semibold py-3 lg:py-4 px-6 text-base lg:text-lg rounded-xl transition-colors duration-200 min-h-[44px] flex items-center justify-center"
                 >
                   Request New Reset Link
                 </Link>
               </div>
             )}
 
-            <div className="text-center mt-8">
-              <p className="text-base text-gray-600">
+            <div className="text-center mt-6 lg:mt-8">
+              <p className="text-sm lg:text-base text-gray-600">
                 Remember your password?{" "}
                 <Link
                   href="/login"

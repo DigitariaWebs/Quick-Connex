@@ -85,7 +85,7 @@ console.log('✅ API: MongoDB connection established');
       const communicationService = CommunicationService.getInstance();
       console.log('✅ API: EmailService created successfully');
       
-      const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+      const resetUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
       console.log('🔗 API: Reset URL generated:', resetUrl);
       
       // Use TemplateLoader to render password reset email
