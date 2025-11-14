@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import {
   Plus,
   FileText,
-  BarChart3,
   Search,
   Clock,
   CheckCircle,
@@ -109,15 +108,6 @@ export default function QuickActions({
       bgColor: "bg-green-50 hover:bg-green-100",
       onClick: onViewPending || (() => {}),
       badge: pendingCount,
-    },
-    {
-      id: "generate-report",
-      title: "Generate Report",
-      description: "Create transfer performance reports",
-      icon: <BarChart3 size={20} className="text-purple-600" />,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50 hover:bg-purple-100",
-      onClick: onGenerateReport || (() => {}),
     },
   ];
 
