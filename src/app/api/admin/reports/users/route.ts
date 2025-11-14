@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/lib/auth';
-import { DatabaseService } from '@/lib/database';
 import User from '@/models/User';
 import AuditLog from '@/models/AuditLog';
 import { UserReportData, TimeRange } from '@/types/reports/report.types';
 import { AuditAction, AuditCategory } from '@/models/AuditLog';
+import mongoose from 'mongoose';
 
 /**
  * User Reports API Endpoint
@@ -52,49 +52,59 @@ export async function GET(request: NextRequest) {
     
     const { start, end } = calculateDateRange(timeRange);
 
-    // Fetch user statistics in parallel
+    // Optimize: Use a single aggregation pipeline to get all user stats at once
+    // This is much faster than multiple separate count queries
     const [
-      totalUsers,
-      approvedUsers,
-      pendingUsers,
-      suspendedUsers,
-      rejectedUsers,
-      newUsersInPeriod,
-      usersByRole,
+      userStatsResult,
       activityLogs
     ] = await Promise.all([
-      // Total users
-      DatabaseService.count(User, {}),
-      
-      // Status breakdown
-      DatabaseService.count(User, { status: 'approved' }),
-      DatabaseService.count(User, { status: 'pending' }),
-      DatabaseService.count(User, { status: 'suspended' }),
-      DatabaseService.count(User, { status: 'rejected' }),
-      
-      // New users in period
-      DatabaseService.count(User, {
-        createdAt: { $gte: start, $lte: end }
-      }),
-      
-      // Users by role
-      DatabaseService.aggregate(User, [
-        { $group: { _id: '$userType', count: { $sum: 1 } } }
+      // Single aggregation to get all user counts
+      User.aggregate([
+        {
+          $facet: {
+            total: [{ $count: "count" }],
+            byStatus: [
+              { $group: { _id: "$status", count: { $sum: 1 } } }
+            ],
+            newInPeriod: [
+              { $match: { createdAt: { $gte: start, $lte: end } } },
+              { $count: "count" }
+            ],
+            byRole: [
+              { $group: { _id: "$userType", count: { $sum: 1 } } }
+            ]
+          }
+        }
       ]),
       
       // User activity from audit logs
-      DatabaseService.findMany(AuditLog, {
+      AuditLog.find({
         $or: [
           { category: AuditCategory.USER_MANAGEMENT },
           { category: AuditCategory.AUTHENTICATION },
           { action: { $in: [AuditAction.LOGIN_SUCCESS, AuditAction.LOGIN_FAILED, AuditAction.LOGOUT] } }
         ],
         timestamp: { $gte: start, $lte: end }
-      }, {
-        sort: { timestamp: -1 },
-        limit: 100
       })
+        .select('actorId actorName actorEmail actorType action description timestamp category')
+        .sort({ timestamp: -1 })
+        .limit(100)
+        .lean()
     ]);
+
+    // Extract stats from aggregation result
+    const statsData = userStatsResult[0];
+    const totalUsers = statsData.total[0]?.count || 0;
+    const statusCounts = statsData.byStatus.reduce((acc: any, item: any) => {
+      acc[item._id] = item.count;
+      return acc;
+    }, {});
+    const approvedUsers = statusCounts.approved || 0;
+    const pendingUsers = statusCounts.pending || 0;
+    const suspendedUsers = statusCounts.suspended || 0;
+    const rejectedUsers = statusCounts.rejected || 0;
+    const newUsersInPeriod = statsData.newInPeriod[0]?.count || 0;
+    const usersByRole = statsData.byRole || [];
 
     // Process role breakdown
     const roleBreakdown = {
@@ -110,43 +120,54 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Process activity logs and populate user details
-    const activitySummary = await Promise.all(
-      activityLogs.map(async (log: any) => {
-        // Try to get user details from the log
-        let userName = log.adminName || log.actorName || 'System';
-        let userEmail = log.adminEmail || log.actorEmail || 'system@example.com';
-        let userType = log.adminRole || log.actorType || 'system';
-        let userId = log.adminId || log.actorId || 'unknown';
+    // Optimize: Batch fetch all user details at once instead of N+1 queries
+    // Collect all unique actorIds that need user details
+    const actorIds = activityLogs
+      .map((log: any) => log.actorId)
+      .filter((id: any) => id && id !== 'unknown' && mongoose.Types.ObjectId.isValid(id))
+      .filter((id: any, index: number, self: any[]) => self.indexOf(id) === index); // Remove duplicates
 
-        // If we have an actorId, try to fetch user details
-        if (log.actorId && log.actorId !== 'unknown') {
-          try {
-            const user = await DatabaseService.findOne(User, { _id: log.actorId });
-            if (user) {
-              userName = `${user.firstName} ${user.lastName}`;
-              userEmail = user.email;
-              userType = user.userType;
-              userId = user._id.toString();
-            }
-          } catch (error) {
-            // If user not found, use log data
-            console.warn('User not found for activity log:', log.actorId);
-          }
+    // Batch fetch all users in a single query
+    const usersMap = new Map();
+    if (actorIds.length > 0) {
+      const users = await User.find({ _id: { $in: actorIds } })
+        .select('_id firstName lastName email userType')
+        .lean();
+      
+      users.forEach((user: any) => {
+        usersMap.set(user._id.toString(), user);
+      });
+    }
+
+    // Process activity logs using the batch-fetched user data
+    const activitySummary = activityLogs.map((log: any) => {
+      let userName = log.actorName || 'System';
+      let userEmail = log.actorEmail || 'system@example.com';
+      let userType = log.actorType || 'system';
+      let userId = log.actorId || 'unknown';
+
+      // Use batch-fetched user data if available
+      if (log.actorId && mongoose.Types.ObjectId.isValid(log.actorId)) {
+        const user = usersMap.get(log.actorId.toString());
+        if (user) {
+          userName = `${user.firstName} ${user.lastName}`;
+          userEmail = user.email;
+          userType = user.userType;
+          userId = user._id.toString();
         }
+      }
 
-        return {
-          userId,
-          userName,
-          userEmail,
-          userType,
-          action: log.action || 'Unknown Action',
-          description: log.description || 'No description',
-          timestamp: log.timestamp.toISOString(),
-          category: log.category || 'system'
-        };
-      })
-    );
+      return {
+        userId,
+        userName,
+        userEmail,
+        userType,
+        action: log.action || 'Unknown Action',
+        description: log.description || 'No description',
+        timestamp: log.timestamp?.toISOString() || new Date().toISOString(),
+        category: log.category || 'system'
+      };
+    });
 
     // Build report data
     const reportData: UserReportData = {
@@ -174,7 +195,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ User reports API error:', error);
+    console.error('User reports API error:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to generate user report',

@@ -36,7 +36,7 @@ function getLoginRedirectRoute(userType: string): string {
     case 'admin':
       return '/admin/dashboard';
     case 'manager':
-      return '/manager';
+      return '/dashboard';
     case 'employee':
     default:
       return '/dashboard';

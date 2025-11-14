@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DatabaseService } from "@/lib/database";
 import User from "@/models/User";
-import Hospital from "@/models/Hospital";
 import { CIUSSS } from "@/models/CIUSSS";
-import HospitalModel from "@/models/Hospital";
 import { AuthService } from "@/lib/auth";
 import mongoose from "mongoose";
 
@@ -15,22 +13,10 @@ import mongoose from "mongoose";
 export async function GET(request: NextRequest) {
   try {
     // Verify admin authentication
-    console.log('🔍 Admin Users API: Starting authentication...');
     const { user } = await AuthService.requireAuth(request, {
       roles: ['admin', 'super_admin'],
       requireSession: true
     });
-    console.log('🔍 Admin Users API: Authentication successful, user:', {
-      hasUser: !!user,
-      userType: user?.userType,
-      hasId: !!user?._id,
-      idType: typeof user?._id
-    });
-
-    // DatabaseService handles connection automatically
-// Ensure models are registered
-    const { CIUSSS } = await import("@/models/CIUSSS");
-    const Hospital = await import("@/models/Hospital");
 
     // Extract query parameters
     const { searchParams } = new URL(request.url);
@@ -80,106 +66,40 @@ export async function GET(request: NextRequest) {
     // Calculate pagination
     const skip = (page - 1) * limit;
 
-    // Fetch users without population first to avoid ObjectId casting errors
-    console.log('🔍 Admin Users API: Fetching users without population...');
-    const [rawUsers, total] = await Promise.all([
-      DatabaseService.findMany(User, filter, {
-        sort: { createdAt: -1 },
-        skip: skip,
-        limit: limit
-      }),
-      DatabaseService.count(User, filter),
+    // Fetch users with Mongoose populate (much faster than manual queries)
+    // This reduces 50+ queries to just 3 queries (main + 2 populate)
+    const [users, total] = await Promise.all([
+      User.find(filter)
+        .populate('ciusss', 'code name region isActive')
+        .populate('hospital', 'name address organization specialties isActive')
+        .select('-password') // Exclude password from results
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(), // Use lean() for better performance (returns plain objects)
+      User.countDocuments(filter),
     ]);
-    
-    console.log('🔍 Admin Users API: Found raw users:', rawUsers.length);
-    if (rawUsers.length > 0) {
-      console.log('🔍 Admin Users API: Sample user data:', {
-        id: rawUsers[0]._id,
-        name: `${rawUsers[0].firstName} ${rawUsers[0].lastName}`,
-        userType: rawUsers[0].userType,
-        ciusssType: typeof rawUsers[0].ciusss,
-        ciusssValue: rawUsers[0].ciusss,
-        hospitalType: typeof rawUsers[0].hospital,
-        hospitalValue: rawUsers[0].hospital
-      });
-    }
 
-    // Manually populate CIUSSS and Hospital data
-    console.log('🔍 Admin Users API: Manually populating CIUSSS and Hospital data...');
-    const users = await Promise.all(rawUsers.map(async (user) => {
-      // Convert Mongoose document to plain object for JSON serialization
-      const populatedUser: any = user.toObject ? user.toObject() : { ...user };
-      
-      // Handle CIUSSS population - return full object, not just ID
-      if (user.ciusss) {
-        try {
-          let ciusssData = null;
-          // Check if ciusss is an ObjectId or string
-          if (typeof user.ciusss === 'string') {
-            // If it's a string, try to find by code
-            ciusssData = await DatabaseService.findOne(CIUSSS, { code: user.ciusss });
-          } else {
-            // If it's an ObjectId, populate normally
-            ciusssData = await DatabaseService.findById(CIUSSS, user.ciusss.toString());
-          }
-          
-          // Set the full object if found, otherwise undefined
-          if (ciusssData) {
-            populatedUser.ciusss = ciusssData.toObject ? ciusssData.toObject() : ciusssData;
-          } else {
-            populatedUser.ciusss = undefined;
-          }
-        } catch (error) {
-          console.warn(`⚠️ Failed to populate CIUSSS for user ${user._id}:`, error instanceof Error ? error.message : 'Unknown error');
-          populatedUser.ciusss = undefined;
-        }
-      } else {
-        populatedUser.ciusss = undefined;
-      }
-      
-      // Handle Hospital population - return full object, not just ID
-      if (user.hospital) {
-        try {
-          let hospitalData = null;
-          // Check if hospital is an ObjectId or string
-          if (typeof user.hospital === 'string') {
-            // If it's a string, try to find by name
-            hospitalData = await DatabaseService.findOne(HospitalModel, { name: user.hospital });
-          } else {
-            // If it's an ObjectId, populate normally
-            hospitalData = await DatabaseService.findById(HospitalModel, user.hospital.toString());
-          }
-          
-          // Set the full object if found, otherwise undefined
-          if (hospitalData) {
-            populatedUser.hospital = hospitalData.toObject ? hospitalData.toObject() : hospitalData;
-          } else {
-            populatedUser.hospital = undefined;
-          }
-        } catch (error) {
-          console.warn(`⚠️ Failed to populate Hospital for user ${user._id}:`, error instanceof Error ? error.message : 'Unknown error');
-          populatedUser.hospital = undefined;
-        }
-      } else {
-        populatedUser.hospital = undefined;
-      }
-      
-      // Ensure _id is serialized as string
-      if (populatedUser._id && populatedUser._id.toString) {
-        populatedUser._id = populatedUser._id.toString();
-      }
-      
-      return populatedUser;
+    // Ensure _id is serialized as string for all users
+    const serializedUsers = users.map((user: any) => ({
+      ...user,
+      _id: user._id?.toString() || user._id,
+      ciusss: user.ciusss ? {
+        ...user.ciusss,
+        _id: user.ciusss._id?.toString() || user.ciusss._id
+      } : undefined,
+      hospital: user.hospital ? {
+        ...user.hospital,
+        _id: user.hospital._id?.toString() || user.hospital._id
+      } : undefined,
     }));
-    
-    console.log('🔍 Admin Users API: Successfully populated users:', users.length);
 
     const totalPages = Math.ceil(total / limit);
 
-    const responseData = {
+    return NextResponse.json({
       success: true,
       data: {
-        users,
+        users: serializedUsers,
         total,
         page,
         limit,
@@ -187,27 +107,9 @@ export async function GET(request: NextRequest) {
         hasNext: page < totalPages,
         hasPrev: page > 1,
       },
-    };
-    
-    console.log('🔍 Admin Users API: Response data structure:', {
-      success: responseData.success,
-      usersCount: responseData.data.users.length,
-      total: responseData.data.total,
-      pagination: {
-        page: responseData.data.page,
-        limit: responseData.data.limit,
-        totalPages: responseData.data.totalPages
-      }
     });
-
-    return NextResponse.json(responseData);
   } catch (error) {
-    console.error("❌ Admin users API error:", error);
-    console.error("❌ Error details:", {
-      name: error instanceof Error ? error.name : 'Unknown',
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : 'No stack trace'
-    });
+    console.error("Admin users API error:", error);
     return NextResponse.json(
       { 
         success: false, 
@@ -336,7 +238,7 @@ export async function POST(request: NextRequest) {
       status: "pending",
     });
 
-    await newUser;
+    await newUser.save();
 
     // Populate related data
     await newUser.populate("ciusss", "code name region isActive");

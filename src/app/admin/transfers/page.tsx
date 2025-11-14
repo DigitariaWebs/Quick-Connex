@@ -775,7 +775,7 @@ export default function AdminTransfersPage() {
                   </div>
                 </div>
                 {/* Search */}
-                <div className="w-full lg:w-auto">
+                <div className="hidden lg:block w-full lg:w-auto">
                   <ExpandableSearchBar
                     onSearch={handleSearch}
                     placeholder="Search transfers..."

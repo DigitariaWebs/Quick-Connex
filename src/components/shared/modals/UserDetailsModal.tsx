@@ -585,7 +585,7 @@ export default function UserDetailsModal({
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-100">
                 <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                  <div className="hidden lg:flex w-16 h-16 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full items-center justify-center text-white font-bold text-xl">
                     {getUserInitials(user!.firstName, user!.lastName)}
                   </div>
                   <div>
@@ -595,7 +595,7 @@ export default function UserDetailsModal({
                     <div className="flex items-center space-x-2 mt-1">
                       {statusConfig && StatusIcon && (
                         <div
-                          className={`px-3 py-1 rounded-full text-sm font-medium ${statusConfig.badgeClass}`}
+                          className={`hidden lg:inline-flex px-3 py-1 rounded-full text-sm font-medium ${statusConfig.badgeClass}`}
                         >
                           <StatusIcon size={14} className="inline mr-1" />
                           {statusConfig.label}

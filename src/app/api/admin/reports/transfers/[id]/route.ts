@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/lib/auth';
-import { DatabaseService } from '@/lib/database';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
-import Hospital from '@/models/Hospital';
 import AuditLog from '@/models/AuditLog';
 import { TransferReportData } from '@/types/reports/report.types';
-import { AuditAction, TargetResourceType } from '@/models/AuditLog';
+import { TargetResourceType } from '@/models/AuditLog';
+import mongoose from 'mongoose';
 
 /**
  * Individual Transfer Report API Endpoint
@@ -28,13 +27,18 @@ export async function GET(
 
     const transferId = params.id;
 
-    // Fetch transfer with populated references
-    const transfer = await DatabaseService.findOne(Transfer, { 
+    // Optimize: Fetch transfer with populated references in a single query
+    const transfer = await Transfer.findOne({ 
       $or: [
         { _id: transferId },
         { transferId: transferId }
       ]
-    });
+    })
+      .populate('requestedBy', 'firstName lastName email phone userType')
+      .populate('assignedTo', 'firstName lastName email phone userType')
+      .populate('fromHospital', 'name address organization')
+      .populate('toHospital', 'name address organization')
+      .lean();
 
     if (!transfer) {
       return NextResponse.json({
@@ -43,25 +47,9 @@ export async function GET(
       }, { status: 404 });
     }
 
-    // Populate user and hospital references
-    const [requestedByUser, assignedToUser, fromHospitalData, toHospitalData] = await Promise.all([
-      transfer.requestedBy 
-        ? DatabaseService.findOne(User, { _id: transfer.requestedBy })
-        : null,
-      transfer.assignedTo 
-        ? DatabaseService.findOne(User, { _id: transfer.assignedTo })
-        : null,
-      transfer.fromHospital 
-        ? DatabaseService.findOne(Hospital, { _id: transfer.fromHospital })
-        : null,
-      transfer.toHospital 
-        ? DatabaseService.findOne(Hospital, { _id: transfer.toHospital })
-        : null
-    ]);
-
     // Fetch timeline from audit logs
     const transferIdStr = transfer._id ? String(transfer._id) : transfer.transferId;
-    const timelineLogs = await DatabaseService.findMany(AuditLog, {
+    const timelineLogs = await AuditLog.find({
       $or: [
         {
           'targetResource.type': TargetResourceType.TRANSFER,
@@ -72,49 +60,60 @@ export async function GET(
           'targetResource.id': transfer.transferId
         }
       ]
-    }, {
-      sort: { timestamp: 1 } // Chronological order
-    });
+    })
+      .select('actorId actorName actorEmail actorType action description timestamp metadata changes')
+      .sort({ timestamp: 1 }) // Chronological order
+      .lean();
 
-    // Process timeline events
-    const timeline = await Promise.all(
-      timelineLogs.map(async (log: any) => {
-        let actorName = log.adminName || log.actorName || 'System';
-        let actorEmail = log.adminEmail || log.actorEmail || 'system@example.com';
-        let actorType = log.adminRole || log.actorType || 'system';
-        let actorId = log.adminId || log.actorId || 'unknown';
+    // Optimize: Batch fetch all actor users at once instead of N+1 queries
+    const actorIds = timelineLogs
+      .map((log: any) => log.actorId)
+      .filter((id: any) => id && id !== 'unknown' && mongoose.Types.ObjectId.isValid(id))
+      .filter((id: any, index: number, self: any[]) => self.indexOf(id) === index); // Remove duplicates
 
-        // Try to fetch actor details if we have an ID
-        if (log.actorId && log.actorId !== 'unknown') {
-          try {
-            const actor = await DatabaseService.findOne(User, { _id: log.actorId });
-            if (actor && actor._id) {
-              actorName = `${actor.firstName} ${actor.lastName}`;
-              actorEmail = actor.email;
-              actorType = actor.userType;
-              actorId = String(actor._id);
-            }
-          } catch (error) {
-            // Use log data if user not found
-          }
+    const actorsMap = new Map<string, any>();
+    if (actorIds.length > 0) {
+      const actors = await User.find({ _id: { $in: actorIds } })
+        .select('_id firstName lastName email userType')
+        .lean();
+      actors.forEach((actor: any) => {
+        actorsMap.set(actor._id.toString(), actor);
+      });
+    }
+
+    // Process timeline events using pre-fetched actor data
+    const timeline = timelineLogs.map((log: any) => {
+      let actorName = log.actorName || 'System';
+      let actorEmail = log.actorEmail || 'system@example.com';
+      let actorType = log.actorType || 'system';
+      let actorId = log.actorId || 'unknown';
+
+      // Use pre-fetched actor data if available
+      if (log.actorId && mongoose.Types.ObjectId.isValid(log.actorId)) {
+        const actor = actorsMap.get(log.actorId.toString());
+        if (actor) {
+          actorName = `${actor.firstName} ${actor.lastName}`;
+          actorEmail = actor.email;
+          actorType = actor.userType;
+          actorId = actor._id.toString();
         }
+      }
 
-        return {
-          id: log._id.toString(),
-          action: log.action || 'Unknown Action',
-          description: log.description || 'No description',
-          timestamp: log.timestamp.toISOString(),
-          actor: {
-            id: actorId,
-            name: actorName,
-            email: actorEmail,
-            userType: actorType
-          },
-          status: log.metadata?.status || log.changes?.status,
-          changes: log.changes
-        };
-      })
-    );
+      return {
+        id: log._id.toString(),
+        action: log.action || 'Unknown Action',
+        description: log.description || 'No description',
+        timestamp: log.timestamp?.toISOString() || new Date().toISOString(),
+        actor: {
+          id: actorId,
+          name: actorName,
+          email: actorEmail,
+          userType: actorType
+        },
+        status: log.metadata?.status || log.changes?.status,
+        changes: log.changes
+      };
+    });
 
     // Build transfer report data
     const reportData: TransferReportData = {
@@ -122,7 +121,7 @@ export async function GET(
       transferCategory: transfer.transferCategory,
       status: transfer.status,
       priority: transfer.priority,
-      requestedDate: transfer.requestedDate.toISOString(),
+      requestedDate: transfer.requestedDate?.toISOString() || new Date().toISOString(),
       scheduledDate: transfer.scheduledDate?.toISOString(),
       acceptedAt: transfer.acceptedAt?.toISOString(),
       completedDate: transfer.completedDate?.toISOString(),
@@ -134,36 +133,36 @@ export async function GET(
       envelopeInfo: transfer.transferData?.envelopeInfo,
       equipmentInfo: transfer.transferData?.equipmentInfo,
       
-      // Hospital information
-      fromHospital: fromHospitalData ? {
-        id: fromHospitalData._id ? String(fromHospitalData._id) : '',
-        name: fromHospitalData.name,
-        address: fromHospitalData.address || '',
-        organization: fromHospitalData.organization
+      // Hospital information (from populated data)
+      fromHospital: (transfer.fromHospital && typeof transfer.fromHospital === 'object' && 'name' in transfer.fromHospital) ? {
+        id: (transfer.fromHospital as any)._id ? String((transfer.fromHospital as any)._id) : '',
+        name: (transfer.fromHospital as any).name,
+        address: (transfer.fromHospital as any).address || '',
+        organization: (transfer.fromHospital as any).organization
       } : {
         id: '',
         name: transfer.fromHospitalName || 'Unknown',
         address: ''
       },
-      toHospital: toHospitalData ? {
-        id: toHospitalData._id ? String(toHospitalData._id) : '',
-        name: toHospitalData.name,
-        address: toHospitalData.address || '',
-        organization: toHospitalData.organization
+      toHospital: (transfer.toHospital && typeof transfer.toHospital === 'object' && 'name' in transfer.toHospital) ? {
+        id: (transfer.toHospital as any)._id ? String((transfer.toHospital as any)._id) : '',
+        name: (transfer.toHospital as any).name,
+        address: (transfer.toHospital as any).address || '',
+        organization: (transfer.toHospital as any).organization
       } : {
         id: '',
         name: transfer.toHospitalName || 'Unknown',
         address: ''
       },
       
-      // User information
-      requestedBy: requestedByUser ? {
-        id: requestedByUser._id ? String(requestedByUser._id) : '',
-        firstName: requestedByUser.firstName,
-        lastName: requestedByUser.lastName,
-        email: requestedByUser.email,
-        phone: requestedByUser.phone,
-        userType: requestedByUser.userType
+      // User information (from populated data)
+      requestedBy: (transfer.requestedBy && typeof transfer.requestedBy === 'object' && 'firstName' in transfer.requestedBy) ? {
+        id: (transfer.requestedBy as any)._id ? String((transfer.requestedBy as any)._id) : '',
+        firstName: (transfer.requestedBy as any).firstName,
+        lastName: (transfer.requestedBy as any).lastName,
+        email: (transfer.requestedBy as any).email,
+        phone: (transfer.requestedBy as any).phone,
+        userType: (transfer.requestedBy as any).userType
       } : {
         id: '',
         firstName: 'Unknown',
@@ -171,13 +170,13 @@ export async function GET(
         email: '',
         userType: 'unknown'
       },
-      assignedTo: assignedToUser ? {
-        id: assignedToUser._id ? String(assignedToUser._id) : '',
-        firstName: assignedToUser.firstName,
-        lastName: assignedToUser.lastName,
-        email: assignedToUser.email,
-        phone: assignedToUser.phone,
-        userType: assignedToUser.userType
+      assignedTo: (transfer.assignedTo && typeof transfer.assignedTo === 'object' && 'firstName' in transfer.assignedTo) ? {
+        id: (transfer.assignedTo as any)._id ? String((transfer.assignedTo as any)._id) : '',
+        firstName: (transfer.assignedTo as any).firstName,
+        lastName: (transfer.assignedTo as any).lastName,
+        email: (transfer.assignedTo as any).email,
+        phone: (transfer.assignedTo as any).phone,
+        userType: (transfer.assignedTo as any).userType
       } : undefined,
       
       // Timeline
@@ -195,7 +194,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('❌ Transfer report API error:', error);
+    console.error('Transfer report API error:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to generate transfer report',

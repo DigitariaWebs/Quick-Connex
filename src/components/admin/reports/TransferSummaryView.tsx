@@ -62,13 +62,13 @@ export default function TransferSummaryView({
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Accepted</span>
-                <span className="font-semibold">
+                <span className="font-semibold text-black">
                   {data.statistics.byStatus.accepted}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">In Progress</span>
-                <span className="font-semibold">
+                <span className="font-semibold text-black">
                   {data.statistics.byStatus.in_progress}
                 </span>
               </div>
@@ -81,13 +81,13 @@ export default function TransferSummaryView({
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Low</span>
-                <span className="font-semibold">
+                <span className="font-semibold text-black">
                   {data.statistics.byPriority.low}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Urgent</span>
-                <span className="font-semibold">
+                <span className="font-semibold text-black">
                   {data.statistics.byPriority.urgent}
                 </span>
               </div>
@@ -100,19 +100,19 @@ export default function TransferSummaryView({
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Patient</span>
-                <span className="font-semibold">
+                <span className="font-semibold text-black">
                   {data.statistics.byCategory.patient}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Envelope</span>
-                <span className="font-semibold">
+                <span className="font-semibold text-black">
                   {data.statistics.byCategory.envelope}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Medical Instruments</span>
-                <span className="font-semibold">
+                <span className="font-semibold text-black">
                   {data.statistics.byCategory.medical_instruments}
                 </span>
               </div>

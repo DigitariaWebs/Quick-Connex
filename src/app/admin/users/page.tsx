@@ -734,14 +734,14 @@ export default function UserManagement() {
         <div className="lg:col-span-2 space-y-4">
           <div className="p-0">
             {(originalStats || stats) && (
-              <div className="grid grid-cols-1 gap-3 max-w-48">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-3 lg:gap-3 lg:max-w-48">
                 {/* Total Users - Blue */}
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   onClick={() => handleStatsCardClick("all")}
                   className={`${USER_STAT_CARD_COLORS.total.bg} ${
                     USER_STAT_CARD_COLORS.total.border
-                  } p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
+                  } p-3 lg:p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
                     activeFilter === "all"
                       ? "ring-2 ring-blue-500 ring-opacity-50"
                       : ""
@@ -749,14 +749,14 @@ export default function UserManagement() {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <Users
-                      className={`w-5 h-5 ${USER_STAT_CARD_COLORS.total.iconColor}`}
+                      className={`w-4 h-4 lg:w-5 lg:h-5 ${USER_STAT_CARD_COLORS.total.iconColor}`}
                     />
                     {isRefreshing && (
                       <RefreshCw className="w-3 h-3 text-gray-400 animate-spin" />
                     )}
                   </div>
                   <p
-                    className={`text-[10px] ${USER_STAT_CARD_COLORS.total.textColor} font-medium uppercase tracking-wider mb-1`}
+                    className={`text-[9px] lg:text-[10px] ${USER_STAT_CARD_COLORS.total.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
                     Total Users
                   </p>
@@ -765,7 +765,7 @@ export default function UserManagement() {
                     initial={{ scale: 1.1, opacity: 0.7 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
-                    className={`text-2xl font-bold ${USER_STAT_CARD_COLORS.total.valueColor}`}
+                    className={`text-lg lg:text-2xl font-bold ${USER_STAT_CARD_COLORS.total.valueColor}`}
                   >
                     {(originalStats || stats)?.total}
                   </motion.p>
@@ -777,7 +777,7 @@ export default function UserManagement() {
                   onClick={() => handleStatsCardClick("approved")}
                   className={`${USER_STAT_CARD_COLORS.approved.bg} ${
                     USER_STAT_CARD_COLORS.approved.border
-                  } p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
+                  } p-3 lg:p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
                     activeFilter === "approved"
                       ? "ring-2 ring-blue-500 ring-opacity-50"
                       : ""
@@ -785,14 +785,14 @@ export default function UserManagement() {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <CheckCircle2
-                      className={`w-5 h-5 ${USER_STAT_CARD_COLORS.approved.iconColor}`}
+                      className={`w-4 h-4 lg:w-5 lg:h-5 ${USER_STAT_CARD_COLORS.approved.iconColor}`}
                     />
                     {isRefreshing && (
                       <RefreshCw className="w-3 h-3 text-gray-400 animate-spin" />
                     )}
                   </div>
                   <p
-                    className={`text-[10px] ${USER_STAT_CARD_COLORS.approved.textColor} font-medium uppercase tracking-wider mb-1`}
+                    className={`text-[9px] lg:text-[10px] ${USER_STAT_CARD_COLORS.approved.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
                     Approved
                   </p>
@@ -801,7 +801,7 @@ export default function UserManagement() {
                     initial={{ scale: 1.1, opacity: 0.7 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
-                    className={`text-2xl font-bold ${USER_STAT_CARD_COLORS.approved.valueColor}`}
+                    className={`text-lg lg:text-2xl font-bold ${USER_STAT_CARD_COLORS.approved.valueColor}`}
                   >
                     {(originalStats || stats)?.approved}
                   </motion.p>
@@ -813,7 +813,7 @@ export default function UserManagement() {
                   onClick={() => handleStatsCardClick("pending")}
                   className={`${USER_STAT_CARD_COLORS.pending.bg} ${
                     USER_STAT_CARD_COLORS.pending.border
-                  } p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
+                  } p-3 lg:p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
                     activeFilter === "pending"
                       ? "ring-2 ring-blue-500 ring-opacity-50"
                       : ""
@@ -821,14 +821,14 @@ export default function UserManagement() {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <Clock
-                      className={`w-5 h-5 ${USER_STAT_CARD_COLORS.pending.iconColor}`}
+                      className={`w-4 h-4 lg:w-5 lg:h-5 ${USER_STAT_CARD_COLORS.pending.iconColor}`}
                     />
                     {isRefreshing && (
                       <RefreshCw className="w-3 h-3 text-gray-400 animate-spin" />
                     )}
                   </div>
                   <p
-                    className={`text-[10px] ${USER_STAT_CARD_COLORS.pending.textColor} font-medium uppercase tracking-wider mb-1`}
+                    className={`text-[9px] lg:text-[10px] ${USER_STAT_CARD_COLORS.pending.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
                     Pending
                   </p>
@@ -837,7 +837,7 @@ export default function UserManagement() {
                     initial={{ scale: 1.1, opacity: 0.7 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
-                    className={`text-2xl font-bold ${USER_STAT_CARD_COLORS.pending.valueColor}`}
+                    className={`text-lg lg:text-2xl font-bold ${USER_STAT_CARD_COLORS.pending.valueColor}`}
                   >
                     {(originalStats || stats)?.pending}
                   </motion.p>
@@ -849,7 +849,7 @@ export default function UserManagement() {
                   onClick={() => handleStatsCardClick("suspended")}
                   className={`${USER_STAT_CARD_COLORS.suspended.bg} ${
                     USER_STAT_CARD_COLORS.suspended.border
-                  } p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
+                  } p-3 lg:p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
                     activeFilter === "suspended"
                       ? "ring-2 ring-blue-500 ring-opacity-50"
                       : ""
@@ -857,14 +857,14 @@ export default function UserManagement() {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <AlertTriangle
-                      className={`w-5 h-5 ${USER_STAT_CARD_COLORS.suspended.iconColor}`}
+                      className={`w-4 h-4 lg:w-5 lg:h-5 ${USER_STAT_CARD_COLORS.suspended.iconColor}`}
                     />
                     {isRefreshing && (
                       <RefreshCw className="w-3 h-3 text-gray-400 animate-spin" />
                     )}
                   </div>
                   <p
-                    className={`text-[10px] ${USER_STAT_CARD_COLORS.suspended.textColor} font-medium uppercase tracking-wider mb-1`}
+                    className={`text-[9px] lg:text-[10px] ${USER_STAT_CARD_COLORS.suspended.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
                     Suspended
                   </p>
@@ -873,7 +873,7 @@ export default function UserManagement() {
                     initial={{ scale: 1.1, opacity: 0.7 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
-                    className={`text-2xl font-bold ${USER_STAT_CARD_COLORS.suspended.valueColor}`}
+                    className={`text-lg lg:text-2xl font-bold ${USER_STAT_CARD_COLORS.suspended.valueColor}`}
                   >
                     {(originalStats || stats)?.suspended}
                   </motion.p>
@@ -885,67 +885,72 @@ export default function UserManagement() {
 
         {/* Main Content Area */}
         <div className="lg:col-span-10">
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-4 lg:p-6">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-              <div className="flex items-center space-x-4">
-                {/* Role Filter Buttons */}
-                <div className="flex items-center space-x-2">
-                  {/* All Users Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleRoleFilterClick("all")}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      activeRoleFilter === "all"
-                        ? "bg-gray-900 text-white shadow-md"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    <Users className="w-4 h-4" />
-                    <span>All</span>
-                  </motion.button>
+            <div className="px-0 lg:px-0 py-4 lg:py-5 border-b border-gray-200 mb-4 lg:mb-6">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                <div className="flex items-center space-x-2 lg:space-x-4 overflow-x-auto">
+                  {/* Role Filter Buttons */}
+                  <div className="flex items-center space-x-2">
+                    {/* All Users Button */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleRoleFilterClick("all")}
+                      className={`flex items-center space-x-1 lg:space-x-2 px-2 lg:px-3 py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 ${
+                        activeRoleFilter === "all"
+                          ? "bg-gray-900 text-white shadow-md"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      <Users className="w-3 h-3 lg:w-4 lg:h-4" />
+                      <span>All</span>
+                    </motion.button>
 
-                  {/* Employees Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleRoleFilterClick("employee")}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      activeRoleFilter === "employee"
-                        ? "bg-blue-500 text-white shadow-md"
-                        : "bg-blue-50 text-blue-700 hover:bg-blue-100"
-                    }`}
-                  >
-                    <UserIcon className="w-4 h-4" />
-                    <span>Employees</span>
-                  </motion.button>
+                    {/* Employees Button */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleRoleFilterClick("employee")}
+                      className={`flex items-center space-x-1 lg:space-x-2 px-2 lg:px-3 py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 ${
+                        activeRoleFilter === "employee"
+                          ? "bg-blue-500 text-white shadow-md"
+                          : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                      }`}
+                    >
+                      <UserIcon className="w-3 h-3 lg:w-4 lg:h-4" />
+                      <span>Employees</span>
+                    </motion.button>
 
-                  {/* Managers Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleRoleFilterClick("manager")}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      activeRoleFilter === "manager"
-                        ? "bg-purple-500 text-white shadow-md"
-                        : "bg-purple-50 text-purple-700 hover:bg-purple-100"
-                    }`}
-                  >
-                    <UserCog className="w-4 h-4" />
-                    <span>Managers</span>
-                  </motion.button>
+                    {/* Managers Button */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleRoleFilterClick("manager")}
+                      className={`flex items-center space-x-1 lg:space-x-2 px-2 lg:px-3 py-2 rounded-lg text-xs lg:text-sm font-medium transition-all duration-200 ${
+                        activeRoleFilter === "manager"
+                          ? "bg-purple-500 text-white shadow-md"
+                          : "bg-purple-50 text-purple-700 hover:bg-purple-100"
+                      }`}
+                    >
+                      <UserCog className="w-3 h-3 lg:w-4 lg:h-4" />
+                      <span>Managers</span>
+                    </motion.button>
+                  </div>
+                </div>
+                {/* Search */}
+                <div className="hidden lg:flex w-full lg:w-auto justify-end min-w-0">
+                  <div className="relative max-w-full">
+                    <ExpandableSearchBar
+                      onSearch={handleSearch}
+                      placeholder="Search users..."
+                      expandDirection="left"
+                      width={280}
+                      className="h-10 lg:h-12"
+                    />
+                  </div>
                 </div>
               </div>
-
-              {/* Search */}
-              <ExpandableSearchBar
-                onSearch={handleSearch}
-                placeholder="Search users..."
-                expandDirection="left"
-                width={280}
-                className="h-12"
-              />
             </div>
 
             {/* Content */}
@@ -994,54 +999,63 @@ export default function UserManagement() {
                   <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-blue-50 border border-blue-200 rounded-xl p-4"
+                    className="bg-blue-50 border border-blue-200 rounded-xl p-3 lg:p-4"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-0">
                       <div className="flex items-center space-x-3">
                         <div className="flex items-center space-x-2">
-                          <CheckCircle2 className="w-5 h-5 text-blue-600" />
-                          <span className="font-medium text-blue-900">
+                          <CheckCircle2 className="w-4 h-4 lg:w-5 lg:h-5 text-blue-600" />
+                          <span className="text-sm lg:text-base font-medium text-blue-900">
                             {selectedUsers.length} user
                             {selectedUsers.length > 1 ? "s" : ""} selected
                           </span>
                         </div>
                         <button
                           onClick={() => setSelectedUsers([])}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          className="text-blue-600 hover:text-blue-800 text-xs lg:text-sm font-medium"
                         >
                           Clear selection
                         </button>
                       </div>
 
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 flex-wrap">
                         {/* Bulk Approve */}
                         <button
                           onClick={() => handleBulkApprove()}
                           disabled={!canBulkApprove()}
-                          className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          className="flex items-center space-x-1 lg:space-x-2 px-2 lg:px-4 py-1.5 lg:py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs lg:text-sm"
                         >
-                          <UserCheck className="w-4 h-4" />
-                          <span>Approve Selected</span>
+                          <UserCheck className="w-3 h-3 lg:w-4 lg:h-4" />
+                          <span className="hidden sm:inline">
+                            Approve Selected
+                          </span>
+                          <span className="sm:hidden">Approve</span>
                         </button>
 
                         {/* Bulk Reject */}
                         <button
                           onClick={() => handleBulkReject()}
                           disabled={!canBulkReject()}
-                          className="flex items-center space-x-2 px-4 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          className="flex items-center space-x-1 lg:space-x-2 px-2 lg:px-4 py-1.5 lg:py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs lg:text-sm"
                         >
-                          <UserX className="w-4 h-4" />
-                          <span>Reject Selected</span>
+                          <UserX className="w-3 h-3 lg:w-4 lg:h-4" />
+                          <span className="hidden sm:inline">
+                            Reject Selected
+                          </span>
+                          <span className="sm:hidden">Reject</span>
                         </button>
 
                         {/* Bulk Suspend */}
                         <button
                           onClick={() => handleBulkSuspend()}
                           disabled={!canBulkSuspend()}
-                          className="flex items-center space-x-2 px-4 py-2 bg-orange-100 text-orange-800 rounded-lg hover:bg-orange-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          className="flex items-center space-x-1 lg:space-x-2 px-2 lg:px-4 py-1.5 lg:py-2 bg-orange-100 text-orange-800 rounded-lg hover:bg-orange-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs lg:text-sm"
                         >
-                          <Ban className="w-4 h-4" />
-                          <span>Suspend Selected</span>
+                          <Ban className="w-3 h-3 lg:w-4 lg:h-4" />
+                          <span className="hidden sm:inline">
+                            Suspend Selected
+                          </span>
+                          <span className="sm:hidden">Suspend</span>
                         </button>
                       </div>
                     </div>
@@ -1049,7 +1063,7 @@ export default function UserManagement() {
                 )}
 
                 {/* Users List Header */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="hidden lg:flex items-center justify-between mb-4 px-4 lg:px-6 py-3 bg-gray-50 border-b border-gray-200">
                   <div className="flex items-center space-x-3">
                     <input
                       type="checkbox"
@@ -1081,7 +1095,7 @@ export default function UserManagement() {
                       onChange={handleSelectAll}
                       className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                     />
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-xs lg:text-sm font-semibold text-gray-600 uppercase tracking-wider">
                       Select all (
                       {
                         users.filter((user) => {
@@ -1099,13 +1113,13 @@ export default function UserManagement() {
                       users)
                     </span>
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-xs lg:text-sm text-gray-500">
                     Click on a user to view details
                   </div>
                 </div>
 
                 {/* Users List */}
-                <div className="space-y-3">
+                <div className="divide-y divide-gray-100">
                   {users
                     .filter((user) => {
                       // Filter out users without valid IDs
@@ -1128,80 +1142,169 @@ export default function UserManagement() {
                           key={`user-${user._id || index}-${
                             user.email || "unknown"
                           }`} // More robust key generation
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="bg-gray-50 rounded-2xl p-4 hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: index * 0.02 }}
                           onClick={() => handleUserClick(user)}
+                          className="px-4 lg:px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                              {/* Selection Checkbox */}
-                              <div
-                                className="flex items-center"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={selectedUsers.includes(user._id)}
-                                  onChange={() => handleSelectUser(user._id)}
-                                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                                />
-                              </div>
-                              {/* User Avatar */}
-                              <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                          {/* Desktop View */}
+                          <div className="hidden lg:grid grid-cols-12 gap-4 items-center">
+                            {/* Selection Checkbox */}
+                            <div
+                              className="col-span-1 flex items-center"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedUsers.includes(user._id)}
+                                onChange={() => handleSelectUser(user._id)}
+                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                              />
+                            </div>
+
+                            {/* User Avatar & Name */}
+                            <div className="col-span-3 flex items-center space-x-3">
+                              <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
                                 {`${user.firstName.charAt(
                                   0
                                 )}${user.lastName.charAt(0)}`}
                               </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-gray-900 truncate">
+                                  {user.firstName} {user.lastName}
+                                </p>
+                                <p className="text-xs text-gray-500 truncate">
+                                  {user.email}
+                                </p>
+                              </div>
+                            </div>
 
-                              {/* User Info */}
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2 mb-1">
-                                  <h4 className="font-semibold text-gray-900">
-                                    {user.firstName} {user.lastName}
-                                  </h4>
-                                  <div
-                                    className={`px-2 py-1 rounded-full text-xs font-medium ${statusConfig.badgeClass}`}
-                                  >
-                                    <StatusIcon
-                                      size={12}
-                                      className="inline mr-1"
-                                    />
-                                    {statusConfig.label}
-                                  </div>
-                                  <div
-                                    className={`px-2 py-1 rounded-full text-xs font-medium ${roleConfig.badgeClass}`}
-                                  >
-                                    <RoleIcon
-                                      size={12}
-                                      className="inline mr-1"
-                                    />
-                                    {roleConfig.label}
-                                  </div>
+                            {/* Status & Role */}
+                            <div className="col-span-2 flex items-center space-x-2">
+                              <div
+                                className={`px-2 py-1 rounded-full text-xs font-medium ${statusConfig.badgeClass}`}
+                              >
+                                <StatusIcon size={12} className="inline mr-1" />
+                                {statusConfig.label}
+                              </div>
+                              <div
+                                className={`px-2 py-1 rounded-full text-xs font-medium ${roleConfig.badgeClass}`}
+                              >
+                                <RoleIcon size={12} className="inline mr-1" />
+                                {roleConfig.label}
+                              </div>
+                            </div>
+
+                            {/* Organization */}
+                            <div className="col-span-3">
+                              <p className="text-sm text-gray-700 truncate">
+                                {user.ciusss?.name ||
+                                  user.hospital?.name ||
+                                  "—"}
+                              </p>
+                            </div>
+
+                            {/* Last Login */}
+                            <div className="col-span-3">
+                              <p className="text-sm text-gray-900">
+                                {user.lastLogin
+                                  ? new Date(user.lastLogin).toLocaleDateString(
+                                      "en-US",
+                                      {
+                                        month: "short",
+                                        day: "numeric",
+                                        year: "numeric",
+                                      }
+                                    )
+                                  : "—"}
+                              </p>
+                              {user.lastLogin && (
+                                <p className="text-xs text-gray-500">
+                                  {new Date(user.lastLogin).toLocaleTimeString(
+                                    "en-US",
+                                    {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    }
+                                  )}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Mobile/Tablet View */}
+                          <div className="lg:hidden space-y-3">
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center space-x-2 lg:space-x-3 min-w-0 flex-1">
+                                {/* Selection Checkbox */}
+                                <div
+                                  className="flex items-center flex-shrink-0"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedUsers.includes(user._id)}
+                                    onChange={() => handleSelectUser(user._id)}
+                                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                                  />
                                 </div>
-                                <div className="flex items-center space-x-4 text-sm text-gray-600">
-                                  <span className="flex items-center">
-                                    <Mail size={14} className="mr-1" />
+                                {/* User Avatar */}
+                                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                                  {`${user.firstName.charAt(
+                                    0
+                                  )}${user.lastName.charAt(0)}`}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs lg:text-sm font-semibold text-gray-900 truncate">
+                                    {user.firstName} {user.lastName}
+                                  </p>
+                                  <p className="text-xs text-gray-500 truncate">
                                     {user.email}
-                                  </span>
-                                  {(user.ciusss?.name ||
-                                    user.hospital?.name) && (
-                                    <span className="flex items-center">
-                                      <Building size={14} className="mr-1" />
-                                      {user.ciusss?.name || user.hospital?.name}
-                                    </span>
-                                  )}
-                                  {user.lastLogin && (
-                                    <span className="flex items-center">
-                                      <Calendar size={14} className="mr-1" />
-                                      Last login:{" "}
-                                      {new Date(
-                                        user.lastLogin
-                                      ).toLocaleDateString()}
-                                    </span>
-                                  )}
+                                  </p>
                                 </div>
                               </div>
+                              <div className="flex flex-col items-end space-y-1">
+                                <div
+                                  className={`px-2 py-1 rounded-full text-xs font-medium ${statusConfig.badgeClass}`}
+                                >
+                                  <StatusIcon
+                                    size={10}
+                                    className="inline mr-1"
+                                  />
+                                  {statusConfig.label}
+                                </div>
+                                <div
+                                  className={`px-2 py-1 rounded-full text-xs font-medium ${roleConfig.badgeClass}`}
+                                >
+                                  <RoleIcon size={10} className="inline mr-1" />
+                                  {roleConfig.label}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="pl-14 lg:pl-13">
+                              {(user.ciusss?.name || user.hospital?.name) && (
+                                <div className="flex items-center space-x-1 lg:space-x-2 text-xs text-gray-600 mb-2">
+                                  <Building className="w-3 h-3 flex-shrink-0" />
+                                  <span className="truncate">
+                                    {user.ciusss?.name || user.hospital?.name}
+                                  </span>
+                                </div>
+                              )}
+                              {user.lastLogin && (
+                                <div className="flex items-center justify-between text-xs text-gray-500">
+                                  <span className="flex items-center">
+                                    <Calendar className="w-3 h-3 mr-1" />
+                                    {new Date(
+                                      user.lastLogin
+                                    ).toLocaleDateString("en-US", {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </motion.div>
@@ -1211,44 +1314,52 @@ export default function UserManagement() {
 
                 {/* Pagination */}
                 {totalPages > 0 && (
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                    <div className="text-sm text-gray-600">
-                      Showing {(currentPage - 1) * pageSize + 1} to{" "}
-                      {Math.min(currentPage * pageSize, totalUsers)} of{" "}
-                      {totalUsers} users
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() =>
-                          setCurrentPage((prev) => Math.max(1, prev - 1))
-                        }
-                        disabled={currentPage === 1}
-                        className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Previous
-                      </button>
-                      <span className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg">
-                        {Math.min(currentPage, totalPages)} of {totalPages}
-                      </span>
-                      <button
-                        onClick={() =>
-                          setCurrentPage((prev) =>
-                            Math.min(totalPages, prev + 1)
-                          )
-                        }
-                        disabled={currentPage >= totalPages}
-                        className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Next
-                      </button>
-                      {currentPage > totalPages && (
+                  <div className="px-4 lg:px-6 py-4 border-t border-gray-200">
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                      <div className="text-xs lg:text-sm text-gray-600">
+                        Showing {(currentPage - 1) * pageSize + 1} to{" "}
+                        {Math.min(currentPage * pageSize, totalUsers)} of{" "}
+                        {totalUsers} users
+                      </div>
+                      <div className="flex items-center space-x-2">
                         <button
-                          onClick={() => setCurrentPage(1)}
-                          className="px-3 py-1 text-sm bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200"
+                          onClick={() =>
+                            setCurrentPage((prev) => Math.max(1, prev - 1))
+                          }
+                          disabled={currentPage === 1}
+                          className="px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                         >
-                          Go to Page 1
+                          <span className="flex items-center space-x-1">
+                            <ArrowRight className="w-3 h-3 lg:w-4 lg:h-4 rotate-180" />
+                            <span>Previous</span>
+                          </span>
                         </button>
-                      )}
+                        <div className="px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium bg-gray-900 text-white rounded-lg">
+                          Page {currentPage} of {totalPages}
+                        </div>
+                        <button
+                          onClick={() =>
+                            setCurrentPage((prev) =>
+                              Math.min(totalPages, prev + 1)
+                            )
+                          }
+                          disabled={currentPage >= totalPages}
+                          className="px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                        >
+                          <span className="flex items-center space-x-1">
+                            <span>Next</span>
+                            <ArrowRight className="w-3 h-3 lg:w-4 lg:h-4" />
+                          </span>
+                        </button>
+                        {currentPage > totalPages && (
+                          <button
+                            onClick={() => setCurrentPage(1)}
+                            className="px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200"
+                          >
+                            Go to Page 1
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}

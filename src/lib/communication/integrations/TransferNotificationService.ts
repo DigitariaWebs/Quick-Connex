@@ -146,22 +146,18 @@ export class TransferNotificationService {
     try {
       console.log('📧 Sending new transfer request notifications...');
 
-      // Get admin contact information from environment variables
-      const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM;
-      const adminName = process.env.ADMIN_NAME || process.env.EMAIL_FROM_NAME || 'System Administrator';
-      const adminPhone = process.env.ADMIN_PHONE || '+15140000000';
-      
-      
-      if (!adminEmail) {
-        console.error('❌ Admin email not configured. Please set ADMIN_EMAIL environment variable.');
+      // Query database for all admin users (userType: 'admin', all statuses)
+      const adminUsers = await User.find({ userType: 'admin' })
+        .select('firstName lastName email phone')
+        .lean();
+
+      // Check if any admins found
+      if (!adminUsers || adminUsers.length === 0) {
+        console.error('❌ No admin users found in database. Cannot send transfer request notifications.');
         return;
       }
-      
-      const adminContact = {
-        email: adminEmail,
-        phone: adminPhone,
-        name: adminName
-      };
+
+      console.log(`📧 Found ${adminUsers.length} admin user(s) to notify`);
 
       // Get transfer display information
       const transferDisplayInfo = this.getTransferDisplayInfo(transfer);
@@ -215,13 +211,43 @@ export class TransferNotificationService {
           : '',
       };
 
-      // Send email notification to admin
-      await this.sendTransferRequestEmail(adminContact, transferData);
+      // Send notifications to all admin users
+      let emailCount = 0;
+      let smsCount = 0;
 
-      // Send SMS notification to admin
-      await this.sendTransferRequestSMS(adminContact, transferData);
+      for (const adminUser of adminUsers) {
+        const adminContact = {
+          email: adminUser.email,
+          phone: adminUser.phone,
+          name: `${adminUser.firstName || ''} ${adminUser.lastName || ''}`.trim() || 'System Administrator'
+        };
 
-      console.log('✅ Transfer request notifications sent successfully');
+        // Send email notification if admin has email
+        if (adminContact.email) {
+          try {
+            await this.sendTransferRequestEmail(adminContact, transferData);
+            emailCount++;
+          } catch (emailError) {
+            console.error(`❌ Failed to send email to admin ${adminContact.email}:`, emailError);
+          }
+        } else {
+          console.warn(`⚠️ Skipping email for admin ${adminContact.name} - no email address`);
+        }
+
+        // Send SMS notification if admin has phone
+        if (adminContact.phone) {
+          try {
+            await this.sendTransferRequestSMS(adminContact, transferData);
+            smsCount++;
+          } catch (smsError) {
+            console.error(`❌ Failed to send SMS to admin ${adminContact.phone}:`, smsError);
+          }
+        } else {
+          console.warn(`⚠️ Skipping SMS for admin ${adminContact.name} - no phone number`);
+        }
+      }
+
+      console.log(`✅ Transfer request notifications sent successfully to ${emailCount} admin(s) via email and ${smsCount} admin(s) via SMS`);
     } catch (error) {
       console.error('❌ Error sending transfer request notifications:', error);
     }

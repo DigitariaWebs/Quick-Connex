@@ -7,6 +7,25 @@ import { Search, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+// Hook to get window width
+function useWindowWidth() {
+  const [windowWidth, setWindowWidth] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    function handleResize() {
+      setWindowWidth(window.innerWidth);
+    }
+
+    // Set initial width
+    handleResize();
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return windowWidth;
+}
+
 export type ExpandableSearchBarProps = {
   expandDirection?: "left" | "right";
   placeholder?: string;
@@ -32,6 +51,13 @@ export default function ExpandableSearchBar(props: ExpandableSearchBarProps) {
   const [value, setValue] = useState("");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const windowWidth = useWindowWidth();
+
+  // Calculate responsive width
+  const responsiveWidth =
+    windowWidth && windowWidth < 640
+      ? Math.min(width, windowWidth - 80)
+      : width;
 
   const inputPadding = "pl-4";
   const placeholderLeft = "left-4";
@@ -108,7 +134,7 @@ export default function ExpandableSearchBar(props: ExpandableSearchBarProps) {
   return (
     <div
       ref={containerRef}
-      className={cn("relative inline-block", className)}
+      className={cn("relative inline-block max-w-full", className)}
       style={{ width: COLLAPSED_SIZE, height: COLLAPSED_SIZE }}
     >
       {/* Icon button (always visible, overlays left of bar) */}
@@ -133,11 +159,18 @@ export default function ExpandableSearchBar(props: ExpandableSearchBarProps) {
             className={cn(
               "absolute top-0 h-10 rounded-full border bg-white text-gray-900 shadow-sm overflow-hidden flex items-center",
               "border-gray-200 focus:outline-none focus:ring-0",
-              expandDirection === "left" ? "right-0" : "left-0"
+              expandDirection === "left" ? "right-0" : "left-0",
+              "max-w-[calc(100vw-2rem)] sm:max-w-none"
             )}
-            style={{ outline: "none", WebkitAppearance: "none" }}
+            style={{
+              outline: "none",
+              WebkitAppearance: "none",
+            }}
             initial={{ width: COLLAPSED_SIZE, opacity: 0.98 }}
-            animate={{ width: width, opacity: 1 }}
+            animate={{
+              width: responsiveWidth,
+              opacity: 1,
+            }}
             exit={{
               width: COLLAPSED_SIZE,
               opacity: 0,

@@ -999,6 +999,148 @@ async function createUser() {
     }
 }
 
+async function editUser(userId) {
+    try {
+        await ensureConnection();
+
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            console.log('\n❌ Invalid user ID format.');
+            return false;
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            console.log(`\n⚠️  User with ID ${userId} not found.`);
+            return false;
+        }
+
+        console.log('\n' + '='.repeat(80));
+        console.log('✏️  EDIT USER');
+        console.log('='.repeat(80));
+        console.log(`Current Information:`);
+        console.log(`  Name: ${user.firstName} ${user.lastName}`);
+        console.log(`  Email: ${user.email}`);
+        console.log(`  Phone: ${user.phone}`);
+        console.log(`  Type: ${user.userType}`);
+        console.log(`  Status: ${user.status}`);
+        console.log('='.repeat(80));
+
+        const updateFields = {};
+
+        // Edit Email
+        const newEmail = await question('\n📧 New email (press Enter to keep current): ');
+        if (newEmail.trim()) {
+            const normalizedEmail = newEmail.trim().toLowerCase();
+            const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+            if (!emailRegex.test(normalizedEmail)) {
+                console.log('\n❌ Invalid email format.');
+                return false;
+            }
+
+            // Check if email is already taken by another user
+            const existingUser = await User.findOne({
+                email: normalizedEmail,
+                _id: { $ne: userId }
+            });
+
+            if (existingUser) {
+                console.log('\n❌ Email is already in use by another user.');
+                return false;
+            }
+
+            updateFields.email = normalizedEmail;
+        }
+
+        // Edit Phone
+        const newPhone = await question('📱 New phone number (press Enter to keep current): ');
+        if (newPhone.trim()) {
+            const normalizedPhone = newPhone.trim();
+
+            // Check if phone is already taken by another user
+            const existingUser = await User.findOne({
+                phone: normalizedPhone,
+                _id: { $ne: userId }
+            });
+
+            if (existingUser) {
+                console.log('\n❌ Phone number is already in use by another user.');
+                return false;
+            }
+
+            updateFields.phone = normalizedPhone;
+        }
+
+        // Edit Password
+        const newPassword = await question('🔐 New password (press Enter to keep current): ');
+        if (newPassword.trim()) {
+            if (newPassword.length < 6) {
+                console.log('\n❌ Password must be at least 6 characters long.');
+                return false;
+            }
+
+            console.log('\n🔐 Hashing password...');
+            const hashedPassword = await bcrypt.hash(newPassword, 12);
+            updateFields.password = hashedPassword;
+        }
+
+        if (Object.keys(updateFields).length === 0) {
+            console.log('\n⚠️  No changes made.');
+            return false;
+        }
+
+        // Show what will be updated
+        console.log('\n' + '='.repeat(80));
+        console.log('📝 Changes to be made:');
+        if (updateFields.email) {
+            console.log(`  Email: ${user.email} → ${updateFields.email}`);
+        }
+        if (updateFields.phone) {
+            console.log(`  Phone: ${user.phone} → ${updateFields.phone}`);
+        }
+        if (updateFields.password) {
+            console.log(`  Password: [HIDDEN] → [NEW PASSWORD]`);
+        }
+        console.log('='.repeat(80));
+
+        const confirm = await question('\nConfirm these changes? (yes/no): ');
+        if (!isConfirmed(confirm)) {
+            console.log('❌ Update cancelled.');
+            return false;
+        }
+
+        // Update user
+        Object.assign(user, updateFields);
+        await user.save();
+
+        console.log('\n' + '='.repeat(80));
+        console.log('✅ USER UPDATED SUCCESSFULLY');
+        console.log('='.repeat(80));
+        console.log(`🆔 ID: ${user._id}`);
+        console.log(`👤 Name: ${user.firstName} ${user.lastName}`);
+        if (updateFields.email) {
+            console.log(`📧 Email: ${user.email} (updated)`);
+        } else {
+            console.log(`📧 Email: ${user.email}`);
+        }
+        if (updateFields.phone) {
+            console.log(`📱 Phone: ${user.phone} (updated)`);
+        } else {
+            console.log(`📱 Phone: ${user.phone}`);
+        }
+        if (updateFields.password) {
+            console.log(`🔐 Password: [UPDATED]`);
+        }
+        console.log(`👤 Type: ${user.userType}`);
+        console.log(`📊 Status: ${user.status}`);
+        console.log('='.repeat(80));
+
+        return true;
+    } catch (error) {
+        console.error('\n❌ Error editing user:', error.message);
+        throw error;
+    }
+}
+
 async function deleteUserById(userId) {
     let client;
     try {
@@ -2508,9 +2650,10 @@ async function handleUserMenu() {
         console.log('1. List all users');
         console.log('2. List users by type');
         console.log('3. Create new user');
-        console.log('4. Delete user by ID');
-        console.log('5. Delete users by type');
-        console.log('6. Show user statistics');
+        console.log('4. Edit user (email, phone, password)');
+        console.log('5. Delete user by ID');
+        console.log('6. Delete users by type');
+        console.log('7. Show user statistics');
         console.log('0. Back to main menu');
         console.log('='.repeat(80));
 
@@ -2542,11 +2685,16 @@ async function handleUserMenu() {
                 await question('\nPress Enter to continue...');
                 break;
             case '4':
+                const editUserId = await question('\nEnter user ID to edit: ');
+                await editUser(editUserId.trim());
+                await question('\nPress Enter to continue...');
+                break;
+            case '5':
                 const userId = await question('\nEnter user ID to delete: ');
                 await deleteUserById(userId.trim());
                 await question('\nPress Enter to continue...');
                 break;
-            case '5':
+            case '6':
                 console.log('\nUser Types:');
                 console.log('1. employee');
                 console.log('2. manager');
@@ -2562,7 +2710,7 @@ async function handleUserMenu() {
                 await deleteUsersByType(deleteUserType);
                 await question('\nPress Enter to continue...');
                 break;
-            case '6':
+            case '7':
                 await showUserStatistics();
                 await question('\nPress Enter to continue...');
                 break;

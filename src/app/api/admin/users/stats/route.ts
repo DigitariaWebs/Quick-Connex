@@ -16,8 +16,7 @@ export async function GET(request: NextRequest) {
       requireSession: true
     });
 
-    // DatabaseService handles connection automatically
-// Get current date for calculations
+    // Get current date for calculations
     const now = new Date();
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
@@ -27,65 +26,87 @@ export async function GET(request: NextRequest) {
     const startOfToday = new Date(now);
     startOfToday.setHours(0, 0, 0, 0);
 
-    // Calculate all statistics in parallel
+    // Optimize: Use a single aggregation pipeline to get all stats at once
+    // This is much faster than multiple separate count queries
     const [
-      totalUsers,
-      approvedUsers,
-      pendingUsers,
-      suspendedUsers,
-      rejectedUsers,
-      newThisWeek,
-      newThisMonth,
+      statsResult,
       usersByRole,
       usersByOrganization,
-      loginActivityToday,
-      loginActivityThisWeek,
-      loginActivityThisMonth,
-      approvedUsersCount,
-      pendingUsersCount,
-      lockedUsers,
-      superAdminUsers,
+      organizationDetails,
     ] = await Promise.all([
-      // Total users
-      DatabaseService.count(User, {}),
-      
-      // Status counts
-      DatabaseService.count(User, { status: "approved" }),
-      DatabaseService.count(User, { status: "pending" }),
-      DatabaseService.count(User, { status: "suspended" }),
-      DatabaseService.count(User, { status: "rejected" }),
-      
-      // New users this week
-      DatabaseService.count(User, { createdAt: { $gte: startOfWeek } }),
-      
-      // New users this month
-      DatabaseService.count(User, { createdAt: { $gte: startOfMonth } }),
-      
+      // Single aggregation to get all counts
+      User.aggregate([
+        {
+          $facet: {
+            total: [{ $count: "count" }],
+            byStatus: [
+              { $group: { _id: "$status", count: { $sum: 1 } } }
+            ],
+            newThisWeek: [
+              { $match: { createdAt: { $gte: startOfWeek } } },
+              { $count: "count" }
+            ],
+            newThisMonth: [
+              { $match: { createdAt: { $gte: startOfMonth } } },
+              { $count: "count" }
+            ],
+            loginToday: [
+              { $match: { lastLogin: { $gte: startOfToday } } },
+              { $count: "count" }
+            ],
+            loginThisWeek: [
+              { $match: { lastLogin: { $gte: startOfWeek } } },
+              { $count: "count" }
+            ],
+            loginThisMonth: [
+              { $match: { lastLogin: { $gte: startOfMonth } } },
+              { $count: "count" }
+            ],
+            locked: [
+              { $match: { accountLockedUntil: { $gt: new Date() } } },
+              { $count: "count" }
+            ],
+            superAdmins: [
+              { $match: { userType: "super_admin" } },
+              { $count: "count" }
+            ],
+          }
+        }
+      ]),
       // Users by role
-      DatabaseService.aggregate(User, [
+      User.aggregate([
         { $group: { _id: "$userType", count: { $sum: 1 } } },
       ]),
-      
-      // Users by organization
-      DatabaseService.aggregate(User, [
+      // Users by CIUSSS
+      User.aggregate([
         { $group: { _id: "$ciuss", count: { $sum: 1 } } },
       ]),
-      
-      // Login activity today
-      DatabaseService.count(User, { lastLogin: { $gte: startOfToday } }),
-      
-      // Login activity this week
-      DatabaseService.count(User, { lastLogin: { $gte: startOfWeek } }),
-      
-      // Login activity this month
-      DatabaseService.count(User, { lastLogin: { $gte: startOfMonth } }),
-      
-      // Account status
-      DatabaseService.count(User, { status: "approved" }),
-      DatabaseService.count(User, { status: "pending" }),
-      DatabaseService.count(User, { accountLockedUntil: { $gt: new Date() } }),
-      DatabaseService.count(User, { userType: "super_admin" }),
+      // Organization details with lookup
+      User.aggregate([
+        { $lookup: { from: "organizations", localField: "organization", foreignField: "_id", as: "orgDetails" } },
+        { $unwind: "$orgDetails" },
+        { $group: { _id: "$organization", name: { $first: "$orgDetails.name" }, count: { $sum: 1 } } },
+      ]),
     ]);
+
+    // Extract stats from aggregation result
+    const statsData = statsResult[0];
+    const totalUsers = statsData.total[0]?.count || 0;
+    const statusCounts = statsData.byStatus.reduce((acc: any, item: any) => {
+      acc[item._id] = item.count;
+      return acc;
+    }, {});
+    const approvedUsers = statusCounts.approved || 0;
+    const pendingUsers = statusCounts.pending || 0;
+    const suspendedUsers = statusCounts.suspended || 0;
+    const rejectedUsers = statusCounts.rejected || 0;
+    const newThisWeek = statsData.newThisWeek[0]?.count || 0;
+    const newThisMonth = statsData.newThisMonth[0]?.count || 0;
+    const loginActivityToday = statsData.loginToday[0]?.count || 0;
+    const loginActivityThisWeek = statsData.loginThisWeek[0]?.count || 0;
+    const loginActivityThisMonth = statsData.loginThisMonth[0]?.count || 0;
+    const lockedUsers = statsData.locked[0]?.count || 0;
+    const superAdminUsers = statsData.superAdmins[0]?.count || 0;
 
     // Process role statistics
     const roleStats = {
@@ -114,16 +135,8 @@ export async function GET(request: NextRequest) {
 
     // Process organization statistics
     const organizationStats: Record<string, { name: string; count: number }> = {};
-    
-    // Get organization details for populated stats
-    const organizationDetails = await DatabaseService.aggregate(User, [
-      { $lookup: { from: "organizations", localField: "organization", foreignField: "_id", as: "orgDetails" } },
-      { $unwind: "$orgDetails" },
-      { $group: { _id: "$organization", name: { $first: "$orgDetails.name" }, count: { $sum: 1 } } },
-    ]);
-
-    organizationDetails.forEach((org) => {
-      organizationStats[org._id] = {
+    organizationDetails.forEach((org: any) => {
+      organizationStats[org._id?.toString() || org._id] = {
         name: org.name,
         count: org.count,
       };
@@ -146,8 +159,8 @@ export async function GET(request: NextRequest) {
         thisMonth: loginActivityThisMonth,
       },
       accountHealth: {
-        approved: approvedUsersCount,
-        pending: pendingUsersCount,
+        approved: approvedUsers,
+        pending: pendingUsers,
         locked: lockedUsers,
         superAdmin: superAdminUsers,
       },

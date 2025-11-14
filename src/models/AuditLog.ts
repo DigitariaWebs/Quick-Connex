@@ -483,6 +483,11 @@ AuditLogSchema.index({ 'requestInfo.sessionId': 1, timestamp: -1 });
 // Compound index for efficient login history queries
 AuditLogSchema.index({ actorId: 1, action: 1, category: 1, timestamp: -1 });
 
+// Additional index for action-based queries with timestamp (for reports)
+AuditLogSchema.index({ action: 1, timestamp: -1 });
+// Combined index for $or queries with category/action and timestamp
+AuditLogSchema.index({ timestamp: -1, category: 1, action: 1 });
+
 // TTL index for automatic cleanup (2 years default)
 AuditLogSchema.index({ timestamp: 1 }, { expireAfterSeconds: 63072000 });
 

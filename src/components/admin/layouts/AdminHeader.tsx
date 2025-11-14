@@ -61,7 +61,7 @@ export default function AdminHeader({
           </div>
 
           {/* Right Side - User Profile */}
-          <div className="flex items-center space-x-2 lg:space-x-3">
+          <div className="hidden lg:flex items-center space-x-2 lg:space-x-3">
             {/* User Profile Section - Responsive */}
             <div className="flex items-center space-x-2 lg:space-x-3 bg-purple-50 rounded-full px-2 lg:px-3 py-2 border border-purple-200 shadow-sm">
               {/* Profile Picture */}

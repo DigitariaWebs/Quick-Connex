@@ -343,6 +343,25 @@ UserSchema.index({ 'documents.fileId': 1 });
 UserSchema.index({ userType: 1, status: 1 });
 UserSchema.index({ phone: 1 }); // Index for phone availability checks
 
+// Indexes for search functionality (firstName, lastName, email, userId)
+UserSchema.index({ firstName: 1 });
+UserSchema.index({ lastName: 1 });
+// Compound index for full name searches
+UserSchema.index({ firstName: 1, lastName: 1 });
+
+// Index for createdAt (used for sorting and date range queries)
+UserSchema.index({ createdAt: -1 });
+
+// Index for lastLogin (used in stats queries)
+UserSchema.index({ lastLogin: -1 });
+
+// Compound index for common filter combinations
+UserSchema.index({ status: 1, createdAt: -1 });
+UserSchema.index({ userType: 1, status: 1, createdAt: -1 });
+
+// Index for account locking queries
+UserSchema.index({ accountLockedUntil: 1 });
+
 // Instance methods
 UserSchema.methods.hasPermission = function(permission: Permission): boolean {
   // Super admins have all permissions

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/lib/auth';
-import { DatabaseService } from '@/lib/database';
 import Transfer from '@/models/Transfer';
 import User from '@/models/User';
 import Hospital from '@/models/Hospital';
 import AuditLog from '@/models/AuditLog';
 import { TransferSummaryReportData, TimeRange } from '@/types/reports/report.types';
 import { TargetResourceType } from '@/models/AuditLog';
+import mongoose from 'mongoose';
 
 /**
  * Transfer Summary Report API Endpoint
@@ -40,85 +40,61 @@ function calculateDateRange(timeRange: TimeRange): { start: Date; end: Date } {
   return { start, end };
 }
 
-async function getTransferDetails(transfer: any): Promise<any> {
-  // Populate user and hospital references
-  const [requestedByUser, assignedToUser, fromHospitalData, toHospitalData] = await Promise.all([
-    transfer.requestedBy 
-      ? DatabaseService.findOne(User, { _id: transfer.requestedBy })
-      : null,
-    transfer.assignedTo 
-      ? DatabaseService.findOne(User, { _id: transfer.assignedTo })
-      : null,
-    transfer.fromHospital 
-      ? DatabaseService.findOne(Hospital, { _id: transfer.fromHospital })
-      : null,
-    transfer.toHospital 
-      ? DatabaseService.findOne(Hospital, { _id: transfer.toHospital })
-      : null
-  ]);
-
-  // Fetch timeline from audit logs
+// Helper function to process transfer with pre-fetched data
+function processTransfer(
+  transfer: any,
+  timelineMap: Map<string, any[]>,
+  actorsMap: Map<string, any>
+): any {
   const transferIdStr = transfer._id ? String(transfer._id) : transfer.transferId;
-  const timelineLogs = await DatabaseService.findMany(AuditLog, {
-    $or: [
-      {
-        'targetResource.type': TargetResourceType.TRANSFER,
-        'targetResource.id': transferIdStr
-      },
-      {
-        'targetResource.type': TargetResourceType.TRANSFER,
-        'targetResource.id': transfer.transferId
+  const timelineLogs = timelineMap.get(transferIdStr) || [];
+
+  // Process timeline events using pre-fetched actor data
+  const timeline = timelineLogs.map((log: any) => {
+    let actorName = log.actorName || 'System';
+    let actorEmail = log.actorEmail || 'system@example.com';
+    let actorType = log.actorType || 'system';
+    let actorId = log.actorId || 'unknown';
+
+    // Use pre-fetched actor data if available
+    if (log.actorId && mongoose.Types.ObjectId.isValid(log.actorId)) {
+      const actor = actorsMap.get(log.actorId.toString());
+      if (actor) {
+        actorName = `${actor.firstName} ${actor.lastName}`;
+        actorEmail = actor.email;
+        actorType = actor.userType;
+        actorId = actor._id.toString();
       }
-    ]
-  }, {
-    sort: { timestamp: 1 }
+    }
+
+    return {
+      id: log._id.toString(),
+      action: log.action || 'Unknown Action',
+      description: log.description || 'No description',
+      timestamp: log.timestamp?.toISOString() || new Date().toISOString(),
+      actor: {
+        id: actorId,
+        name: actorName,
+        email: actorEmail,
+        userType: actorType
+      },
+      status: log.metadata?.status || log.changes?.status,
+      changes: log.changes
+    };
   });
 
-  // Process timeline events
-  const timeline = await Promise.all(
-    timelineLogs.map(async (log: any) => {
-      let actorName = log.adminName || log.actorName || 'System';
-      let actorEmail = log.adminEmail || log.actorEmail || 'system@example.com';
-      let actorType = log.adminRole || log.actorType || 'system';
-      let actorId = log.adminId || log.actorId || 'unknown';
-
-      if (log.actorId && log.actorId !== 'unknown') {
-        try {
-          const actor = await DatabaseService.findOne(User, { _id: log.actorId });
-          if (actor && actor._id) {
-            actorName = `${actor.firstName} ${actor.lastName}`;
-            actorEmail = actor.email;
-            actorType = actor.userType;
-            actorId = String(actor._id);
-          }
-        } catch (error) {
-          // Use log data if user not found
-        }
-      }
-
-      return {
-        id: log._id.toString(),
-        action: log.action || 'Unknown Action',
-        description: log.description || 'No description',
-        timestamp: log.timestamp.toISOString(),
-        actor: {
-          id: actorId,
-          name: actorName,
-          email: actorEmail,
-          userType: actorType
-        },
-        status: log.metadata?.status || log.changes?.status,
-        changes: log.changes
-      };
-    })
-  );
+  // Use populated data directly from transfer (already populated)
+  const requestedByUser = transfer.requestedBy || null;
+  const assignedToUser = transfer.assignedTo || null;
+  const fromHospitalData = transfer.fromHospital || null;
+  const toHospitalData = transfer.toHospital || null;
 
   return {
     transferId: transfer.transferId,
     transferCategory: transfer.transferCategory,
     status: transfer.status,
     priority: transfer.priority,
-    requestedDate: transfer.requestedDate.toISOString(),
+    requestedDate: transfer.requestedDate?.toISOString() || new Date().toISOString(),
     scheduledDate: transfer.scheduledDate?.toISOString(),
     acceptedAt: transfer.acceptedAt?.toISOString(),
     completedDate: transfer.completedDate?.toISOString(),
@@ -194,37 +170,132 @@ export async function GET(request: NextRequest) {
     
     const { start, end } = calculateDateRange(timeRange);
 
-    // Fetch transfers in date range
-    const transfers = await DatabaseService.findMany(Transfer, {
-      requestedDate: { $gte: start, $lte: end }
-    }, {
-      sort: { requestedDate: -1 }
-    });
+    // Optimize: Fetch transfers with populate and calculate stats in parallel
+    const [transfers, statsResult] = await Promise.all([
+      // Fetch transfers with populated relationships
+      Transfer.find({
+        requestedDate: { $gte: start, $lte: end }
+      })
+        .populate('requestedBy', 'firstName lastName email phone userType')
+        .populate('assignedTo', 'firstName lastName email phone userType')
+        .populate('fromHospital', 'name address organization')
+        .populate('toHospital', 'name address organization')
+        .sort({ requestedDate: -1 })
+        .lean(),
+      
+      // Calculate statistics using aggregation (much faster than client-side filtering)
+      Transfer.aggregate([
+        { $match: { requestedDate: { $gte: start, $lte: end } } },
+        {
+          $facet: {
+            byStatus: [
+              { $group: { _id: '$status', count: { $sum: 1 } } }
+            ],
+            byPriority: [
+              { $group: { _id: '$priority', count: { $sum: 1 } } }
+            ],
+            byCategory: [
+              { $group: { _id: '$transferCategory', count: { $sum: 1 } } }
+            ],
+            total: [{ $count: 'count' }]
+          }
+        }
+      ])
+    ]);
 
-    // Calculate statistics
+    // Extract statistics from aggregation result
+    const statsData = statsResult[0];
+    const statusCounts = statsData.byStatus.reduce((acc: any, item: any) => {
+      acc[item._id] = item.count;
+      return acc;
+    }, {});
+    const priorityCounts = statsData.byPriority.reduce((acc: any, item: any) => {
+      acc[item._id] = item.count;
+      return acc;
+    }, {});
+    const categoryCounts = statsData.byCategory.reduce((acc: any, item: any) => {
+      acc[item._id] = item.count;
+      return acc;
+    }, {});
+    
     const statistics = {
-      total: transfers.length,
+      total: statsData.total[0]?.count || 0,
       byStatus: {
-        pending: transfers.filter(t => t.status === 'pending').length,
-        accepted: transfers.filter(t => t.status === 'accepted').length,
-        in_progress: transfers.filter(t => t.status === 'in_progress').length,
-        completed: transfers.filter(t => t.status === 'completed').length,
-        cancelled: transfers.filter(t => t.status === 'cancelled').length
+        pending: statusCounts.pending || 0,
+        accepted: statusCounts.accepted || 0,
+        in_progress: statusCounts.in_progress || 0,
+        completed: statusCounts.completed || 0,
+        cancelled: statusCounts.cancelled || 0
       },
       byPriority: {
-        low: transfers.filter(t => t.priority === 'low').length,
-        urgent: transfers.filter(t => t.priority === 'urgent').length
+        low: priorityCounts.low || 0,
+        urgent: priorityCounts.urgent || 0
       },
       byCategory: {
-        patient: transfers.filter(t => t.transferCategory === 'patient').length,
-        envelope: transfers.filter(t => t.transferCategory === 'envelope').length,
-        medical_instruments: transfers.filter(t => t.transferCategory === 'medical_instruments').length
+        patient: categoryCounts.patient || 0,
+        envelope: categoryCounts.envelope || 0,
+        medical_instruments: categoryCounts.medical_instruments || 0
       }
     };
 
-    // Get detailed information for each transfer
-    const transferDetails = await Promise.all(
-      transfers.map(transfer => getTransferDetails(transfer))
+    // Optimize: Batch fetch all timeline logs and actors at once
+    const transferIds = transfers.map(t => {
+      const id = t._id ? String(t._id) : t.transferId;
+      return id;
+    });
+    const transferObjectIds = transfers
+      .map(t => t.transferId)
+      .filter((id): id is string => !!id);
+
+    // Fetch all timeline logs in a single query
+    const allTimelineLogs = await AuditLog.find({
+      $or: [
+        {
+          'targetResource.type': TargetResourceType.TRANSFER,
+          'targetResource.id': { $in: transferIds }
+        },
+        {
+          'targetResource.type': TargetResourceType.TRANSFER,
+          'targetResource.id': { $in: transferObjectIds }
+        }
+      ]
+    })
+      .select('targetResource action description timestamp actorId actorName actorEmail actorType metadata changes')
+      .sort({ timestamp: 1 })
+      .lean();
+
+    // Group timeline logs by transfer ID
+    const timelineMap = new Map<string, any[]>();
+    allTimelineLogs.forEach((log: any) => {
+      const transferId = log.targetResource?.id;
+      if (transferId) {
+        if (!timelineMap.has(transferId)) {
+          timelineMap.set(transferId, []);
+        }
+        timelineMap.get(transferId)!.push(log);
+      }
+    });
+
+    // Collect all unique actor IDs and batch fetch users
+    const actorIds = allTimelineLogs
+      .map((log: any) => log.actorId)
+      .filter((id: any) => id && id !== 'unknown' && mongoose.Types.ObjectId.isValid(id))
+      .filter((id: any, index: number, self: any[]) => self.indexOf(id) === index);
+
+    const actorsMap = new Map<string, any>();
+    if (actorIds.length > 0) {
+      const actors = await User.find({ _id: { $in: actorIds } })
+        .select('_id firstName lastName email userType')
+        .lean();
+      actors.forEach((actor: any) => {
+        actorsMap.set(actor._id.toString(), actor);
+      });
+    }
+
+    // Process all transfers using pre-fetched data
+    // Note: transfers are already populated with users and hospitals
+    const transferDetails = transfers.map(transfer =>
+      processTransfer(transfer, timelineMap, actorsMap)
     );
 
     // Build report data
@@ -244,7 +315,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Transfer summary report API error:', error);
+    console.error('Transfer summary report API error:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to generate transfer summary report',

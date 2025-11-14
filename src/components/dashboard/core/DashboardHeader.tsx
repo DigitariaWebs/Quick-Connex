@@ -110,7 +110,7 @@ export default function DashboardHeader({
             )}
 
             {/* User Profile Section - Responsive */}
-            <div className="flex items-center space-x-2 lg:space-x-3 bg-green-50 rounded-full px-2 lg:px-3 py-2 border border-green-200 shadow-sm sidebar-nav-item">
+            <div className="hidden lg:flex items-center space-x-2 lg:space-x-3 bg-green-50 rounded-full px-2 lg:px-3 py-2 border border-green-200 shadow-sm sidebar-nav-item">
               {/* Profile Picture */}
               <div className="w-8 h-8 bg-gradient-to-br from-pink-400 to-red-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-sm">
