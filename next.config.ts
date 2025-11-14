@@ -44,6 +44,74 @@ const nextConfig: NextConfig = {
         })
       })
     );
+
+    // Optimize file watching to prevent unnecessary recompilations
+      // Webpack requires ignored to be either all strings (glob patterns) or a single RegExp
+      const ignoredPatterns = [
+        "**/node_modules/**",
+        "**/.next/**",
+        "**/public/**",
+        "**/.git/**",
+        "**/.cursor/**",
+        "**/.vscode/**",
+        "**/.idea/**",
+        "**/coverage/**",
+        "**/dist/**",
+        "**/build/**",
+        "**/out/**",
+        // Log files (comprehensive patterns)
+        "**/*.log",
+        "**/server.log",
+        "**/npm-debug.log*",
+        "**/yarn-debug.log*",
+        "**/yarn-error.log*",
+        "**/.pnpm-debug.log*",
+        // Data files that shouldn't trigger recompilation
+        "**/cookies.txt",
+        "**/data.txt",
+        "**/production_credentials.txt",
+        "**/test_users_credentials.txt",
+        "**/vapid-keys.txt",
+        "**/secrets.txt",
+        "**/things.txt",
+        // Additional .txt files in root (not in src/)
+        "cookies.txt",
+        "data.txt",
+        "production_credentials.txt",
+        "test_users_credentials.txt",
+        "vapid-keys.txt",
+        "secrets.txt",
+        "things.txt",
+        // Test and documentation files
+        "**/test/**",
+        "**/docs/**/*.md",
+        // Temporary files
+        "**/.DS_Store",
+        "**/Thumbs.db",
+        "**/*.swp",
+        "**/*.swo",
+        "**/*~",
+        // Environment files
+        "**/.env*.local",
+        "**/.env*.backup",
+        // Build artifacts
+        "**/*.tsbuildinfo",
+        "**/next-env.d.ts",
+        // Markdown files in docs and test directories (documentation)
+        "**/docs/**/*.md",
+        "**/test/**/*.md",
+      ];
+
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: ignoredPatterns,
+        // Aggregate changes before triggering rebuild
+        aggregateTimeout: 600,
+        // Use polling only if native watching fails
+        poll: false,
+        // Follow symbolic links
+        followSymlinks: true,
+      };
     
     // Ignore handlebars require.extensions warnings
     config.ignoreWarnings = [

@@ -56,8 +56,8 @@ console.log('✅ API: MongoDB connection established');
     console.log(`🔍 API: Looking up user with reset token`);
     const user = await DatabaseService.findOne(User, {
       resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() }
-    });
+      resetPasswordExpires: { $gt: new Date() }
+    }, { lean: false });
 
     if (!user) {
       console.log('❌ API: Invalid or expired reset token');
@@ -80,11 +80,23 @@ console.log('✅ API: MongoDB connection established');
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Update user password and clear reset token
-    user.password = hashedPassword;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
-    await user;
+    // Update user password and clear reset token using findOneAndUpdate with runValidators: false
+    // This is necessary because managers require hospital/ciusss fields, but we're only updating password
+    // Using runValidators: false avoids triggering full document validation
+    await User.findOneAndUpdate(
+      { _id: user._id },
+      {
+        $set: {
+          password: hashedPassword,
+          resetPasswordToken: undefined,
+          resetPasswordExpires: undefined
+        }
+      },
+      {
+        runValidators: false, // Skip validation since we're only updating password and clearing reset token
+        new: false // We don't need the updated document
+      }
+    );
 
     console.log('✅ API: Password reset successfully');
 

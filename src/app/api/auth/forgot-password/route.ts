@@ -49,7 +49,7 @@ console.log('✅ API: MongoDB connection established');
 
     // Find user by email
     console.log(`🔍 API: Looking up user with email: ${email}`);
-    const user = await DatabaseService.findOne(User, { email: email.toLowerCase() });
+    const user = await DatabaseService.findOne(User, { email: email.toLowerCase() }, { lean: true });
 
     if (!user) {
       console.log('❌ API: User not found');
@@ -72,10 +72,22 @@ console.log('✅ API: MongoDB connection established');
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetExpires = new Date(Date.now() + 3600000); // 1 hour from now
 
-    // Save reset token to user
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = resetExpires;
-    await user;
+    // Update reset token fields using findOneAndUpdate with runValidators: false
+    // This is necessary because managers require hospital/ciusss fields, but we're only updating reset token
+    // Using runValidators: false avoids triggering full document validation
+    await User.findOneAndUpdate(
+      { _id: user._id },
+      {
+        $set: {
+          resetPasswordToken: resetToken,
+          resetPasswordExpires: resetExpires
+        }
+      },
+      {
+        runValidators: false, // Skip validation since we're only updating reset token fields
+        new: false // We don't need the updated document
+      }
+    );
 
     console.log('✅ API: Reset token generated and saved');
 
