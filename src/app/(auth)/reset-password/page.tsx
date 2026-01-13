@@ -4,9 +4,12 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { LOGO_PATH, ASSETS } from "@/constants";
 
 function ResetPasswordForm() {
+  const t = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [password, setPassword] = useState("");
@@ -21,7 +24,7 @@ function ResetPasswordForm() {
     const tokenParam = searchParams.get("token");
     if (!tokenParam) {
       setMessage({
-        text: "Invalid or missing reset token. Please request a new password reset.",
+        text: t("resetPassword.invalidToken"),
         type: "error",
       });
     } else {
@@ -37,7 +40,7 @@ function ResetPasswordForm() {
     // Validate passwords match
     if (password !== confirmPassword) {
       setMessage({
-        text: "Passwords do not match. Please try again.",
+        text: t("validation.passwordsMustMatch"),
         type: "error",
       });
       setIsLoading(false);
@@ -47,7 +50,7 @@ function ResetPasswordForm() {
     // Validate password strength
     if (password.length < 6) {
       setMessage({
-        text: "Password must be at least 6 characters long.",
+        text: t("validation.passwordTooShort"),
         type: "error",
       });
       setIsLoading(false);
@@ -67,7 +70,7 @@ function ResetPasswordForm() {
 
       if (response.ok) {
         setMessage({
-          text: "Password has been reset successfully! You can now sign in with your new password.",
+          text: t("resetPassword.success"),
           type: "success",
         });
 
@@ -81,14 +84,14 @@ function ResetPasswordForm() {
         }, 3000);
       } else {
         setMessage({
-          text: data.message || "An error occurred. Please try again.",
+          text: data.message || t("messages.serverError"),
           type: "error",
         });
       }
     } catch (error) {
       console.error("Error:", error);
       setMessage({
-        text: "An error occurred. Please try again.",
+        text: t("messages.serverError"),
         type: "error",
       });
     } finally {
@@ -117,11 +120,10 @@ function ResetPasswordForm() {
           className="max-w-lg text-white"
         >
           <h1 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight drop-shadow-lg">
-            Set New Password
+            {t("resetPassword.title")}
           </h1>
           <p className="text-lg lg:text-xl text-white/90 leading-relaxed drop-shadow-md">
-            Enter your new password below to complete the reset process and
-            regain access to your account
+            {t("resetPassword.subtitle")}
           </p>
         </motion.div>
       </div>
@@ -144,11 +146,14 @@ function ResetPasswordForm() {
                 />
               </div>
               <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">
-                Reset Password
+                {t("resetPassword.title")}
               </h2>
               <p className="text-sm lg:text-base text-gray-600">
-                Enter your new password
+                {t("resetPassword.subtitle")}
               </p>
+              <div className="flex justify-center mt-4">
+                <LanguageSwitcher />
+              </div>
             </div>
 
             {/* Status Message */}
@@ -171,7 +176,7 @@ function ResetPasswordForm() {
                     htmlFor="password"
                     className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
                   >
-                    New Password
+                    {t("resetPassword.newPassword")}
                   </label>
                   <div className="relative">
                     <input
@@ -182,7 +187,7 @@ function ResetPasswordForm() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full px-4 lg:px-5 py-3 lg:py-4 text-base lg:text-lg border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-12 placeholder:text-gray-500 text-black"
-                      placeholder="Enter your new password"
+                      placeholder={t("auth.enterPassword")}
                     />
                     <button
                       type="button"
@@ -236,7 +241,7 @@ function ResetPasswordForm() {
                     htmlFor="confirm-password"
                     className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
                   >
-                    Confirm New Password
+                    {t("resetPassword.confirmPassword")}
                   </label>
                   <div className="relative">
                     <input
@@ -247,7 +252,7 @@ function ResetPasswordForm() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="w-full px-4 lg:px-5 py-3 lg:py-4 text-base lg:text-lg border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-12 placeholder:text-gray-500 text-black"
-                      placeholder="Confirm your new password"
+                      placeholder={t("auth.confirmPassword")}
                     />
                     <button
                       type="button"
@@ -301,7 +306,9 @@ function ResetPasswordForm() {
                     disabled={isLoading}
                     className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 lg:py-4 px-6 text-base lg:text-lg rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                   >
-                    {isLoading ? "Resetting Password..." : "Reset Password"}
+                    {isLoading
+                      ? t("resetPassword.resetting")
+                      : t("resetPassword.resetButton")}
                   </button>
                 </div>
               </form>
@@ -312,7 +319,7 @@ function ResetPasswordForm() {
                 </p>
                 <Link
                   href="/forgot-password"
-                  className="inline-block bg-green-500 hover:bg-green-600 text-white font-semibold py-3 lg:py-4 px-6 text-base lg:text-lg rounded-xl transition-colors duration-200 min-h-[44px] flex items-center justify-center"
+                  className="flex bg-green-500 hover:bg-green-600 text-white font-semibold py-3 lg:py-4 px-6 text-base lg:text-lg rounded-xl transition-colors duration-200 min-h-[44px] items-center justify-center"
                 >
                   Request New Reset Link
                 </Link>
@@ -321,12 +328,12 @@ function ResetPasswordForm() {
 
             <div className="text-center mt-6 lg:mt-8">
               <p className="text-sm lg:text-base text-gray-600">
-                Remember your password?{" "}
+                {t("auth.alreadyHaveAccount")}{" "}
                 <Link
                   href="/login"
                   className="font-medium text-green-600 hover:text-green-500 transition-colors duration-200"
                 >
-                  Sign In
+                  {t("auth.signIn")}
                 </Link>
               </p>
             </div>
@@ -338,8 +345,10 @@ function ResetPasswordForm() {
 }
 
 export default function ResetPasswordPage() {
+  const t = useTranslations("common");
+
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div>{t("loading")}</div>}>
       <ResetPasswordForm />
     </Suspense>
   );

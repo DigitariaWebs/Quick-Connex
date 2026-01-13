@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 /**
  * Database Performance Monitoring Page
@@ -76,6 +77,8 @@ interface IndexPerformance {
 }
 
 export default function DatabasePerformancePage() {
+  const t = useTranslations("adminMonitoring");
+  const tCommon = useTranslations("common");
   const [metrics, setMetrics] = useState<DatabaseMetrics>({
     totalQueries: 0,
     averageQueryTime: 0,
@@ -106,7 +109,7 @@ export default function DatabasePerformancePage() {
   const fetchDatabaseData = async () => {
     try {
       const response = await fetch(
-        `/api/admin/monitoring/database?timeRange=${timeRange}`
+        `/api/admin/monitoring/database?timeRange=${timeRange}`,
       );
       if (response.ok) {
         const data = await response.json();
@@ -197,7 +200,7 @@ export default function DatabasePerformancePage() {
 
   const getPerformanceColor = (
     value: number,
-    thresholds: { good: number; warning: number }
+    thresholds: { good: number; warning: number },
   ) => {
     if (value <= thresholds.good) return "text-green-600";
     if (value <= thresholds.warning) return "text-yellow-600";
@@ -206,18 +209,16 @@ export default function DatabasePerformancePage() {
 
   return (
     <AdminLayout
-      pageTitle="Database Performance"
-      pageDescription="Monitor database performance, query execution times, and connection health"
+      pageTitle={t("databasePerformance")}
+      pageDescription={t("overview")}
     >
       {/* Header with Controls */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            Database Performance
+            {t("databasePerformance")}
           </h1>
-          <p className="text-gray-600 mt-2">
-            Monitor database health, query performance, and connection metrics
-          </p>
+          <p className="text-gray-600 mt-2">{t("overview")}</p>
         </div>
         <div className="flex items-center space-x-4">
           {/* Time Range Selector */}
@@ -226,10 +227,10 @@ export default function DatabasePerformancePage() {
             onChange={(e) => setTimeRange(e.target.value as any)}
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           >
-            <option value="1h">Last Hour</option>
-            <option value="6h">Last 6 Hours</option>
-            <option value="24h">Last 24 Hours</option>
-            <option value="7d">Last 7 Days</option>
+            <option value="1h">{t("1h")}</option>
+            <option value="6h">{t("6h")}</option>
+            <option value="24h">{t("24h")}</option>
+            <option value="7d">{t("7d")}</option>
           </select>
 
           <motion.button
@@ -242,7 +243,7 @@ export default function DatabasePerformancePage() {
             <RefreshCw
               className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
             />
-            <span>Refresh</span>
+            <span>{isRefreshing ? t("refreshing") : t("refresh")}</span>
           </motion.button>
         </div>
       </div>
@@ -264,12 +265,12 @@ export default function DatabasePerformancePage() {
               <p
                 className={`text-2xl font-bold ${getPerformanceColor(
                   metrics.averageQueryTime,
-                  { good: 100, warning: 500 }
+                  { good: 100, warning: 500 },
                 )}`}
               >
                 {formatDuration(metrics.averageQueryTime)}
               </p>
-              <p className="text-sm text-gray-500">Avg Query Time</p>
+              <p className="text-sm text-gray-500">{t("avgQueryTime")}</p>
             </div>
           </div>
         </motion.div>
@@ -289,7 +290,7 @@ export default function DatabasePerformancePage() {
               <p className="text-2xl font-bold text-gray-900">
                 {metrics.queriesPerSecond.toFixed(1)}
               </p>
-              <p className="text-sm text-gray-500">Queries/sec</p>
+              <p className="text-sm text-gray-500">{t("queriesPerSecond")}</p>
             </div>
           </div>
         </motion.div>
@@ -309,7 +310,7 @@ export default function DatabasePerformancePage() {
               <p className="text-2xl font-bold text-gray-900">
                 {formatBytes(metrics.databaseSize)}
               </p>
-              <p className="text-sm text-gray-500">Database Size</p>
+              <p className="text-sm text-gray-500">{t("databaseSize")}</p>
             </div>
           </div>
         </motion.div>
@@ -329,7 +330,7 @@ export default function DatabasePerformancePage() {
               <p className="text-2xl font-bold text-gray-900">
                 {metrics.cacheHitRatio.toFixed(1)}%
               </p>
-              <p className="text-sm text-gray-500">Cache Hit Ratio</p>
+              <p className="text-sm text-gray-600">{t("indexHitRatio")}</p>
             </div>
           </div>
         </motion.div>
@@ -344,12 +345,12 @@ export default function DatabasePerformancePage() {
           transition={{ duration: 0.4, delay: 0.5 }}
           className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
         >
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Connection Pool
-          </h2>
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">
+            {t("connectionPool")}
+          </h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Pool Size</span>
+              <p className="text-sm text-gray-600">{t("connectionPoolSize")}</p>
               <span className="font-medium">{metrics.connectionPoolSize}</span>
             </div>
             <div className="flex items-center justify-between">
@@ -390,7 +391,7 @@ export default function DatabasePerformancePage() {
           </h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Total Queries</span>
+              <p className="text-sm text-gray-500">{t("slowQueries")}</p>
               <span className="font-medium">
                 {metrics.totalQueries.toLocaleString()}
               </span>
@@ -406,11 +407,11 @@ export default function DatabasePerformancePage() {
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Index Hit Ratio</span>
+              <p className="text-sm text-gray-600">{t("cacheHitRatio")}</p>
               <span
                 className={`font-medium ${getPerformanceColor(
                   metrics.indexHitRatio,
-                  { good: 95, warning: 85 }
+                  { good: 95, warning: 85 },
                 )}`}
               >
                 {metrics.indexHitRatio.toFixed(1)}%
@@ -441,7 +442,7 @@ export default function DatabasePerformancePage() {
                 <div className="flex items-center space-x-3">
                   <div
                     className={`p-2 rounded-lg ${getQueryTypeColor(
-                      query.type
+                      query.type,
                     )}`}
                   >
                     <Database className="w-4 h-4" />
@@ -491,7 +492,7 @@ export default function DatabasePerformancePage() {
                 <div className="flex items-center space-x-3">
                   <div
                     className={`p-2 rounded-lg ${getConnectionStatusColor(
-                      connection.status
+                      connection.status,
                     )}`}
                   >
                     <Server className="w-4 h-4" />
@@ -509,7 +510,7 @@ export default function DatabasePerformancePage() {
                 <div className="text-right">
                   <div
                     className={`px-2 py-1 rounded-full text-xs font-medium ${getConnectionStatusColor(
-                      connection.status
+                      connection.status,
                     )}`}
                   >
                     {connection.status}
@@ -517,7 +518,7 @@ export default function DatabasePerformancePage() {
                   <p className="text-xs text-gray-500 mt-1">
                     {formatDuration(
                       Date.now() -
-                        parseTimestamp(connection.connectedAt).getTime()
+                        parseTimestamp(connection.connectedAt).getTime(),
                     )}
                   </p>
                 </div>
@@ -544,8 +545,8 @@ export default function DatabasePerformancePage() {
                 health.status === "healthy"
                   ? "bg-green-100 text-green-800"
                   : health.status === "degraded"
-                  ? "bg-yellow-100 text-yellow-800"
-                  : "bg-red-100 text-red-800"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : "bg-red-100 text-red-800"
               }`}
             >
               {health.status.toUpperCase()}
@@ -614,7 +615,7 @@ export default function DatabasePerformancePage() {
               <div className="text-2xl font-bold text-gray-900">
                 {dbStats.indexes}
               </div>
-              <div className="text-sm text-gray-600">Indexes</div>
+              <p className="text-sm text-gray-600">{t("idle")}</p>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-xl">
               <div className="text-2xl font-bold text-gray-900">
@@ -743,7 +744,7 @@ export default function DatabasePerformancePage() {
                     <span
                       className={`font-medium ${getPerformanceColor(
                         index.efficiency,
-                        { good: 80, warning: 60 }
+                        { good: 80, warning: 60 },
                       )}`}
                     >
                       {index.efficiency}%

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 interface Template {
   path: string;
@@ -51,6 +52,8 @@ interface PreviewResult {
 }
 
 export default function TemplateManager() {
+  const t = useTranslations("adminTemplates");
+  const tCommon = useTranslations("common");
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [preview, setPreview] = useState<PreviewResult | null>(null);
@@ -74,10 +77,10 @@ export default function TemplateManager() {
           setSelectedTemplate(data.templates[0].path);
         }
       } else {
-        setError(data.error || "Failed to load templates");
+        setError(data.error || t("error"));
       }
     } catch (err) {
-      setError("Failed to load templates");
+      setError(t("error"));
     } finally {
       setLoading(false);
     }
@@ -99,10 +102,10 @@ export default function TemplateManager() {
       if (data.success) {
         setValidation(data.result);
       } else {
-        setError(data.error || "Validation failed");
+        setError(data.error || t("validationFailed"));
       }
     } catch (err) {
-      setError("Validation failed");
+      setError(t("validationFailed"));
     } finally {
       setLoading(false);
     }
@@ -124,10 +127,10 @@ export default function TemplateManager() {
       if (data.success) {
         setPreview(data.result);
       } else {
-        setError(data.error || "Preview generation failed");
+        setError(data.error || t("previewFailed"));
       }
     } catch (err) {
-      setError("Preview generation failed");
+      setError(t("previewFailed"));
     } finally {
       setLoading(false);
     }
@@ -135,7 +138,7 @@ export default function TemplateManager() {
 
   const openPreviewInNewTab = (templatePath: string) => {
     const url = `/api/templates/preview?templatePath=${encodeURIComponent(
-      templatePath
+      templatePath,
     )}&withValidation=true`;
     window.open(url, "_blank");
   };
@@ -145,16 +148,18 @@ export default function TemplateManager() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Template Manager
+            {t("title")}
           </h1>
-          <p className="text-gray-600">Validate and preview email templates</p>
+          <p className="text-gray-600">{t("subtitle")}</p>
         </div>
 
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
             <div className="flex">
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">Error</h3>
+                <h3 className="text-sm font-medium text-red-800">
+                  {t("errorOccurred")}
+                </h3>
                 <div className="mt-2 text-sm text-red-700">{error}</div>
               </div>
             </div>
@@ -166,7 +171,7 @@ export default function TemplateManager() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-lg font-semibold mb-4">
-                Available Templates
+                {t("availableTemplates")}
               </h2>
 
               {loading ? (
@@ -197,11 +202,11 @@ export default function TemplateManager() {
                         <div className="flex items-center space-x-2">
                           {template.validation.isValid ? (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              ✓ Valid
+                              ✓ {t("valid")}
                             </span>
                           ) : (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              ✗ {template.validation.errorCount} errors
+                              ✗ {template.validation.errorCount} {t("errors")}
                             </span>
                           )}
                           {template.validation.warningCount > 0 && (
@@ -225,12 +230,12 @@ export default function TemplateManager() {
                 {/* Template Info */}
                 <div className="bg-white rounded-lg shadow p-6">
                   <h2 className="text-lg font-semibold mb-4">
-                    Template Details
+                    {t("templateDetails")}
                   </h2>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700">
-                        Path
+                        {t("path")}
                       </label>
                       <p className="mt-1 text-sm text-gray-900">
                         {selectedTemplate}
@@ -238,7 +243,7 @@ export default function TemplateManager() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700">
-                        Category
+                        {t("category")}
                       </label>
                       <p className="mt-1 text-sm text-gray-900">
                         {
@@ -251,7 +256,7 @@ export default function TemplateManager() {
 
                   <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700">
-                      Variables
+                      {t("variables")}
                     </label>
                     <div className="mt-1 flex flex-wrap gap-2">
                       {templates
@@ -273,20 +278,20 @@ export default function TemplateManager() {
                       disabled={loading}
                       className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                     >
-                      Validate Template
+                      {t("validateTemplate")}
                     </button>
                     <button
                       onClick={() => generatePreview(selectedTemplate)}
                       disabled={loading}
                       className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
                     >
-                      Generate Preview
+                      {t("generatePreview")}
                     </button>
                     <button
                       onClick={() => openPreviewInNewTab(selectedTemplate)}
                       className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
-                      Open in New Tab
+                      {t("openInNewTab")}
                     </button>
                   </div>
                 </div>
@@ -295,7 +300,7 @@ export default function TemplateManager() {
                 {validation && (
                   <div className="bg-white rounded-lg shadow p-6">
                     <h2 className="text-lg font-semibold mb-4">
-                      Validation Results
+                      {t("validationResults")}
                     </h2>
 
                     <div className="mb-4">
@@ -306,14 +311,16 @@ export default function TemplateManager() {
                             : "bg-red-100 text-red-800"
                         }`}
                       >
-                        {validation.isValid ? "✓ Valid" : "✗ Invalid"}
+                        {validation.isValid
+                          ? `✓ ${t("valid")}`
+                          : `✗ ${t("invalid")}`}
                       </span>
                     </div>
 
                     {validation.errors.length > 0 && (
                       <div className="mb-4">
                         <h3 className="text-sm font-medium text-red-800 mb-2">
-                          Errors
+                          {t("errors")}
                         </h3>
                         <div className="space-y-2">
                           {validation.errors.map((error, index) => (
@@ -328,7 +335,7 @@ export default function TemplateManager() {
                                   </p>
                                   {error.line && (
                                     <p className="text-xs text-red-600 mt-1">
-                                      Line {error.line}
+                                      {t("line")} {error.line}
                                     </p>
                                   )}
                                 </div>
@@ -342,7 +349,7 @@ export default function TemplateManager() {
                     {validation.warnings.length > 0 && (
                       <div>
                         <h3 className="text-sm font-medium text-yellow-800 mb-2">
-                          Warnings
+                          {t("warnings")}
                         </h3>
                         <div className="space-y-2">
                           {validation.warnings.map((warning, index) => (
@@ -357,7 +364,7 @@ export default function TemplateManager() {
                                   </p>
                                   {warning.line && (
                                     <p className="text-xs text-yellow-600 mt-1">
-                                      Line {warning.line}
+                                      {t("line")} {warning.line}
                                     </p>
                                   )}
                                 </div>
@@ -374,20 +381,24 @@ export default function TemplateManager() {
                 {preview && (
                   <div className="bg-white rounded-lg shadow p-6">
                     <h2 className="text-lg font-semibold mb-4">
-                      Preview Results
+                      {t("previewResults")}
                     </h2>
 
                     <div className="mb-4 grid grid-cols-3 gap-4 text-sm">
                       <div>
-                        <span className="font-medium">Render Time:</span>{" "}
+                        <span className="font-medium">{t("renderTime")}:</span>{" "}
                         {preview.metadata.renderTime}ms
                       </div>
                       <div>
-                        <span className="font-medium">Variables Used:</span>{" "}
+                        <span className="font-medium">
+                          {t("variablesUsed")}:
+                        </span>{" "}
                         {preview.metadata.variablesUsed.length}
                       </div>
                       <div>
-                        <span className="font-medium">Data Provided:</span>{" "}
+                        <span className="font-medium">
+                          {t("dataProvided")}:
+                        </span>{" "}
                         {preview.metadata.dataProvided.length}
                       </div>
                     </div>

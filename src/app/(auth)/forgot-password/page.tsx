@@ -3,9 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { LOGO_PATH, ASSETS } from "@/constants";
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 
 export default function ForgotPasswordPage() {
+  const t = useTranslations();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
@@ -34,14 +37,14 @@ export default function ForgotPasswordPage() {
         setEmail(""); // Clear the form
       } else {
         setMessage({
-          text: data.message || "An error occurred. Please try again.",
+          text: data.message || t("messages.serverError"),
           type: "error",
         });
       }
     } catch (error) {
       console.error("Error:", error);
       setMessage({
-        text: "An error occurred. Please try again.",
+        text: t("messages.serverError"),
         type: "error",
       });
     } finally {
@@ -70,11 +73,10 @@ export default function ForgotPasswordPage() {
           className="max-w-lg text-white"
         >
           <h1 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight drop-shadow-lg">
-            Reset Your Password
+            {t("forgotPassword.title")}
           </h1>
           <p className="text-lg lg:text-xl text-white/90 leading-relaxed drop-shadow-md">
-            Enter your email address and we'll send you a link to reset your
-            password
+            {t("forgotPassword.subtitle")}
           </p>
         </motion.div>
       </div>
@@ -97,11 +99,14 @@ export default function ForgotPasswordPage() {
                 />
               </div>
               <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">
-                Forgot Password
+                {t("forgotPassword.title")}
               </h2>
               <p className="text-sm lg:text-base text-gray-600">
-                Enter your email to receive a reset link
+                {t("forgotPassword.subtitle")}
               </p>
+              <div className="flex justify-center mt-4">
+                <LanguageSwitcher />
+              </div>
             </div>
 
             {/* Status Message */}
@@ -123,7 +128,7 @@ export default function ForgotPasswordPage() {
                   htmlFor="email"
                   className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
                 >
-                  Email Address
+                  {t("auth.email")}
                 </label>
                 <input
                   id="email"
@@ -133,7 +138,7 @@ export default function ForgotPasswordPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-4 lg:px-5 py-3 lg:py-4 text-base lg:text-lg border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black"
-                  placeholder="Enter your email address"
+                  placeholder={t("auth.enterEmail")}
                 />
               </div>
 
@@ -143,29 +148,31 @@ export default function ForgotPasswordPage() {
                   disabled={isLoading}
                   className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 lg:py-4 px-6 text-base lg:text-lg rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                 >
-                  {isLoading ? "Sending Reset Link..." : "Send Reset Link"}
+                  {isLoading
+                    ? t("forgotPassword.sending")
+                    : t("forgotPassword.sendInstructions")}
                 </button>
               </div>
             </form>
 
             <div className="text-center mt-6 lg:mt-8 space-y-4">
               <p className="text-sm lg:text-base text-gray-600">
-                Remember your password?{" "}
+                {t("forgotPassword.backToLogin")}{" "}
                 <Link
                   href="/login"
                   className="font-medium text-green-600 hover:text-green-500 transition-colors duration-200"
                 >
-                  Sign In
+                  {t("auth.signIn")}
                 </Link>
               </p>
 
               <p className="text-sm lg:text-base text-gray-600">
-                Don't have an account?{" "}
+                {t("auth.dontHaveAccount")}{" "}
                 <Link
                   href="/signup"
                   className="font-medium text-green-600 hover:text-green-500 transition-colors duration-200"
                 >
-                  Sign Up
+                  {t("auth.signUp")}
                 </Link>
               </p>
             </div>

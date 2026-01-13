@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/contexts/SessionContext";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslations } from "next-intl";
 import {
   Search,
   Filter,
@@ -88,6 +89,8 @@ interface TransferRequest {
 export default function MyTransfersPage() {
   const router = useRouter();
   const { user, isLoading: authLoading, logout } = useSession();
+  const t = useTranslations("myTransfersPage");
+  const tCommon = useTranslations("common");
   const [transfers, setTransfers] = useState<TransferRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,7 +126,7 @@ export default function MyTransfersPage() {
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
-          errorData.error || `HTTP error! status: ${response.status}`
+          errorData.error || `HTTP error! status: ${response.status}`,
         );
       }
 
@@ -137,7 +140,7 @@ export default function MyTransfersPage() {
     } catch (error) {
       console.error("Error fetching my transfers:", error);
       setError(
-        error instanceof Error ? error.message : "Failed to fetch my transfers"
+        error instanceof Error ? error.message : "Failed to fetch my transfers",
       );
     } finally {
       setLoading(false);
@@ -161,7 +164,7 @@ export default function MyTransfersPage() {
 
     // Helper function to get hospital name from either string or object
     const getHospitalName = (
-      hospital: string | { name: string; [key: string]: any }
+      hospital: string | { name: string; [key: string]: any },
     ) => {
       return typeof hospital === "string" ? hospital : hospital?.name || "";
     };
@@ -195,13 +198,13 @@ export default function MyTransfersPage() {
     filteredTransfers = [...filteredTransfers].sort(
       (a, b) =>
         //@ts-ignore
-        priorityOrder[b.priority] - priorityOrder[a.priority]
+        priorityOrder[b.priority] - priorityOrder[a.priority],
     );
   } else {
     filteredTransfers = [...filteredTransfers].sort(
       (a, b) =>
         new Date(b.requestedDate).getTime() -
-        new Date(a.requestedDate).getTime()
+        new Date(a.requestedDate).getTime(),
     );
   }
 
@@ -209,7 +212,7 @@ export default function MyTransfersPage() {
   const stats = useMemo(() => {
     const total = transfers.length;
     const inProgress = transfers.filter(
-      (t) => t.status === "in_progress"
+      (t) => t.status === "in_progress",
     ).length;
     const completed = transfers.filter((t) => t.status === "completed").length;
     const urgent = transfers.filter((t) => t.priority === "urgent").length;
@@ -271,7 +274,7 @@ export default function MyTransfersPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">{t("loading")}</p>
         </div>
       </div>
     );
@@ -374,7 +377,7 @@ export default function MyTransfersPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">
-                    In Progress
+                    {t("inProgress")}
                   </p>
                   <p className="text-2xl font-bold text-gray-900">
                     {stats.inProgress}
@@ -392,7 +395,9 @@ export default function MyTransfersPage() {
                   <AlertTriangle className="w-6 h-6 text-red-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Urgent</p>
+                  <h3 className="text-sm font-semibold text-gray-700">
+                    {t("urgent")}
+                  </h3>
                   <p className="text-2xl font-bold text-gray-900">
                     {stats.urgent}
                   </p>
@@ -500,7 +505,7 @@ export default function MyTransfersPage() {
                                 | "all"
                                 | "in_progress"
                                 | "completed"
-                                | "cancelled"
+                                | "cancelled",
                             )
                           }
                           className={`w-full appearance-none bg-white border border-gray-200 ${BORDER_RADIUS["2xl"]} px-4 py-3 text-sm text-gray-700 font-medium shadow-sm hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:shadow-lg transition-all duration-200 cursor-pointer`}
@@ -637,11 +642,11 @@ export default function MyTransfersPage() {
                       {searchTerm
                         ? `No results for "${searchTerm}". Try a different search term.`
                         : filter === "all"
-                        ? "You haven't accepted any transfers yet."
-                        : `You don't have any ${filter.replace(
-                            "_",
-                            " "
-                          )} transfers.`}
+                          ? "You haven't accepted any transfers yet."
+                          : `You don't have any ${filter.replace(
+                              "_",
+                              " ",
+                            )} transfers.`}
                     </p>
                     {searchTerm && (
                       <button

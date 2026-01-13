@@ -6,10 +6,13 @@ import { useSession } from "@/contexts/SessionContext";
 import { motion } from "framer-motion";
 import Sidebar from "@/components/dashboard/core/Sidebar";
 import DashboardHeader from "@/components/dashboard/core/DashboardHeader";
+import { useTranslations } from "next-intl";
 
 export default function NursesPage() {
   const router = useRouter();
   const { user, isLoading: authLoading, logout } = useSession();
+  const t = useTranslations("nursesListPage");
+  const tCommon = useTranslations("common");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   // Show loading spinner while fetching user data
@@ -19,7 +22,7 @@ export default function NursesPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">{t("loading")}</p>
         </div>
       </div>
     );
@@ -67,7 +70,7 @@ export default function NursesPage() {
               updatedAt: user.updatedAt || new Date(),
             }}
             onLogout={logout}
-            pageTitle="Nurses"
+            pageTitle={t("title")}
           />
         )}
 
@@ -96,12 +99,10 @@ export default function NursesPage() {
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                Nurses Management
+                {t("managementTitle")}
               </h2>
               <p className="text-gray-500 max-w-md mx-auto">
-                This section is under development. You'll be able to manage
-                nurses, view schedules, and handle nurse-related operations
-                here.
+                {t("underDevelopment")}
               </p>
             </div>
           </motion.div>

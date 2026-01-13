@@ -2,20 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { DatabaseService } from "@/lib/database";
 import User from "@/models/User";
 import { CIUSSS } from "@/models/CIUSSS";
+import Hospital from "@/models/Hospital";
 import { AuthService } from "@/lib/auth";
 import mongoose from "mongoose";
 
 /**
  * GET /api/admin/users
- * 
+ *
  * Fetch users with advanced filtering, search, and pagination
  */
 export async function GET(request: NextRequest) {
   try {
+    // DatabaseService handles connection automatically
+    await DatabaseService.connect();
+
+    // Force model registration - ensure CIUSSS and Hospital are available
+    if (!mongoose.models.CIUSSS) {
+      await import("@/models/CIUSSS");
+    }
+    if (!mongoose.models.Hospital) {
+      await import("@/models/Hospital");
+    }
+
     // Verify admin authentication
     const { user } = await AuthService.requireAuth(request, {
-      roles: ['admin', 'super_admin'],
-      requireSession: true
+      roles: ["admin", "super_admin"],
+      requireSession: true,
     });
 
     // Extract query parameters
@@ -51,7 +63,6 @@ export async function GET(request: NextRequest) {
       filter.status = { $in: status };
     }
 
-
     // Date range filter
     if (startDate || endDate) {
       filter.createdAt = {};
@@ -70,9 +81,9 @@ export async function GET(request: NextRequest) {
     // This reduces 50+ queries to just 3 queries (main + 2 populate)
     const [users, total] = await Promise.all([
       User.find(filter)
-        .populate('ciusss', 'code name region isActive')
-        .populate('hospital', 'name address organization specialties isActive')
-        .select('-password') // Exclude password from results
+        .populate("ciusss", "code name region isActive")
+        .populate("hospital", "name address organization specialties isActive")
+        .select("-password") // Exclude password from results
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -84,14 +95,18 @@ export async function GET(request: NextRequest) {
     const serializedUsers = users.map((user: any) => ({
       ...user,
       _id: user._id?.toString() || user._id,
-      ciusss: user.ciusss ? {
-        ...user.ciusss,
-        _id: user.ciusss._id?.toString() || user.ciusss._id
-      } : undefined,
-      hospital: user.hospital ? {
-        ...user.hospital,
-        _id: user.hospital._id?.toString() || user.hospital._id
-      } : undefined,
+      ciusss: user.ciusss
+        ? {
+            ...user.ciusss,
+            _id: user.ciusss._id?.toString() || user.ciusss._id,
+          }
+        : undefined,
+      hospital: user.hospital
+        ? {
+            ...user.hospital,
+            _id: user.hospital._id?.toString() || user.hospital._id,
+          }
+        : undefined,
     }));
 
     const totalPages = Math.ceil(total / limit);
@@ -111,33 +126,39 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Admin users API error:", error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to fetch users',
-        message: error instanceof Error ? error.message : 'Unknown error'
+      {
+        success: false,
+        error: "Failed to fetch users",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 /**
  * POST /api/admin/users
- * 
+ *
  * Create a new user
  */
 export async function POST(request: NextRequest) {
   try {
+    // DatabaseService handles connection automatically
+    await DatabaseService.connect();
+
+    // Force model registration
+    if (!mongoose.models.CIUSSS) {
+      await import("@/models/CIUSSS");
+    }
+    if (!mongoose.models.Hospital) {
+      await import("@/models/Hospital");
+    }
+
     // Verify admin authentication
     const { user } = await AuthService.requireAuth(request, {
-      roles: ['admin', 'super_admin'],
-      requireSession: true
+      roles: ["admin", "super_admin"],
+      requireSession: true,
     });
-
-    // DatabaseService handles connection automatically
-// Ensure models are registered
-    const { CIUSSS } = await import("@/models/CIUSSS");
-    const Hospital = await import("@/models/Hospital");
 
     const body = await request.json();
     const {
@@ -152,57 +173,58 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate CIUSSS and Hospital references for managers
-    if (userType === 'manager') {
+    if (userType === "manager") {
       // Validate CIUSSS reference
       if (ciusssId) {
         // Ensure it's a valid ObjectId, not a string
         if (!mongoose.Types.ObjectId.isValid(ciusssId)) {
           return NextResponse.json(
-            { 
-              success: false, 
+            {
+              success: false,
               message: "CIUSSS reference must be a valid ObjectId",
-              error: "Invalid CIUSSS format"
+              error: "Invalid CIUSSS format",
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
-        
+
         const ciusssExists = await CIUSSS.findById(ciusssId);
         if (!ciusssExists) {
           return NextResponse.json(
-            { 
-              success: false, 
+            {
+              success: false,
               message: "CIUSSS reference not found in database",
-              error: "Invalid CIUSSS reference"
+              error: "Invalid CIUSSS reference",
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
       }
-      
+
       // Validate Hospital reference
       if (hospitalId) {
         // Ensure it's a valid ObjectId, not a string
         if (!mongoose.Types.ObjectId.isValid(hospitalId)) {
           return NextResponse.json(
-            { 
-              success: false, 
+            {
+              success: false,
               message: "Hospital reference must be a valid ObjectId",
-              error: "Invalid Hospital format"
+              error: "Invalid Hospital format",
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
-        
-        const hospitalExists = await mongoose.models.Hospital?.findById(hospitalId);
+
+        const hospitalExists =
+          await mongoose.models.Hospital?.findById(hospitalId);
         if (!hospitalExists) {
           return NextResponse.json(
-            { 
-              success: false, 
+            {
+              success: false,
               message: "Hospital reference not found in database",
-              error: "Invalid Hospital reference"
+              error: "Invalid Hospital reference",
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
       }
@@ -212,7 +234,7 @@ export async function POST(request: NextRequest) {
     if (!firstName || !lastName || !email || !userType) {
       return NextResponse.json(
         { success: false, message: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -221,7 +243,7 @@ export async function POST(request: NextRequest) {
     if (existingUser) {
       return NextResponse.json(
         { success: false, message: "User with this email already exists" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -242,7 +264,10 @@ export async function POST(request: NextRequest) {
 
     // Populate related data
     await newUser.populate("ciusss", "code name region isActive");
-    await newUser.populate("hospital", "name address organization specialties isActive");
+    await newUser.populate(
+      "hospital",
+      "name address organization specialties isActive",
+    );
 
     return NextResponse.json({
       success: true,
@@ -253,7 +278,7 @@ export async function POST(request: NextRequest) {
     console.error("Error creating user:", error);
     return NextResponse.json(
       { success: false, message: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

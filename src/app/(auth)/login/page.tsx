@@ -4,13 +4,16 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { useLoginForm } from "@/hooks/auth/useLoginForm";
 import { FormInput } from "@/components/shared/forms/FormInput";
 import { SubmitButton } from "@/components/shared/forms/SubmitButton";
 import { Icon } from "@/components/shared/ui/icons/Icon";
 import { LOGO_PATH, ASSETS } from "@/constants";
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 
 function LoginForm() {
+  const t = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isLoading, message, handleSubmit } = useLoginForm();
@@ -24,25 +27,19 @@ function LoginForm() {
   useEffect(() => {
     const message = searchParams.get("message");
     if (message === "account-created") {
-      setSuccessMessage(
-        "Account created successfully! Please log in with your credentials."
-      );
+      setSuccessMessage(t("auth.accountCreated"));
       // Clear the URL parameter after showing the message
       const url = new URL(window.location.href);
       url.searchParams.delete("message");
       window.history.replaceState({}, "", url.toString());
     } else if (message === "account-pending-approval") {
-      setSuccessMessage(
-        "Account created successfully! Your registration is pending approval. You will receive an email notification once approved."
-      );
+      setSuccessMessage(t("auth.accountPendingApproval"));
       // Clear the URL parameter after showing the message
       const url = new URL(window.location.href);
       url.searchParams.delete("message");
       window.history.replaceState({}, "", url.toString());
     } else if (message === "password-reset-success") {
-      setSuccessMessage(
-        "Password has been reset successfully! You can now sign in with your new password."
-      );
+      setSuccessMessage(t("auth.passwordResetSuccess"));
       // Clear the URL parameter after showing the message
       const url = new URL(window.location.href);
       url.searchParams.delete("message");
@@ -74,11 +71,10 @@ function LoginForm() {
           className="max-w-lg text-white"
         >
           <h1 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight drop-shadow-lg">
-            Fast, Efficient and Productive
+            {t("auth.motto")}
           </h1>
           <p className="text-lg lg:text-xl text-white/90 leading-relaxed drop-shadow-md">
-            Connect quickly and securely with Quick Connex - your trusted
-            patient management platform
+            {t("auth.tagline")}
           </p>
         </motion.div>
       </div>
@@ -101,8 +97,11 @@ function LoginForm() {
                 />
               </div>
               <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">
-                Sign In
+                {t("auth.signIn")}
               </h2>
+              <div className="flex justify-center mt-4">
+                <LanguageSwitcher />
+              </div>
             </div>
 
             {/* Success Message from Signup */}
@@ -119,8 +118,8 @@ function LoginForm() {
                   message.type === "success"
                     ? "bg-green-50 text-green-700 border border-green-200"
                     : message.type === "warning"
-                    ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
-                    : "bg-red-50 text-red-700 border border-red-200"
+                      ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                      : "bg-red-50 text-red-700 border border-red-200"
                 }`}
               >
                 {message.text}
@@ -133,7 +132,7 @@ function LoginForm() {
                   htmlFor="email"
                   className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
                 >
-                  Email
+                  {t("auth.email")}
                 </label>
                 <input
                   id="email"
@@ -141,7 +140,7 @@ function LoginForm() {
                   type="email"
                   required
                   className="w-full px-4 lg:px-5 py-3 lg:py-4 text-base lg:text-lg border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black"
-                  placeholder="Enter your email"
+                  placeholder={t("auth.enterEmail")}
                 />
               </div>
 
@@ -150,7 +149,7 @@ function LoginForm() {
                   htmlFor="password"
                   className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
                 >
-                  Password
+                  {t("auth.password")}
                 </label>
                 <div className="relative">
                   <input
@@ -159,7 +158,7 @@ function LoginForm() {
                     type={showPassword ? "text" : "password"}
                     required
                     className="w-full px-4 lg:px-5 py-3 lg:py-4 text-base lg:text-lg border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-12 placeholder:text-gray-500 text-black"
-                    placeholder="Enter your password"
+                    placeholder={t("auth.enterPassword")}
                   />
                   <button
                     type="button"
@@ -211,7 +210,7 @@ function LoginForm() {
                   disabled={isLoading}
                   className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 lg:py-4 px-6 text-base lg:text-lg rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                 >
-                  {isLoading ? "Signing In..." : "Sign In"}
+                  {isLoading ? t("auth.signingIn") : t("auth.signIn")}
                 </button>
               </div>
             </form>
@@ -231,17 +230,17 @@ function LoginForm() {
                 }}
                 className="text-sm text-green-600 hover:text-green-500 transition-colors duration-200 cursor-pointer underline bg-transparent border-none p-2 min-h-[44px] flex items-center justify-center"
               >
-                Forgot your password?
+                {t("auth.forgotPassword")}
               </button>
             </div>
 
             <p className="text-center text-sm lg:text-base text-gray-600 mt-6 lg:mt-8">
-              Don't have an account?{" "}
+              {t("auth.dontHaveAccount")}{" "}
               <Link
                 href="/signup"
                 className="font-medium text-green-600 hover:text-green-500 transition-colors duration-200"
               >
-                Sign Up
+                {t("auth.signUp")}
               </Link>
             </p>
           </div>
@@ -252,8 +251,10 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
+  const t = useTranslations("common");
+
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div>{t("loading")}</div>}>
       <LoginForm />
     </Suspense>
   );

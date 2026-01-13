@@ -21,6 +21,7 @@ import {
 import CalendarView from "@/components/calendar/CalendarView";
 import Sidebar from "@/components/dashboard/core/Sidebar";
 import DashboardHeader from "@/components/dashboard/core/DashboardHeader";
+import { useTranslations } from "next-intl";
 
 interface CalendarEvent {
   id: string;
@@ -37,12 +38,14 @@ interface CalendarEvent {
 export default function CalendarPage() {
   const router = useRouter();
   const { user, isLoading: authLoading, logout } = useSession();
+  const t = useTranslations("calendarPage");
+  const tCommon = useTranslations("common");
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
-    null
+    null,
   );
   const [showEventDetails, setShowEventDetails] = useState(false);
 
@@ -68,7 +71,7 @@ export default function CalendarPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">{tCommon("loading")}</p>
         </div>
       </div>
     );
@@ -118,7 +121,7 @@ export default function CalendarPage() {
               updatedAt: user.updatedAt || new Date(),
             }}
             onLogout={logout}
-            pageTitle="Transfer Calendar"
+            pageTitle={t("title")}
             showPlusButton={false}
             onPlusClick={() => router.push("/transfers")}
             onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -158,9 +161,9 @@ export default function CalendarPage() {
                   selectedEvent.extendedProps.transferCategory === "patient"
                     ? "bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600"
                     : selectedEvent.extendedProps.transferCategory ===
-                      "envelope"
-                    ? "bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600"
-                    : "bg-gradient-to-br from-purple-500 via-purple-600 to-violet-600"
+                        "envelope"
+                      ? "bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600"
+                      : "bg-gradient-to-br from-purple-500 via-purple-600 to-violet-600"
                 }`}
               >
                 <button
@@ -187,21 +190,25 @@ export default function CalendarPage() {
                       <span className="px-2 lg:px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold text-white w-fit">
                         {selectedEvent.extendedProps.transferCategory ===
                         "patient"
-                          ? "Patient Transfer"
+                          ? tCommon("transfers.patientTransfer") ||
+                            "Patient Transfer"
                           : selectedEvent.extendedProps.transferCategory ===
-                            "envelope"
-                          ? "Envelope Transfer"
-                          : "Medical Equipment"}
+                              "envelope"
+                            ? tCommon("transfers.envelopeTransfer") ||
+                              "Envelope Transfer"
+                            : tCommon("transfers.medicalEquipment") ||
+                              "Medical Equipment"}
                       </span>
                       <span
                         className={`px-2 lg:px-3 py-1 rounded-full text-xs font-semibold w-fit ${
                           selectedEvent.extendedProps.priority === "urgent"
                             ? "bg-red-500 text-white"
                             : selectedEvent.extendedProps.priority === "high"
-                            ? "bg-orange-500 text-white"
-                            : selectedEvent.extendedProps.priority === "medium"
-                            ? "bg-yellow-500 text-white"
-                            : "bg-green-500 text-white"
+                              ? "bg-orange-500 text-white"
+                              : selectedEvent.extendedProps.priority ===
+                                  "medium"
+                                ? "bg-yellow-500 text-white"
+                                : "bg-green-500 text-white"
                         }`}
                       >
                         {selectedEvent.extendedProps.priority.toUpperCase()}
@@ -219,7 +226,7 @@ export default function CalendarPage() {
                           year: "numeric",
                           month: "long",
                           day: "numeric",
-                        }
+                        },
                       )}
                     </p>
                   </div>
@@ -233,12 +240,13 @@ export default function CalendarPage() {
                   <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 lg:p-6 border border-blue-100">
                     <h3 className="text-sm font-semibold text-blue-900 mb-4 flex items-center">
                       <User size={16} className="mr-2" />
-                      Patient Information
+                      {tCommon("transfers.patientInformation") ||
+                        "Patient Information"}
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <p className="text-xs text-gray-500 font-medium">
-                          Full Name
+                          {tCommon("profile.personalInfo") || "Full Name"}
                         </p>
                         <p className="text-base font-semibold text-gray-900">
                           {selectedEvent.extendedProps.patient?.firstName}{" "}
@@ -246,7 +254,9 @@ export default function CalendarPage() {
                         </p>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-xs text-gray-500 font-medium">Age</p>
+                        <p className="text-xs text-gray-500 font-medium">
+                          {tCommon("transfers.age") || "Age"}
+                        </p>
                         <p className="text-base font-semibold text-gray-900">
                           {selectedEvent.extendedProps.patient?.age} years old
                         </p>
@@ -440,7 +450,7 @@ export default function CalendarPage() {
                             {
                               hour: "2-digit",
                               minute: "2-digit",
-                            }
+                            },
                           )}
                         </p>
                       </div>
@@ -468,12 +478,14 @@ export default function CalendarPage() {
                         selectedEvent.extendedProps.status === "pending"
                           ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
                           : selectedEvent.extendedProps.status === "accepted"
-                          ? "bg-blue-100 text-blue-700 border border-blue-200"
-                          : selectedEvent.extendedProps.status === "in_progress"
-                          ? "bg-purple-100 text-purple-700 border border-purple-200"
-                          : selectedEvent.extendedProps.status === "completed"
-                          ? "bg-green-100 text-green-700 border border-green-200"
-                          : "bg-red-100 text-red-700 border border-red-200"
+                            ? "bg-blue-100 text-blue-700 border border-blue-200"
+                            : selectedEvent.extendedProps.status ===
+                                "in_progress"
+                              ? "bg-purple-100 text-purple-700 border border-purple-200"
+                              : selectedEvent.extendedProps.status ===
+                                  "completed"
+                                ? "bg-green-100 text-green-700 border border-green-200"
+                                : "bg-red-100 text-red-700 border border-red-200"
                       }`}
                     >
                       {selectedEvent.extendedProps.status

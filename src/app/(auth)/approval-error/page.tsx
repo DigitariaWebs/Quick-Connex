@@ -3,9 +3,12 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 function ApprovalErrorContent() {
   const searchParams = useSearchParams();
+  const t = useTranslations("approval.error");
+  const tCommon = useTranslations("common");
   const [errorMessage, setErrorMessage] = useState("");
   const [transferId, setTransferId] = useState("");
   const [errorType, setErrorType] = useState("");
@@ -18,7 +21,7 @@ function ApprovalErrorContent() {
     if (errorParam) {
       setErrorMessage(decodeURIComponent(errorParam));
     } else {
-      setErrorMessage("An error occurred while processing your request");
+      setErrorMessage(t("description.generic"));
     }
 
     if (transferIdParam) {
@@ -44,25 +47,25 @@ function ApprovalErrorContent() {
 
   const getErrorTitle = () => {
     if (errorType === "already_processed") {
-      return "Transfer Already Processed";
+      return t("alreadyProcessed");
     } else if (errorType === "not_found") {
-      return "Transfer Not Found";
+      return t("notFound");
     } else if (errorType === "unauthorized") {
-      return "Access Denied";
+      return t("unauthorized");
     } else {
-      return "Processing Error";
+      return t("title");
     }
   };
 
   const getErrorDescription = () => {
     if (errorType === "already_processed") {
-      return "This transfer has already been processed and cannot be modified.";
+      return t("description.alreadyProcessed");
     } else if (errorType === "not_found") {
-      return "The requested transfer could not be found in the system.";
+      return t("description.notFound");
     } else if (errorType === "unauthorized") {
-      return "You don't have permission to perform this action.";
+      return t("description.unauthorized");
     } else {
-      return "An unexpected error occurred while processing your request.";
+      return t("description.generic");
     }
   };
 
@@ -101,7 +104,7 @@ function ApprovalErrorContent() {
             transition={{ delay: 0.5 }}
             className="text-sm text-gray-600 mb-6"
           >
-            Transfer ID:{" "}
+            {t("transferId")}{" "}
             <span className="font-mono font-semibold">{transferId}</span>
           </motion.p>
         )}
@@ -117,7 +120,7 @@ function ApprovalErrorContent() {
           {errorMessage && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-left">
               <p className="text-sm text-red-800 font-medium mb-1">
-                Error Details:
+                {t("errorDetails")}
               </p>
               <p className="text-sm text-red-700">{errorMessage}</p>
             </div>
@@ -125,12 +128,12 @@ function ApprovalErrorContent() {
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
             <p className="text-sm text-blue-800">
-              <strong>What to do next:</strong>
+              <strong>{t("whatToDoNext")}</strong>
             </p>
             <ul className="text-sm text-blue-700 mt-2 space-y-1">
-              <li>• Check if you have the latest email notification</li>
-              <li>• Contact the system administrator if you need assistance</li>
-              <li>• Verify the transfer status in the dashboard</li>
+              <li>• {t("checkEmail")}</li>
+              <li>• {t("contactAdmin")}</li>
+              <li>• {t("verifyStatus")}</li>
             </ul>
           </div>
         </motion.div>
@@ -143,7 +146,7 @@ function ApprovalErrorContent() {
           className="mt-8 pt-6 border-t border-gray-200"
         >
           <p className="text-xs text-gray-500">
-            This is an automated notification from the{" "}
+            {t("automatedNotification")}{" "}
             <span className="font-semibold">Quick Connex</span>
           </p>
         </motion.div>
@@ -159,7 +162,9 @@ export default function ApprovalErrorPage() {
         <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 flex items-center justify-center p-4">
           <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading...</p>
+            <p className="mt-4 text-gray-600">
+              {useTranslations("common")("loading")}
+            </p>
           </div>
         </div>
       }

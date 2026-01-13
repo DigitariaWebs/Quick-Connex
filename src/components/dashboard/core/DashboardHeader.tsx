@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Plus, Search, Menu } from "lucide-react";
 import type { User } from "@/types/auth/user.types";
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 
 interface DashboardHeaderProps {
   user: User;
@@ -96,6 +97,9 @@ export default function DashboardHeader({
                 <Search size={18} className="text-gray-600" />
               </button>
             )}
+
+            {/* Language Switcher */}
+            <LanguageSwitcher />
 
             {/* Plus Button - Only show when showPlusButton is true */}
             {showPlusButton && (

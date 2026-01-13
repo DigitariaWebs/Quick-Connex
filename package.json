@@ -5,7 +5,7 @@
   "packageManager": "npm@10.0.0",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "NODE_OPTIONS='--max-old-space-size=4096' next build",
     "start": "next start",
     "dev:locked": "node scripts/dev-with-lock.js",
     "dev:server": "next dev",
@@ -80,6 +80,7 @@
     "mongoose": "^8.18.1",
     "motion": "^12.23.24",
     "next": "15.5.3",
+    "next-intl": "^4.7.0",
     "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.6",
     "react": "19.1.0",

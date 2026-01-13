@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Menu } from "lucide-react";
 import type { User } from "@/types/auth/user.types";
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 
 interface AdminHeaderProps {
   user: User;
@@ -60,8 +61,11 @@ export default function AdminHeader({
             </div>
           </div>
 
-          {/* Right Side - User Profile */}
+          {/* Right Side - Language Switcher & User Profile */}
           <div className="hidden lg:flex items-center space-x-2 lg:space-x-3">
+            {/* Language Switcher */}
+            <LanguageSwitcher />
+
             {/* User Profile Section - Responsive */}
             <div className="flex items-center space-x-2 lg:space-x-3 bg-purple-50 rounded-full px-2 lg:px-3 py-2 border border-purple-200 shadow-sm">
               {/* Profile Picture */}

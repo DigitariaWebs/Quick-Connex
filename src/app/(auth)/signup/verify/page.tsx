@@ -4,10 +4,13 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 function VerifyPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const t = useTranslations("verification");
+  const tCommon = useTranslations("common");
 
   const email = searchParams.get("email") || "";
   const phone = searchParams.get("phone") || "";
@@ -95,7 +98,7 @@ function VerifyPageContent() {
       if (countryCodeToUse === "+1" && phoneDigits.length === 10) {
         return `(${phoneDigits.slice(0, 3)}) ${phoneDigits.slice(
           3,
-          6
+          6,
         )}-${phoneDigits.slice(6)}`;
       }
 
@@ -111,7 +114,7 @@ function VerifyPageContent() {
 
       return phone;
     },
-    []
+    [],
   );
 
   // Normalize phone number
@@ -134,7 +137,7 @@ function VerifyPageContent() {
         if (phoneDigits.startsWith(countryCodeDigits + countryCodeDigits)) {
           // Remove one instance of the country code
           const withoutDuplicate = phoneDigits.substring(
-            countryCodeDigits.length
+            countryCodeDigits.length,
           );
           return `+${withoutDuplicate}`;
         }
@@ -154,7 +157,7 @@ function VerifyPageContent() {
       const fullPhone = `${countryCodeDigits}${normalized}`;
       return `+${fullPhone}`;
     },
-    []
+    [],
   );
 
   // Countdown timer for email code expiration
@@ -165,7 +168,7 @@ function VerifyPageContent() {
       const now = new Date();
       const remaining = Math.max(
         0,
-        Math.floor((emailCodeExpirationTime.getTime() - now.getTime()) / 1000)
+        Math.floor((emailCodeExpirationTime.getTime() - now.getTime()) / 1000),
       );
       setEmailTimeRemaining(remaining);
 
@@ -185,7 +188,7 @@ function VerifyPageContent() {
       const now = new Date();
       const remaining = Math.max(
         0,
-        Math.floor((phoneCodeExpirationTime.getTime() - now.getTime()) / 1000)
+        Math.floor((phoneCodeExpirationTime.getTime() - now.getTime()) / 1000),
       );
       setPhoneTimeRemaining(remaining);
 
@@ -206,7 +209,7 @@ function VerifyPageContent() {
   // Email verification handlers
   const handleSendEmailCode = async () => {
     if (!email) {
-      setEmailError("Email is required");
+      setEmailError(t("email.sending"));
       return;
     }
 
@@ -283,7 +286,7 @@ function VerifyPageContent() {
   // Phone verification handlers
   const handleSendPhoneCode = async () => {
     if (!phone) {
-      setPhoneError("Phone number is required");
+      setPhoneError(t("phone.sending"));
       return;
     }
 
@@ -364,7 +367,7 @@ function VerifyPageContent() {
   // Update user verification status in database
   const updateUserVerification = async (
     type: "email" | "phone",
-    verified: boolean
+    verified: boolean,
   ) => {
     try {
       const normalizedEmail = email.toLowerCase().trim();
@@ -463,7 +466,7 @@ function VerifyPageContent() {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ email, code: emailCode }),
-            }
+            },
           );
 
           const data = await response.json();
@@ -530,7 +533,7 @@ function VerifyPageContent() {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ phone: normalizedPhone, code: phoneCode }),
-            }
+            },
           );
 
           const data = await response.json();
@@ -565,6 +568,7 @@ function VerifyPageContent() {
   ]);
 
   const displayPhone = formatPhoneForDisplay(phone, countryCode);
+  const canContinue = isEmailVerified; // Users can continue with email verification only
   const isBothVerified = isEmailVerified && isPhoneVerified;
 
   return (
@@ -597,11 +601,10 @@ function VerifyPageContent() {
           className="max-w-lg text-black"
         >
           <h1 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight">
-            Verify Your Account
+            {t("title")}
           </h1>
           <p className="text-lg lg:text-xl text-black/80 leading-relaxed">
-            Please verify your email and phone number to complete your
-            registration
+            {t("subtitle")}
           </p>
         </motion.div>
       </div>
@@ -617,15 +620,15 @@ function VerifyPageContent() {
           <div className="bg-white rounded-2xl lg:rounded-3xl p-6 lg:p-12 shadow-2xl max-h-[90vh] min-h-screen lg:min-h-[700px] overflow-y-auto hide-scrollbar">
             <div className="text-center mb-6 lg:mb-8">
               <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">
-                Verify Your Account
+                {t("title")}
               </h2>
               <p className="text-base lg:text-lg text-gray-600">
-                Please verify both your email and phone number
+                {t("subtitle")}
               </p>
             </div>
 
-            {/* Success Message - When both verified */}
-            {isBothVerified && (
+            {/* Success Message - When email is verified */}
+            {canContinue && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -647,18 +650,19 @@ function VerifyPageContent() {
                   </svg>
                 </div>
                 <h3 className="text-xl font-bold text-green-800 text-center mb-2">
-                  Verification Complete!
+                  {isBothVerified ? t("bothVerified") : t("email.verified")}
                 </h3>
                 <p className="text-center text-green-700">
-                  Your account has been created successfully. Please wait for
-                  admin approval to gain access.
+                  {tCommon("messages.createdSuccessfully")}{" "}
+                  {isBothVerified ? "" : t("subtitle") + ". "}
+                  {tCommon("messages.info")}
                 </p>
                 <div className="mt-6 text-center">
                   <Link
                     href="/login"
                     className="inline-block px-6 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-colors duration-200"
                   >
-                    Go to Login
+                    {tCommon("back")} {tCommon("auth.signIn")}
                   </Link>
                 </div>
               </motion.div>
@@ -670,10 +674,12 @@ function VerifyPageContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      Email Verification
+                      {t("email.title")}
                     </h3>
                     <p className="text-sm text-gray-600">
-                      {email ? `Verify ${email}` : "Email not provided"}
+                      {email
+                        ? `${t("email.verify")} ${email}`
+                        : tCommon("auth.email")}
                     </p>
                   </div>
                   {isEmailVerified && (
@@ -707,11 +713,14 @@ function VerifyPageContent() {
                         }
                         className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
                       >
-                        {isSendingEmailCode ? "Sending..." : "Send Code"}
+                        {isSendingEmailCode
+                          ? t("email.sending")
+                          : t("email.sendCode")}
                       </button>
                       {emailTimeRemaining > 0 && (
                         <div className="flex items-center px-4 text-sm text-gray-600">
-                          Expires: {formatTime(emailTimeRemaining)}
+                          {t("email.timeRemaining")}{" "}
+                          {formatTime(emailTimeRemaining)}
                         </div>
                       )}
                     </div>
@@ -719,8 +728,8 @@ function VerifyPageContent() {
                     {!emailVerificationStatus.canRequestNewCode && (
                       <p className="text-xs text-gray-600">
                         {emailVerificationStatus.codesRemaining === 0
-                          ? "Rate limit reached. Please wait before requesting another code."
-                          : `${emailVerificationStatus.codesRemaining} codes remaining`}
+                          ? t("email.cannotRequest")
+                          : `${emailVerificationStatus.codesRemaining} ${t("email.codesRemaining")}`}
                       </p>
                     )}
 
@@ -737,7 +746,7 @@ function VerifyPageContent() {
                             setEmailCode(value);
                             setEmailError("");
                           }}
-                          placeholder="Enter 6-digit code"
+                          placeholder={t("email.enterCode")}
                           className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-center tracking-widest font-mono text-black placeholder:text-gray-500"
                         />
                         {isVerifyingEmailCode && (
@@ -757,12 +766,12 @@ function VerifyPageContent() {
                                 strokeWidth="4"
                               ></circle>
                               <path
-                                className="opacity-75"
+                                className="opacity-75 animate-spin"
                                 fill="currentColor"
                                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                               ></path>
                             </svg>
-                            <span>Verifying...</span>
+                            <span>{t("email.verifying")}</span>
                           </div>
                         )}
                       </div>
@@ -792,7 +801,7 @@ function VerifyPageContent() {
                           d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                         />
                       </svg>
-                      Email verified successfully
+                      {t("email.verified")}
                     </p>
                   </div>
                 )}
@@ -805,12 +814,12 @@ function VerifyPageContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      Phone Verification
+                      {t("phone.title")}
                     </h3>
                     <p className="text-sm text-gray-600">
                       {displayPhone
-                        ? `Verify ${displayPhone}`
-                        : "Phone not provided"}
+                        ? `${t("phone.verify")} ${displayPhone}`
+                        : tCommon("auth.phoneNumber")}
                     </p>
                   </div>
                   {isPhoneVerified && (
@@ -844,11 +853,14 @@ function VerifyPageContent() {
                         }
                         className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
                       >
-                        {isSendingPhoneCode ? "Sending..." : "Send Code"}
+                        {isSendingPhoneCode
+                          ? t("phone.sending")
+                          : t("phone.sendCode")}
                       </button>
                       {phoneTimeRemaining > 0 && (
                         <div className="flex items-center px-4 text-sm text-gray-600">
-                          Expires: {formatTime(phoneTimeRemaining)}
+                          {t("phone.timeRemaining")}{" "}
+                          {formatTime(phoneTimeRemaining)}
                         </div>
                       )}
                     </div>
@@ -856,8 +868,8 @@ function VerifyPageContent() {
                     {!phoneVerificationStatus.canRequestNewCode && (
                       <p className="text-xs text-gray-600">
                         {phoneVerificationStatus.codesRemaining === 0
-                          ? "Rate limit reached. Please wait before requesting another code."
-                          : `${phoneVerificationStatus.codesRemaining} codes remaining`}
+                          ? t("phone.cannotRequest")
+                          : `${phoneVerificationStatus.codesRemaining} ${t("phone.codesRemaining")}`}
                       </p>
                     )}
 
@@ -874,7 +886,7 @@ function VerifyPageContent() {
                             setPhoneCode(value);
                             setPhoneError("");
                           }}
-                          placeholder="Enter 6-digit code"
+                          placeholder={t("phone.enterCode")}
                           className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-center tracking-widest font-mono text-black placeholder:text-gray-500"
                         />
                         {isVerifyingPhoneCode && (
@@ -894,12 +906,12 @@ function VerifyPageContent() {
                                 strokeWidth="4"
                               ></circle>
                               <path
-                                className="opacity-75"
+                                className="opacity-75 animate-spin"
                                 fill="currentColor"
                                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                               ></path>
                             </svg>
-                            <span>Verifying...</span>
+                            <span>{t("phone.verifying")}</span>
                           </div>
                         )}
                       </div>
@@ -929,7 +941,7 @@ function VerifyPageContent() {
                           d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                         />
                       </svg>
-                      Phone verified successfully
+                      {t("phone.verified")}
                     </p>
                   </div>
                 )}
@@ -943,13 +955,15 @@ function VerifyPageContent() {
 }
 
 export default function VerifyPage() {
+  const tCommon = useTranslations("common");
+
   return (
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">{tCommon("loading")}</p>
           </div>
         </div>
       }

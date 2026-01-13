@@ -10,6 +10,7 @@ import {
   Calendar,
   Activity,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface TransferStats {
   totalActive: number;
@@ -64,35 +65,38 @@ export default function TransferOverview({
   loading = false,
   error = null,
 }: TransferOverviewProps) {
+  const t = useTranslations("dashboardWidgets.transferOverview");
+  const tCommon = useTranslations("common");
+
   const employeeStats = [
     {
-      title: "Pending Your Action",
+      title: t("pendingYourAction"),
       value: stats.pendingAcceptance,
-      subtitle: "Transfers awaiting confirmation",
+      subtitle: t("pendingSubtitle"),
       icon: <Clock size={24} className="text-amber-600" />,
       color: "text-amber-600",
       bgColor: "bg-amber-50",
     },
     {
-      title: "Urgent Transfers",
+      title: t("urgentTransfers"),
       value: stats.urgent,
-      subtitle: "Require immediate attention",
+      subtitle: t("urgentSubtitle"),
       icon: <AlertTriangle size={24} className="text-red-600" />,
       color: "text-red-600",
       bgColor: "bg-red-50",
     },
     {
-      title: "Completed Today",
+      title: t("completedToday"),
       value: stats.completedToday,
-      subtitle: "Transfers processed",
+      subtitle: t("completedSubtitle"),
       icon: <CheckCircle size={24} className="text-green-600" />,
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
     {
-      title: "Success Rate",
+      title: t("successRate"),
       value: `${stats.successRate}%`,
-      subtitle: "This month",
+      subtitle: t("successRateSubtitle"),
       icon: <Activity size={24} className="text-green-600" />,
       color: "text-green-600",
       bgColor: "bg-green-50",
@@ -101,33 +105,33 @@ export default function TransferOverview({
 
   const managerStats = [
     {
-      title: "Active Transfers",
+      title: t("activeTransfers"),
       value: stats.totalActive,
-      subtitle: "Currently in system",
+      subtitle: t("activeSubtitle"),
       icon: <Hospital size={24} className="text-green-600" />,
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
     {
-      title: "Avg Processing Time",
+      title: t("avgProcessingTime"),
       value: stats.averageProcessingTime,
-      subtitle: "From request to completion",
+      subtitle: t("avgProcessingSubtitle"),
       icon: <Clock size={24} className="text-purple-600" />,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
     },
     {
-      title: "Success Rate",
+      title: t("successRate"),
       value: `${stats.successRate}%`,
-      subtitle: "Completed successfully",
+      subtitle: t("completedSubtitle"),
       icon: <CheckCircle size={24} className="text-green-600" />,
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
     {
-      title: "Today's Schedule",
+      title: t("todaySchedule"),
       value: stats.completedToday,
-      subtitle: "Transfers scheduled",
+      subtitle: t("todayScheduleSubtitle"),
       icon: <Calendar size={24} className="text-green-600" />,
       color: "text-green-600",
       bgColor: "bg-green-50",
@@ -139,7 +143,7 @@ export default function TransferOverview({
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-800">Overview</h2>
+        <h2 className="text-xl font-semibold text-gray-800">{t("title")}</h2>
       </div>
 
       {loading ? (
@@ -166,7 +170,7 @@ export default function TransferOverview({
           <div className="flex items-center space-x-2">
             <AlertTriangle size={20} className="text-red-600" />
             <span className="text-red-800">
-              Failed to load statistics: {error}
+              {t("failedToLoad")}: {error}
             </span>
           </div>
         </div>

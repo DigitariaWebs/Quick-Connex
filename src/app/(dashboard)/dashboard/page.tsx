@@ -16,6 +16,7 @@ import MyAcceptedTransfersModal from "@/components/transfers/modals/MyAcceptedTr
 import SearchTransfersModal from "@/components/transfers/modals/SearchTransfersModal";
 import PendingTransfersModal from "@/components/transfers/modals/PendingTransfersModal";
 import TodayScheduleModal from "@/components/transfers/modals/TodayScheduleModal";
+import { useTranslations } from "next-intl";
 
 interface User {
   _id: string;
@@ -39,6 +40,8 @@ export default function EmployeeDashboard() {
     error: dataError,
     refetch,
   } = useDashboardData();
+  const t = useTranslations("employeeDashboard");
+  const tCommon = useTranslations("common");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
@@ -54,7 +57,7 @@ export default function EmployeeDashboard() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard data...</p>
+          <p className="mt-4 text-gray-600">{t("loadingData")}</p>
         </div>
       </div>
     );
@@ -67,14 +70,14 @@ export default function EmployeeDashboard() {
         <div className="text-center">
           <div className="text-red-600 text-6xl mb-4">⚠️</div>
           <h2 className="text-xl font-semibold text-gray-800 mb-2">
-            Failed to load dashboard
+            {t("failedToLoad")}
           </h2>
           <p className="text-gray-600 mb-4">{dataError}</p>
           <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Retry
+            {t("retry")}
           </button>
         </div>
       </div>
@@ -125,7 +128,7 @@ export default function EmployeeDashboard() {
               updatedAt: user.updatedAt || new Date(),
             }}
             onLogout={logout}
-            pageTitle="Dashboard"
+            pageTitle={t("title")}
             onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           />
         )}

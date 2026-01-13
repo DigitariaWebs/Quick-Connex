@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { AdminLayout } from "@/components/admin/layouts";
 import LoadingSpinner from "@/components/dashboard/core/LoadingSpinner";
+import { useTranslations } from "next-intl";
 
 /**
  * Transfer Analytics Page
@@ -118,6 +119,8 @@ interface AnalyticsData {
 }
 
 export default function TransferAnalyticsPage() {
+  const t = useTranslations("adminTransfers");
+  const tCommon = useTranslations("common");
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -143,12 +146,12 @@ export default function TransferAnalyticsPage() {
         {
           method: "GET",
           credentials: "include",
-        }
+        },
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch analytics");
+        throw new Error(errorData.message || t("error"));
       }
 
       const data = await response.json();
@@ -156,13 +159,11 @@ export default function TransferAnalyticsPage() {
       if (data.success) {
         setAnalytics(data.data);
       } else {
-        throw new Error(data.message || "Failed to fetch analytics");
+        throw new Error(data.message || t("error"));
       }
     } catch (error) {
       console.error("Error fetching analytics:", error);
-      setError(
-        error instanceof Error ? error.message : "Failed to fetch analytics"
-      );
+      setError(error instanceof Error ? error.message : t("error"));
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -194,11 +195,11 @@ export default function TransferAnalyticsPage() {
         {
           method: "GET",
           credentials: "include",
-        }
+        },
       );
 
       if (!response.ok) {
-        throw new Error("Export failed");
+        throw new Error(t("error"));
       }
 
       // Download file
@@ -215,13 +216,13 @@ export default function TransferAnalyticsPage() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Export error:", error);
-      setError(error instanceof Error ? error.message : "Export failed");
+      setError(error instanceof Error ? error.message : t("error"));
     }
   };
 
   if (loading && !analytics) {
     return (
-      <AdminLayout pageTitle="Transfer Analytics">
+      <AdminLayout pageTitle={t("analytics")}>
         <div className="flex items-center justify-center h-64">
           <LoadingSpinner />
         </div>
@@ -231,20 +232,18 @@ export default function TransferAnalyticsPage() {
 
   if (error || !analytics) {
     return (
-      <AdminLayout pageTitle="Transfer Analytics">
+      <AdminLayout pageTitle={t("analytics")}>
         <div className="text-center py-12">
           <BarChart3 className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Analytics Error
+            {t("error")}
           </h3>
-          <p className="text-gray-600 mb-4">
-            {error || "Failed to load analytics data"}
-          </p>
+          <p className="text-gray-600 mb-4">{error || t("error")}</p>
           <button
             onClick={handleRefresh}
             className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
-            Try Again
+            {t("retry")}
           </button>
         </div>
       </AdminLayout>
@@ -252,17 +251,15 @@ export default function TransferAnalyticsPage() {
   }
 
   return (
-    <AdminLayout pageTitle="Transfer Analytics">
+    <AdminLayout pageTitle={t("analytics")}>
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              Transfer Analytics
+              {t("analytics")}
             </h1>
-            <p className="text-gray-600 mt-2">
-              Comprehensive analytics and insights for transfer management
-            </p>
+            <p className="text-gray-600 mt-2">{t("overview")}</p>
           </div>
           <div className="flex items-center space-x-3">
             <button
@@ -270,7 +267,7 @@ export default function TransferAnalyticsPage() {
               className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
               <Filter size={16} />
-              <span>Filters</span>
+              <span>{showFilters ? t("hideFilters") : t("showFilters")}</span>
               {showFilters ? (
                 <ChevronUp size={16} />
               ) : (
@@ -286,7 +283,7 @@ export default function TransferAnalyticsPage() {
                 size={16}
                 className={isRefreshing ? "animate-spin" : ""}
               />
-              <span>Refresh</span>
+              <span>{isRefreshing ? t("refreshing") : t("refresh")}</span>
             </button>
             <div className="flex items-center space-x-2">
               <button
@@ -294,14 +291,14 @@ export default function TransferAnalyticsPage() {
                 className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
               >
                 <Download size={16} />
-                <span>Export CSV</span>
+                <span>{t("export")} CSV</span>
               </button>
               <button
                 onClick={() => handleExport("json")}
                 className="flex items-center space-x-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
               >
                 <Download size={16} />
-                <span>Export JSON</span>
+                <span>{t("export")} JSON</span>
               </button>
             </div>
           </div>
@@ -318,41 +315,41 @@ export default function TransferAnalyticsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date Range
+                  {t("dateRange")}
                 </label>
                 <select
                   value={dateRange}
                   onChange={(e) => setDateRange(e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
-                  <option value="7d">Last 7 days</option>
-                  <option value="30d">Last 30 days</option>
-                  <option value="90d">Last 90 days</option>
-                  <option value="1y">Last year</option>
-                  <option value="all">All time</option>
+                  <option value="7d">{t("last7days")}</option>
+                  <option value="30d">{t("last30days")}</option>
+                  <option value="90d">{t("last90days")}</option>
+                  <option value="1y">{t("customRange")}</option>
+                  <option value="all">{tCommon("all")}</option>
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Hospital
+                  {t("hospital")}
                 </label>
                 <input
                   type="text"
                   value={hospitalId}
                   onChange={(e) => setHospitalId(e.target.value)}
-                  placeholder="Hospital ID"
+                  placeholder={t("hospital")}
                   className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  User
+                  {t("user")}
                 </label>
                 <input
                   type="text"
                   value={userId}
                   onChange={(e) => setUserId(e.target.value)}
-                  placeholder="User ID"
+                  placeholder={t("user")}
                   className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
@@ -366,7 +363,7 @@ export default function TransferAnalyticsPage() {
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Transfers</p>
+              <p className="text-sm text-gray-600">{t("total")}</p>
               <p className="text-2xl font-bold text-gray-900">
                 {analytics.overview.stats.total}
               </p>
@@ -377,7 +374,7 @@ export default function TransferAnalyticsPage() {
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Completed</p>
+              <p className="text-sm text-gray-600">{t("completed")}</p>
               <p className="text-2xl font-bold text-green-600">
                 {analytics.overview.stats.completed}
               </p>
@@ -388,7 +385,7 @@ export default function TransferAnalyticsPage() {
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">In Progress</p>
+              <p className="text-sm text-gray-600">{t("inProgress")}</p>
               <p className="text-2xl font-bold text-purple-600">
                 {analytics.overview.stats.inProgress}
               </p>
@@ -399,7 +396,7 @@ export default function TransferAnalyticsPage() {
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Pending</p>
+              <p className="text-sm text-gray-600">{t("pending")}</p>
               <p className="text-2xl font-bold text-yellow-600">
                 {analytics.overview.stats.pending}
               </p>
@@ -410,7 +407,7 @@ export default function TransferAnalyticsPage() {
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Urgent</p>
+              <p className="text-sm text-gray-600">{t("urgent")}</p>
               <p className="text-2xl font-bold text-red-600">
                 {analytics.overview.stats.urgent}
               </p>
@@ -421,7 +418,7 @@ export default function TransferAnalyticsPage() {
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Cancelled</p>
+              <p className="text-sm text-gray-600">{t("cancelled")}</p>
               <p className="text-2xl font-bold text-gray-600">
                 {analytics.overview.stats.cancelled}
               </p>
@@ -435,43 +432,47 @@ export default function TransferAnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Performance Metrics
+            {t("performance")} {t("metrics")}
           </h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">
-                Average Completion Time
+                {t("avgCompletionTime")}
               </span>
               <span className="text-lg font-semibold text-gray-900">
                 {analytics.performance.metrics.avgCompletionTime
                   ? `${Math.round(
-                      analytics.performance.metrics.avgCompletionTime
+                      analytics.performance.metrics.avgCompletionTime,
                     )} min`
                   : "N/A"}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Fastest Completion</span>
+              <span className="text-sm text-gray-600">
+                {t("minCompletionTime")}
+              </span>
               <span className="text-lg font-semibold text-green-600">
                 {analytics.performance.metrics.minCompletionTime
                   ? `${Math.round(
-                      analytics.performance.metrics.minCompletionTime
+                      analytics.performance.metrics.minCompletionTime,
                     )} min`
                   : "N/A"}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Slowest Completion</span>
+              <span className="text-sm text-gray-600">
+                {t("maxCompletionTime")}
+              </span>
               <span className="text-lg font-semibold text-red-600">
                 {analytics.performance.metrics.maxCompletionTime
                   ? `${Math.round(
-                      analytics.performance.metrics.maxCompletionTime
+                      analytics.performance.metrics.maxCompletionTime,
                     )} min`
                   : "N/A"}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Total Completed</span>
+              <span className="text-sm text-gray-600">{t("completed")}</span>
               <span className="text-lg font-semibold text-blue-600">
                 {analytics.performance.metrics.totalCompleted}
               </span>
@@ -481,7 +482,7 @@ export default function TransferAnalyticsPage() {
 
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Category Distribution
+            {t("categoryDistribution")}
           </h2>
           <div className="space-y-3">
             {analytics.trends.categoryDistribution.map((category) => (
@@ -507,7 +508,7 @@ export default function TransferAnalyticsPage() {
       {/* Hospital Analysis */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Hospital Performance
+          {t("hospitalAnalysis")}
         </h2>
         {analytics.performance.hospitalAnalysis.length > 0 ? (
           <div className="overflow-x-auto">
@@ -515,19 +516,19 @@ export default function TransferAnalyticsPage() {
               <thead>
                 <tr className="border-b border-gray-200">
                   <th className="text-left py-3 px-4 font-medium text-gray-700">
-                    Hospital
+                    {t("hospital")}
                   </th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">
-                    Total Transfers
+                    {t("totalFrom")}
                   </th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">
-                    Completed
+                    {t("completed")}
                   </th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">
-                    Cancelled
+                    {t("cancelled")}
                   </th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">
-                    Completion Rate
+                    {t("completionRate")}
                   </th>
                 </tr>
               </thead>
@@ -583,7 +584,7 @@ export default function TransferAnalyticsPage() {
       {/* User Activity */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          User Activity
+          {t("userActivity")}
         </h2>
         {analytics.performance.userActivity.length > 0 ? (
           <div className="overflow-x-auto">
@@ -591,25 +592,25 @@ export default function TransferAnalyticsPage() {
               <thead>
                 <tr className="border-b border-gray-200">
                   <th className="text-left py-3 px-4 font-medium text-gray-700">
-                    User
+                    {t("user")}
                   </th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">
-                    Type
+                    {t("type")}
                   </th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">
-                    Total Transfers
+                    {t("total")}
                   </th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">
-                    Completed
+                    {t("completed")}
                   </th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">
-                    Cancelled
+                    {t("cancelled")}
                   </th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">
-                    Urgent
+                    {t("urgent")}
                   </th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">
-                    Completion Rate
+                    {t("completionRate")}
                   </th>
                 </tr>
               </thead>
@@ -669,7 +670,7 @@ export default function TransferAnalyticsPage() {
       {/* Daily Trends */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Daily Trends
+          {t("dailyTrends")}
         </h2>
         {analytics.trends.daily.length > 0 ? (
           <div className="space-y-3">
@@ -684,7 +685,7 @@ export default function TransferAnalyticsPage() {
                     {new Date(
                       day._id.year,
                       day._id.month - 1,
-                      day._id.day
+                      day._id.day,
                     ).toLocaleDateString()}
                   </span>
                 </div>

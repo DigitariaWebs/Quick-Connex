@@ -12,6 +12,7 @@ import {
   FileText,
   Hospital,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface ActivityItem {
   id: string;
@@ -80,14 +81,15 @@ export default function RecentActivity({
   loading = false,
   error = null,
 }: RecentActivityProps) {
+  const t = useTranslations("dashboardWidgets.recentActivity");
   const displayActivities = activities.slice(0, maxItems);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">Recent Activity</h3>
+        <h3 className="text-lg font-semibold text-gray-800">{t("title")}</h3>
         <span className="text-sm text-gray-500">
-          {userType === "manager" ? "System-wide" : "Your actions"}
+          {userType === "manager" ? t("systemWide") : t("yourActions")}
         </span>
       </div>
 
@@ -112,7 +114,7 @@ export default function RecentActivity({
           <div className="w-12 h-12 flex items-center justify-center mx-auto mb-3">
             <AlertTriangle size={24} className="text-red-600" />
           </div>
-          <p className="text-red-600 text-sm mb-2">Failed to load activity</p>
+          <p className="text-red-600 text-sm mb-2">{t("failedToLoad")}</p>
           <p className="text-gray-500 text-xs">{error}</p>
         </div>
       ) : displayActivities.length === 0 ? (
@@ -120,7 +122,7 @@ export default function RecentActivity({
           <div className="w-12 h-12 flex items-center justify-center mx-auto mb-3">
             <Activity size={24} className="text-gray-400" />
           </div>
-          <p className="text-gray-500 text-sm">No recent activity</p>
+          <p className="text-gray-500 text-sm">{t("noActivity")}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -182,7 +184,7 @@ export default function RecentActivity({
       {activities.length > maxItems && (
         <div className="mt-4 pt-4 border-t border-gray-100">
           <button className="text-sm text-green-600 hover:text-green-700 font-medium">
-            View all activity ({activities.length - maxItems} more)
+            {t("viewAll")} ({activities.length - maxItems} {t("more")})
           </button>
         </div>
       )}

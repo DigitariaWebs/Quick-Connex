@@ -3,15 +3,18 @@
 import Link from "next/link";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { useSignUpForm } from "@/hooks/auth/useSignUpForm";
 import { UserTypeButton } from "@/components/shared/forms/UserTypeButton";
 import { TermsModal } from "@/components/shared/modals/TermsModal";
+import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { LOGO_PATH, ASSETS } from "@/constants";
 
 // Validation status type
 type ValidationStatus = "idle" | "checking" | "exists" | "available" | "error";
 
 export default function SignUpPage() {
+  const t = useTranslations();
   const {
     userType,
     setUserType,
@@ -63,7 +66,7 @@ export default function SignUpPage() {
   const [isSendingCode, setIsSendingCode] = useState<boolean>(false);
   const [isVerifyingCode, setIsVerifyingCode] = useState<boolean>(false);
   const [codeExpirationTime, setCodeExpirationTime] = useState<Date | null>(
-    null
+    null,
   );
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [verificationError, setVerificationError] = useState<string>("");
@@ -160,7 +163,7 @@ export default function SignUpPage() {
       }
       return result;
     },
-    []
+    [],
   );
 
   // Check email availability
@@ -181,7 +184,7 @@ export default function SignUpPage() {
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       setEmailValidation(cached.result ? "available" : "exists");
       setEmailValidationError(
-        cached.result ? "" : "This email is already registered"
+        cached.result ? "" : "This email is already registered",
       );
       return;
     }
@@ -210,7 +213,7 @@ export default function SignUpPage() {
           const isAvailable = data.email === true;
           setEmailValidation(isAvailable ? "available" : "exists");
           setEmailValidationError(
-            isAvailable ? "" : "This email is already registered"
+            isAvailable ? "" : "This email is already registered",
           );
 
           // Cache result
@@ -226,7 +229,7 @@ export default function SignUpPage() {
         setEmailValidation("error");
         const errorData = await response.json().catch(() => ({}));
         setEmailValidationError(
-          errorData.error || "Failed to check email availability"
+          errorData.error || "Failed to check email availability",
         );
       }
     } catch (error: any) {
@@ -258,7 +261,7 @@ export default function SignUpPage() {
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
         setPhoneValidation(cached.result ? "available" : "exists");
         setPhoneValidationError(
-          cached.result ? "" : "This phone number is already registered"
+          cached.result ? "" : "This phone number is already registered",
         );
         return;
       }
@@ -287,7 +290,7 @@ export default function SignUpPage() {
             const isAvailable = data.phone === true;
             setPhoneValidation(isAvailable ? "available" : "exists");
             setPhoneValidationError(
-              isAvailable ? "" : "This phone number is already registered"
+              isAvailable ? "" : "This phone number is already registered",
             );
 
             // Cache result
@@ -303,7 +306,7 @@ export default function SignUpPage() {
           setPhoneValidation("error");
           const errorData = await response.json().catch(() => ({}));
           setPhoneValidationError(
-            errorData.error || "Failed to check phone availability"
+            errorData.error || "Failed to check phone availability",
           );
         }
       } catch (error: any) {
@@ -315,7 +318,7 @@ export default function SignUpPage() {
         setPhoneValidationError("Failed to check phone availability");
       }
     },
-    [normalizePhoneNumber]
+    [normalizePhoneNumber],
   );
 
   // Cleanup on unmount
@@ -432,7 +435,7 @@ export default function SignUpPage() {
       const now = new Date();
       const remaining = Math.max(
         0,
-        Math.floor((codeExpirationTime.getTime() - now.getTime()) / 1000)
+        Math.floor((codeExpirationTime.getTime() - now.getTime()) / 1000),
       );
       setTimeRemaining(remaining);
 
@@ -452,7 +455,7 @@ export default function SignUpPage() {
       const now = new Date();
       const remaining = Math.max(
         0,
-        Math.floor((emailCodeExpirationTime.getTime() - now.getTime()) / 1000)
+        Math.floor((emailCodeExpirationTime.getTime() - now.getTime()) / 1000),
       );
       setEmailTimeRemaining(remaining);
 
@@ -472,8 +475,8 @@ export default function SignUpPage() {
       countryCodes.filter(
         (cc) =>
           cc.code.includes(searchTerm) ||
-          cc.country.toLowerCase().includes(searchTerm)
-      )
+          cc.country.toLowerCase().includes(searchTerm),
+      ),
     );
   };
 
@@ -510,12 +513,12 @@ export default function SignUpPage() {
         });
       } else {
         setEmailVerificationError(
-          data.error || "Failed to send verification code"
+          data.error || "Failed to send verification code",
         );
       }
     } catch (error) {
       setEmailVerificationError(
-        "Failed to send verification code. Please try again."
+        "Failed to send verification code. Please try again.",
       );
     } finally {
       setIsSendingEmailCode(false);
@@ -533,7 +536,7 @@ export default function SignUpPage() {
 
     if (!emailVerificationCode || emailVerificationCode.length !== 6) {
       setEmailVerificationError(
-        "Please enter a valid 6-digit verification code"
+        "Please enter a valid 6-digit verification code",
       );
       return;
     }
@@ -604,7 +607,7 @@ export default function SignUpPage() {
       }
     } catch (error) {
       setVerificationError(
-        "Failed to send verification code. Please try again."
+        "Failed to send verification code. Please try again.",
       );
     } finally {
       setIsSendingCode(false);
@@ -719,8 +722,11 @@ export default function SignUpPage() {
                 />
               </div>
               <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2 lg:mb-3">
-                Sign Up
+                {t("auth.signUp")}
               </h2>
+              <div className="flex justify-center mt-4">
+                <LanguageSwitcher />
+              </div>
             </div>
 
             {/* User Type Selection */}
@@ -756,7 +762,7 @@ export default function SignUpPage() {
                 e.preventDefault();
                 // Combine country code with phone number before submission
                 const phoneInput = document.getElementById(
-                  "phone"
+                  "phone",
                 ) as HTMLInputElement;
                 const phoneNumber = phoneInput?.value?.replace(/\D/g, "") || "";
                 const fullPhone = `${selectedCountryCode}${phoneNumber}`;
@@ -793,8 +799,8 @@ export default function SignUpPage() {
                         hasFieldError("email") || emailValidation === "exists"
                           ? "border-red-300 bg-red-50"
                           : emailValidation === "available"
-                          ? "border-green-300 bg-green-50"
-                          : "border-gray-200"
+                            ? "border-green-300 bg-green-50"
+                            : "border-gray-200"
                       }`}
                       placeholder="Enter your email"
                       onChange={(e) => {
@@ -1164,7 +1170,7 @@ export default function SignUpPage() {
                                   setIsCountryCodeOpen(false);
                                   // Re-validate phone with new country code
                                   const phoneInput = document.getElementById(
-                                    "phone"
+                                    "phone",
                                   ) as HTMLInputElement;
                                   const phone = phoneInput?.value || "";
                                   if (
@@ -1180,10 +1186,10 @@ export default function SignUpPage() {
                                       () => {
                                         checkPhoneAvailability(
                                           phone,
-                                          newCountryCode
+                                          newCountryCode,
                                         );
                                       },
-                                      500
+                                      500,
                                     );
                                   }
                                 }}
@@ -1212,8 +1218,8 @@ export default function SignUpPage() {
                         hasFieldError("phone") || phoneValidation === "exists"
                           ? "border-red-300 bg-red-50"
                           : phoneValidation === "available"
-                          ? "border-green-300 bg-green-50"
-                          : "border-gray-200"
+                            ? "border-green-300 bg-green-50"
+                            : "border-gray-200"
                       }`}
                       placeholder="(123) 456-7890"
                       onChange={(e) => {
@@ -1422,8 +1428,8 @@ export default function SignUpPage() {
                             !term
                               ? hospitals
                               : hospitals.filter((h) =>
-                                  h.name.toLowerCase().includes(term)
-                                )
+                                  h.name.toLowerCase().includes(term),
+                                ),
                           );
                           setIsHospitalOpen(true);
                         }}
@@ -1488,7 +1494,7 @@ export default function SignUpPage() {
                             <p key={index} className="text-sm text-red-600">
                               {error}
                             </p>
-                          )
+                          ),
                         )}
                       </div>
                     )}
@@ -1521,8 +1527,8 @@ export default function SignUpPage() {
                             !term
                               ? postOptions
                               : postOptions.filter((opt) =>
-                                  opt.label.toLowerCase().includes(term)
-                                )
+                                  opt.label.toLowerCase().includes(term),
+                                ),
                           );
                           setIsPostOpen(true);
                         }}
@@ -1607,7 +1613,7 @@ export default function SignUpPage() {
                           if (
                             e.target.value !==
                             ciusssOptions.find(
-                              (opt) => opt._id === selectedCiusssId
+                              (opt) => opt._id === selectedCiusssId,
                             )?.name
                           ) {
                             setSelectedCiusssId("");
@@ -1617,8 +1623,8 @@ export default function SignUpPage() {
                             !term
                               ? ciusssOptions
                               : ciusssOptions.filter((opt) =>
-                                  opt.name.toLowerCase().includes(term)
-                                )
+                                  opt.name.toLowerCase().includes(term),
+                                ),
                           );
                           setIsCiusssOpen(true);
                         }}
@@ -1705,7 +1711,7 @@ export default function SignUpPage() {
                   }
                   className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 lg:py-4 px-6 text-base lg:text-lg rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                 >
-                  {isLoading ? "Creating Account..." : "Sign Up"}
+                  {isLoading ? t("signup.creating") : t("auth.signUp")}
                 </button>
                 {(emailValidation === "exists" ||
                   phoneValidation === "exists") && (

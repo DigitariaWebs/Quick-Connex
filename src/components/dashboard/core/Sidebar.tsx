@@ -16,6 +16,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LogoutConfirmationModal from "@/components/shared/modals/LogoutConfirmationModal";
 import type { User as UserType } from "@/types/auth/user.types";
+import { useTranslations } from "next-intl";
 
 interface SidebarProps {
   user: UserType;
@@ -25,37 +26,6 @@ interface SidebarProps {
   isMobileOpen?: boolean;
 }
 
-const navigation = [
-  {
-    name: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-    color: "text-blue-600",
-    bgColor: "bg-blue-50",
-  },
-  {
-    name: "Transfers",
-    href: "/transfers",
-    icon: ArrowRightLeft,
-    color: "text-green-600",
-    bgColor: "bg-green-50",
-  },
-  {
-    name: "Calendar",
-    href: "/calendar",
-    icon: Calendar,
-    color: "text-purple-600",
-    bgColor: "bg-purple-50",
-  },
-  {
-    name: "Nurses",
-    href: "/nurses",
-    icon: Users,
-    color: "text-pink-600",
-    bgColor: "bg-pink-50",
-  },
-];
-
 export default function Sidebar({
   user,
   onLogout,
@@ -63,10 +33,43 @@ export default function Sidebar({
   onMobileToggle,
   isMobileOpen = false,
 }: SidebarProps) {
+  const t = useTranslations("navigation");
+  const tAuth = useTranslations("auth");
   const [isCollapsed, setIsCollapsed] = useState(true); // Start collapsed by default
   const [isHovered, setIsHovered] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const pathname = usePathname();
+
+  const navigation = [
+    {
+      name: t("dashboard"),
+      href: "/dashboard",
+      icon: LayoutDashboard,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+    },
+    {
+      name: t("transfers"),
+      href: "/transfers",
+      icon: ArrowRightLeft,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+    },
+    {
+      name: t("calendar"),
+      href: "/calendar",
+      icon: Calendar,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+    },
+    {
+      name: t("nurses"),
+      href: "/nurses",
+      icon: Users,
+      color: "text-pink-600",
+      bgColor: "bg-pink-50",
+    },
+  ];
 
   // Auto-expand on hover, collapse when not hovered
   const handleMouseEnter = () => {
@@ -195,7 +198,7 @@ export default function Sidebar({
                 whileHover={{ x: isHovered ? 4 : 0 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleLogoutClick}
-                title={!isHovered ? "Sign Out" : undefined}
+                title={!isHovered ? tAuth("signOut") : undefined}
                 className={`sidebar-nav-item-red flex items-center space-x-3 ${
                   isHovered ? "px-4" : "px-2"
                 } py-3 rounded-2xl text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200 w-full`}
@@ -205,7 +208,7 @@ export default function Sidebar({
                 </div>
                 {isHovered && (
                   <span className="font-medium text-sm whitespace-nowrap truncate">
-                    Sign Out
+                    {tAuth("signOut")}
                   </span>
                 )}
               </motion.button>
@@ -285,7 +288,7 @@ export default function Sidebar({
                 <LogOut size={20} />
               </div>
               <span className="font-medium text-sm whitespace-nowrap truncate">
-                Sign Out
+                {tAuth("signOut")}
               </span>
             </button>
           </div>

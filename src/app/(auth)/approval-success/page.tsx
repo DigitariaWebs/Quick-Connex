@@ -3,9 +3,12 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 function ApprovalSuccessContent() {
   const searchParams = useSearchParams();
+  const t = useTranslations("approval.success");
+  const tCommon = useTranslations("common");
   const [message, setMessage] = useState("");
   const [transferId, setTransferId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -15,11 +18,11 @@ function ApprovalSuccessContent() {
     const transferIdParam = searchParams.get("transferId");
 
     if (messageParam === "transfer-approved") {
-      setMessage("Transfer Approved Successfully");
+      setMessage(t("approved"));
     } else if (messageParam === "transfer-rejected") {
-      setMessage("Transfer Rejected");
+      setMessage(t("rejected"));
     } else {
-      setMessage("Action Completed");
+      setMessage(t("completed"));
     }
 
     if (transferIdParam) {
@@ -84,7 +87,7 @@ function ApprovalSuccessContent() {
             transition={{ delay: 0.5 }}
             className="text-sm text-gray-600 mb-6"
           >
-            Transfer ID:{" "}
+            {t("transferId")}{" "}
             <span className="font-mono font-semibold">{transferId}</span>
           </motion.p>
         )}
@@ -96,9 +99,9 @@ function ApprovalSuccessContent() {
           className="space-y-4"
         >
           <p className="text-gray-600">
-            {message.includes("Approved")
-              ? "The transfer has been approved and is now available for assignment to employees."
-              : "The transfer request has been processed successfully."}
+            {message.includes(t("approved"))
+              ? t("description.approved")
+              : t("description.generic")}
           </p>
         </motion.div>
 
@@ -110,7 +113,7 @@ function ApprovalSuccessContent() {
           className="mt-8 pt-6 border-t border-gray-200"
         >
           <p className="text-xs text-gray-500">
-            This is an automated notification from the{" "}
+            {t("automatedNotification")}{" "}
             <span className="font-semibold">Quick Connex</span>
           </p>
         </motion.div>
@@ -126,7 +129,9 @@ export default function ApprovalSuccessPage() {
         <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
           <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading...</p>
+            <p className="mt-4 text-gray-600">
+              {useTranslations("common")("loading")}
+            </p>
           </div>
         </div>
       }

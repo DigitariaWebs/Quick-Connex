@@ -21,6 +21,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LogoutConfirmationModal from "@/components/shared/modals/LogoutConfirmationModal";
 import type { User } from "@/types/auth/user.types";
+import { useTranslations } from "next-intl";
 
 interface AdminSidebarProps {
   user: User;
@@ -37,88 +38,13 @@ interface NavigationSection {
 }
 
 interface NavigationItem {
-  name: string;
+  nameKey: string;
   href: string;
   icon: any;
   color: string;
   bgColor: string;
   superAdminOnly?: boolean;
 }
-
-const navigation: NavigationSection[] = [
-  {
-    section: "Dashboard",
-    items: [
-      {
-        name: "Overview",
-        href: "/admin/dashboard",
-        icon: LayoutDashboard,
-        color: "text-purple-600",
-        bgColor: "bg-purple-50",
-      },
-    ],
-  },
-  {
-    section: "Monitoring",
-    items: [
-      {
-        name: "SSE Connections",
-        href: "/admin/monitoring/sse",
-        icon: Radio,
-        color: "text-blue-600",
-        bgColor: "bg-blue-50",
-      },
-      {
-        name: "Sessions",
-        href: "/admin/sessions",
-        icon: Shield,
-        color: "text-green-600",
-        bgColor: "bg-green-50",
-      },
-      {
-        name: "Database",
-        href: "/admin/monitoring/database",
-        icon: Database,
-        color: "text-indigo-600",
-        bgColor: "bg-indigo-50",
-      },
-      {
-        name: "API Performance",
-        href: "/admin/monitoring/api",
-        icon: Zap,
-        color: "text-yellow-600",
-        bgColor: "bg-yellow-50",
-      },
-      {
-        name: "Error Logs",
-        href: "/admin/monitoring/errors",
-        icon: AlertTriangle,
-        color: "text-red-600",
-        bgColor: "bg-red-50",
-      },
-    ],
-    superAdminOnly: true,
-  },
-  {
-    section: "Management",
-    items: [
-      {
-        name: "Transfers",
-        href: "/admin/transfers",
-        icon: ArrowRightLeft,
-        color: "text-emerald-600",
-        bgColor: "bg-emerald-50",
-      },
-      {
-        name: "Users",
-        href: "/admin/users",
-        icon: Users,
-        color: "text-pink-600",
-        bgColor: "bg-pink-50",
-      },
-    ],
-  },
-];
 
 export default function AdminSidebar({
   user,
@@ -127,10 +53,80 @@ export default function AdminSidebar({
   onMobileToggle,
   isMobileOpen = false,
 }: AdminSidebarProps) {
+  const t = useTranslations("navigation");
+  const tAuth = useTranslations("auth");
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const pathname = usePathname();
+
+  const navigation: NavigationSection[] = [
+    {
+      section: t("dashboard"),
+      items: [
+        {
+          nameKey: "dashboard",
+          href: "/admin/dashboard",
+          icon: LayoutDashboard,
+          color: "text-purple-600",
+          bgColor: "bg-purple-50",
+        },
+      ],
+    },
+    {
+      section: t("monitoring"),
+      items: [
+        {
+          nameKey: "sessions",
+          href: "/admin/sessions",
+          icon: Shield,
+          color: "text-green-600",
+          bgColor: "bg-green-50",
+        },
+        {
+          nameKey: "database",
+          href: "/admin/monitoring/database",
+          icon: Database,
+          color: "text-indigo-600",
+          bgColor: "bg-indigo-50",
+        },
+        {
+          nameKey: "api",
+          href: "/admin/monitoring/api",
+          icon: Zap,
+          color: "text-yellow-600",
+          bgColor: "bg-yellow-50",
+        },
+        {
+          nameKey: "errors",
+          href: "/admin/monitoring/errors",
+          icon: AlertTriangle,
+          color: "text-red-600",
+          bgColor: "bg-red-50",
+        },
+      ],
+      superAdminOnly: true,
+    },
+    {
+      section: t("admin"),
+      items: [
+        {
+          nameKey: "transfers",
+          href: "/admin/transfers",
+          icon: ArrowRightLeft,
+          color: "text-emerald-600",
+          bgColor: "bg-emerald-50",
+        },
+        {
+          nameKey: "users",
+          href: "/admin/users",
+          icon: Users,
+          color: "text-pink-600",
+          bgColor: "bg-pink-50",
+        },
+      ],
+    },
+  ];
 
   const handleMouseEnter = () => {
     setIsHovered(true);
@@ -161,7 +157,7 @@ export default function AdminSidebar({
     .map((section) => ({
       ...section,
       items: section.items.filter(
-        (item) => !item.superAdminOnly || isSuperAdmin
+        (item) => !item.superAdminOnly || isSuperAdmin,
       ),
     }))
     .filter((section) => section.items.length > 0);
@@ -211,14 +207,14 @@ export default function AdminSidebar({
                     const Icon = item.icon;
 
                     return (
-                      <Link key={item.name} href={item.href}>
+                      <Link key={item.href} href={item.href}>
                         <motion.div
                           whileHover={{
                             x: isHovered ? 4 : 0,
                             scale: isHovered ? 1.02 : 1,
                           }}
                           whileTap={{ scale: 0.98 }}
-                          title={!isHovered ? item.name : undefined}
+                          title={!isHovered ? item.nameKey : undefined}
                           className={`flex items-center space-x-3 ${
                             isHovered ? "px-4" : "px-2"
                           } py-3 rounded-2xl transition-all duration-200 relative group mb-1 ${
@@ -242,7 +238,7 @@ export default function AdminSidebar({
                               className="flex items-center justify-between flex-1 min-w-0"
                             >
                               <span className="font-medium text-sm whitespace-nowrap truncate">
-                                {item.name}
+                                {t(item.nameKey)}
                               </span>
                             </motion.div>
                           )}
@@ -261,7 +257,7 @@ export default function AdminSidebar({
               whileHover={{ x: isHovered ? 4 : 0 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleLogoutClick}
-              title={!isHovered ? "Sign Out" : undefined}
+              title={!isHovered ? tAuth("signOut") : undefined}
               className={`flex items-center space-x-3 ${
                 isHovered ? "px-4" : "px-2"
               } py-3 rounded-2xl text-red-300 hover:bg-red-500/20 hover:text-red-200 transition-all duration-200 w-full border border-red-500/30`}
@@ -271,7 +267,7 @@ export default function AdminSidebar({
               </div>
               {isHovered && (
                 <span className="font-medium text-sm whitespace-nowrap truncate">
-                  Sign Out
+                  {tAuth("signOut")}
                 </span>
               )}
             </motion.button>
@@ -296,7 +292,7 @@ export default function AdminSidebar({
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-white">
-                  Admin Panel
+                  {t("admin")}
                 </h2>
                 <p className="text-purple-200 text-sm">
                   {user.firstName} {user.lastName}
@@ -333,7 +329,7 @@ export default function AdminSidebar({
                   const Icon = item.icon;
 
                   return (
-                    <Link key={item.name} href={item.href}>
+                    <Link key={item.nameKey} href={item.href}>
                       <motion.div
                         whileHover={{ x: 4, scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
@@ -352,7 +348,7 @@ export default function AdminSidebar({
                           <Icon size={20} />
                         </div>
                         <span className="font-medium text-sm whitespace-nowrap truncate">
-                          {item.name}
+                          {t(item.nameKey)}
                         </span>
                       </motion.div>
                     </Link>
@@ -375,7 +371,7 @@ export default function AdminSidebar({
               <LogOut size={20} />
             </div>
             <span className="font-medium text-sm whitespace-nowrap truncate">
-              Sign Out
+              {tAuth("signOut")}
             </span>
           </motion.button>
         </div>

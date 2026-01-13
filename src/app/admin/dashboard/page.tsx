@@ -16,6 +16,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useAdminDashboard } from "@/hooks/dashboard";
 import { StatCard } from "@/types/dashboard/dashboard.types";
+import { useTranslations } from "next-intl";
 
 /**
  * Admin Dashboard - Main Overview
@@ -29,6 +30,9 @@ import { StatCard } from "@/types/dashboard/dashboard.types";
  */
 
 export default function AdminDashboard() {
+  const t = useTranslations("adminDashboard");
+  const tCommon = useTranslations("common");
+
   // Fetch dashboard data with automatic polling
   const { data, loading, error, refresh } = useAdminDashboard({
     pollInterval: 60000, // Poll every 1 minute
@@ -44,7 +48,7 @@ export default function AdminDashboard() {
   const stats: StatCard[] = data
     ? [
         {
-          name: "Pending Approvals",
+          name: t("pendingApprovals"),
           value: formatNumber(data.pendingApprovals),
           change: "0%",
           trend: "stable",
@@ -53,7 +57,7 @@ export default function AdminDashboard() {
           bgColor: "bg-amber-50",
         },
         {
-          name: "Transfers Today",
+          name: t("transfersToday"),
           value: formatNumber(data.transfersToday),
           change: "0%",
           trend: "stable",
@@ -62,7 +66,7 @@ export default function AdminDashboard() {
           bgColor: "bg-purple-50",
         },
         {
-          name: "Total Users",
+          name: t("totalUsers"),
           value: formatNumber(data.totalUsers),
           change: "0%",
           trend: "stable",
@@ -71,7 +75,7 @@ export default function AdminDashboard() {
           bgColor: "bg-indigo-50",
         },
         {
-          name: "System Health",
+          name: t("systemHealth"),
           value: `${data.systemHealth.overallScore}%`,
           change: "0%",
           trend: "stable",
@@ -138,14 +142,16 @@ export default function AdminDashboard() {
     const time = new Date(timestamp);
     const seconds = Math.floor((now.getTime() - time.getTime()) / 1000);
 
-    if (seconds < 60) return `${seconds}s ago`;
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    return `${Math.floor(seconds / 86400)}d ago`;
+    if (seconds < 60) return `${seconds}${t("timeAgo.seconds")}`;
+    if (seconds < 3600)
+      return `${Math.floor(seconds / 60)}${t("timeAgo.minutes")}`;
+    if (seconds < 86400)
+      return `${Math.floor(seconds / 3600)}${t("timeAgo.hours")}`;
+    return `${Math.floor(seconds / 86400)}${t("timeAgo.days")}`;
   };
 
   return (
-    <AdminLayout pageTitle="Admin Dashboard">
+    <AdminLayout pageTitle={t("title")}>
       {/* Error Alert */}
       <AnimatePresence>
         {error && (
@@ -159,7 +165,7 @@ export default function AdminDashboard() {
               <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-red-900 mb-1">
-                  Error Loading Dashboard
+                  {t("errorLoading")}
                 </h3>
                 <p className="text-sm text-red-700">{error.message}</p>
               </div>
@@ -167,7 +173,7 @@ export default function AdminDashboard() {
                 onClick={refresh}
                 className="text-sm text-red-600 hover:text-red-700 font-medium"
               >
-                Retry
+                {t("retry")}
               </button>
             </div>
           </motion.div>
@@ -206,7 +212,7 @@ export default function AdminDashboard() {
                     <div className="absolute top-3 right-3 flex items-center space-x-1">
                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                       <span className="text-xs font-medium text-green-600">
-                        LIVE
+                        {t("live")}
                       </span>
                     </div>
                   )}
@@ -237,7 +243,7 @@ export default function AdminDashboard() {
           className="bg-white rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100"
         >
           <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">
-            System Status
+            {t("systemStatus")}
           </h2>
 
           {loading.isLoading && !data ? (
@@ -275,7 +281,7 @@ export default function AdminDashboard() {
                           {service.metadata?.activeConnections !==
                             undefined && (
                             <p className="text-xs text-gray-500 truncate">
-                              {service.metadata.activeConnections} active
+                              {service.metadata.activeConnections} {t("active")}
                             </p>
                           )}
                         </div>
@@ -294,7 +300,7 @@ export default function AdminDashboard() {
                       </div>
                     </motion.div>
                   );
-                }
+                },
               )}
             </div>
           ) : null}
@@ -308,7 +314,7 @@ export default function AdminDashboard() {
           className="bg-white rounded-2xl p-4 lg:p-6 shadow-sm border border-gray-100"
         >
           <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-3 lg:mb-4">
-            Recent Activity
+            {t("recentActivity")}
           </h2>
 
           {loading.isLoading && !data ? (
@@ -374,7 +380,7 @@ export default function AdminDashboard() {
           ) : (
             <div className="text-center py-6 lg:py-8 text-gray-500">
               <Activity className="w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-2 opacity-50" />
-              <p className="text-xs lg:text-sm">No recent activity</p>
+              <p className="text-xs lg:text-sm">{t("noActivity")}</p>
             </div>
           )}
         </motion.div>
@@ -392,11 +398,10 @@ export default function AdminDashboard() {
             <AlertCircle className="w-4 h-4 lg:w-5 lg:h-5 text-amber-600 mt-0.5 flex-shrink-0" />
             <div className="min-w-0 flex-1">
               <h3 className="text-xs lg:text-sm font-semibold text-amber-900 mb-1">
-                System Alert
+                {t("systemAlert")}
               </h3>
               <p className="text-xs lg:text-sm text-amber-700">
-                Some services are experiencing degraded performance. Monitoring
-                the situation.
+                {t("servicesAlert")}
               </p>
             </div>
           </div>

@@ -3,10 +3,12 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/contexts/SessionContext";
+import { useTranslations } from "next-intl";
 
 export default function HomePage() {
   const router = useRouter();
   const { user, isLoading } = useSession();
+  const t = useTranslations("homePage");
 
   useEffect(() => {
     // Don't redirect while still loading
@@ -34,7 +36,7 @@ export default function HomePage() {
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto"></div>
         <p className="mt-6 text-gray-700 text-lg font-medium">
-          {isLoading ? "Loading..." : "Redirecting..."}
+          {isLoading ? t("loading") : t("redirecting")}
         </p>
       </div>
     </div>

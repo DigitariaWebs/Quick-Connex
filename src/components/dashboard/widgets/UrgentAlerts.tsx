@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, Clock, MapPin, User, X } from "lucide-react";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 interface UrgentTransfer {
   id: string;
@@ -31,6 +32,7 @@ export default function UrgentAlerts({
   loading = false,
   error = null,
 }: UrgentAlertsProps) {
+  const t = useTranslations("dashboardWidgets.urgentAlerts");
   const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([]);
 
   const handleDismiss = (id: string) => {
@@ -39,7 +41,7 @@ export default function UrgentAlerts({
   };
 
   const visibleAlerts = urgentTransfers.filter(
-    (alert) => !dismissedAlerts.includes(alert.id)
+    (alert) => !dismissedAlerts.includes(alert.id),
   );
 
   // Show loading state
@@ -66,7 +68,7 @@ export default function UrgentAlerts({
         <div className="flex items-center space-x-2">
           <AlertTriangle size={20} className="text-red-600" />
           <span className="text-red-800 text-sm">
-            Failed to load urgent alerts: {error}
+            {t("failedToLoad")}: {error}
           </span>
         </div>
       </div>
@@ -125,7 +127,7 @@ export default function UrgentAlerts({
                           : "bg-orange-100 text-orange-800"
                       }`}
                     >
-                      {transfer.priority}
+                      {t(transfer.priority)}
                     </span>
                     <span className="text-xs text-gray-500">
                       {transfer.transferId}
@@ -146,7 +148,7 @@ export default function UrgentAlerts({
                     <div className="flex items-center space-x-1">
                       <Clock size={12} />
                       <span className="font-medium text-red-600">
-                        {transfer.timeElapsed} ago
+                        {transfer.timeElapsed} {t("ago")}
                       </span>
                     </div>
                   </div>
@@ -164,13 +166,13 @@ export default function UrgentAlerts({
                           : "bg-orange-600 text-white hover:bg-orange-700"
                       }`}
                     >
-                      View Transfer
+                      {t("viewTransfer")}
                     </button>
                     <button
                       onClick={() => handleDismiss(transfer.id)}
                       className="px-3 py-1.5 rounded-md text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
                     >
-                      Dismiss
+                      {t("dismiss")}
                     </button>
                   </div>
                 </div>

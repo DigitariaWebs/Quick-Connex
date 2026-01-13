@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useSession } from "@/contexts/SessionContext";
 import Sidebar from "@/components/dashboard/core/Sidebar";
 import { User, Phone, Mail, MapPin, Calendar, Award, Bell } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface UserProfile {
   _id: string;
@@ -28,6 +29,8 @@ interface UserProfile {
 
 export default function ProfilePage() {
   const { user, isLoading: authLoading, logout } = useSession();
+  const t = useTranslations("profilePage");
+  const tCommon = useTranslations("common");
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
@@ -52,7 +55,7 @@ export default function ProfilePage() {
         console.error(
           "Failed to fetch profile data:",
           response.status,
-          response.statusText
+          response.statusText,
         );
       }
     } catch (error) {
@@ -112,7 +115,9 @@ export default function ProfilePage() {
                   {profile.firstName} {profile.lastName}
                 </h2>
                 <p className="text-sm text-gray-600 capitalize">
-                  {profile.userType === "manager" ? "Manager" : "Employee"}
+                  {profile.userType === "manager"
+                    ? t("manager")
+                    : t("employee")}
                 </p>
               </div>
 
@@ -120,9 +125,13 @@ export default function ProfilePage() {
                 <div className="flex items-center space-x-3">
                   <User className="h-4 w-4 text-gray-500" />
                   <div>
-                    <p className="text-xs text-gray-500 font-medium">Role</p>
+                    <p className="text-xs text-gray-500 font-medium">
+                      {t("role")}
+                    </p>
                     <p className="text-sm font-semibold text-gray-900 capitalize">
-                      {profile.userType === "manager" ? "Manager" : "Employee"}
+                      {profile.userType === "manager"
+                        ? t("manager")
+                        : t("employee")}
                     </p>
                   </div>
                 </div>
@@ -132,7 +141,7 @@ export default function ProfilePage() {
                     <Award className="h-4 w-4 text-gray-500" />
                     <div>
                       <p className="text-xs text-gray-500 font-medium">
-                        Position
+                        {t("position")}
                       </p>
                       <p className="text-sm font-semibold text-gray-900">
                         {profile.post}
@@ -146,7 +155,7 @@ export default function ProfilePage() {
                     <MapPin className="h-4 w-4 text-gray-500" />
                     <div>
                       <p className="text-xs text-gray-500 font-medium">
-                        CIUSSS
+                        {t("ciusss")}
                       </p>
                       <p className="text-sm font-semibold text-gray-900">
                         {typeof profile.ciusss === "string"
@@ -160,7 +169,9 @@ export default function ProfilePage() {
                 <div className="flex items-center space-x-3">
                   <Phone className="h-4 w-4 text-gray-500" />
                   <div>
-                    <p className="text-xs text-gray-500 font-medium">Phone</p>
+                    <p className="text-xs text-gray-500 font-medium">
+                      {t("phone")}
+                    </p>
                     <p className="text-sm font-semibold text-gray-900">
                       {profile.phone}
                     </p>
@@ -170,7 +181,9 @@ export default function ProfilePage() {
                 <div className="flex items-center space-x-3">
                   <Mail className="h-4 w-4 text-gray-500" />
                   <div>
-                    <p className="text-xs text-gray-500 font-medium">Email</p>
+                    <p className="text-xs text-gray-500 font-medium">
+                      {t("email")}
+                    </p>
                     <p className="text-sm font-semibold text-gray-900">
                       {profile.email}
                     </p>
@@ -181,7 +194,7 @@ export default function ProfilePage() {
                   <Calendar className="h-4 w-4 text-gray-500" />
                   <div>
                     <p className="text-xs text-gray-500 font-medium">
-                      Member Since
+                      {t("memberSince")}
                     </p>
                     <p className="text-sm font-semibold text-gray-900">
                       {new Date(profile.createdAt).toLocaleDateString("en-CA", {
@@ -202,11 +215,9 @@ export default function ProfilePage() {
               <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 mx-4">
                 <div className="text-center">
                   <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                    Welcome, {profile.firstName}!
+                    {t("welcome")}, {profile.firstName}!
                   </h1>
-                  <p className="text-gray-600">
-                    Here's your profile information
-                  </p>
+                  <p className="text-gray-600">{t("profileInfo")}</p>
                 </div>
 
                 {/* Notifications Settings */}
@@ -214,7 +225,7 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-2 mb-3">
                     <Bell className="h-5 w-5 text-gray-700" />
                     <h2 className="text-lg font-semibold text-gray-900">
-                      Browser Push Notifications
+                      {t("notifications")}
                     </h2>
                   </div>
                   <NotificationsSettings />
@@ -223,7 +234,7 @@ export default function ProfilePage() {
             ) : (
               <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 mx-4">
                 <div className="text-center">
-                  <p className="text-gray-600">No profile data available.</p>
+                  <p className="text-gray-600">{t("noData")}</p>
                 </div>
               </div>
             )}
@@ -235,12 +246,11 @@ export default function ProfilePage() {
 }
 
 function NotificationsSettings() {
+  const t = useTranslations("profilePage");
+
   return (
     <div className="border border-gray-200 rounded-xl p-4">
-      <div className="text-sm text-gray-600">
-        Push notification functionality has been removed. This feature is no
-        longer available.
-      </div>
+      <div className="text-sm text-gray-600">{t("notificationsDisabled")}</div>
     </div>
   );
 }

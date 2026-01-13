@@ -12,6 +12,7 @@ import {
   Users,
   Calendar,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface QuickAction {
   id: string;
@@ -57,11 +58,14 @@ export default function QuickActions({
   loading = false,
   error = null,
 }: QuickActionsProps) {
+  const t = useTranslations("dashboardWidgets.quickActions");
+  const tTransfers = useTranslations("transfers");
+
   const employeeActions: QuickAction[] = [
     {
       id: "view-accepted",
-      title: "My Accepted Transfers",
-      description: "View transfers you have accepted and are working on",
+      title: t("viewAccepted"),
+      description: tTransfers("viewAccepted"),
       icon: <CheckCircle size={20} className="text-blue-600" />,
       color: "text-blue-600",
       bgColor: "bg-blue-50 hover:bg-blue-100",
@@ -70,8 +74,8 @@ export default function QuickActions({
     },
     {
       id: "view-schedule",
-      title: "Today's Schedule",
-      description: "View transfers scheduled for today",
+      title: t("viewSchedule"),
+      description: tTransfers("viewSchedule"),
       icon: <Calendar size={20} className="text-green-600" />,
       color: "text-green-600",
       bgColor: "bg-green-50 hover:bg-green-100",
@@ -80,8 +84,8 @@ export default function QuickActions({
     },
     {
       id: "search-transfers",
-      title: "Search Transfers",
-      description: "Find specific transfers or patients",
+      title: t("searchTransfers"),
+      description: tTransfers("searchTransfers"),
       icon: <Search size={20} className="text-purple-600" />,
       color: "text-purple-600",
       bgColor: "bg-purple-50 hover:bg-purple-100",
@@ -92,8 +96,8 @@ export default function QuickActions({
   const managerActions: QuickAction[] = [
     {
       id: "new-transfer",
-      title: "Book New Transfer",
-      description: "Create a new patient transfer request",
+      title: t("newTransfer"),
+      description: tTransfers("createTransfer"),
       icon: <Plus size={20} className="text-green-600" />,
       color: "text-green-600",
       bgColor: "bg-green-50 hover:bg-green-100",
@@ -101,8 +105,8 @@ export default function QuickActions({
     },
     {
       id: "view-pending",
-      title: "Review Pending",
-      description: "Validate pending transfer requests",
+      title: t("viewPending"),
+      description: tTransfers("viewPending"),
       icon: <CheckCircle size={20} className="text-green-600" />,
       color: "text-green-600",
       bgColor: "bg-green-50 hover:bg-green-100",
@@ -116,7 +120,7 @@ export default function QuickActions({
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-800">Quick Actions</h3>
+        <h3 className="text-lg font-semibold text-gray-800">{t("title")}</h3>
       </div>
 
       {loading ? (
@@ -141,9 +145,7 @@ export default function QuickActions({
           <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
             <AlertTriangle size={24} className="text-red-600" />
           </div>
-          <p className="text-red-600 text-sm mb-2">
-            Failed to load quick actions
-          </p>
+          <p className="text-red-600 text-sm mb-2">{t("failedToLoad")}</p>
           <p className="text-gray-500 text-xs">{error}</p>
         </div>
       ) : (
