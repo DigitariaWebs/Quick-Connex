@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 type UserTypeButtonProps = {
   type: string;
@@ -12,7 +13,22 @@ export function UserTypeButton({
   currentType,
   onClick,
 }: UserTypeButtonProps) {
-  const label = type.charAt(0).toUpperCase() + type.slice(1);
+  const t = useTranslations("users");
+
+  const getLabel = (type: string) => {
+    switch (type.toLowerCase()) {
+      case "employee":
+        return t("employee");
+      case "manager":
+        return t("manager");
+      case "admin":
+        return t("admin");
+      default:
+        return type.charAt(0).toUpperCase() + type.slice(1);
+    }
+  };
+
+  const label = getLabel(type);
 
   return (
     <motion.button

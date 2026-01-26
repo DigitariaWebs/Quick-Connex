@@ -27,7 +27,8 @@
     "none": "None",
     "clear": "Clear",
     "apply": "Apply",
-    "reset": "Reset"
+    "reset": "Reset",
+    "more": "more"
   },
   "auth": {
     "signIn": "Sign In",
@@ -125,7 +126,18 @@
     "urgent": "Urgent",
     "normal": "Normal",
     "noTransfers": "No transfers found",
-    "searchTransfers": "Search transfers..."
+    "searchTransfers": "Search transfers...",
+    "patient": "Patient",
+    "patientTransfer": "Patient Transfer",
+    "envelope": "Envelope",
+    "envelopeTransfer": "Envelope Transfer",
+    "packageEnvelope": "Package/Envelope",
+    "medicalEquipment": "Medical Equipment",
+    "medicalInstruments": "Medical Instruments",
+    "medicalInstrumentsTransfer": "Medical Instruments Transfer",
+    "transfer": "Transfer",
+    "unknownType": "Unknown Type",
+    "unknown": "Unknown"
   },
   "nurses": {
     "title": "Nurses",

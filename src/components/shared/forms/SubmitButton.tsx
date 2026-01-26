@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslations } from "next-intl";
 
 type SubmitButtonProps = {
   isLoading: boolean;
@@ -10,9 +11,14 @@ type SubmitButtonProps = {
 export function SubmitButton({
   isLoading,
   text,
-  label = "Create Account",
-  loadingText = "Processing...",
+  label,
+  loadingText,
 }: SubmitButtonProps) {
+  const t = useTranslations("common");
+  const tAuth = useTranslations("auth");
+
+  const defaultLabel = label || tAuth("createAccount");
+  const defaultLoadingText = loadingText || t("loading");
   return (
     <button
       type="submit"
@@ -41,7 +47,7 @@ export function SubmitButton({
           ></path>
         </svg>
       ) : null}
-      {isLoading ? loadingText : text || label}
+      {isLoading ? defaultLoadingText : text || defaultLabel}
     </button>
   );
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Menu } from "lucide-react";
 import type { User } from "@/types/auth/user.types";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
+import { useTranslations } from "next-intl";
 
 interface AdminHeaderProps {
   user: User;
@@ -24,6 +25,8 @@ export default function AdminHeader({
   hideMobileMenu = false,
 }: AdminHeaderProps) {
   const router = useRouter();
+  const t = useTranslations("admin");
+  const tDashboard = useTranslations("dashboard");
 
   return (
     <motion.header
@@ -53,10 +56,10 @@ export default function AdminHeader({
             {/* Welcome Message */}
             <div className="flex-1 min-w-0">
               <h1 className="text-xl lg:text-2xl font-bold text-black truncate">
-                {pageTitle || `Hello ${user.firstName}`}
+                {pageTitle || `${tDashboard("welcome")} ${user.firstName}`}
               </h1>
               <p className="text-sm text-gray-500 mt-1 hidden lg:block">
-                {pageTitle ? "" : "Manage your system today!"}
+                {pageTitle ? "" : t("userManagement")}
               </p>
             </div>
           </div>
@@ -82,7 +85,9 @@ export default function AdminHeader({
                   {user.firstName} {user.lastName}
                 </p>
                 <p className="text-xs text-purple-600 font-medium capitalize">
-                  {user.userType === "super_admin" ? "Super Admin" : "Admin"}
+                  {user.userType === "super_admin"
+                    ? t("superAdmin")
+                    : t("admin")}
                 </p>
               </div>
             </div>

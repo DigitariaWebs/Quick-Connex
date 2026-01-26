@@ -13,6 +13,7 @@ import {
   Edit,
   X,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface CalendarEvent {
   id: string;
@@ -83,6 +84,10 @@ export default function CalendarView({
   onDateClick,
   onCreateTransfer,
 }: CalendarViewProps) {
+  const t = useTranslations("calendar");
+  const tCommon = useTranslations("common");
+  const tTransfers = useTranslations("transfers");
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<"month" | "week" | "day">("month");
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -114,10 +119,10 @@ export default function CalendarView({
       if (data.success) {
         setEvents(data.data.events);
       } else {
-        setError(data.error || "Failed to fetch calendar events");
+        setError(data.error || tCommon("error"));
       }
     } catch (err) {
-      setError("Network error occurred");
+      setError(tCommon("error"));
       console.error("Error fetching calendar events:", err);
     } finally {
       setLoading(false);
@@ -182,7 +187,7 @@ export default function CalendarView({
           colors[priority as keyof typeof colors]
         }`}
       >
-        {priority.toUpperCase()}
+        {tTransfers(priority as any)}
       </span>
     );
   };
@@ -202,7 +207,7 @@ export default function CalendarView({
           colors[status as keyof typeof colors]
         }`}
       >
-        {status.replace("_", " ").toUpperCase()}
+        {tTransfers(status.replace("_", "") as any)}
       </span>
     );
   };
@@ -277,11 +282,11 @@ export default function CalendarView({
             ))}
             {dayEvents.length > 2 && (
               <div className="text-xs text-gray-500">
-                +{dayEvents.length - 2} more
+                +{dayEvents.length - 2} {tCommon("more")}
               </div>
             )}
           </div>
-        </div>
+        </div>,
       );
 
       currentDay.setDate(currentDay.getDate() + 1);
@@ -350,7 +355,7 @@ export default function CalendarView({
               </div>
             ))}
           </div>
-        </div>
+        </div>,
       );
     }
 
@@ -425,10 +430,10 @@ export default function CalendarView({
               {hour === 0
                 ? "12 AM"
                 : hour < 12
-                ? `${hour} AM`
-                : hour === 12
-                ? "12 PM"
-                : `${hour - 12} PM`}
+                  ? `${hour} AM`
+                  : hour === 12
+                    ? "12 PM"
+                    : `${hour - 12} PM`}
             </div>
           ))}
         </div>

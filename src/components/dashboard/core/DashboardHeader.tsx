@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Plus, Search, Menu } from "lucide-react";
 import type { User } from "@/types/auth/user.types";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
+import { useTranslations } from "next-intl";
 
 interface DashboardHeaderProps {
   user: User;
@@ -30,6 +31,9 @@ export default function DashboardHeader({
   onMobileMenuToggle,
   hideMobileMenu = false,
 }: DashboardHeaderProps) {
+  const t = useTranslations("common");
+  const tDashboard = useTranslations("dashboard");
+
   return (
     <motion.header
       initial={{ opacity: 0, y: -20 }}
@@ -58,10 +62,10 @@ export default function DashboardHeader({
             {/* Welcome Message */}
             <div className="flex-1 min-w-0">
               <h1 className="text-xl lg:text-2xl font-bold text-black truncate">
-                {pageTitle || `Hello ${user.firstName}`}
+                {pageTitle || `${tDashboard("welcome")} ${user.firstName}`}
               </h1>
               <p className="text-sm text-gray-500 mt-1 hidden lg:block">
-                {pageTitle ? "" : "Manage your patients today!"}
+                {pageTitle ? "" : tDashboard("overview")}
               </p>
             </div>
           </div>
@@ -82,7 +86,7 @@ export default function DashboardHeader({
                   />
                   <input
                     type="text"
-                    placeholder="Search transfers..."
+                    placeholder={t("search")}
                     value={searchValue}
                     onChange={(e) => onSearchChange?.(e.target.value)}
                     className="absolute inset-0 w-full h-full px-4 bg-transparent text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-transparent focus:border-transparent border-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"

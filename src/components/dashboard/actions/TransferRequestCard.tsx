@@ -23,6 +23,7 @@ import {
 } from "@/lib/transfers";
 import FeedbackToast from "@/components/shared/feedback/FeedbackToast";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 
 interface TransferRequest {
   _id: string;
@@ -126,7 +127,7 @@ interface TransferRequestCardProps {
 }
 
 // Helper function to get transfer display information
-function getTransferDisplayInfo(transfer: TransferRequest) {
+function getTransferDisplayInfo(transfer: TransferRequest, t: any) {
   const category = transfer.transferCategory || TransferCategory.PATIENT;
 
   switch (category) {
@@ -136,48 +137,48 @@ function getTransferDisplayInfo(transfer: TransferRequest) {
       return {
         title: patientInfo
           ? `${patientInfo.firstName} ${patientInfo.lastName}`
-          : "Patient Transfer",
-        subtitle: patientInfo?.dossierNumber || "Patient",
+          : t("patientTransfer"),
+        subtitle: patientInfo?.dossierNumber || t("patient"),
         icon: User,
         iconColor: "text-blue-600",
         bgColor: "bg-blue-100",
-        category: "Patient",
+        category: t("patient"),
       };
 
     case TransferCategory.ENVELOPE:
       const envelopeInfo = transfer.transferData?.envelopeInfo;
       return {
         title: envelopeInfo
-          ? `Envelope: ${envelopeInfo.senderName} → ${envelopeInfo.recipientName}`
-          : "Envelope Transfer",
-        subtitle: envelopeInfo?.contents || "Package/Envelope",
+          ? `${t("envelope")}: ${envelopeInfo.senderName} → ${envelopeInfo.recipientName}`
+          : t("envelopeTransfer"),
+        subtitle: envelopeInfo?.contents || t("packageEnvelope"),
         icon: Package,
         iconColor: "text-orange-600",
         bgColor: "bg-orange-100",
-        category: "Envelope",
+        category: t("envelope"),
       };
 
     case TransferCategory.MEDICAL_INSTRUMENTS:
       const equipmentInfo = transfer.transferData?.equipmentInfo;
       return {
         title: equipmentInfo
-          ? `Medical Equipment: ${equipmentInfo.equipmentName}`
-          : "Medical Instruments Transfer",
-        subtitle: equipmentInfo?.serialNumber || "Medical Equipment",
+          ? `${t("medicalEquipment")}: ${equipmentInfo.equipmentName}`
+          : t("medicalInstrumentsTransfer"),
+        subtitle: equipmentInfo?.serialNumber || t("medicalEquipment"),
         icon: Stethoscope,
         iconColor: "text-purple-600",
         bgColor: "bg-purple-100",
-        category: "Medical Instruments",
+        category: t("medicalInstruments"),
       };
 
     default:
       return {
-        title: "Transfer",
-        subtitle: "Unknown Type",
+        title: t("transfer"),
+        subtitle: t("unknownType"),
         icon: User,
         iconColor: "text-gray-600",
         bgColor: "bg-gray-100",
-        category: "Unknown",
+        category: t("unknown"),
       };
   }
 }
@@ -191,6 +192,9 @@ export default function TransferRequestCard({
   currentUserType,
   isSelected = false,
 }: TransferRequestCardProps) {
+  const t = useTranslations("transfers");
+  const tCommon = useTranslations("common");
+
   const [isAccepting, setIsAccepting] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isHoveringCancel, setIsHoveringCancel] = useState(false);
@@ -198,10 +202,10 @@ export default function TransferRequestCard({
   const [feedbackStatus, setFeedbackStatus] = useState<
     "success" | "error" | null
   >(null);
-  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackMessage, setFeedbackMessage] = useState<string>("");
 
-  // Get display information based on transfer type
-  const displayInfo = getTransferDisplayInfo(transfer);
+  // Get display information
+  const displayInfo = getTransferDisplayInfo(transfer, t);
   const IconComponent = displayInfo.icon;
 
   // Update current time every minute for real-time countdown
@@ -223,7 +227,7 @@ export default function TransferRequestCard({
     const hoursLeft = Math.max(0, 24 - Math.floor(timeDiff / (1000 * 60 * 60)));
     const minutesLeft = Math.max(
       0,
-      60 - Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60))
+      60 - Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60)),
     );
 
     if (hoursLeft === 0 && minutesLeft === 0) {
@@ -357,7 +361,7 @@ export default function TransferRequestCard({
 
   const handleCancel = async () => {
     const reason = prompt(
-      "Please provide a reason for cancelling this transfer:"
+      "Please provide a reason for cancelling this transfer:",
     );
     if (!reason) return;
 
@@ -761,7 +765,7 @@ export default function TransferRequestCard({
               }}
             />
           </div>,
-          document.body
+          document.body,
         )}
     </motion.div>
   );

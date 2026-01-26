@@ -79,7 +79,7 @@
     "mongodb": "^6.19.0",
     "mongoose": "^8.18.1",
     "motion": "^12.23.24",
-    "next": "15.5.3",
+    "next": "15.5.9",
     "next-intl": "^4.7.0",
     "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.6",

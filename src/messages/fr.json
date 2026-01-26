@@ -27,7 +27,8 @@
     "none": "Aucun",
     "clear": "Effacer",
     "apply": "Appliquer",
-    "reset": "Réinitialiser"
+    "reset": "Réinitialiser",
+    "more": "plus"
   },
   "auth": {
     "signIn": "Se connecter",
@@ -125,7 +126,18 @@
     "urgent": "Urgent",
     "normal": "Normal",
     "noTransfers": "Aucun transfert trouvé",
-    "searchTransfers": "Rechercher des transferts..."
+    "searchTransfers": "Rechercher des transferts...",
+    "patient": "Patient",
+    "patientTransfer": "Transfert de patient",
+    "envelope": "Enveloppe",
+    "envelopeTransfer": "Transfert d'enveloppe",
+    "packageEnvelope": "Colis/Enveloppe",
+    "medicalEquipment": "Équipement médical",
+    "medicalInstruments": "Instruments médicaux",
+    "medicalInstrumentsTransfer": "Transfert d'instruments médicaux",
+    "transfer": "Transfert",
+    "unknownType": "Type inconnu",
+    "unknown": "Inconnu"
   },
   "nurses": {
     "title": "Infirmières",

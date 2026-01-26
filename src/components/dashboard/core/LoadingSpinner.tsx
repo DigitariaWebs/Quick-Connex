@@ -1,8 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 export default function LoadingSpinner() {
+  const t = useTranslations("common");
+
   const spinnerVariants = {
     animate: {
       rotate: 360,
@@ -61,10 +64,8 @@ export default function LoadingSpinner() {
           transition={{ delay: 0.3, duration: 0.5 }}
           className="text-center"
         >
-          <p className="text-gray-700 font-medium mb-1">Loading transfers</p>
-          <p className="text-gray-500 text-sm">
-            Please wait while we fetch the latest data
-          </p>
+          <p className="text-gray-700 font-medium mb-1">{t("loading")}</p>
+          <p className="text-gray-500 text-sm">{t("refresh")}</p>
         </motion.div>
       </motion.div>
     </div>

@@ -232,7 +232,7 @@ export default function TransferDetailsModal({
 }: TransferDetailsModalProps) {
   const [transfer, setTransfer] = useState<TransferDetails | null>(null);
   const [relatedTransfers, setRelatedTransfers] = useState<RelatedTransfer[]>(
-    []
+    [],
   );
   const [adminTimeline, setAdminTimeline] = useState<any[]>([]);
   const [availableActions, setAvailableActions] = useState<any[]>([]);
@@ -308,7 +308,7 @@ export default function TransferDetailsModal({
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to refresh transfer data"
+          : "Failed to refresh transfer data",
       );
     } finally {
       setLoading(false);
@@ -361,7 +361,7 @@ export default function TransferDetailsModal({
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to fetch transfer details"
+          : "Failed to fetch transfer details",
       );
     } finally {
       setLoading(false);
@@ -446,7 +446,7 @@ export default function TransferDetailsModal({
             action,
             reason: actionReason,
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -474,7 +474,7 @@ export default function TransferDetailsModal({
     } catch (error) {
       console.error("Error performing admin action:", error);
       setError(
-        error instanceof Error ? error.message : "Failed to perform action"
+        error instanceof Error ? error.message : "Failed to perform action",
       );
     }
   };
@@ -556,7 +556,7 @@ export default function TransferDetailsModal({
       console.error("Error approving transfer:", error);
       setFeedbackStatus("error");
       setError(
-        error instanceof Error ? error.message : "Failed to approve transfer"
+        error instanceof Error ? error.message : "Failed to approve transfer",
       );
     } finally {
       setActionLoading(null);
@@ -629,7 +629,7 @@ export default function TransferDetailsModal({
       console.error("Error rejecting transfer:", error);
       setFeedbackStatus("error");
       setError(
-        error instanceof Error ? error.message : "Failed to reject transfer"
+        error instanceof Error ? error.message : "Failed to reject transfer",
       );
     } finally {
       setActionLoading(null);
@@ -693,7 +693,7 @@ export default function TransferDetailsModal({
       console.error("Error cancelling transfer:", error);
       setFeedbackStatus("error");
       setError(
-        error instanceof Error ? error.message : "Failed to cancel transfer"
+        error instanceof Error ? error.message : "Failed to cancel transfer",
       );
     } finally {
       setActionLoading(null);
@@ -743,7 +743,7 @@ export default function TransferDetailsModal({
                     {transfer &&
                       (() => {
                         const statusConfig = getTransferStatusConfig(
-                          transfer.status
+                          transfer.status,
                         );
                         const StatusIcon = statusConfig.icon;
                         return (
@@ -882,7 +882,7 @@ export default function TransferDetailsModal({
                                   {(() => {
                                     const categoryConfig =
                                       getTransferCategoryConfig(
-                                        "medical_instruments"
+                                        "medical_instruments",
                                       );
                                     const CategoryIcon = categoryConfig.icon;
                                     return (
@@ -997,7 +997,7 @@ export default function TransferDetailsModal({
                               </p>
                               <p className="text-xs lg:text-sm text-gray-600">
                                 {new Date(
-                                  transfer.requestedDate
+                                  transfer.requestedDate,
                                 ).toLocaleDateString()}
                               </p>
                             </div>
@@ -1154,7 +1154,7 @@ export default function TransferDetailsModal({
                             whileTap={{ scale: 0.98 }}
                             onClick={() => handleApproveTransfer()}
                             disabled={actionLoading === "approve"}
-                            className={`w-full flex items-center justify-center px-4 py-3 rounded-xl font-medium transition-all duration-200 border-2 hover:shadow-lg hover:scale-105 bg-green-100 border-green-400 text-green-900 hover:bg-green-200 font-semibold ${
+                            className={`w-full flex items-center justify-center px-4 py-3 rounded-xl font-semiboldsemiboldsemiboldsemiboldsemiboldsemiboldsemiboldsemiboldsemibold transition-all duration-200 border-2 hover:shadow-lg hover:scale-105 bg-green-100 border-green-400 text-green-900 hover:bg-green-200 font-semibold ${
                               actionLoading === "approve"
                                 ? "opacity-75 cursor-not-allowed"
                                 : ""
@@ -1185,7 +1185,7 @@ export default function TransferDetailsModal({
                             whileTap={{ scale: 0.98 }}
                             onClick={() => handleRejectTransfer()}
                             disabled={actionLoading === "reject"}
-                            className={`w-full flex items-center justify-center px-4 py-3 rounded-xl font-medium transition-all duration-200 border-2 hover:shadow-lg hover:scale-105 bg-red-100 border-red-400 text-red-900 hover:bg-red-200 font-semibold ${
+                            className={`w-full flex items-center justify-center px-4 py-3 rounded-xl font-semibold transition-all duration-200 border-2 hover:shadow-lg hover:scale-105 bg-red-100 border-red-400 text-red-900 hover:bg-red-200 font-semibold ${
                               actionLoading === "reject"
                                 ? "opacity-75 cursor-not-allowed"
                                 : ""
@@ -1279,7 +1279,7 @@ export default function TransferDetailsModal({
               }}
             />
           </div>,
-          document.body
+          document.body,
         )}
     </AnimatePresence>
   );

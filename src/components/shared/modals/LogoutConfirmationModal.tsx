@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { LogOut, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface LogoutConfirmationModalProps {
   isOpen: boolean;
@@ -14,6 +15,10 @@ export default function LogoutConfirmationModal({
   onClose,
   onConfirm,
 }: LogoutConfirmationModalProps) {
+  const t = useTranslations("auth");
+  const tCommon = useTranslations("common");
+  const tMessages = useTranslations("messages");
+
   if (!isOpen) return null;
 
   const handleConfirm = () => {
@@ -36,7 +41,9 @@ export default function LogoutConfirmationModal({
             <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center">
               <LogOut className="w-5 h-5 text-red-600" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900">Sign Out</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {t("signOut")}
+            </h3>
           </div>
           <button
             onClick={onClose}
@@ -48,10 +55,7 @@ export default function LogoutConfirmationModal({
 
         {/* Content */}
         <div className="p-6">
-          <p className="text-gray-600 mb-6">
-            Are you sure you want to sign out? You'll need to log in again to
-            access your account.
-          </p>
+          <p className="text-gray-600 mb-6">{tMessages("confirmAction")}</p>
 
           {/* Actions */}
           <div className="flex space-x-3">
@@ -59,14 +63,14 @@ export default function LogoutConfirmationModal({
               onClick={onClose}
               className="flex-1 px-4 py-2.5 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors font-medium"
             >
-              Cancel
+              {tCommon("cancel")}
             </button>
             <button
               onClick={handleConfirm}
               className="flex-1 px-4 py-2.5 text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors font-medium flex items-center justify-center space-x-2"
             >
               <LogOut className="w-4 h-4" />
-              <span>Sign Out</span>
+              <span>{t("signOut")}</span>
             </button>
           </div>
         </div>
