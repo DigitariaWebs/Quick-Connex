@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 /**
  * Error Logs Viewer Page
@@ -66,6 +67,9 @@ interface ErrorStats {
 }
 
 export default function ErrorLogsPage() {
+  const t = useTranslations("adminMonitoring");
+  const tCommon = useTranslations("common");
+
   const [errors, setErrors] = useState<ErrorLog[]>([]);
   const [stats, setStats] = useState<ErrorStats>({
     totalErrors: 0,
@@ -84,7 +88,7 @@ export default function ErrorLogsPage() {
   const [showResolved, setShowResolved] = useState(false);
   const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<"timestamp" | "level" | "category">(
-    "timestamp"
+    "timestamp",
   );
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
@@ -254,7 +258,7 @@ export default function ErrorLogsPage() {
           error.userEmail || "N/A",
           error.ipAddress,
           error.resolved ? "Yes" : "No",
-        ].join(",")
+        ].join(","),
       ),
     ].join("\n");
 
@@ -269,16 +273,14 @@ export default function ErrorLogsPage() {
 
   return (
     <AdminLayout
-      pageTitle="Error Logs"
-      pageDescription="Monitor and analyze system errors, warnings, and debug information"
+      pageTitle={t("errorLogs")}
+      pageDescription={t("errorLogsDesc")}
     >
       {/* Header with Controls */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Error Logs</h1>
-          <p className="text-gray-600 mt-2">
-            Monitor and analyze system errors and warnings
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900">{t("errorLogs")}</h1>
+          <p className="text-gray-600 mt-2">{t("monitorErrors")}</p>
         </div>
         <div className="flex items-center space-x-4">
           <motion.button
@@ -288,7 +290,7 @@ export default function ErrorLogsPage() {
             className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
           >
             <Download className="w-4 h-4" />
-            <span>Export CSV</span>
+            <span>{tCommon("export")}</span>
           </motion.button>
 
           <motion.button
@@ -301,7 +303,7 @@ export default function ErrorLogsPage() {
             <RefreshCw
               className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
             />
-            <span>Refresh</span>
+            <span>{tCommon("refresh")}</span>
           </motion.button>
         </div>
       </div>
@@ -323,7 +325,7 @@ export default function ErrorLogsPage() {
               <p className="text-2xl font-bold text-gray-900">
                 {stats.totalErrors}
               </p>
-              <p className="text-sm text-gray-500">Total Errors</p>
+              <p className="text-sm text-gray-500">{t("totalErrorsCount")}</p>
             </div>
           </div>
         </motion.div>
@@ -343,7 +345,7 @@ export default function ErrorLogsPage() {
               <p className="text-2xl font-bold text-gray-900">
                 {stats.errorsLast24h}
               </p>
-              <p className="text-sm text-gray-500">Last 24h</p>
+              <p className="text-sm text-gray-500">{t("errorsLast24h")}</p>
             </div>
           </div>
         </motion.div>
@@ -363,7 +365,7 @@ export default function ErrorLogsPage() {
               <p className="text-2xl font-bold text-red-600">
                 {stats.criticalErrors}
               </p>
-              <p className="text-sm text-gray-500">Critical</p>
+              <p className="text-sm text-gray-500">{t("criticalErrors")}</p>
             </div>
           </div>
         </motion.div>
@@ -383,7 +385,7 @@ export default function ErrorLogsPage() {
               <p className="text-2xl font-bold text-green-600">
                 {stats.resolvedErrors}
               </p>
-              <p className="text-sm text-gray-500">Resolved</p>
+              <p className="text-sm text-gray-500">{t("resolvedErrors")}</p>
             </div>
           </div>
         </motion.div>
@@ -396,39 +398,38 @@ export default function ErrorLogsPage() {
         transition={{ duration: 0.4, delay: 0.5 }}
         className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search errors..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
-          </div>
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder={tCommon("search")}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          />
+        </div>
 
-          {/* Level Filter */}
+        {/* Filters */}
+        <div className="flex items-center space-x-4">
           <select
             value={selectedLevel}
             onChange={(e) => setSelectedLevel(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           >
-            <option value="all">All Levels</option>
-            <option value="error">Error</option>
-            <option value="warning">Warning</option>
-            <option value="info">Info</option>
-            <option value="debug">Debug</option>
+            <option value="all">{t("allLevels")}</option>
+            <option value="error">{t("error")}</option>
+            <option value="warning">{t("warning")}</option>
+            <option value="info">{t("info")}</option>
+            <option value="debug">{t("debug")}</option>
           </select>
 
-          {/* Category Filter */}
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           >
-            <option value="all">All Categories</option>
+            <option value="all">{t("allCategories")}</option>
             <option value="api">API</option>
             <option value="database">Database</option>
             <option value="auth">Authentication</option>
@@ -444,9 +445,9 @@ export default function ErrorLogsPage() {
               onChange={(e) => setSortBy(e.target.value as any)}
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
-              <option value="timestamp">Sort by Time</option>
-              <option value="level">Sort by Level</option>
-              <option value="category">Sort by Category</option>
+              <option value="timestamp">{t("sortByTime")}</option>
+              <option value="level">{t("sortByLevel")}</option>
+              <option value="category">{t("category")}</option>
             </select>
             <button
               onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
@@ -469,7 +470,7 @@ export default function ErrorLogsPage() {
               onChange={(e) => setShowResolved(e.target.checked)}
               className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
             />
-            <span className="text-sm text-gray-600">Show resolved errors</span>
+            <span className="text-sm text-gray-600">{t("showResolved")}</span>
           </label>
         </div>
       </motion.div>
@@ -483,7 +484,7 @@ export default function ErrorLogsPage() {
       >
         <div className="p-6 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900">
-            Error Logs ({filteredErrors.length})
+            {t("errorLogs")} ({filteredErrors.length})
           </h2>
         </div>
 
@@ -510,7 +511,7 @@ export default function ErrorLogsPage() {
                       <div className="flex items-center space-x-2 mb-2">
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-bold ${getLevelColor(
-                            error.level
+                            error.level,
                           )}`}
                         >
                           {error.level.toUpperCase()}

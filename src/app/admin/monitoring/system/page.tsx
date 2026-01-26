@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 /**
  * System Overview Monitoring Page
@@ -56,6 +57,9 @@ interface SystemAlert {
 }
 
 export default function SystemOverviewPage() {
+  const t = useTranslations("adminMonitoring");
+  const tCommon = useTranslations("common");
+
   const [metrics, setMetrics] = useState<SystemMetrics>({
     uptime: 0,
     cpuUsage: 0,
@@ -225,16 +229,16 @@ export default function SystemOverviewPage() {
 
   return (
     <AdminLayout
-      pageTitle="System Overview"
-      pageDescription="Monitor system health, performance metrics, and service status"
+      pageTitle={t("systemOverview")}
+      pageDescription={t("systemOverviewDesc")}
     >
       {/* Header with Refresh Button */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">System Overview</h1>
-          <p className="text-gray-600 mt-2">
-            Real-time system health and performance monitoring
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {t("systemOverview")}
+          </h1>
+          <p className="text-gray-600 mt-2">{t("realtimeMonitoring")}</p>
         </div>
         <motion.button
           whileHover={{ scale: 1.05 }}
@@ -246,7 +250,7 @@ export default function SystemOverviewPage() {
           <RefreshCw
             className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
           />
-          <span>Refresh</span>
+          <span>{tCommon("refresh")}</span>
         </motion.button>
       </div>
 
@@ -267,7 +271,7 @@ export default function SystemOverviewPage() {
               <p className="text-2xl font-bold text-gray-900">
                 {formatUptime(metrics.uptime)}
               </p>
-              <p className="text-sm text-gray-500">Uptime</p>
+              <p className="text-sm text-gray-500">{t("uptime")}</p>
             </div>
           </div>
         </motion.div>
@@ -287,7 +291,7 @@ export default function SystemOverviewPage() {
               <p className="text-2xl font-bold text-gray-900">
                 {metrics.cpuUsage.toFixed(1)}%
               </p>
-              <p className="text-sm text-gray-500">CPU Usage</p>
+              <p className="text-sm text-gray-500">{t("cpuUsage")}</p>
             </div>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
@@ -313,7 +317,7 @@ export default function SystemOverviewPage() {
               <p className="text-2xl font-bold text-gray-900">
                 {metrics.memoryUsage.toFixed(1)}%
               </p>
-              <p className="text-sm text-gray-500">Memory Usage</p>
+              <p className="text-sm text-gray-500">{t("memoryUsage")}</p>
             </div>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
@@ -339,7 +343,7 @@ export default function SystemOverviewPage() {
               <p className="text-2xl font-bold text-gray-900">
                 {metrics.activeUsers}
               </p>
-              <p className="text-sm text-gray-500">Active Users</p>
+              <p className="text-sm text-gray-500">{t("activeUsers")}</p>
             </div>
           </div>
         </motion.div>
@@ -355,7 +359,7 @@ export default function SystemOverviewPage() {
           className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
         >
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Service Status
+            {t("serviceStatus")}
           </h2>
           <div className="space-y-3">
             {services.map((service, index) => {
@@ -368,7 +372,7 @@ export default function SystemOverviewPage() {
                   <div className="flex items-center space-x-3">
                     <div
                       className={`p-2 rounded-lg ${getStatusColor(
-                        service.status
+                        service.status,
                       )}`}
                     >
                       <StatusIcon className="w-4 h-4" />
@@ -406,7 +410,7 @@ export default function SystemOverviewPage() {
           className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
         >
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Recent Alerts
+            {t("recentAlerts")}
           </h2>
           <div className="space-y-3">
             {alerts.map((alert) => {
@@ -415,7 +419,7 @@ export default function SystemOverviewPage() {
                 <div
                   key={alert.id}
                   className={`p-3 rounded-xl border ${getAlertColor(
-                    alert.type
+                    alert.type,
                   )}`}
                 >
                   <div className="flex items-start space-x-3">
@@ -446,26 +450,26 @@ export default function SystemOverviewPage() {
         className="mt-6 bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
       >
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Connection Metrics
+          {t("connectionMetrics")}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center">
             <p className="text-2xl font-bold text-gray-900">
               {metrics.sseConnections}
             </p>
-            <p className="text-sm text-gray-500">SSE Connections</p>
+            <p className="text-sm text-gray-500">{t("sseConnections")}</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold text-gray-900">
               {metrics.databaseConnections}
             </p>
-            <p className="text-sm text-gray-500">Database Connections</p>
+            <p className="text-sm text-gray-500">{t("databaseConnections")}</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold text-gray-900">
               {metrics.apiRequestsPerMinute}
             </p>
-            <p className="text-sm text-gray-500">API Requests/min</p>
+            <p className="text-sm text-gray-500">{t("apiRequestsPerMin")}</p>
           </div>
         </div>
       </motion.div>

@@ -288,7 +288,7 @@ export default function DatabasePerformancePage() {
             </div>
             <div className="text-right">
               <p className="text-2xl font-bold text-gray-900">
-                {metrics.queriesPerSecond.toFixed(1)}
+                {(metrics.queriesPerSecond ?? 0).toFixed(1)}
               </p>
               <p className="text-sm text-gray-500">{t("queriesPerSecond")}</p>
             </div>
@@ -328,7 +328,7 @@ export default function DatabasePerformancePage() {
             </div>
             <div className="text-right">
               <p className="text-2xl font-bold text-gray-900">
-                {metrics.cacheHitRatio.toFixed(1)}%
+                {(metrics.cacheHitRatio ?? 0).toFixed(1)}%
               </p>
               <p className="text-sm text-gray-600">{t("indexHitRatio")}</p>
             </div>
@@ -393,7 +393,7 @@ export default function DatabasePerformancePage() {
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-500">{t("slowQueries")}</p>
               <span className="font-medium">
-                {metrics.totalQueries.toLocaleString()}
+                {(metrics.totalQueries ?? 0).toLocaleString()}
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -414,7 +414,7 @@ export default function DatabasePerformancePage() {
                   { good: 95, warning: 85 },
                 )}`}
               >
-                {metrics.indexHitRatio.toFixed(1)}%
+                {(metrics.indexHitRatio ?? 0).toFixed(1)}%
               </span>
             </div>
           </div>

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 /**
  * API Performance Monitoring Page
@@ -73,6 +74,9 @@ interface StatusCodeDistribution {
 }
 
 export default function APIPerformancePage() {
+  const t = useTranslations("adminMonitoring");
+  const tCommon = useTranslations("common");
+
   const [metrics, setMetrics] = useState<APIMetrics>({
     totalRequests: 0,
     averageResponseTime: 0,
@@ -95,7 +99,7 @@ export default function APIPerformancePage() {
   const fetchAPIData = async () => {
     try {
       const response = await fetch(
-        `/api/admin/monitoring/api?timeRange=${timeRange}&endpoint=${selectedEndpoint}`
+        `/api/admin/monitoring/api?timeRange=${timeRange}&endpoint=${selectedEndpoint}`,
       );
       if (response.ok) {
         const data = await response.json();
@@ -179,7 +183,7 @@ export default function APIPerformancePage() {
 
   const getPerformanceColor = (
     value: number,
-    thresholds: { good: number; warning: number }
+    thresholds: { good: number; warning: number },
   ) => {
     if (value <= thresholds.good) return "text-green-600";
     if (value <= thresholds.warning) return "text-yellow-600";
@@ -210,16 +214,16 @@ export default function APIPerformancePage() {
 
   return (
     <AdminLayout
-      pageTitle="API Performance"
-      pageDescription="Monitor API endpoint performance, response times, and request analytics"
+      pageTitle={t("apiPerformance")}
+      pageDescription={t("apiPerformanceDesc")}
     >
       {/* Header with Controls */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">API Performance</h1>
-          <p className="text-gray-600 mt-2">
-            Monitor API endpoint performance and request analytics
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {t("apiPerformance")}
+          </h1>
+          <p className="text-gray-600 mt-2">{t("apiPerformanceDesc")}</p>
         </div>
         <div className="flex items-center space-x-4">
           {/* Time Range Selector */}
@@ -228,10 +232,10 @@ export default function APIPerformancePage() {
             onChange={(e) => setTimeRange(e.target.value as any)}
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           >
-            <option value="1h">Last Hour</option>
-            <option value="6h">Last 6 Hours</option>
-            <option value="24h">Last 24 Hours</option>
-            <option value="7d">Last 7 Days</option>
+            <option value="1h">{t("1h")}</option>
+            <option value="6h">{t("6h")}</option>
+            <option value="24h">{t("24h")}</option>
+            <option value="7d">{t("7d")}</option>
           </select>
 
           <motion.button
@@ -244,7 +248,7 @@ export default function APIPerformancePage() {
             <RefreshCw
               className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
             />
-            <span>Refresh</span>
+            <span>{tCommon("refresh")}</span>
           </motion.button>
         </div>
       </div>
@@ -266,12 +270,12 @@ export default function APIPerformancePage() {
               <p
                 className={`text-2xl font-bold ${getPerformanceColor(
                   metrics.averageResponseTime,
-                  { good: 200, warning: 500 }
+                  { good: 200, warning: 500 },
                 )}`}
               >
                 {formatDuration(metrics.averageResponseTime)}
               </p>
-              <p className="text-sm text-gray-500">Avg Response Time</p>
+              <p className="text-sm text-gray-500">{t("avgResponseTime")}</p>
             </div>
           </div>
         </motion.div>
@@ -291,7 +295,7 @@ export default function APIPerformancePage() {
               <p className="text-2xl font-bold text-gray-900">
                 {metrics.requestsPerMinute.toFixed(1)}
               </p>
-              <p className="text-sm text-gray-500">Requests/min</p>
+              <p className="text-sm text-gray-500">{t("requestsPerMinute")}</p>
             </div>
           </div>
         </motion.div>
@@ -311,12 +315,12 @@ export default function APIPerformancePage() {
               <p
                 className={`text-2xl font-bold ${getPerformanceColor(
                   100 - metrics.successRate,
-                  { good: 5, warning: 10 }
+                  { good: 5, warning: 10 },
                 )}`}
               >
                 {metrics.successRate.toFixed(1)}%
               </p>
-              <p className="text-sm text-gray-500">Success Rate</p>
+              <p className="text-sm text-gray-500">{t("successRate")}</p>
             </div>
           </div>
         </motion.div>
@@ -336,7 +340,7 @@ export default function APIPerformancePage() {
               <p className="text-2xl font-bold text-gray-900">
                 {metrics.totalRequests.toLocaleString()}
               </p>
-              <p className="text-sm text-gray-500">Total Requests</p>
+              <p className="text-sm text-gray-500">{t("totalRequests")}</p>
             </div>
           </div>
         </motion.div>
@@ -353,7 +357,7 @@ export default function APIPerformancePage() {
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">
-              Endpoint Performance
+              {t("endpointPerformance")}
             </h2>
             <select
               value={selectedEndpoint}
@@ -380,7 +384,7 @@ export default function APIPerformancePage() {
                   <div className="flex items-center space-x-3">
                     <div
                       className={`p-2 rounded-lg ${getMethodColor(
-                        endpoint.method
+                        endpoint.method,
                       )}`}
                     >
                       <span className="text-xs font-bold">
@@ -400,7 +404,7 @@ export default function APIPerformancePage() {
                   <div className="text-right">
                     <div
                       className={`flex items-center space-x-2 ${getStatusColor(
-                        endpoint.status
+                        endpoint.status,
                       )}`}
                     >
                       <StatusIcon className="w-4 h-4" />
@@ -426,7 +430,7 @@ export default function APIPerformancePage() {
           className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
         >
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Status Code Distribution
+            {t("statusCodeDistribution")}
           </h2>
           <div className="space-y-3">
             {statusCodes.map((status, index) => (
@@ -434,7 +438,7 @@ export default function APIPerformancePage() {
                 <div className="flex items-center space-x-3">
                   <div
                     className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusCodeColor(
-                      status.code
+                      status.code,
                     )}`}
                   >
                     {status.code}
@@ -473,29 +477,29 @@ export default function APIPerformancePage() {
         className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
       >
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Recent Requests
+          {t("requestLogs")}
         </h2>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200">
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                  Method
+                  {t("method")}
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                  Endpoint
+                  {t("endpoint")}
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                  Status
+                  {t("status")}
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                  Response Time
+                  {t("avgResponseTime")}
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                  IP Address
+                  {t("ipAddress")}
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                  Timestamp
+                  {t("timestamp")}
                 </th>
               </tr>
             </thead>
@@ -505,7 +509,7 @@ export default function APIPerformancePage() {
                   <td className="py-3 px-4">
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-bold ${getMethodColor(
-                        request.method
+                        request.method,
                       )}`}
                     >
                       {request.method}
@@ -517,7 +521,7 @@ export default function APIPerformancePage() {
                   <td className="py-3 px-4">
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusCodeColor(
-                        request.statusCode
+                        request.statusCode,
                       )}`}
                     >
                       {request.statusCode}

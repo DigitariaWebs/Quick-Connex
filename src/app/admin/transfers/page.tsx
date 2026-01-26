@@ -166,7 +166,7 @@ export default function AdminTransfersPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [stats, setStats] = useState<TransferStats | null>(null);
   const [originalStats, setOriginalStats] = useState<TransferStats | null>(
-    null
+    null,
   );
   const [hasLoadedInitialStats, setHasLoadedInitialStats] = useState(false);
 
@@ -179,7 +179,7 @@ export default function AdminTransfersPage() {
   // Modal state
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [selectedTransferId, setSelectedTransferId] = useState<string | null>(
-    null
+    null,
   );
   const [selectedTransferData, setSelectedTransferData] =
     useState<TransferRequest | null>(null);
@@ -255,7 +255,7 @@ export default function AdminTransfersPage() {
         {
           method: "GET",
           credentials: "include",
-        }
+        },
       );
 
       if (!response.ok) {
@@ -312,7 +312,7 @@ export default function AdminTransfersPage() {
     } catch (error) {
       console.error("Error fetching transfers:", error);
       setError(
-        error instanceof Error ? error.message : "Failed to fetch transfers"
+        error instanceof Error ? error.message : "Failed to fetch transfers",
       );
     } finally {
       setLoading(false);
@@ -332,30 +332,30 @@ export default function AdminTransfersPage() {
     // Apply status filter (from stats cards)
     if (activeFilter === "pending") {
       filteredTransfers = filteredTransfers.filter(
-        (t) => t.status === "pending"
+        (t) => t.status === "pending",
       );
     } else if (activeFilter === "inProgress") {
       filteredTransfers = filteredTransfers.filter(
-        (t) => t.status === "in_progress"
+        (t) => t.status === "in_progress",
       );
     } else if (activeFilter === "urgent") {
       filteredTransfers = filteredTransfers.filter(
-        (t) => t.priority === "urgent"
+        (t) => t.priority === "urgent",
       );
     }
 
     // Apply category filter (from category buttons)
     if (activeCategoryFilter === "patient") {
       filteredTransfers = filteredTransfers.filter(
-        (t) => t.transferCategory === "patient"
+        (t) => t.transferCategory === "patient",
       );
     } else if (activeCategoryFilter === "envelope") {
       filteredTransfers = filteredTransfers.filter(
-        (t) => t.transferCategory === "envelope"
+        (t) => t.transferCategory === "envelope",
       );
     } else if (activeCategoryFilter === "medical_instruments") {
       filteredTransfers = filteredTransfers.filter(
-        (t) => t.transferCategory === "medical_instruments"
+        (t) => t.transferCategory === "medical_instruments",
       );
     }
 
@@ -385,7 +385,7 @@ export default function AdminTransfersPage() {
   // Handle filter changes
   const handleFilterChange = (
     filterType: keyof TransferFilters,
-    value: any
+    value: any,
   ) => {
     setFilters((prev) => ({
       ...prev,
@@ -415,7 +415,7 @@ export default function AdminTransfersPage() {
     setSelectedTransfers((prev) =>
       prev.includes(transferId)
         ? prev.filter((id) => id !== transferId)
-        : [...prev, transferId]
+        : [...prev, transferId],
     );
   };
 
@@ -461,13 +461,13 @@ export default function AdminTransfersPage() {
 
         // Show success message
         console.log(
-          `Bulk ${action} completed: ${data.data.successCount} successful, ${data.data.errorCount} failed`
+          `Bulk ${action} completed: ${data.data.successCount} successful, ${data.data.errorCount} failed`,
         );
       }
     } catch (error) {
       console.error("Bulk operation error:", error);
       setError(
-        error instanceof Error ? error.message : "Bulk operation failed"
+        error instanceof Error ? error.message : "Bulk operation failed",
       );
     }
   };
@@ -498,7 +498,7 @@ export default function AdminTransfersPage() {
         {
           method: "GET",
           credentials: "include",
-        }
+        },
       );
 
       if (!response.ok) {
@@ -871,13 +871,13 @@ export default function AdminTransfersPage() {
                 <div className="divide-y divide-gray-100">
                   {transfers.map((transfer, index) => {
                     const categoryConfig = getTransferCategoryConfig(
-                      transfer.transferCategory
+                      transfer.transferCategory,
                     );
                     const statusConfig = getTransferStatusConfig(
-                      transfer.status
+                      transfer.status,
                     );
                     const priorityConfig = getTransferPriorityConfig(
-                      transfer.priority
+                      transfer.priority,
                     );
                     const CategoryIcon = categoryConfig.icon;
 
@@ -933,11 +933,11 @@ export default function AdminTransfersPage() {
                           <div className="col-span-3">
                             <div className="flex items-center space-x-2">
                               <p className="text-sm text-gray-700 truncate flex-1">
-                                {transfer.fromHospital.name}
+                                {transfer.fromHospital?.name}
                               </p>
                               <ArrowRight className="w-3 h-3 text-gray-400 flex-shrink-0" />
                               <p className="text-sm text-gray-700 truncate flex-1">
-                                {transfer.toHospital.name}
+                                {transfer.toHospital?.name}
                               </p>
                             </div>
                           </div>
@@ -946,7 +946,7 @@ export default function AdminTransfersPage() {
                           <div className="col-span-2">
                             <p className="text-sm text-gray-900 font-medium">
                               {new Date(
-                                transfer.requestedDate
+                                transfer.requestedDate,
                               ).toLocaleDateString("en-US", {
                                 month: "short",
                                 day: "numeric",
@@ -955,7 +955,7 @@ export default function AdminTransfersPage() {
                             </p>
                             <p className="text-xs text-gray-500">
                               {new Date(
-                                transfer.requestedDate
+                                transfer.requestedDate,
                               ).toLocaleTimeString("en-US", {
                                 hour: "2-digit",
                                 minute: "2-digit",
@@ -1012,14 +1012,14 @@ export default function AdminTransfersPage() {
                             <div className="flex items-center space-x-1 lg:space-x-2 text-xs text-gray-600 mb-2">
                               <MapPin className="w-3 h-3 flex-shrink-0" />
                               <span className="truncate">
-                                {transfer.fromHospital.name} →{" "}
-                                {transfer.toHospital.name}
+                                {transfer.fromHospital?.name} →{" "}
+                                {transfer.toHospital?.name}
                               </span>
                             </div>
                             <div className="flex items-center justify-between text-xs text-gray-500">
                               <span>
                                 {new Date(
-                                  transfer.requestedDate
+                                  transfer.requestedDate,
                                 ).toLocaleDateString("en-US", {
                                   month: "short",
                                   day: "numeric",

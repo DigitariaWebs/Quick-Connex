@@ -97,6 +97,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "esbuild": "^0.25.11",
+    "knip": "^5.82.1",
     "tailwindcss": "^4",
     "tsx": "^4.20.6",
     "turbo": "^2.5.4",

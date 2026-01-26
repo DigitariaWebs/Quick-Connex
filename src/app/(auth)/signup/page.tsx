@@ -695,11 +695,10 @@ export default function SignUpPage() {
           className="max-w-lg text-white"
         >
           <h1 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight drop-shadow-lg">
-            Fast, Efficient and Productive
+            {t("signup.tagline")}
           </h1>
           <p className="text-lg lg:text-xl text-white/90 leading-relaxed drop-shadow-md">
-            Join Quick Connex and streamline your healthcare workflow with our
-            fast and efficient patient management platform
+            {t("signup.description")}
           </p>
         </motion.div>
       </div>
@@ -787,7 +786,7 @@ export default function SignUpPage() {
                     htmlFor="email"
                     className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
                   >
-                    Email
+                    {t("auth.email")}
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -802,7 +801,7 @@ export default function SignUpPage() {
                             ? "border-green-300 bg-green-50"
                             : "border-gray-200"
                       }`}
-                      placeholder="Enter your email"
+                      placeholder={t("signup.enterYourEmail")}
                       onChange={(e) => {
                         const email = e.target.value;
                         // Reset validation error when user starts typing
@@ -848,14 +847,14 @@ export default function SignUpPage() {
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         ></path>
                       </svg>
-                      <span>Checking availability...</span>
+                      <span>{t("signup.checkingAvailability")}</span>
                     </div>
                   )}
                   {(emailValidation === "exists" || emailValidationError) && (
                     <div className="mt-2">
                       <p className="text-sm text-red-600">
                         {emailValidationError ||
-                          "This email is already registered"}
+                          t("signup.emailAlreadyRegistered")}
                       </p>
                     </div>
                   )}
@@ -874,7 +873,7 @@ export default function SignUpPage() {
                           d="M5 13l4 4L19 7"
                         />
                       </svg>
-                      <span>Email is available</span>
+                      <span>{t("signup.emailAvailable")}</span>
                     </div>
                   )}
 
@@ -895,7 +894,7 @@ export default function SignUpPage() {
                   htmlFor="password"
                   className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
                 >
-                  Password
+                  {t("auth.password")}
                 </label>
                 <div className="relative">
                   <input
@@ -908,7 +907,7 @@ export default function SignUpPage() {
                         ? "border-red-300 bg-red-50"
                         : "border-gray-200"
                     }`}
-                    placeholder="Enter your password"
+                    placeholder={t("signup.enterYourPassword")}
                   />
                   <button
                     type="button"
@@ -962,8 +961,7 @@ export default function SignUpPage() {
                   </div>
                 ) : (
                   <p className="text-sm text-gray-500 mt-2">
-                    Use 8 or more characters with a mix of letters, numbers &
-                    symbols
+                    {t("signup.passwordHint")}
                   </p>
                 )}
               </div>
@@ -973,7 +971,7 @@ export default function SignUpPage() {
                   htmlFor="repeat-password"
                   className="block text-base font-medium text-gray-700 mb-3"
                 >
-                  Repeat Password
+                  {t("signup.repeatPassword")}
                 </label>
                 <div className="relative">
                   <input
@@ -982,7 +980,7 @@ export default function SignUpPage() {
                     type={showRepeatPassword ? "text" : "password"}
                     required
                     className="w-full px-5 py-4 text-lg border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 pr-12 placeholder:text-gray-500 text-black"
-                    placeholder="Repeat your password"
+                    placeholder={t("signup.repeatYourPassword")}
                   />
                   <button
                     type="button"
@@ -1036,13 +1034,13 @@ export default function SignUpPage() {
                     className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                   />
                   <span className="ml-3 text-gray-600">
-                    I accept the{" "}
+                    {t("signup.iAcceptThe")}{" "}
                     <button
                       type="button"
                       onClick={() => setIsTermsModalOpen(true)}
                       className="text-green-600 hover:underline cursor-pointer"
                     >
-                      Terms
+                      {t("signup.termsLink")}
                     </button>
                   </span>
                 </label>
@@ -1055,7 +1053,7 @@ export default function SignUpPage() {
                     htmlFor="firstName"
                     className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
                   >
-                    First Name
+                    {t("signup.firstName")}
                   </label>
                   <input
                     id="firstName"
@@ -1067,7 +1065,7 @@ export default function SignUpPage() {
                         ? "border-red-300 bg-red-50"
                         : "border-gray-200"
                     }`}
-                    placeholder="John"
+                    placeholder={t("signup.firstNamePlaceholder")}
                   />
                   {hasFieldError("firstName") && (
                     <div className="mt-2">
@@ -1084,7 +1082,7 @@ export default function SignUpPage() {
                     htmlFor="lastName"
                     className="block text-sm lg:text-base font-medium text-gray-700 mb-2 lg:mb-3"
                   >
-                    Last Name
+                    {t("signup.lastName")}
                   </label>
                   <input
                     id="lastName"
@@ -1096,7 +1094,7 @@ export default function SignUpPage() {
                         ? "border-red-300 bg-red-50"
                         : "border-gray-200"
                     }`}
-                    placeholder="Doe"
+                    placeholder={t("signup.lastNamePlaceholder")}
                   />
                   {hasFieldError("lastName") && (
                     <div className="mt-2">
@@ -1117,7 +1115,7 @@ export default function SignUpPage() {
                     htmlFor="phone"
                     className="block text-base font-medium text-gray-700 mb-3"
                   >
-                    Phone Number
+                    {t("signup.phoneNumber")}
                   </label>
                   <div className="flex gap-2">
                     {/* Country Code Dropdown */}
@@ -1267,14 +1265,14 @@ export default function SignUpPage() {
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         ></path>
                       </svg>
-                      <span>Checking availability...</span>
+                      <span>{t("signup.checkingAvailability")}</span>
                     </div>
                   )}
                   {(phoneValidation === "exists" || phoneValidationError) && (
                     <div className="mt-2">
                       <p className="text-sm text-red-600">
                         {phoneValidationError ||
-                          "This phone number is already registered"}
+                          t("signup.phoneAlreadyRegistered")}
                       </p>
                     </div>
                   )}
@@ -1293,7 +1291,7 @@ export default function SignUpPage() {
                           d="M5 13l4 4L19 7"
                         />
                       </svg>
-                      <span>Phone number is available</span>
+                      <span>{t("signup.phoneAvailable")}</span>
                     </div>
                   )}
 
@@ -1409,10 +1407,10 @@ export default function SignUpPage() {
                 <>
                   <div>
                     <label
-                      htmlFor="managerHospital"
+                      htmlFor="hospital"
                       className="block text-base font-medium text-gray-700 mb-3"
                     >
-                      Hospital
+                      {t("signup.hospital")}
                     </label>
                     <div className="relative">
                       <input
@@ -1434,7 +1432,7 @@ export default function SignUpPage() {
                           setIsHospitalOpen(true);
                         }}
                         onFocus={() => setIsHospitalOpen(true)}
-                        placeholder="Select hospital"
+                        placeholder={t("signup.searchHospital")}
                         className={`w-full px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
                           hasFieldError("managerHospitalId")
                             ? "border-red-300 bg-red-50"
@@ -1449,11 +1447,11 @@ export default function SignUpPage() {
                         >
                           {isHospitalLoading ? (
                             <div className="p-3 text-center text-gray-500">
-                              Loading hospitals...
+                              {t("signup.loading")}
                             </div>
                           ) : filteredHospitals.length === 0 ? (
                             <div className="p-3 text-center text-gray-500">
-                              No hospitals found
+                              {t("signup.noHospitalsFound")}
                             </div>
                           ) : (
                             <div className="py-1">
@@ -1504,7 +1502,7 @@ export default function SignUpPage() {
                       htmlFor="post"
                       className="block text-base font-medium text-gray-700 mb-3"
                     >
-                      Post
+                      {t("signup.post")}
                     </label>
                     <div className="relative">
                       <input
@@ -1533,7 +1531,7 @@ export default function SignUpPage() {
                           setIsPostOpen(true);
                         }}
                         onFocus={() => setIsPostOpen(true)}
-                        placeholder="Select post"
+                        placeholder={t("signup.searchPost")}
                         className={`w-full px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
                           hasFieldError("post")
                             ? "border-red-300 bg-red-50"
@@ -1548,7 +1546,7 @@ export default function SignUpPage() {
                         >
                           {filteredPosts.length === 0 ? (
                             <div className="p-3 text-center text-gray-500">
-                              No post found
+                              {t("signup.noPostsFound")}
                             </div>
                           ) : (
                             <div className="py-1">
@@ -1598,7 +1596,7 @@ export default function SignUpPage() {
                       htmlFor="ciusss"
                       className="block text-base font-medium text-gray-700 mb-3"
                     >
-                      CIUSSS
+                      {t("signup.ciusss")}
                     </label>
                     <div className="relative">
                       <input
@@ -1629,7 +1627,7 @@ export default function SignUpPage() {
                           setIsCiusssOpen(true);
                         }}
                         onFocus={() => setIsCiusssOpen(true)}
-                        placeholder="Select CIUSSS"
+                        placeholder={t("signup.searchCiusss")}
                         className={`w-full px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
                           hasFieldError("ciusss")
                             ? "border-red-300 bg-red-50"
@@ -1644,7 +1642,7 @@ export default function SignUpPage() {
                         >
                           {filteredCiusss.length === 0 ? (
                             <div className="p-3 text-center text-gray-500">
-                              No CIUSSS found
+                              {t("signup.noCiusssFound")}
                             </div>
                           ) : (
                             <div className="py-1">
@@ -1716,19 +1714,19 @@ export default function SignUpPage() {
                 {(emailValidation === "exists" ||
                   phoneValidation === "exists") && (
                   <p className="mt-2 text-sm text-center text-gray-600">
-                    Please use a different email or phone number
+                    {t("signup.useDifferentCredentials")}
                   </p>
                 )}
               </div>
             </form>
 
             <p className="text-center text-sm lg:text-base text-gray-600 mt-6 lg:mt-8">
-              Already have an account?{" "}
+              {t("signup.alreadyHaveAccount")}{" "}
               <Link
                 href="/login"
                 className="font-medium text-green-600 hover:text-green-500 transition-colors duration-200"
               >
-                Sign In
+                {t("signup.signIn")}
               </Link>
             </p>
           </div>
