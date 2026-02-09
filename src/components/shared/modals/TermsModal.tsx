@@ -33,7 +33,7 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gray-50">
                 <h2 className="text-2xl font-bold text-gray-900">
-                  Conditions d'utilisation
+                  Conditions d’utilisation – Employés exécutant les transferts
                 </h2>
                 <button
                   onClick={onClose}
@@ -47,9 +47,6 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
               <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
                 <div className="prose prose-lg max-w-none">
                   <div className="mb-6 space-y-2">
-                    <p className="text-lg font-semibold text-gray-900">
-                      Employés exécutant les transferts
-                    </p>
                     <p className="text-gray-600">
                       <strong>Entreprise :</strong> Groupe BZ Service inc.
                       Quickconnex
@@ -67,10 +64,9 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
                     </h3>
                     <p className="text-gray-700 leading-relaxed mb-4">
                       Ces conditions définissent les règles et responsabilités
-                      des employés utilisant l'application et le site Phénix
-                      Transfert (ou le nom que tu choisiras) pour exécuter des
-                      missions de transfert de patients entre les établissements
-                      de santé.
+                      des employés utilisant l’application et le site
+                      Quickconnex Transfert pour exécuter des missions de
+                      transfert de patients entre les établissements de santé.
                     </p>
                   </section>
 
@@ -79,8 +75,8 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
                       2. Inscription et accès
                     </h3>
                     <p className="text-gray-700 leading-relaxed mb-4">
-                      L'accès à la plateforme est réservé aux employés autorisés
-                      et formés de l'Entreprise.
+                      L’accès à la plateforme est réservé aux employés autorisés
+                      et formés.
                     </p>
                     <p className="text-gray-700 leading-relaxed mb-4">
                       Chaque employé reçoit un identifiant personnel ; il est
@@ -97,9 +93,9 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
                       3. Utilisation autorisée
                     </h3>
                     <p className="text-gray-700 leading-relaxed mb-4">
-                      L'application doit être utilisée exclusivement pour
+                      L’application doit être utilisée exclusivement pour
                       accepter, gérer et exécuter les missions de transfert
-                      confiées par l'Entreprise.
+                      confiées par Quickconnex.
                     </p>
                     <p className="text-gray-700 leading-relaxed mb-4">
                       Toute utilisation à des fins personnelles, commerciales ou
@@ -117,24 +113,22 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
                       4. Responsabilités de l'employé
                     </h3>
                     <p className="text-gray-700 leading-relaxed mb-4">
-                      <strong>Compétence et conformité :</strong> maintenir ses
-                      certifications professionnelles à jour (ex. : Membre OPIQ,
+                      Compétence et conformité : maintenir ses certifications
+                      professionnelles à jour (ex. : permis d’inhalothérapeute,
                       RCR, etc.).
                     </p>
                     <p className="text-gray-700 leading-relaxed mb-4">
-                      <strong>Respect des directives :</strong> suivre les
-                      procédures cliniques et les protocoles de l'Entreprise
-                      pour le transfert des patients.
+                      Respect des directives : suivre les procédures cliniques
+                      et les protocoles de transfert des patients.
                     </p>
                     <p className="text-gray-700 leading-relaxed mb-4">
-                      <strong>Protection des données :</strong> ne pas divulguer
-                      d'informations médicales ou personnelles obtenues durant
-                      les missions.
+                      Protection des données : ne pas divulguer d’informations
+                      médicales ou personnelles obtenues durant les missions.
                     </p>
                     <p className="text-gray-700 leading-relaxed mb-4">
-                      <strong>Signalement :</strong> informer immédiatement le
-                      gestionnaire en cas d'incident, de défaillance technique
-                      ou d'urgence médicale.
+                      Signalement : informer immédiatement le gestionnaire en
+                      cas d’incident, de défaillance technique ou d’autre
+                      urgence.
                     </p>
                   </section>
 
@@ -166,9 +160,8 @@ export function TermsModal({ isOpen, onClose }: TermsModalProps) {
                       des patients et des dispositifs médicaux.
                     </p>
                     <p className="text-gray-700 leading-relaxed mb-4">
-                      Maintenir les équipements (véhicules, dispositifs
-                      respiratoires, matériel d'urgence) en bon état et signaler
-                      tout problème.
+                      Maintenir les équipements ( dispositifs respiratoires,
+                      matériel,etc) en bon état et signaler tout problème.
                     </p>
                     <p className="text-gray-700 leading-relaxed mb-4">
                       Porter l'équipement de protection individuelle (EPI)
