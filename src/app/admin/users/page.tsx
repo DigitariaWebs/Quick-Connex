@@ -1,45 +1,21 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { useTranslations } from "next-intl";
+import { motion } from "framer-motion";
 import {
   Users,
   CheckCircle2,
   Clock,
   AlertTriangle,
   User as UserIcon,
-  Shield,
-  Crown,
   UserCheck,
   UserX,
-  Mail,
-  Phone,
   Building,
-  MapPin,
   Calendar,
-  Activity,
-  Settings,
-  Trash2,
   Ban,
-  Unlock,
-  Key,
-  Download,
-  Upload,
-  TrendingUp,
-  BarChart3,
-  Sparkles,
-  Zap,
   ArrowRight,
   RefreshCw,
-  Filter,
-  Search,
-  ChevronDown,
-  ChevronUp,
-  X,
-  Plus,
-  FileText,
-  UserPlus,
   UserCog,
 } from "lucide-react";
 import { AdminLayout } from "@/components/admin/layouts";
@@ -47,14 +23,11 @@ import LoadingSpinner from "@/components/dashboard/core/LoadingSpinner";
 import ExpandableSearchBar from "@/components/shared/ui/expandable-search-bar";
 import UserDetailsModal from "@/components/shared/modals/UserDetailsModal";
 import {
-  BORDER_RADIUS,
-  CARD_STYLES,
   getUserStatusConfig,
   getUserRoleConfig,
   USER_STAT_CARD_COLORS,
 } from "@/constants";
 import type { User, UserStats, UserFilters } from "@/types/auth/user.types";
-import type { UserListResponse } from "@/types/dto/user.dto";
 
 /**
  * Admin Users Page
@@ -68,6 +41,9 @@ import type { UserListResponse } from "@/types/dto/user.dto";
  */
 
 export default function UserManagement() {
+  const t = useTranslations("adminUsers");
+  const tCommon = useTranslations("common");
+
   // State management
   const [users, setUsers] = useState<User[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]); // Store all users for client-side filtering
@@ -78,7 +54,6 @@ export default function UserManagement() {
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [totalPages, setTotalPages] = useState(1);
@@ -177,7 +152,7 @@ export default function UserManagement() {
     } catch (error) {
       console.error("Error fetching users:", error);
       setError(
-        error instanceof Error ? error.message : "Failed to fetch users"
+        error instanceof Error ? error.message : "Failed to fetch users",
       );
     } finally {
       setLoading(false);
@@ -237,7 +212,7 @@ export default function UserManagement() {
     const totalFilteredUsers = filteredUsers.length;
     const totalPagesForFiltered = Math.max(
       1,
-      Math.ceil(totalFilteredUsers / pageSize)
+      Math.ceil(totalFilteredUsers / pageSize),
     );
 
     // Reset to page 1 if current page is beyond the available pages
@@ -342,7 +317,7 @@ export default function UserManagement() {
     setSelectedUsers((prev) =>
       prev.includes(userId)
         ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
+        : [...prev, userId],
     );
   };
 
@@ -404,17 +379,21 @@ export default function UserManagement() {
   // Handle user update (local state update)
   const handleUserUpdate = (userId: string, updates: Partial<User>) => {
     setUsers((prev) =>
-      prev.map((user) => (user._id === userId ? { ...user, ...updates } : user))
+      prev.map((user) =>
+        user._id === userId ? { ...user, ...updates } : user,
+      ),
     );
     setAllUsers((prev) =>
-      prev.map((user) => (user._id === userId ? { ...user, ...updates } : user))
+      prev.map((user) =>
+        user._id === userId ? { ...user, ...updates } : user,
+      ),
     );
   };
 
   // Handle user update from modal (refresh data)
   const handleUserUpdateFromModal = (
     action: "approve" | "reject" | "suspend" | "activate",
-    userType: string
+    userType: string,
   ) => {
     // Update stats immediately for instant feedback
     updateStatsSmart(action, userType);
@@ -464,7 +443,7 @@ export default function UserManagement() {
     });
 
     if (pendingUsers.length === 0) {
-      alert("No pending users selected for approval.");
+      alert(t("noPendingUsers"));
       return;
     }
 
@@ -497,7 +476,7 @@ export default function UserManagement() {
           fetchUserStats();
         }, 500);
 
-        alert(`Successfully approved ${data.approvedCount} users.`);
+        alert(t("usersApproved", { count: data.approvedCount }));
       } else {
         throw new Error(data.message || "Failed to approve users");
       }
@@ -517,13 +496,12 @@ export default function UserManagement() {
     });
 
     if (pendingUsers.length === 0) {
-      alert("No pending users selected for rejection.");
+      alert(t("noPendingUsers"));
       return;
     }
 
     const reason =
-      prompt("Please provide a reason for rejection:") ||
-      "Bulk rejection by administrator";
+      prompt(t("enterRejectionReason")) || "Bulk rejection by administrator";
 
     try {
       const response = await fetch("/api/admin/users/bulk-reject", {
@@ -554,7 +532,7 @@ export default function UserManagement() {
           fetchUserStats();
         }, 500);
 
-        alert(`Successfully rejected ${data.rejectedCount} users.`);
+        alert(t("usersRejected", { count: data.rejectedCount }));
       } else {
         throw new Error(data.message || "Failed to reject users");
       }
@@ -574,13 +552,12 @@ export default function UserManagement() {
     });
 
     if (approvedUsers.length === 0) {
-      alert("No approved users selected for suspension.");
+      alert(t("noApprovedUsers"));
       return;
     }
 
     const reason =
-      prompt("Please provide a reason for suspension:") ||
-      "Bulk suspension by administrator";
+      prompt(t("enterSuspensionReason")) || "Bulk suspension by administrator";
 
     try {
       const response = await fetch("/api/admin/users/bulk-suspend", {
@@ -611,7 +588,7 @@ export default function UserManagement() {
           fetchUserStats();
         }, 500);
 
-        alert(`Successfully suspended ${data.suspendedCount} users.`);
+        alert(t("usersSuspended", { count: data.suspendedCount }));
       } else {
         throw new Error(data.message || "Failed to suspend users");
       }
@@ -624,7 +601,7 @@ export default function UserManagement() {
   // Smart stats update based on user action
   const updateStatsSmart = (
     action: "approve" | "reject" | "suspend" | "activate",
-    userType: string
+    userType: string,
   ) => {
     if (!stats) return;
 
@@ -687,7 +664,7 @@ export default function UserManagement() {
   const handleUserAction = async (
     userId: string,
     action: string,
-    data?: any
+    data?: any,
   ) => {
     try {
       const response = await fetch(`/api/admin/users/${userId}/actions`, {
@@ -727,7 +704,7 @@ export default function UserManagement() {
   }, [filters]);
 
   return (
-    <AdminLayout pageTitle="User Management">
+    <AdminLayout pageTitle={t("title")}>
       {/* Main Layout Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Sidebar - Stats Cards */}
@@ -758,7 +735,7 @@ export default function UserManagement() {
                   <p
                     className={`text-[9px] lg:text-[10px] ${USER_STAT_CARD_COLORS.total.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
-                    Total Users
+                    {t("userStats.total")}
                   </p>
                   <motion.p
                     key={(originalStats || stats)?.total}
@@ -794,7 +771,7 @@ export default function UserManagement() {
                   <p
                     className={`text-[9px] lg:text-[10px] ${USER_STAT_CARD_COLORS.approved.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
-                    Approved
+                    {t("userStats.approved")}
                   </p>
                   <motion.p
                     key={(originalStats || stats)?.approved}
@@ -830,7 +807,7 @@ export default function UserManagement() {
                   <p
                     className={`text-[9px] lg:text-[10px] ${USER_STAT_CARD_COLORS.pending.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
-                    Pending
+                    {t("userStats.pending")}
                   </p>
                   <motion.p
                     key={(originalStats || stats)?.pending}
@@ -866,7 +843,7 @@ export default function UserManagement() {
                   <p
                     className={`text-[9px] lg:text-[10px] ${USER_STAT_CARD_COLORS.suspended.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
-                    Suspended
+                    {t("userStats.suspended")}
                   </p>
                   <motion.p
                     key={(originalStats || stats)?.suspended}
@@ -904,7 +881,7 @@ export default function UserManagement() {
                       }`}
                     >
                       <Users className="w-3 h-3 lg:w-4 lg:h-4" />
-                      <span>All</span>
+                      <span>{t("allButton")}</span>
                     </motion.button>
 
                     {/* Employees Button */}
@@ -919,7 +896,7 @@ export default function UserManagement() {
                       }`}
                     >
                       <UserIcon className="w-3 h-3 lg:w-4 lg:h-4" />
-                      <span>Employees</span>
+                      <span>{t("employeesButton")}</span>
                     </motion.button>
 
                     {/* Managers Button */}
@@ -934,7 +911,7 @@ export default function UserManagement() {
                       }`}
                     >
                       <UserCog className="w-3 h-3 lg:w-4 lg:h-4" />
-                      <span>Managers</span>
+                      <span>{t("managersButton")}</span>
                     </motion.button>
                   </div>
                 </div>
@@ -943,7 +920,7 @@ export default function UserManagement() {
                   <div className="relative max-w-full">
                     <ExpandableSearchBar
                       onSearch={handleSearch}
-                      placeholder="Search users..."
+                      placeholder={t("search")}
                       expandDirection="left"
                       width={280}
                       className="h-10 lg:h-12"
@@ -980,8 +957,8 @@ export default function UserManagement() {
                 </h2>
                 <p className="text-gray-600 mb-4">
                   {filters.search || activeFiltersCount > 0
-                    ? "Try adjusting your search or filters"
-                    : "No users have been created yet"}
+                    ? t("noUsersMessage")
+                    : t("noUsersCreated")}
                 </p>
                 {activeFiltersCount > 0 && (
                   <button
@@ -1027,9 +1004,11 @@ export default function UserManagement() {
                         >
                           <UserCheck className="w-3 h-3 lg:w-4 lg:h-4" />
                           <span className="hidden sm:inline">
-                            Approve Selected
+                            {t("approveSelected")}
                           </span>
-                          <span className="sm:hidden">Approve</span>
+                          <span className="sm:hidden">
+                            {t("actions.approve")}
+                          </span>
                         </button>
 
                         {/* Bulk Reject */}
@@ -1040,9 +1019,11 @@ export default function UserManagement() {
                         >
                           <UserX className="w-3 h-3 lg:w-4 lg:h-4" />
                           <span className="hidden sm:inline">
-                            Reject Selected
+                            {t("rejectSelected")}
                           </span>
-                          <span className="sm:hidden">Reject</span>
+                          <span className="sm:hidden">
+                            {t("actions.reject")}
+                          </span>
                         </button>
 
                         {/* Bulk Suspend */}
@@ -1053,9 +1034,11 @@ export default function UserManagement() {
                         >
                           <Ban className="w-3 h-3 lg:w-4 lg:h-4" />
                           <span className="hidden sm:inline">
-                            Suspend Selected
+                            {t("suspendSelected")}
                           </span>
-                          <span className="sm:hidden">Suspend</span>
+                          <span className="sm:hidden">
+                            {t("actions.suspend")}
+                          </span>
                         </button>
                       </div>
                     </div>
@@ -1096,9 +1079,8 @@ export default function UserManagement() {
                       className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                     />
                     <span className="text-xs lg:text-sm font-semibold text-gray-600 uppercase tracking-wider">
-                      Select all (
-                      {
-                        users.filter((user) => {
+                      {t("selectAllUsers", {
+                        count: users.filter((user) => {
                           if (!user._id) return false;
                           const id =
                             typeof user._id === "string"
@@ -1108,13 +1090,12 @@ export default function UserManagement() {
                           return (
                             id && typeof id === "string" && id.trim() !== ""
                           );
-                        }).length
-                      }{" "}
-                      users)
+                        }).length,
+                      })}
                     </span>
                   </div>
                   <div className="text-xs lg:text-sm text-gray-500">
-                    Click on a user to view details
+                    {t("clickToViewDetails")}
                   </div>
                 </div>
 
@@ -1167,7 +1148,7 @@ export default function UserManagement() {
                             <div className="col-span-3 flex items-center space-x-3">
                               <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
                                 {`${user.firstName.charAt(
-                                  0
+                                  0,
                                 )}${user.lastName.charAt(0)}`}
                               </div>
                               <div className="min-w-0">
@@ -1215,7 +1196,7 @@ export default function UserManagement() {
                                         month: "short",
                                         day: "numeric",
                                         year: "numeric",
-                                      }
+                                      },
                                     )
                                   : "—"}
                               </p>
@@ -1226,7 +1207,7 @@ export default function UserManagement() {
                                     {
                                       hour: "2-digit",
                                       minute: "2-digit",
-                                    }
+                                    },
                                   )}
                                 </p>
                               )}
@@ -1252,7 +1233,7 @@ export default function UserManagement() {
                                 {/* User Avatar */}
                                 <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
                                   {`${user.firstName.charAt(
-                                    0
+                                    0,
                                   )}${user.lastName.charAt(0)}`}
                                 </div>
                                 <div className="min-w-0 flex-1">
@@ -1296,7 +1277,7 @@ export default function UserManagement() {
                                   <span className="flex items-center">
                                     <Calendar className="w-3 h-3 mr-1" />
                                     {new Date(
-                                      user.lastLogin
+                                      user.lastLogin,
                                     ).toLocaleDateString("en-US", {
                                       month: "short",
                                       day: "numeric",
@@ -1317,9 +1298,11 @@ export default function UserManagement() {
                   <div className="px-4 lg:px-6 py-4 border-t border-gray-200">
                     <div className="flex items-center justify-between flex-wrap gap-4">
                       <div className="text-xs lg:text-sm text-gray-600">
-                        Showing {(currentPage - 1) * pageSize + 1} to{" "}
-                        {Math.min(currentPage * pageSize, totalUsers)} of{" "}
-                        {totalUsers} users
+                        {t("showingUsersRange", {
+                          start: (currentPage - 1) * pageSize + 1,
+                          end: Math.min(currentPage * pageSize, totalUsers),
+                          total: totalUsers,
+                        })}
                       </div>
                       <div className="flex items-center space-x-2">
                         <button
@@ -1331,23 +1314,26 @@ export default function UserManagement() {
                         >
                           <span className="flex items-center space-x-1">
                             <ArrowRight className="w-3 h-3 lg:w-4 lg:h-4 rotate-180" />
-                            <span>Previous</span>
+                            <span>{tCommon("previous")}</span>
                           </span>
                         </button>
                         <div className="px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium bg-gray-900 text-white rounded-lg">
-                          Page {currentPage} of {totalPages}
+                          {t("pageOf", {
+                            current: currentPage,
+                            total: totalPages,
+                          })}
                         </div>
                         <button
                           onClick={() =>
                             setCurrentPage((prev) =>
-                              Math.min(totalPages, prev + 1)
+                              Math.min(totalPages, prev + 1),
                             )
                           }
                           disabled={currentPage >= totalPages}
                           className="px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                         >
                           <span className="flex items-center space-x-1">
-                            <span>Next</span>
+                            <span>{tCommon("next")}</span>
                             <ArrowRight className="w-3 h-3 lg:w-4 lg:h-4" />
                           </span>
                         </button>
@@ -1356,7 +1342,7 @@ export default function UserManagement() {
                             onClick={() => setCurrentPage(1)}
                             className="px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200"
                           >
-                            Go to Page 1
+                            {t("goToPage1")}
                           </button>
                         )}
                       </div>

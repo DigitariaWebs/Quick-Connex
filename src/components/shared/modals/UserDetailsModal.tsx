@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import FeedbackToast from "@/components/shared/feedback/FeedbackToast";
@@ -56,7 +57,7 @@ interface UserDetailsModalProps {
   onUserIconAction?: (userId: string, action: string, data?: any) => void;
   onUserUpdate?: (
     action: "approve" | "reject" | "suspend" | "activate",
-    userType: string
+    userType: string,
   ) => void;
   onDocumentDownload?: (document: any) => void;
 }
@@ -80,6 +81,7 @@ export default function UserDetailsModal({
   onUserUpdate,
   onDocumentDownload,
 }: UserDetailsModalProps) {
+  const t = useTranslations("adminUsers");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const [showActionModal, setShowActionModal] = useState(false);
@@ -220,8 +222,7 @@ export default function UserDetailsModal({
       let reason = "";
       if (action === "reject") {
         reason =
-          prompt("Please provide a reason for rejection:") ||
-          "Rejected by administrator";
+          prompt(t("reasonForRejection")) || t("reasonForRejectionDefault");
       }
 
       const endpoint =
@@ -282,7 +283,7 @@ export default function UserDetailsModal({
       console.error(`Error ${action}ing user:`, error);
       setFeedbackStatus("error");
       setError(
-        error instanceof Error ? error.message : `Failed to ${action} user`
+        error instanceof Error ? error.message : `Failed to ${action} user`,
       );
     } finally {
       setActionLoading(null);
@@ -298,8 +299,7 @@ export default function UserDetailsModal({
 
     try {
       const reason =
-        prompt("Please provide a reason for suspension:") ||
-        "Account suspended by administrator";
+        prompt(t("reasonForSuspension")) || t("reasonForSuspensionDefault");
 
       const response = await fetch(`/api/admin/users/${user._id}/suspend`, {
         method: "POST",
@@ -354,7 +354,7 @@ export default function UserDetailsModal({
       console.error("Error suspending user:", error);
       setFeedbackStatus("error");
       setError(
-        error instanceof Error ? error.message : "Failed to suspend user"
+        error instanceof Error ? error.message : "Failed to suspend user",
       );
     } finally {
       setActionLoading(null);
@@ -370,8 +370,7 @@ export default function UserDetailsModal({
 
     try {
       const reason =
-        prompt("Please provide a reason for reactivation:") ||
-        "Account reactivated by administrator";
+        prompt(t("reasonForReactivation")) || t("reasonForReactivationDefault");
 
       const response = await fetch(`/api/admin/users/${user._id}/activate`, {
         method: "POST",
@@ -426,7 +425,7 @@ export default function UserDetailsModal({
       console.error("Error activating user:", error);
       setFeedbackStatus("error");
       setError(
-        error instanceof Error ? error.message : "Failed to activate user"
+        error instanceof Error ? error.message : "Failed to activate user",
       );
     } finally {
       setActionLoading(null);
@@ -450,14 +449,14 @@ export default function UserDetailsModal({
         return [
           {
             id: "approve",
-            label: "Approve User",
+            label: t("approveUser"),
             icon: "UserCheck",
             buttonClass:
               "bg-green-100 border-green-300 text-green-800 hover:bg-green-200",
           },
           {
             id: "reject",
-            label: "Reject User",
+            label: t("rejectUser"),
             icon: "UserX",
             buttonClass:
               "bg-red-100 border-red-300 text-red-800 hover:bg-red-200",
@@ -469,21 +468,21 @@ export default function UserDetailsModal({
         return [
           {
             id: "suspend",
-            label: "Suspend User",
+            label: t("suspendUser"),
             icon: "Ban",
             buttonClass:
               "bg-red-100 border-red-300 text-red-800 hover:bg-red-200",
           },
           {
             id: "exportData",
-            label: "Export Data",
+            label: t("exportData"),
             icon: "Download",
             buttonClass:
               "bg-orange-100 border-orange-300 text-orange-800 hover:bg-orange-200",
           },
           {
             id: "delete",
-            label: "Delete User",
+            label: t("deleteUser"),
             icon: "Trash2",
             buttonClass:
               "bg-red-100 border-red-300 text-red-800 hover:bg-red-200",
@@ -495,14 +494,14 @@ export default function UserDetailsModal({
         return [
           {
             id: "approve",
-            label: "Approve User",
+            label: t("approveUser"),
             icon: "UserCheck",
             buttonClass:
               "bg-green-100 border-green-300 text-green-800 hover:bg-green-200",
           },
           {
             id: "delete",
-            label: "Delete User",
+            label: t("deleteUser"),
             icon: "Trash2",
             buttonClass:
               "bg-red-100 border-red-300 text-red-800 hover:bg-red-200",
@@ -514,14 +513,14 @@ export default function UserDetailsModal({
         return [
           {
             id: "activate",
-            label: "Activate User",
+            label: t("activateUser"),
             icon: "CheckCircle2",
             buttonClass:
               "bg-green-100 border-green-300 text-green-800 hover:bg-green-200",
           },
           {
             id: "delete",
-            label: "Delete User",
+            label: t("deleteUser"),
             icon: "Trash2",
             buttonClass:
               "bg-red-100 border-red-300 text-red-800 hover:bg-red-200",
@@ -533,14 +532,14 @@ export default function UserDetailsModal({
         return [
           {
             id: "activate",
-            label: "Activate User",
+            label: t("activateUser"),
             icon: "CheckCircle2",
             buttonClass:
               "bg-green-100 border-green-300 text-green-800 hover:bg-green-200",
           },
           {
             id: "delete",
-            label: "Delete User",
+            label: t("deleteUser"),
             icon: "Trash2",
             buttonClass:
               "bg-red-100 border-red-300 text-red-800 hover:bg-red-200",
@@ -636,14 +635,16 @@ export default function UserDetailsModal({
                     {/* Basic Information */}
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Basic Information
+                        {t("basicInformation")}
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-3">
                           <div className="flex items-center space-x-3">
                             <Mail className="w-5 h-5 text-gray-400" />
                             <div>
-                              <p className="text-sm text-gray-500">Email</p>
+                              <p className="text-sm text-gray-500">
+                                {t("email")}
+                              </p>
                               <p className="font-medium text-gray-900">
                                 {user.email}
                               </p>
@@ -653,7 +654,9 @@ export default function UserDetailsModal({
                             <div className="flex items-center space-x-3">
                               <Phone className="w-5 h-5 text-gray-400" />
                               <div>
-                                <p className="text-sm text-gray-500">Phone</p>
+                                <p className="text-sm text-gray-500">
+                                  {t("phone")}
+                                </p>
                                 <p className="font-medium text-gray-900">
                                   {user.phone}
                                 </p>
@@ -665,7 +668,7 @@ export default function UserDetailsModal({
                               <Building className="w-5 h-5 text-gray-400" />
                               <div>
                                 <p className="text-sm text-gray-500">
-                                  Organization
+                                  {t("organization")}
                                 </p>
                                 <p className="font-medium text-gray-900">
                                   {user.ciusss?.name || user.hospital?.name}
@@ -680,7 +683,7 @@ export default function UserDetailsModal({
                               <Building className="w-5 h-5 text-gray-400" />
                               <div>
                                 <p className="text-sm text-gray-500">
-                                  Position
+                                  {t("position")}
                                 </p>
                                 <p className="font-medium text-gray-900">
                                   {user.post}
@@ -692,7 +695,7 @@ export default function UserDetailsModal({
                             <Calendar className="w-5 h-5 text-gray-400" />
                             <div>
                               <p className="text-sm text-gray-500">
-                                Member Since
+                                {t("memberSince")}
                               </p>
                               <p className="font-medium text-gray-900">
                                 {new Date(user.createdAt).toLocaleDateString()}
@@ -706,7 +709,7 @@ export default function UserDetailsModal({
                     {/* Account Status */}
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Account Status
+                        {t("accountStatus")}
                       </h3>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="bg-gray-50 rounded-lg p-4">
@@ -719,7 +722,7 @@ export default function UserDetailsModal({
                               }`}
                             />
                             <span className="text-sm font-medium text-gray-700">
-                              Account Status
+                              {t("accountStatus")}
                             </span>
                           </div>
                           <p
@@ -729,16 +732,14 @@ export default function UserDetailsModal({
                                 : "text-gray-500"
                             }`}
                           >
-                            {user.status === "approved"
-                              ? "Approved"
-                              : user.status}
+                            {t(`statuses.${user.status}`)}
                           </p>
                         </div>
                         <div className="bg-gray-50 rounded-lg p-4">
                           <div className="flex items-center space-x-2 mb-2">
                             <Calendar className="w-5 h-5 text-gray-400" />
                             <span className="text-sm font-medium text-gray-700">
-                              Last Login
+                              {t("lastLogin")}
                             </span>
                           </div>
                           <p className="text-sm text-gray-600">
@@ -746,11 +747,11 @@ export default function UserDetailsModal({
                               <span className="animate-pulse">Loading...</span>
                             ) : detailedUser?.lastLogin ? (
                               new Date(
-                                detailedUser.lastLogin
+                                detailedUser.lastLogin,
                               ).toLocaleDateString() +
                               " at " +
                               new Date(
-                                detailedUser.lastLogin
+                                detailedUser.lastLogin,
                               ).toLocaleTimeString([], {
                                 hour: "2-digit",
                                 minute: "2-digit",
@@ -766,7 +767,7 @@ export default function UserDetailsModal({
                     {/* Login History */}
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Login History
+                        {t("loginHistory")}
                       </h3>
                       {loginHistoryLoading ? (
                         <div className="flex items-center justify-center py-8">
@@ -788,7 +789,9 @@ export default function UserDetailsModal({
                                   }`}
                                 />
                                 <span className="text-sm text-gray-700">
-                                  {login.success ? "Successful" : "Failed"}
+                                  {login.success
+                                    ? t("successful")
+                                    : t("failed")}
                                 </span>
                               </div>
                               <div className="text-xs text-gray-500">
@@ -800,7 +803,7 @@ export default function UserDetailsModal({
                       ) : (
                         <div className="text-center py-4">
                           <p className="text-gray-500 text-sm">
-                            No login history available
+                            {t("noLoginHistory")}
                           </p>
                         </div>
                       )}
@@ -810,7 +813,7 @@ export default function UserDetailsModal({
                     {user?.userType === "employee" && (
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                          Employee Documents
+                          {t("employeeDocuments")}
                         </h3>
                         {documentsLoading ? (
                           <div className="flex items-center justify-center py-8">
@@ -853,7 +856,7 @@ export default function UserDetailsModal({
                                     <div className="flex items-center space-x-2 mt-2">
                                       <span className="text-xs text-gray-400">
                                         {(document.size / 1024 / 1024).toFixed(
-                                          2
+                                          2,
                                         )}{" "}
                                         MB
                                       </span>
@@ -862,7 +865,7 @@ export default function UserDetailsModal({
                                       </span>
                                       <span className="text-xs text-gray-400">
                                         {new Date(
-                                          document.uploadedAt
+                                          document.uploadedAt,
                                         ).toLocaleDateString()}
                                       </span>
                                     </div>
@@ -878,7 +881,7 @@ export default function UserDetailsModal({
                           <div className="text-center py-8">
                             <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                             <p className="text-gray-500">
-                              No documents uploaded
+                              {t("noDocumentsUploaded")}
                             </p>
                           </div>
                         )}
@@ -888,7 +891,7 @@ export default function UserDetailsModal({
                     {/* Recent Activity */}
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Recent Activity
+                        {t("recentActivity")}
                       </h3>
                       {activitiesLoading ? (
                         <div className="flex items-center justify-center py-8">
@@ -908,7 +911,7 @@ export default function UserDetailsModal({
                                 </p>
                                 <p className="text-xs text-gray-500">
                                   {new Date(
-                                    activity.timestamp
+                                    activity.timestamp,
                                   ).toLocaleString()}
                                 </p>
                               </div>
@@ -918,7 +921,9 @@ export default function UserDetailsModal({
                       ) : (
                         <div className="text-center py-8">
                           <Activity className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                          <p className="text-gray-500">No recent activity</p>
+                          <p className="text-gray-500">
+                            {t("noRecentActivity")}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -927,11 +932,9 @@ export default function UserDetailsModal({
                   <div className="text-center py-12">
                     <div className="text-gray-400 text-6xl mb-4">👤</div>
                     <h2 className="text-xl font-semibold text-gray-800 mb-2">
-                      UserIcon not found
+                      {t("userNotFound")}
                     </h2>
-                    <p className="text-gray-600">
-                      The requested user could not be found.
-                    </p>
+                    <p className="text-gray-600">{t("userNotFoundMessage")}</p>
                   </div>
                 )}
               </div>
@@ -974,13 +977,13 @@ export default function UserDetailsModal({
                     >
                       <div className="bg-white rounded-2xl shadow-2xl border-2 border-gray-200 p-4 min-w-[220px] space-y-2 backdrop-blur-sm">
                         <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3 text-center">
-                          Admin Actions
+                          {t("adminActions")}
                         </div>
                         {availableActions
                           .filter(
                             (action) =>
                               !action.id.toLowerCase().includes("note") &&
-                              !action.label.toLowerCase().includes("note")
+                              !action.label.toLowerCase().includes("note"),
                           )
                           .map((action, index) => {
                             const ActionIcon = iconMap[action.icon];
@@ -1070,8 +1073,8 @@ export default function UserDetailsModal({
               status={feedbackStatus}
               message={
                 feedbackStatus === "success"
-                  ? "User action completed successfully"
-                  : error || "Failed to complete user action"
+                  ? t("userActionSuccess")
+                  : error || t("userActionFailed")
               }
               durationMs={1700}
               onHide={() => {
@@ -1080,7 +1083,7 @@ export default function UserDetailsModal({
               }}
             />
           </div>,
-          document.body
+          document.body,
         )}
     </AnimatePresence>
   );

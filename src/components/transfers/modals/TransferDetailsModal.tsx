@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import FeedbackToast from "@/components/shared/feedback/FeedbackToast";
 import { useSession } from "@/contexts/SessionContext";
 import {
@@ -230,6 +231,7 @@ export default function TransferDetailsModal({
   transferData,
   onTransferUpdate,
 }: TransferDetailsModalProps) {
+  const t = useTranslations("transfers");
   const [transfer, setTransfer] = useState<TransferDetails | null>(null);
   const [relatedTransfers, setRelatedTransfers] = useState<RelatedTransfer[]>(
     [],
@@ -736,7 +738,7 @@ export default function TransferDetailsModal({
                 <div className="flex items-center justify-between mb-4 lg:mb-6">
                   <div className="min-w-0 flex-1">
                     <h2 className="text-lg lg:text-xl font-semibold text-gray-800 truncate">
-                      {transfer?.transferId || "Loading..."}
+                      {transfer?.transferId || t("loading")}
                     </h2>
                   </div>
                   <div className="flex items-center space-x-2 lg:space-x-3 flex-shrink-0">
@@ -752,7 +754,7 @@ export default function TransferDetailsModal({
                           >
                             <StatusIcon size={14} className="lg:w-4 lg:h-4" />
                             <span className="font-medium text-xs lg:text-sm">
-                              {statusConfig.label}
+                              {t(transfer.status)}
                             </span>
                           </div>
                         );
@@ -780,7 +782,7 @@ export default function TransferDetailsModal({
                     <div className="text-center px-4">
                       <AlertTriangle className="w-10 h-10 lg:w-12 lg:h-12 text-red-500 mx-auto mb-4" />
                       <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-2">
-                        Error Loading Transfer
+                        {t("errorLoadingTransfer")}
                       </h3>
                       <p className="text-sm lg:text-base text-gray-600 mb-4">
                         {error}
@@ -789,7 +791,7 @@ export default function TransferDetailsModal({
                         onClick={handleRefresh}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors min-h-[44px]"
                       >
-                        Try Again
+                        {t("tryAgain")}
                       </button>
                     </div>
                   </div>
@@ -806,7 +808,7 @@ export default function TransferDetailsModal({
                         {/* Patient/Transfer Info */}
                         <div className="space-y-4">
                           <h3 className="text-base lg:text-lg font-semibold text-gray-900">
-                            Transfer Information
+                            {t("transferInformation")}
                           </h3>
 
                           {transfer.transferCategory === "patient" &&
@@ -920,7 +922,7 @@ export default function TransferDetailsModal({
                         {/* Hospital Information */}
                         <div className="space-y-4">
                           <h3 className="text-base lg:text-lg font-semibold text-gray-900">
-                            Route Information
+                            {t("routeInformation")}
                           </h3>
 
                           <div className="space-y-4">
@@ -931,7 +933,7 @@ export default function TransferDetailsModal({
                               />
                               <div className="min-w-0 flex-1">
                                 <p className="font-medium text-gray-900 text-sm lg:text-base">
-                                  From
+                                  {t("from")}
                                 </p>
                                 <p className="text-xs lg:text-sm text-gray-600 truncate">
                                   {transfer.fromHospital?.name ||
@@ -951,7 +953,7 @@ export default function TransferDetailsModal({
                               />
                               <div className="min-w-0 flex-1">
                                 <p className="font-medium text-gray-900 text-sm lg:text-base">
-                                  To
+                                  {t("to")}
                                 </p>
                                 <p className="text-xs lg:text-sm text-gray-600 truncate">
                                   {transfer.toHospital?.name ||
@@ -977,7 +979,7 @@ export default function TransferDetailsModal({
                             />
                             <div className="min-w-0 flex-1">
                               <p className="text-xs lg:text-sm font-medium text-gray-900">
-                                Requested By
+                                {t("requestedBy")}
                               </p>
                               <p className="text-xs lg:text-sm text-gray-600 truncate">
                                 {transfer.requestedBy?.firstName || "Unknown"}{" "}
@@ -993,7 +995,7 @@ export default function TransferDetailsModal({
                             />
                             <div className="min-w-0 flex-1">
                               <p className="text-xs lg:text-sm font-medium text-gray-900">
-                                Requested Date
+                                {t("requestedDate")}
                               </p>
                               <p className="text-xs lg:text-sm text-gray-600">
                                 {new Date(
@@ -1011,7 +1013,7 @@ export default function TransferDetailsModal({
                               />
                               <div className="min-w-0 flex-1">
                                 <p className="text-xs lg:text-sm font-medium text-gray-900">
-                                  Assigned To
+                                  {t("assignedTo")}
                                 </p>
                                 <p className="text-xs lg:text-sm text-gray-600 truncate">
                                   {transfer.assignedTo?.firstName || "Not"}{" "}
@@ -1027,7 +1029,7 @@ export default function TransferDetailsModal({
                       {transfer.reason && (
                         <div className="mt-4 lg:mt-6 pt-4 lg:pt-6 border-t border-gray-200">
                           <h4 className="text-xs lg:text-sm font-medium text-gray-900 mb-2">
-                            Reason
+                            {t("reason")}
                           </h4>
                           <p className="text-xs lg:text-sm text-gray-600 bg-gray-50 p-3 rounded-lg break-words">
                             {transfer.reason}
@@ -1039,7 +1041,7 @@ export default function TransferDetailsModal({
                       {transfer.notes && (
                         <div className="mt-4 lg:mt-6 pt-4 lg:pt-6 border-t border-gray-200">
                           <h4 className="text-xs lg:text-sm font-medium text-gray-900 mb-2">
-                            Notes
+                            {t("notes")}
                           </h4>
                           <p className="text-xs lg:text-sm text-gray-600 bg-gray-50 p-3 rounded-lg break-words">
                             {transfer.notes}
@@ -1058,7 +1060,7 @@ export default function TransferDetailsModal({
                       >
                         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
                           <History size={20} className="text-blue-600" />
-                          <span>Timeline</span>
+                          <span>{t("timeline")}</span>
                         </h2>
                         <div className="space-y-4">
                           {transfer.timeline.map((event, index) => (
@@ -1132,7 +1134,7 @@ export default function TransferDetailsModal({
                   >
                     <div className="bg-white rounded-2xl shadow-2xl border-2 border-gray-200 p-4 min-w-[220px] space-y-2 backdrop-blur-sm">
                       <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3 text-center">
-                        Admin Actions
+                        {t("adminActions")}
                       </div>
 
                       {/* Dynamic Actions based on transfer status */}
@@ -1165,8 +1167,8 @@ export default function TransferDetailsModal({
                             ) : null}
                             <span className="text-sm font-semibold text-black">
                               {actionLoading === "approve"
-                                ? "Approving..."
-                                : "Approve Transfer"}
+                                ? t("approving")
+                                : t("approveTransfer")}
                             </span>
                           </motion.button>
 
@@ -1196,8 +1198,8 @@ export default function TransferDetailsModal({
                             ) : null}
                             <span className="text-sm font-semibold text-black">
                               {actionLoading === "reject"
-                                ? "Rejecting..."
-                                : "Reject Transfer"}
+                                ? t("rejecting")
+                                : t("rejectTransfer")}
                             </span>
                           </motion.button>
                         </>
@@ -1232,8 +1234,8 @@ export default function TransferDetailsModal({
                             ) : null}
                             <span className="text-sm font-semibold text-black">
                               {actionLoading === "cancel"
-                                ? "Cancelling..."
-                                : "Cancel Transfer"}
+                                ? t("cancelling")
+                                : t("cancelTransfer")}
                             </span>
                           </motion.button>
                         </>
@@ -1244,10 +1246,10 @@ export default function TransferDetailsModal({
                         transfer?.status !== "in_progress" && (
                           <div className="text-center py-4">
                             <div className="text-sm text-gray-500 mb-2">
-                              No actions available for
+                              {t("noActionsAvailable")}
                             </div>
                             <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                              {transfer?.status || "Unknown"} Status
+                              {transfer?.status || t("unknown")} {t("status")}
                             </div>
                           </div>
                         )}
@@ -1269,8 +1271,8 @@ export default function TransferDetailsModal({
               status={feedbackStatus}
               message={
                 feedbackStatus === "success"
-                  ? "Transfer action completed successfully"
-                  : error || "Failed to complete transfer action"
+                  ? t("transferActionCompleted")
+                  : error || t("transferActionFailed")
               }
               durationMs={1700}
               onHide={() => {

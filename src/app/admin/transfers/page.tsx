@@ -1,25 +1,15 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
+import { motion } from "framer-motion";
 import {
-  MoreHorizontal,
-  CheckCircle2,
-  XCircle,
   Clock,
   AlertTriangle,
-  Users,
   MapPin,
-  Calendar,
-  Flag,
   FileText,
-  Eye,
-  Edit,
-  Trash2,
   TrendingUp,
   BarChart3,
-  Sparkles,
   Zap,
   ArrowRight,
   RefreshCw,
@@ -32,13 +22,11 @@ import LoadingSpinner from "@/components/dashboard/core/LoadingSpinner";
 import { TransferDetailsModal } from "@/components/transfers/modals";
 import ExpandableSearchBar from "@/components/shared/ui/expandable-search-bar";
 import {
-  BORDER_RADIUS,
   CARD_STYLES,
   getTransferCategoryConfig,
   getTransferStatusConfig,
   getTransferPriorityConfig,
   STAT_CARD_COLORS,
-  TRANSFER_CATEGORIES,
 } from "@/constants";
 
 /**
@@ -156,7 +144,9 @@ interface TransferFilters {
 }
 
 export default function AdminTransfersPage() {
-  const router = useRouter();
+  const t = useTranslations("adminTransfers");
+  const tCommon = useTranslations("common");
+  const tTransfers = useTranslations("transfers");
 
   // State management
   const [transfers, setTransfers] = useState<TransferRequest[]>([]);
@@ -552,7 +542,7 @@ export default function AdminTransfersPage() {
 
   if (loading && transfers.length === 0) {
     return (
-      <AdminLayout pageTitle="Transfer Management">
+      <AdminLayout pageTitle={t("title")}>
         <div className="flex items-center justify-center h-64">
           <LoadingSpinner />
         </div>
@@ -561,7 +551,7 @@ export default function AdminTransfersPage() {
   }
 
   return (
-    <AdminLayout pageTitle="Transfer Management">
+    <AdminLayout pageTitle={t("title")}>
       {/* Main Layout Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
         {/* Left Sidebar - Stats Cards */}
@@ -592,7 +582,7 @@ export default function AdminTransfersPage() {
                   <p
                     className={`text-[9px] lg:text-[10px] ${STAT_CARD_COLORS.total.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
-                    Total
+                    {t("total")}
                   </p>
                   <p
                     className={`text-lg lg:text-2xl font-bold ${STAT_CARD_COLORS.total.valueColor}`}
@@ -624,7 +614,7 @@ export default function AdminTransfersPage() {
                   <p
                     className={`text-[9px] lg:text-[10px] ${STAT_CARD_COLORS.pending.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
-                    Pending
+                    {t("pending")}
                   </p>
                   <p
                     className={`text-lg lg:text-2xl font-bold ${STAT_CARD_COLORS.pending.valueColor}`}
@@ -656,7 +646,7 @@ export default function AdminTransfersPage() {
                   <p
                     className={`text-[9px] lg:text-[10px] ${STAT_CARD_COLORS.inProgress.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
-                    In Progress
+                    {t("inProgress")}
                   </p>
                   <p
                     className={`text-lg lg:text-2xl font-bold ${STAT_CARD_COLORS.inProgress.valueColor}`}
@@ -688,7 +678,7 @@ export default function AdminTransfersPage() {
                   <p
                     className={`text-[9px] lg:text-[10px] ${STAT_CARD_COLORS.urgent.textColor} font-medium uppercase tracking-wider mb-1`}
                   >
-                    Urgent
+                    {t("urgent")}
                   </p>
                   <p
                     className={`text-lg lg:text-2xl font-bold ${STAT_CARD_COLORS.urgent.valueColor}`}
@@ -723,7 +713,7 @@ export default function AdminTransfersPage() {
                       }`}
                     >
                       <BarChart3 className="w-3 h-3 lg:w-4 lg:h-4" />
-                      <span>All</span>
+                      <span>{tCommon("all")}</span>
                     </motion.button>
 
                     {/* Patient Transfers Button */}
@@ -738,7 +728,7 @@ export default function AdminTransfersPage() {
                       }`}
                     >
                       <User className="w-3 h-3 lg:w-4 lg:h-4" />
-                      <span>Patients</span>
+                      <span>{t("patient")}</span>
                     </motion.button>
 
                     {/* Envelope Transfers Button */}
@@ -753,7 +743,7 @@ export default function AdminTransfersPage() {
                       }`}
                     >
                       <Package className="w-3 h-3 lg:w-4 lg:h-4" />
-                      <span>Envelopes</span>
+                      <span>{t("envelope")}</span>
                     </motion.button>
 
                     {/* Medical Instruments Button */}
@@ -770,7 +760,7 @@ export default function AdminTransfersPage() {
                       }`}
                     >
                       <Stethoscope className="w-3 h-3 lg:w-4 lg:h-4" />
-                      <span>Instruments</span>
+                      <span>{t("medicalInstruments")}</span>
                     </motion.button>
                   </div>
                 </div>
@@ -778,7 +768,7 @@ export default function AdminTransfersPage() {
                 <div className="hidden lg:block w-full lg:w-auto">
                   <ExpandableSearchBar
                     onSearch={handleSearch}
-                    placeholder="Search transfers..."
+                    placeholder={t("searchTransfers")}
                     expandDirection="left"
                     width={280}
                     className="h-10 lg:h-12"
@@ -842,15 +832,15 @@ export default function AdminTransfersPage() {
                   onClick={handleRefresh}
                   className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
                 >
-                  Try Again
+                  {tCommon("retry")}
                 </button>
               </div>
             ) : transfers.length === 0 ? (
               <div className="p-6 lg:p-8 text-center">
                 <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 font-medium">No transfers found</p>
+                <p className="text-gray-600 font-medium">{t("noTransfers")}</p>
                 <p className="text-gray-500 text-sm">
-                  Try adjusting your filters or search terms
+                  {t("tryAdjustingFilters")}
                 </p>
               </div>
             ) : (
@@ -858,12 +848,12 @@ export default function AdminTransfersPage() {
                 {/* Table Header */}
                 <div className="px-4 lg:px-6 py-3 bg-gray-50 border-b border-gray-200 hidden lg:block">
                   <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    <div className="col-span-3">Transfer ID</div>
-                    <div className="col-span-2">Patient/Item</div>
-                    <div className="col-span-3">Route</div>
-                    <div className="col-span-2">Date</div>
-                    <div className="col-span-1">Priority</div>
-                    <div className="col-span-1 text-right">Status</div>
+                    <div className="col-span-3">{t("transferId")}</div>
+                    <div className="col-span-2">{t("patientItem")}</div>
+                    <div className="col-span-3">{t("route")}</div>
+                    <div className="col-span-2">{t("date")}</div>
+                    <div className="col-span-1">{t("priority")}</div>
+                    <div className="col-span-1 text-right">{t("status")}</div>
                   </div>
                 </div>
 
@@ -976,7 +966,7 @@ export default function AdminTransfersPage() {
                             <span
                               className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig.badgeClass}`}
                             >
-                              {statusConfig.label}
+                              {tTransfers(transfer.status)}
                             </span>
                           </div>
                         </div>
@@ -995,14 +985,14 @@ export default function AdminTransfersPage() {
                                   {transfer.transferId}
                                 </p>
                                 <p className="text-xs text-gray-500 capitalize truncate">
-                                  {transfer.transferCategory.replace("_", " ")}
+                                  {t(`categories.${transfer.transferCategory}`)}
                                 </p>
                               </div>
                             </div>
                             <span
                               className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig.badgeClass}`}
                             >
-                              {statusConfig.label}
+                              {tTransfers(transfer.status)}
                             </span>
                           </div>
                           <div className="pl-7 lg:pl-13">
@@ -1050,9 +1040,11 @@ export default function AdminTransfersPage() {
               <div className="px-4 lg:px-6 py-4 border-t border-gray-200">
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   <div className="text-sm text-gray-600">
-                    Showing {(currentPage - 1) * 20 + 1} to{" "}
-                    {Math.min(currentPage * 20, totalCount)} of {totalCount}{" "}
-                    results
+                    {t("showingResults", {
+                      start: (currentPage - 1) * 20 + 1,
+                      end: Math.min(currentPage * 20, totalCount),
+                      total: totalCount,
+                    })}
                   </div>
 
                   <div className="flex items-center space-x-2">
@@ -1063,12 +1055,12 @@ export default function AdminTransfersPage() {
                     >
                       <span className="flex items-center space-x-1">
                         <ArrowRight className="w-4 h-4 rotate-180" />
-                        <span>Previous</span>
+                        <span>{tCommon("previous")}</span>
                       </span>
                     </button>
 
                     <div className="px-4 py-2 text-sm font-medium bg-gray-900 text-white rounded-lg">
-                      Page {currentPage} of {totalPages}
+                      {t("pageOf", { current: currentPage, total: totalPages })}
                     </div>
 
                     <button
@@ -1077,7 +1069,7 @@ export default function AdminTransfersPage() {
                       className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                     >
                       <span className="flex items-center space-x-1">
-                        <span>Next</span>
+                        <span>{tCommon("next")}</span>
                         <ArrowRight className="w-4 h-4" />
                       </span>
                     </button>
