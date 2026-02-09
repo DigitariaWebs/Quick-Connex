@@ -3,13 +3,9 @@
 import { motion } from "framer-motion";
 import {
   Plus,
-  FileText,
   Search,
-  Clock,
   CheckCircle,
   AlertTriangle,
-  Hospital,
-  Users,
   Calendar,
 } from "lucide-react";
 import { useTranslations } from "next-intl";

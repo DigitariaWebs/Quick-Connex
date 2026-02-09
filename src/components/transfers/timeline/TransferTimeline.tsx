@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -16,7 +17,6 @@ import {
   Activity,
   Hospital,
   Stethoscope,
-  Ambulance,
   Shield,
   MessageSquare,
   Package,
@@ -194,6 +194,7 @@ export default function TransferTimeline({
   onClose,
   isVisible,
 }: TransferTimelineProps) {
+  const t = useTranslations("transfersPage");
   // Get display information based on transfer type
   const displayInfo = getTransferDisplayInfo(transfer);
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
@@ -221,10 +222,10 @@ export default function TransferTimeline({
       });
 
       const response = await fetch(
-        `/api/transfers/${transfer.transferId}/timeline?${queryParams}`
+        `/api/transfers/${transfer.transferId}/timeline?${queryParams}`,
       );
       if (!response.ok) {
-        throw new Error("Failed to fetch timeline data");
+        throw new Error(t("failedToFetchTimelineData"));
       }
 
       const data = await response.json();
@@ -264,12 +265,12 @@ export default function TransferTimeline({
 
         setTimelineEvents(transformedEvents);
       } else {
-        throw new Error(data.message || "Failed to fetch timeline data");
+        throw new Error(data.message || t("failedToFetchTimelineData"));
       }
     } catch (err) {
       console.error("Error fetching timeline:", err);
       setError(
-        err instanceof Error ? err.message : "Failed to fetch timeline data"
+        err instanceof Error ? err.message : t("failedToFetchTimelineData"),
       );
       // Fallback to empty array
       setTimelineEvents([]);
@@ -323,7 +324,7 @@ export default function TransferTimeline({
   const getEventStatusColor = (
     type: string,
     isSystemEvent?: boolean,
-    badges?: string[]
+    badges?: string[],
   ) => {
     if (isSystemEvent) {
       return "bg-gray-500";
@@ -394,7 +395,7 @@ export default function TransferTimeline({
   };
 
   const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString("en-US", {
+    return new Date(timestamp).toLocaleString(undefined, {
       month: "short",
       day: "numeric",
       hour: "2-digit",
@@ -463,7 +464,7 @@ export default function TransferTimeline({
                   </div>
                   <div className="min-w-0 flex-1">
                     <h2 className="text-lg lg:text-2xl font-bold text-gray-900 truncate">
-                      Transfer Timeline
+                      {t("transferTimeline")}
                     </h2>
                     <p className="text-xs lg:text-sm text-gray-600 truncate">
                       {displayInfo.title} • {transfer.transferId}
@@ -485,7 +486,7 @@ export default function TransferTimeline({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 space-y-2 sm:space-y-0">
                   <div
                     className={`px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r ${getPriorityColor(
-                      transfer.priority
+                      transfer.priority,
                     )} text-white shadow-lg w-fit`}
                   >
                     {transfer.priority.toUpperCase()}
@@ -493,7 +494,7 @@ export default function TransferTimeline({
                   <div className="flex items-center space-x-2 text-xs lg:text-sm text-gray-600">
                     <Clock size={12} className="lg:w-4 lg:h-4" />
                     <span>
-                      Started {formatTimestamp(transfer.requestedDate)}
+                      {t("started")} {formatTimestamp(transfer.requestedDate)}
                     </span>
                   </div>
                 </div>
@@ -531,7 +532,7 @@ export default function TransferTimeline({
                 <div className="flex items-center justify-center py-6 lg:py-8">
                   <div className="animate-spin rounded-full h-6 w-6 lg:h-8 lg:w-8 border-b-2 border-blue-500"></div>
                   <span className="ml-2 text-sm lg:text-base text-gray-600">
-                    Loading timeline...
+                    {t("loadingTimeline")}
                   </span>
                 </div>
               )}
@@ -544,7 +545,7 @@ export default function TransferTimeline({
                       className="text-red-500 mr-2 lg:w-5 lg:h-5"
                     />
                     <span className="text-sm lg:text-base text-red-700">
-                      Error loading timeline: {error}
+                      {t("errorLoadingTimeline", { error })}
                     </span>
                   </div>
                 </div>
@@ -561,12 +562,10 @@ export default function TransferTimeline({
                         />
                       </div>
                       <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-2">
-                        No Timeline Events
+                        {t("noTimelineEvents")}
                       </h3>
                       <p className="text-sm lg:text-base text-gray-600 text-center max-w-md px-4">
-                        This transfer doesn't have any timeline events yet.
-                        Timeline events are automatically created when transfers
-                        are created, approved, or updated.
+                        {t("timelineDescription")}
                       </p>
                     </div>
                   ) : (
@@ -576,166 +575,138 @@ export default function TransferTimeline({
 
                       {/* Timeline Events */}
                       <div className="space-y-4 lg:space-y-6">
-                        {displayEvents.length === 0 ? (
-                          <div className="text-center py-8">
-                            <Activity
-                              size={48}
-                              className="mx-auto text-gray-400 mb-4"
-                            />
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">
-                              No Timeline Events
-                            </h3>
-                            <p className="text-gray-500">
-                              {loading
-                                ? "Loading timeline events..."
-                                : error
-                                ? "Failed to load timeline events"
-                                : "No timeline events found for this transfer"}
-                            </p>
-                            {error && (
-                              <button
-                                onClick={fetchTimelineData}
-                                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                              >
-                                Retry
-                              </button>
-                            )}
-                          </div>
-                        ) : (
-                          displayEvents.map((event, index) => (
-                            <motion.div
-                              key={event.id}
-                              initial={{ opacity: 0, x: 20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: index * 0.1 }}
-                              className="relative flex items-start space-x-3 lg:space-x-4"
+                        {displayEvents.map((event, index) => (
+                          <motion.div
+                            key={event.id}
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="relative flex items-start space-x-3 lg:space-x-4"
+                          >
+                            {/* Timeline Dot */}
+                            <div
+                              className={`relative flex-shrink-0 w-10 h-10 lg:w-12 lg:h-12 rounded-2xl ${getEventStatusColor(
+                                event.type,
+                                event.isSystemEvent,
+                                event.badges,
+                              )} flex items-center justify-center shadow-lg`}
                             >
-                              {/* Timeline Dot */}
-                              <div
-                                className={`relative flex-shrink-0 w-10 h-10 lg:w-12 lg:h-12 rounded-2xl ${getEventStatusColor(
-                                  event.type,
-                                  event.isSystemEvent,
-                                  event.badges
-                                )} flex items-center justify-center shadow-lg`}
-                              >
-                                {getEventIcon(event.type)}
-                              </div>
+                              {getEventIcon(event.type)}
+                            </div>
 
-                              {/* Event Content */}
-                              <motion.div
-                                whileHover={{ scale: 1.02 }}
-                                className="flex-1 bg-white/60 backdrop-blur-sm rounded-2xl p-3 lg:p-4 shadow-sm border border-white/20 hover:shadow-md transition-all cursor-pointer"
-                                onClick={() =>
-                                  setExpandedEvent(
-                                    expandedEvent === event.id ? null : event.id
-                                  )
-                                }
-                              >
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center space-x-2 min-w-0 flex-1">
-                                    <h3 className="font-semibold text-gray-900 text-sm lg:text-base truncate">
-                                      {event.title}
-                                    </h3>
-                                    {/* Badges */}
-                                    {event.badges &&
-                                      event.badges.length > 0 && (
-                                        <div className="flex space-x-1">
-                                          {event.badges.map(
-                                            (badge, badgeIndex) => (
-                                              <span
-                                                key={badgeIndex}
-                                                className={`text-xs px-2 py-1 rounded-full ${
-                                                  badge === "high-risk" ||
-                                                  badge === "sensitive"
-                                                    ? "bg-red-100 text-red-700"
-                                                    : badge === "medium-risk"
-                                                    ? "bg-yellow-100 text-yellow-700"
-                                                    : badge === "needs-review"
-                                                    ? "bg-orange-100 text-orange-700"
-                                                    : "bg-blue-100 text-blue-700"
-                                                }`}
-                                              >
-                                                {badge.replace("-", " ")}
-                                              </span>
-                                            )
-                                          )}
-                                        </div>
-                                      )}
-                                    {/* Sensitive content indicator */}
-                                    {event.isSensitive && (
-                                      <Shield
-                                        size={14}
-                                        className="text-red-500"
-                                      />
-                                    )}
-                                    {/* Review required indicator */}
-                                    {event.requiresReview && (
-                                      <AlertTriangle
-                                        size={14}
-                                        className="text-orange-500"
-                                      />
-                                    )}
-                                  </div>
-                                  <span className="text-xs text-gray-500 bg-gray-100/50 px-2 py-1 rounded-lg backdrop-blur-sm flex-shrink-0">
-                                    {formatTimestamp(event.timestamp)}
-                                  </span>
-                                </div>
-
-                                <p className="text-xs lg:text-sm text-gray-600 mb-2 break-words">
-                                  {event.description}
-                                </p>
-
-                                <div className="flex items-center space-x-2 text-xs text-gray-500">
-                                  <User size={10} className="lg:w-3 lg:h-3" />
-                                  <span className="truncate">
-                                    {event.actor.name}
-                                  </span>
-                                  {event.actor.userType && (
-                                    <span className="px-1 py-0.5 bg-gray-100 rounded text-xs flex-shrink-0">
-                                      {event.actor.userType}
-                                    </span>
+                            {/* Event Content */}
+                            <motion.div
+                              whileHover={{ scale: 1.02 }}
+                              className="flex-1 bg-white/60 backdrop-blur-sm rounded-2xl p-3 lg:p-4 shadow-sm border border-white/20 hover:shadow-md transition-all cursor-pointer"
+                              onClick={() =>
+                                setExpandedEvent(
+                                  expandedEvent === event.id ? null : event.id,
+                                )
+                              }
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2 min-w-0 flex-1">
+                                  <h3 className="font-semibold text-gray-900 text-sm lg:text-base truncate">
+                                    {event.title}
+                                  </h3>
+                                  {/* Badges */}
+                                  {event.badges && event.badges.length > 0 && (
+                                    <div className="flex space-x-1">
+                                      {event.badges.map((badge, badgeIndex) => (
+                                        <span
+                                          key={badgeIndex}
+                                          className={`text-xs px-2 py-1 rounded-full ${
+                                            badge === "high-risk" ||
+                                            badge === "sensitive"
+                                              ? "bg-red-100 text-red-700"
+                                              : badge === "medium-risk"
+                                                ? "bg-yellow-100 text-yellow-700"
+                                                : badge === "needs-review"
+                                                  ? "bg-orange-100 text-orange-700"
+                                                  : "bg-blue-100 text-blue-700"
+                                          }`}
+                                        >
+                                          {badge.replace("-", " ")}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {/* Sensitive content indicator */}
+                                  {event.isSensitive && (
+                                    <Shield
+                                      size={14}
+                                      className="text-red-500"
+                                    />
+                                  )}
+                                  {/* Review required indicator */}
+                                  {event.requiresReview && (
+                                    <AlertTriangle
+                                      size={14}
+                                      className="text-orange-500"
+                                    />
                                   )}
                                 </div>
+                                <span className="text-xs text-gray-500 bg-gray-100/50 px-2 py-1 rounded-lg backdrop-blur-sm flex-shrink-0">
+                                  {formatTimestamp(event.timestamp)}
+                                </span>
+                              </div>
 
-                                {/* Expanded Details */}
-                                <AnimatePresence>
-                                  {expandedEvent === event.id &&
-                                    (event.metadata?.details ||
-                                      event.metadata?.reason) && (
-                                      <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: "auto" }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="mt-3 pt-3 border-t border-gray-200/50 overflow-hidden"
-                                      >
-                                        <div className="text-xs text-gray-600 bg-gray-50/50 p-2 rounded-lg backdrop-blur-sm">
-                                          {event.metadata?.details && (
-                                            <p className="mb-1">
-                                              {event.metadata.details}
+                              <p className="text-xs lg:text-sm text-gray-600 mb-2 break-words">
+                                {event.description}
+                              </p>
+
+                              <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                <User size={10} className="lg:w-3 lg:h-3" />
+                                <span className="truncate">
+                                  {event.actor.name}
+                                </span>
+                                {event.actor.userType && (
+                                  <span className="px-1 py-0.5 bg-gray-100 rounded text-xs flex-shrink-0">
+                                    {event.actor.userType}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Expanded Details */}
+                              <AnimatePresence>
+                                {expandedEvent === event.id &&
+                                  (event.metadata?.details ||
+                                    event.metadata?.reason) && (
+                                    <motion.div
+                                      initial={{ opacity: 0, height: 0 }}
+                                      animate={{ opacity: 1, height: "auto" }}
+                                      exit={{ opacity: 0, height: 0 }}
+                                      transition={{ duration: 0.2 }}
+                                      className="mt-3 pt-3 border-t border-gray-200/50 overflow-hidden"
+                                    >
+                                      <div className="text-xs text-gray-600 bg-gray-50/50 p-2 rounded-lg backdrop-blur-sm">
+                                        {event.metadata?.details && (
+                                          <p className="mb-1">
+                                            {event.metadata.details}
+                                          </p>
+                                        )}
+                                        {event.metadata?.reason && (
+                                          <p className="text-gray-500">
+                                            {t("reason")}{" "}
+                                            {event.metadata.reason}
+                                          </p>
+                                        )}
+                                        {event.metadata?.oldValue &&
+                                          event.metadata?.newValue && (
+                                            <p className="text-gray-500 mt-1">
+                                              {t("changedFrom")} "
+                                              {event.metadata.oldValue}"{" "}
+                                              {t("to")} "
+                                              {event.metadata.newValue}"
                                             </p>
                                           )}
-                                          {event.metadata?.reason && (
-                                            <p className="text-gray-500">
-                                              Reason: {event.metadata.reason}
-                                            </p>
-                                          )}
-                                          {event.metadata?.oldValue &&
-                                            event.metadata?.newValue && (
-                                              <p className="text-gray-500 mt-1">
-                                                Changed from "
-                                                {event.metadata.oldValue}" to "
-                                                {event.metadata.newValue}"
-                                              </p>
-                                            )}
-                                        </div>
-                                      </motion.div>
-                                    )}
-                                </AnimatePresence>
-                              </motion.div>
+                                      </div>
+                                    </motion.div>
+                                  )}
+                              </AnimatePresence>
                             </motion.div>
-                          ))
-                        )}
+                          </motion.div>
+                        ))}
                       </div>
 
                       {/* Timeline End */}

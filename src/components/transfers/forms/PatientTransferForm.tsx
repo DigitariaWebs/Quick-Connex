@@ -2,6 +2,7 @@
 
 import { FormInput } from "@/components/shared/forms/FormInput";
 import { User } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface PatientTransferFormProps {
   validationErrors: Record<string, string>;
@@ -10,20 +11,21 @@ interface PatientTransferFormProps {
 export default function PatientTransferForm({
   validationErrors,
 }: PatientTransferFormProps) {
+  const t = useTranslations("transfersPage");
   return (
     <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
       <h3 className="text-md font-semibold text-blue-800 mb-3 flex items-center">
         <User size={18} className="mr-2" />
-        Patient Information
+        {t("patientInformation")}
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
           <FormInput
             id="patientFirstName"
             name="patientFirstName"
-            label="First Name"
+            label={t("firstName")}
             required
-            placeholder="Patient's first name"
+            placeholder={t("patientsFirstName")}
           />
           {validationErrors.patientFirstName && (
             <p className="text-red-600 text-xs mt-1">
@@ -36,9 +38,9 @@ export default function PatientTransferForm({
           <FormInput
             id="patientLastName"
             name="patientLastName"
-            label="Last Name"
+            label={t("lastName")}
             required
-            placeholder="Patient's last name"
+            placeholder={t("patientsLastName")}
           />
           {validationErrors.patientLastName && (
             <p className="text-red-600 text-xs mt-1">
@@ -51,10 +53,10 @@ export default function PatientTransferForm({
           <FormInput
             id="patientAge"
             name="patientAge"
-            label="Age"
+            label={t("age")}
             type="number"
             required
-            placeholder="Patient's age"
+            placeholder={t("patientsAge")}
           />
           {validationErrors.patientAge && (
             <p className="text-red-600 text-xs mt-1">
@@ -67,9 +69,9 @@ export default function PatientTransferForm({
           <FormInput
             id="patientDossierNumber"
             name="patientDossierNumber"
-            label="Dossier Number"
+            label={t("dossierNumber")}
             required
-            placeholder="Patient's dossier number"
+            placeholder={t("patientsDossierNumber")}
           />
           {validationErrors.patientDossierNumber && (
             <p className="text-red-600 text-xs mt-1">

@@ -4,17 +4,13 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard,
-  Activity,
-  Radio,
   Database,
   Zap,
   AlertTriangle,
   ArrowRightLeft,
   Users,
-  FileText,
   Shield,
   LogOut,
-  Menu,
   X,
 } from "lucide-react";
 import Link from "next/link";

@@ -1,14 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/contexts/SessionContext";
 import { useDashboardData } from "@/hooks/dashboard/useDashboardData";
-import { motion } from "framer-motion";
 import Sidebar from "@/components/dashboard/core/Sidebar";
 import DashboardHeader from "@/components/dashboard/core/DashboardHeader";
 import TransferOverview from "@/components/dashboard/widgets/TransferOverview";
-import UrgentAlerts from "@/components/dashboard/widgets/UrgentAlerts";
 import RecentActivity from "@/components/dashboard/widgets/RecentActivity";
 import QuickActions from "@/components/dashboard/actions/QuickActions";
 import TransferFormModal from "@/components/transfers/modals/TransferFormModal";

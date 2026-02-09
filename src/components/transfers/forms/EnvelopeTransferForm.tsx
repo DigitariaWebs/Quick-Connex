@@ -2,6 +2,7 @@
 
 import { FormInput } from "@/components/shared/forms/FormInput";
 import { Package } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface EnvelopeTransferFormProps {
   validationErrors: Record<string, string>;
@@ -10,19 +11,20 @@ interface EnvelopeTransferFormProps {
 export default function EnvelopeTransferForm({
   validationErrors,
 }: EnvelopeTransferFormProps) {
+  const t = useTranslations("transfersPage");
   return (
     <div className="bg-orange-50 p-4 rounded-lg border border-orange-100">
       <h3 className="text-md font-semibold text-orange-800 mb-3 flex items-center">
         <Package size={18} className="mr-2" />
-        Envelope Information
+        {t("envelopeInformation")}
       </h3>
       <div className="space-y-4">
         <div>
           <FormInput
             id="envelopeNumber"
             name="envelopeNumber"
-            label="Envelope/Box Number (Optional)"
-            placeholder="Reference number if available"
+            label={t("envelopeBoxNumberOptional")}
+            placeholder={t("referenceNumberIfAvailable")}
           />
           {validationErrors.envelopeNumber && (
             <p className="text-red-600 text-xs mt-1">
@@ -36,9 +38,9 @@ export default function EnvelopeTransferForm({
             <FormInput
               id="senderName"
               name="senderName"
-              label="Sender Name"
+              label={t("senderName")}
               required
-              placeholder="Name of person sending"
+              placeholder={t("nameOfPersonSending")}
             />
             {validationErrors.senderName && (
               <p className="text-red-600 text-xs mt-1">
@@ -51,9 +53,9 @@ export default function EnvelopeTransferForm({
             <FormInput
               id="recipientName"
               name="recipientName"
-              label="Recipient Name"
+              label={t("recipientName")}
               required
-              placeholder="Name of person receiving"
+              placeholder={t("nameOfPersonReceiving")}
             />
             {validationErrors.recipientName && (
               <p className="text-red-600 text-xs mt-1">
@@ -68,7 +70,7 @@ export default function EnvelopeTransferForm({
             htmlFor="contents"
             className="block text-sm font-semibold text-gray-800 mb-1"
           >
-            Content
+            {t("content")}
           </label>
           <textarea
             id="contents"
@@ -76,7 +78,7 @@ export default function EnvelopeTransferForm({
             rows={3}
             required
             className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-300 bg-white shadow-sm hover:shadow-md placeholder:text-gray-500 text-gray-900"
-            placeholder="Describe the contents of the envelope"
+            placeholder={t("describeContentsOfEnvelope")}
           />
           {validationErrors.contents && (
             <p className="text-red-600 text-xs mt-1">

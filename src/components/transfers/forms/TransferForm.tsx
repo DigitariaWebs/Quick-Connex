@@ -23,6 +23,7 @@ import TransferTypeDropdown from "./TransferTypeDropdown";
 import { TransferCategory } from "@/lib/transfers/constants";
 import FeedbackToast from "@/components/shared/feedback/FeedbackToast";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 
 // Validation helpers
 const validateRequired = (value: FormDataEntryValue | null): boolean => {
@@ -50,6 +51,7 @@ export default function TransferForm({
   onSuccess,
   isModal = false,
 }: TransferFormProps) {
+  const t = useTranslations("transfersPage");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -114,7 +116,7 @@ export default function TransferForm({
                 if (ciusssName) {
                   // Fetch all hospitals
                   const hospitalsResp = await fetch(
-                    `/api/hospitals?limit=1000`
+                    `/api/hospitals?limit=1000`,
                   );
                   const hospitalsData = await hospitalsResp.json();
 
@@ -123,7 +125,7 @@ export default function TransferForm({
                     const ciusssHospitals = hospitalsData.hospitals.filter(
                       (h: any) =>
                         h.organization?.name?.toLowerCase().trim() ===
-                        ciusssName.toLowerCase().trim()
+                        ciusssName.toLowerCase().trim(),
                     );
 
                     if (ciusssHospitals.length > 0) {
@@ -140,7 +142,7 @@ export default function TransferForm({
 
                       // Prefer manager's hospital if it belongs to their CIUSSS
                       let selectedHospital = ciusssHospitals.find(
-                        (h: any) => normalizeId(h._id) === managerHospitalIdStr
+                        (h: any) => normalizeId(h._id) === managerHospitalIdStr,
                       );
 
                       // If manager's hospital not found, use first hospital from CIUSSS
@@ -162,16 +164,14 @@ export default function TransferForm({
           if (
             !["manager", "admin", "super_admin"].includes(data.user.userType)
           ) {
-            setError(
-              "Only managers, admins, and super admins can create transfer requests. Please contact your administrator if you need access."
-            );
+            setError(t("accessRestrictedMessage"));
           }
         } else {
-          setError("Authentication required");
+          setError(t("authenticationRequired"));
         }
       } catch (error) {
         console.error("Auth check failed:", error);
-        setError("Authentication failed");
+        setError(t("authenticationFailed"));
       }
     };
 
@@ -205,9 +205,7 @@ export default function TransferForm({
 
     // Check if user is a manager before proceeding
     if (!user || user.userType !== "manager") {
-      setError(
-        "Only managers, admins, and super admins can create transfer requests. Please contact your administrator if you need access."
-      );
+      setError(t("accessRestrictedMessage"));
       setIsSubmitting(false);
       return;
     }
@@ -240,59 +238,59 @@ export default function TransferForm({
 
     // Validate transfer category
     if (!transferCategory) {
-      errors.transferCategory = "Please select a transfer type";
+      errors.transferCategory = t("selectTransferType");
     }
 
     // Category-specific validation
     if (transferCategory === TransferCategory.PATIENT) {
       if (!validateRequired(patientFirstName)) {
-        errors.patientFirstName = "Patient first name is required";
+        errors.patientFirstName = t("patientFirstNameRequired");
       }
 
       if (!validateRequired(patientLastName)) {
-        errors.patientLastName = "Patient last name is required";
+        errors.patientLastName = t("patientLastNameRequired");
       }
 
       if (!validateAge(patientAge)) {
-        errors.patientAge = "Valid age is required (1-120)";
+        errors.patientAge = t("validAgeRequired");
       }
 
       if (!validateRequired(patientDossierNumber)) {
-        errors.patientDossierNumber = "Dossier number is required";
+        errors.patientDossierNumber = t("dossierNumberRequired");
       }
     } else if (transferCategory === TransferCategory.ENVELOPE) {
       if (!validateRequired(senderName)) {
-        errors.senderName = "Sender name is required";
+        errors.senderName = t("senderNameRequired");
       }
 
       if (!validateRequired(recipientName)) {
-        errors.recipientName = "Recipient name is required";
+        errors.recipientName = t("recipientNameRequired");
       }
 
       if (!validateRequired(contents)) {
-        errors.contents = "Content is required";
+        errors.contents = t("contentRequired");
       }
     } else if (transferCategory === TransferCategory.MEDICAL_INSTRUMENTS) {
       if (!validateRequired(equipmentName)) {
-        errors.equipmentName = "Equipment name is required";
+        errors.equipmentName = t("equipmentNameRequired");
       }
 
       if (!validateRequired(serialNumber)) {
-        errors.serialNumber = "Serial number is required";
+        errors.serialNumber = t("serialNumberRequired");
       }
 
       if (!validateRequired(condition)) {
-        errors.condition = "Equipment condition is required";
+        errors.condition = t("equipmentConditionRequired");
       }
     }
 
     // Validate hospital selection
     if (!selectedFromHospital) {
-      errors.fromHospital = "Please select a source hospital from the list";
+      errors.fromHospital = t("selectSourceHospital");
     }
 
     if (!selectedToHospital) {
-      errors.toHospital = "Please select a destination hospital from the list";
+      errors.toHospital = t("selectDestinationHospital");
     }
 
     // Validate that from and to hospitals are different
@@ -301,26 +299,25 @@ export default function TransferForm({
       selectedToHospital &&
       selectedFromHospital._id === selectedToHospital._id
     ) {
-      errors.toHospital =
-        "Destination hospital must be different from source hospital";
+      errors.toHospital = t("destinationDifferentFromSource");
     }
 
     if (!selectedDate) {
-      errors.transferDate = "Valid future date is required";
+      errors.transferDate = t("validFutureDateRequired");
     }
 
     if (!selectedTime) {
-      errors.transferTime = "Transfer time is required";
+      errors.transferTime = t("transferTimeRequired");
     }
 
     if (!validateRequired(transferType)) {
-      errors.transferType = "Transfer type is required";
+      errors.transferType = t("transferTypeRequired");
     }
 
     // Priority is automatically determined based on transfer type
 
     if (!validateRequired(reason)) {
-      errors.reason = "Reason for transfer is required";
+      errors.reason = t("reasonRequired");
     }
 
     // Validate dossier number if provided
@@ -329,19 +326,16 @@ export default function TransferForm({
 
       // Check if dossier number contains only alphanumeric characters and common separators
       if (!/^[A-Za-z0-9\-_\/]+$/.test(dossierNumber)) {
-        errors.patientDossierNumber =
-          "Dossier number can only contain letters, numbers, hyphens, underscores, and forward slashes";
+        errors.patientDossierNumber = t("dossierNumberInvalid");
       }
 
       // Check length (reasonable limits)
       if (dossierNumber.length < 3) {
-        errors.patientDossierNumber =
-          "Dossier number seems quite short. Please verify it is correct.";
+        errors.patientDossierNumber = t("dossierNumberTooShort");
       }
 
       if (dossierNumber.length > 50) {
-        errors.patientDossierNumber =
-          "Dossier number seems quite long. Please verify it is correct.";
+        errors.patientDossierNumber = t("dossierNumberTooLong");
       }
     }
 
@@ -349,7 +343,7 @@ export default function TransferForm({
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       setIsSubmitting(false);
-      setError("Please correct the errors in the form");
+      setError(t("correctFormErrors"));
       setFeedbackStatus("error");
       return;
     }
@@ -421,7 +415,7 @@ export default function TransferForm({
         // Clear any existing errors first
         setError(null);
         setValidationErrors({});
-        setSuccess("Transfer request created successfully");
+        setSuccess(t("transferRequestCreatedSuccessfully"));
         setFeedbackStatus("success");
 
         // Store form reference before async operations
@@ -443,44 +437,41 @@ export default function TransferForm({
           // Map backend validation errors to form fields
           data.errors.forEach((error: string) => {
             if (error.includes("patientFirstName")) {
-              backendErrors.patientFirstName = "Patient first name is required";
+              backendErrors.patientFirstName = t("patientFirstNameRequired");
             } else if (error.includes("patientLastName")) {
-              backendErrors.patientLastName = "Patient last name is required";
+              backendErrors.patientLastName = t("patientLastNameRequired");
             } else if (error.includes("fromHospital")) {
-              backendErrors.fromHospital = "Source hospital is required";
+              backendErrors.fromHospital = t("selectSourceHospital");
             } else if (error.includes("toHospital")) {
-              backendErrors.toHospital = "Destination hospital is required";
+              backendErrors.toHospital = t("selectDestinationHospital");
             } else if (error.includes("transferDate")) {
-              backendErrors.transferDate = "Valid transfer date is required";
+              backendErrors.transferDate = t("validTransferDateRequired");
             } else if (error.includes("reason")) {
-              backendErrors.reason = "Reason for transfer is required";
+              backendErrors.reason = t("reasonRequired");
             } else if (error.includes("dossier number")) {
               backendErrors.patientDossierNumber = error;
             } else if (error.includes("same hospitals")) {
-              backendErrors.fromHospital =
-                "Source and destination hospitals cannot be the same";
-              backendErrors.toHospital =
-                "Source and destination hospitals cannot be the same";
+              backendErrors.fromHospital = t("sourceDestinationSame");
+              backendErrors.toHospital = t("sourceDestinationSame");
             } else if (error.includes("past")) {
-              backendErrors.transferDate =
-                "Transfer date cannot be in the past";
+              backendErrors.transferDate = t("transferDateCannotBePast");
             }
           });
 
           setValidationErrors(backendErrors);
-          setError("Please correct the validation errors below");
+          setError(t("correctValidationErrors"));
           setFeedbackStatus("error");
         } else {
-          setError(data.error || "Failed to create transfer request");
+          setError(data.error || t("failedToCreateTransferRequest"));
           setFeedbackStatus("error");
         }
       }
     } catch (err) {
       console.error("Error creating transfer:", err);
       setError(
-        `Network error occurred: ${
-          err instanceof Error ? err.message : "Unknown error"
-        }`
+        t("networkError", {
+          error: err instanceof Error ? err.message : "Unknown error",
+        }),
       );
       setFeedbackStatus("error");
     } finally {
@@ -498,12 +489,9 @@ export default function TransferForm({
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
           <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-3" />
           <h3 className="text-lg font-semibold text-red-800 mb-2">
-            Access Restricted
+            {t("accessRestricted")}
           </h3>
-          <p className="text-red-600">
-            Only managers, admins, and super admins can create transfer
-            requests. Please contact your administrator if you need access.
-          </p>
+          <p className="text-red-600">{t("accessRestrictedMessage")}</p>
         </div>
       </div>
     );
@@ -517,7 +505,7 @@ export default function TransferForm({
           onClick={() => setShowForm(!showForm)}
           className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-md flex items-center justify-center"
         >
-          {showForm ? "Cancel" : "+ Create New Transfer Request"}
+          {showForm ? t("cancel") : t("createNewTransferRequest")}
         </motion.button>
       )}
 
@@ -539,7 +527,7 @@ export default function TransferForm({
             >
               {!isModal && (
                 <h2 className="text-xl font-bold text-gray-800 mb-4">
-                  Create Transfer Request
+                  {t("createTransferRequest")}
                 </h2>
               )}
 
@@ -552,8 +540,8 @@ export default function TransferForm({
                       status={feedbackStatus}
                       message={
                         feedbackStatus === "success"
-                          ? "Transfer created successfully"
-                          : error || "Failed to create transfer"
+                          ? t("transferCreatedSuccessfully")
+                          : error || t("failedToCreateTransfer")
                       }
                       durationMs={1700}
                       onHide={() => {
@@ -570,7 +558,7 @@ export default function TransferForm({
                             } catch (refreshError) {
                               console.error(
                                 "Error in onSuccess callback:",
-                                refreshError
+                                refreshError,
                               );
                             }
                             if (!isModal) {
@@ -585,7 +573,7 @@ export default function TransferForm({
                       showProgress
                     />
                   </div>,
-                  document.body
+                  document.body,
                 )}
 
               <form onSubmit={handleSubmit}>
@@ -617,14 +605,14 @@ export default function TransferForm({
                     <div>
                       <h3 className="text-base font-medium text-gray-700 mb-3 flex items-center">
                         <Building2 size={18} className="mr-2" />
-                        From
+                        {t("from")}
                       </h3>
                       <HospitalAutocomplete
                         id="fromHospital"
                         name="fromHospital"
-                        label="Source Hospital"
+                        label={t("sourceHospital")}
                         required
-                        placeholder="Search source hospital..."
+                        placeholder={t("searchSourceHospital")}
                         value={selectedFromHospital?.name || ""}
                         onChange={(value, hospital) => {
                           setSelectedFromHospital(hospital);
@@ -642,14 +630,14 @@ export default function TransferForm({
                     <div>
                       <h3 className="text-base font-medium text-gray-700 mb-3 flex items-center">
                         <ArrowRight size={18} className="mr-2" />
-                        To
+                        {t("to")}
                       </h3>
                       <HospitalAutocomplete
                         id="toHospital"
                         name="toHospital"
-                        label="Destination Hospital"
+                        label={t("destinationHospital")}
                         required
-                        placeholder="Search destination hospital..."
+                        placeholder={t("searchDestinationHospital")}
                         onChange={(value, hospital) => {
                           setSelectedToHospital(hospital);
                           // Clear validation error when user selects a hospital
@@ -669,12 +657,12 @@ export default function TransferForm({
                     <div>
                       <h3 className="text-base font-medium text-gray-700 mb-3 flex items-center">
                         <Calendar size={18} className="mr-2" />
-                        Date
+                        {t("date")}
                       </h3>
                       <DatePickerInput
                         id="transferDate"
                         name="transferDate"
-                        label="Transfer Date"
+                        label={t("transferDate")}
                         required
                         selectedDate={selectedDate}
                         onChange={(date) => setSelectedDate(date)}
@@ -684,12 +672,12 @@ export default function TransferForm({
                     <div>
                       <h3 className="text-base font-medium text-gray-700 mb-3 flex items-center">
                         <Clock size={18} className="mr-2" />
-                        Time
+                        {t("time")}
                       </h3>
                       <TimePickerInput
                         id="transferTime"
                         name="transferTime"
-                        label="Transfer Time"
+                        label={t("transferTime")}
                         required
                         selectedTime={selectedTime}
                         onChange={(time) => setSelectedTime(time)}
@@ -705,7 +693,7 @@ export default function TransferForm({
                         <TransferTypeDropdown
                           id="transferType"
                           name="transferType"
-                          label="Transfer Type"
+                          label={t("transferType")}
                           required
                           value={selectedTransferType}
                           onChange={(value) => setSelectedTransferType(value)}
@@ -727,7 +715,7 @@ export default function TransferForm({
                       htmlFor="reason"
                       className="block text-base font-medium text-gray-700 mb-3"
                     >
-                      Reason for Transfer
+                      {t("reasonForTransfer")}
                     </label>
                     <textarea
                       id="reason"
@@ -735,7 +723,7 @@ export default function TransferForm({
                       rows={3}
                       required
                       className="w-full px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black border-gray-200"
-                      placeholder="Provide details about the reason for the transfer"
+                      placeholder={t("provideReasonDetails")}
                     ></textarea>
                     {validationErrors.reason && (
                       <p className="text-sm text-red-600 mt-2">
@@ -750,7 +738,7 @@ export default function TransferForm({
                       disabled={isSubmitting}
                       className="px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-medium hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                     >
-                      {isSubmitting ? "Creating..." : "Create Transfer"}
+                      {isSubmitting ? t("creating") : t("createTransfer")}
                     </button>
                   </div>
                 </div>

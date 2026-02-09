@@ -3,25 +3,18 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/contexts/SessionContext";
+import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search,
   Filter,
-  RefreshCw,
   ChevronDown,
-  ChevronUp,
   Clock,
   CheckCircle2,
   AlertTriangle,
   Users,
-  MapPin,
   X,
-  ArrowRight,
-  User,
-  Calendar,
   FileText,
   Plus,
-  Eye,
 } from "lucide-react";
 import TransferRequestCard from "@/components/dashboard/actions/TransferRequestCard";
 import Sidebar from "@/components/dashboard/core/Sidebar";
@@ -90,6 +83,7 @@ interface TransferRequest {
 export default function TransfersPage() {
   const router = useRouter();
   const { user, isLoading: authLoading, logout } = useSession();
+  const t = useTranslations("transfersPage");
   const [transfers, setTransfers] = useState<TransferRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -127,7 +121,7 @@ export default function TransfersPage() {
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
-          errorData.error || `HTTP error! status: ${response.status}`
+          errorData.error || `HTTP error! status: ${response.status}`,
         );
       }
 
@@ -141,7 +135,7 @@ export default function TransfersPage() {
     } catch (error) {
       console.error("Error fetching transfers:", error);
       setError(
-        error instanceof Error ? error.message : "Failed to fetch transfers"
+        error instanceof Error ? error.message : "Failed to fetch transfers",
       );
     } finally {
       setLoading(false);
@@ -165,7 +159,7 @@ export default function TransfersPage() {
 
     // Helper function to get hospital name from either string or object
     const getHospitalName = (
-      hospital: string | { name: string; [key: string]: any }
+      hospital: string | { name: string; [key: string]: any },
     ) => {
       return typeof hospital === "string" ? hospital : hospital?.name || "";
     };
@@ -199,13 +193,13 @@ export default function TransfersPage() {
     filteredTransfers = [...filteredTransfers].sort(
       (a, b) =>
         //@ts-ignore
-        priorityOrder[b.priority] - priorityOrder[a.priority]
+        priorityOrder[b.priority] - priorityOrder[a.priority],
     );
   } else {
     filteredTransfers = [...filteredTransfers].sort(
       (a, b) =>
         new Date(b.requestedDate).getTime() -
-        new Date(a.requestedDate).getTime()
+        new Date(a.requestedDate).getTime(),
     );
   }
 
@@ -215,7 +209,7 @@ export default function TransfersPage() {
     const pending = transfers.filter((t) => t.status === "pending").length;
     const accepted = transfers.filter((t) => t.status === "accepted").length;
     const inProgress = transfers.filter(
-      (t) => t.status === "in_progress"
+      (t) => t.status === "in_progress",
     ).length;
     const completed = transfers.filter((t) => t.status === "completed").length;
     const urgent = transfers.filter((t) => t.priority === "urgent").length;
@@ -307,7 +301,7 @@ export default function TransfersPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">{t("loadingTransfers")}</p>
         </div>
       </div>
     );
@@ -357,7 +351,7 @@ export default function TransfersPage() {
               updatedAt: user.updatedAt || new Date(),
             }}
             onLogout={logout}
-            pageTitle="Transfer Requests"
+            pageTitle={t("title")}
             showSearchButton={true}
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
@@ -379,7 +373,7 @@ export default function TransfersPage() {
                 </div>
                 <div className="ml-3 lg:ml-4">
                   <p className="text-xs lg:text-sm font-medium text-gray-600">
-                    Total
+                    {t("total")}
                   </p>
                   <p className="text-xl lg:text-2xl font-bold text-gray-900">
                     {stats.total}
@@ -402,7 +396,7 @@ export default function TransfersPage() {
                 </div>
                 <div className="ml-3 lg:ml-4">
                   <p className="text-xs lg:text-sm font-medium text-gray-600">
-                    Pending
+                    {t("pending")}
                   </p>
                   <p className="text-xl lg:text-2xl font-bold text-gray-900">
                     {stats.pending}
@@ -425,7 +419,7 @@ export default function TransfersPage() {
                 </div>
                 <div className="ml-3 lg:ml-4">
                   <p className="text-xs lg:text-sm font-medium text-gray-600">
-                    Accepted
+                    {t("accepted")}
                   </p>
                   <p className="text-xl lg:text-2xl font-bold text-gray-900">
                     {stats.accepted}
@@ -448,7 +442,7 @@ export default function TransfersPage() {
                 </div>
                 <div className="ml-3 lg:ml-4">
                   <p className="text-xs lg:text-sm font-medium text-gray-600">
-                    In Progress
+                    {t("inProgress")}
                   </p>
                   <p className="text-xl lg:text-2xl font-bold text-gray-900">
                     {stats.inProgress}
@@ -467,7 +461,7 @@ export default function TransfersPage() {
                 </div>
                 <div className="ml-3 lg:ml-4">
                   <p className="text-xs lg:text-sm font-medium text-gray-600">
-                    Urgent
+                    {t("urgent")}
                   </p>
                   <p className="text-xl lg:text-2xl font-bold text-gray-900">
                     {stats.urgent}
@@ -490,7 +484,7 @@ export default function TransfersPage() {
                 </div>
                 <div className="ml-3 lg:ml-4">
                   <p className="text-xs lg:text-sm font-medium text-gray-600">
-                    Completed
+                    {t("completed")}
                   </p>
                   <p className="text-xl lg:text-2xl font-bold text-gray-900">
                     {stats.completed}
@@ -506,7 +500,7 @@ export default function TransfersPage() {
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base lg:text-lg font-semibold text-gray-800">
-                Filter & Sort
+                {t("filterAndSort")}
               </h3>
               <button
                 onClick={() => setShowFilters(!showFilters)}
@@ -514,7 +508,7 @@ export default function TransfersPage() {
               >
                 <Filter size={16} />
                 <span className="text-sm font-medium">
-                  {showFilters ? "Hide" : "Show"} Filters
+                  {showFilters ? t("hideFilters") : t("showFilters")}
                 </span>
                 <ChevronDown
                   size={16}
@@ -538,7 +532,7 @@ export default function TransfersPage() {
                     {/* Status Filter */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Status
+                        {t("status")}
                       </label>
                       <div className="relative">
                         <select
@@ -551,17 +545,17 @@ export default function TransfersPage() {
                                 | "accepted"
                                 | "in_progress"
                                 | "completed"
-                                | "cancelled"
+                                | "cancelled",
                             )
                           }
                           className={`w-full appearance-none bg-white border border-gray-200 ${BORDER_RADIUS["2xl"]} px-4 py-3 lg:py-3 text-sm text-gray-700 font-medium shadow-sm hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:shadow-lg transition-all duration-200 cursor-pointer min-h-[44px]`}
                         >
-                          <option value="all">All Statuses</option>
-                          <option value="pending">Pending</option>
-                          <option value="accepted">Accepted</option>
-                          <option value="in_progress">In Progress</option>
-                          <option value="completed">Completed</option>
-                          <option value="cancelled">Cancelled</option>
+                          <option value="all">{t("allStatuses")}</option>
+                          <option value="pending">{t("pending")}</option>
+                          <option value="accepted">{t("accepted")}</option>
+                          <option value="in_progress">{t("inProgress")}</option>
+                          <option value="completed">{t("completed")}</option>
+                          <option value="cancelled">{t("cancelled")}</option>
                         </select>
                         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                           <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -572,7 +566,7 @@ export default function TransfersPage() {
                     {/* Priority Filter */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Priority
+                        {t("priority")}
                       </label>
                       <div className="relative">
                         <select
@@ -582,11 +576,11 @@ export default function TransfersPage() {
                           }
                           className={`w-full appearance-none bg-white border border-gray-200 ${BORDER_RADIUS["2xl"]} px-4 py-3 lg:py-3 text-sm text-gray-700 font-medium shadow-sm hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:shadow-lg transition-all duration-200 cursor-pointer min-h-[44px]`}
                         >
-                          <option value="">All Priorities</option>
-                          <option value="urgent">🔴 Urgent</option>
-                          <option value="high">🟠 High</option>
-                          <option value="medium">🟡 Medium</option>
-                          <option value="low">🟢 Low</option>
+                          <option value="">{t("allPriorities")}</option>
+                          <option value="urgent">🔴 {t("urgent")}</option>
+                          <option value="high">🟠 {t("high")}</option>
+                          <option value="medium">🟡 {t("medium")}</option>
+                          <option value="low">🟢 {t("low")}</option>
                         </select>
                         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                           <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -597,7 +591,7 @@ export default function TransfersPage() {
                     {/* Sort By */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Sort By
+                        {t("sortBy")}
                       </label>
                       <div className="flex space-x-2">
                         <button
@@ -610,7 +604,7 @@ export default function TransfersPage() {
                               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                           }`}
                         >
-                          Date
+                          {t("date")}
                         </button>
                         <button
                           onClick={() => setSortBy("priority")}
@@ -622,7 +616,7 @@ export default function TransfersPage() {
                               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                           }`}
                         >
-                          Priority
+                          {t("priority")}
                         </button>
                       </div>
                     </div>
@@ -642,7 +636,7 @@ export default function TransfersPage() {
                       >
                         <span className="flex items-center justify-center">
                           <X className="w-4 h-4 mr-1" />
-                          Clear All
+                          {t("clearAll")}
                         </span>
                       </motion.button>
                     </div>
@@ -686,21 +680,21 @@ export default function TransfersPage() {
                       <FileText size={24} className="text-blue-400" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                      No transfers found
+                      {t("noTransfers")}
                     </h3>
                     <p className="text-gray-500 max-w-sm text-sm">
                       {searchTerm
-                        ? `No results for "${searchTerm}". Try a different search term.`
+                        ? t("noResultsForSearch", { search: searchTerm })
                         : filter === "all"
-                        ? "There are no transfer requests available at the moment."
-                        : `There are no ${filter.replace("_", " ")} transfers.`}
+                          ? t("noTransfersMessage")
+                          : `There are no ${filter.replace("_", " ")} transfers.`}
                     </p>
                     {searchTerm && (
                       <button
                         onClick={() => setSearchTerm("")}
                         className={`mt-4 px-4 py-2 bg-blue-100 text-blue-700 ${BORDER_RADIUS["2xl"]} text-sm font-medium hover:bg-blue-200 transition-colors`}
                       >
-                        Clear Search
+                        {t("clearSearch")}
                       </button>
                     )}
                   </div>
@@ -753,8 +747,11 @@ export default function TransfersPage() {
           {!loading && !error && filteredTransfers.length > 0 && (
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-500">
-                Showing {filteredTransfers.length} of {transfers.length}{" "}
-                transfers
+                {t("showingResults", {
+                  start: 1,
+                  end: filteredTransfers.length,
+                  total: transfers.length,
+                })}
               </p>
             </div>
           )}

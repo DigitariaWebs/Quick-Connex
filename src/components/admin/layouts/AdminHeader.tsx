@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import type { User } from "@/types/auth/user.types";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { useTranslations } from "next-intl";

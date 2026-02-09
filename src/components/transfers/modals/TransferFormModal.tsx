@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import TransferForm from "@/components/transfers/forms/TransferForm";
 
 interface TransferFormModalProps {
@@ -15,6 +16,8 @@ export default function TransferFormModal({
   onClose,
   onSuccess,
 }: TransferFormModalProps) {
+  const t = useTranslations("transfersPage");
+
   const handleSuccess = () => {
     if (onSuccess) {
       onSuccess();
@@ -47,7 +50,7 @@ export default function TransferFormModal({
               <div className="relative px-6 py-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-gray-800">
-                    Create New Transfer Request
+                    {t("createNewTransfer")}
                   </h2>
                   <button
                     onClick={onClose}

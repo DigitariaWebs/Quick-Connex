@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface TransferTypeOption {
   value: string;
@@ -27,6 +28,7 @@ export default function TransferTypeDropdown({
   onChange,
   error,
 }: TransferTypeDropdownProps) {
+  const t = useTranslations("transfersPage");
   const [isOpen, setIsOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState(value);
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,8 +37,8 @@ export default function TransferTypeDropdown({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const options: TransferTypeOption[] = [
-    { value: "stat", label: "STAT (Immediate)" },
-    { value: "planifier", label: "Planifier (Scheduled)" },
+    { value: "stat", label: t("statImmediate") },
+    { value: "planifier", label: t("planifierScheduled") },
   ];
 
   const [filteredOptions, setFilteredOptions] = useState(options);
@@ -75,7 +77,7 @@ export default function TransferTypeDropdown({
 
     // Filter options based on search term
     const filtered = options.filter((opt) =>
-      opt.label.toLowerCase().includes(term.toLowerCase())
+      opt.label.toLowerCase().includes(term.toLowerCase()),
     );
     setFilteredOptions(filtered);
     setIsOpen(true);
@@ -114,7 +116,7 @@ export default function TransferTypeDropdown({
           value={searchTerm}
           onChange={handleInputChange}
           onFocus={handleInputFocus}
-          placeholder="Select transfer type"
+          placeholder={t("selectTransferTypePlaceholder")}
           className={`w-full px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
             error ? "border-red-300 bg-red-50" : "border-gray-200"
           }`}
@@ -144,7 +146,7 @@ export default function TransferTypeDropdown({
         >
           {filteredOptions.length === 0 ? (
             <div className="p-3 text-center text-gray-500">
-              No transfer type found
+              {t("noTransferTypeFound")}
             </div>
           ) : (
             <div className="py-1">

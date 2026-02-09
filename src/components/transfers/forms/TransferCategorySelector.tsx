@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { User, Package, Stethoscope, CheckCircle } from "lucide-react";
 import { TransferCategory } from "@/lib/transfers/constants";
+import { useTranslations } from "next-intl";
 
 interface TransferCategorySelectorProps {
   selectedCategory: TransferCategory | null;
@@ -11,49 +12,51 @@ interface TransferCategorySelectorProps {
   error?: string;
 }
 
-const categoryOptions = [
-  {
-    value: TransferCategory.PATIENT,
-    label: "Patient Transfer",
-    icon: User,
-    color: "blue",
-    bgColor: "bg-blue-50",
-    borderColor: "border-blue-200",
-    textColor: "text-blue-800",
-    iconColor: "text-blue-600",
-  },
-  {
-    value: TransferCategory.ENVELOPE,
-    label: "Envelope Transfer",
-    icon: Package,
-    color: "orange",
-    bgColor: "bg-orange-50",
-    borderColor: "border-orange-200",
-    textColor: "text-orange-800",
-    iconColor: "text-orange-600",
-  },
-  {
-    value: TransferCategory.MEDICAL_INSTRUMENTS,
-    label: "Medical Instruments Transfer",
-    icon: Stethoscope,
-    color: "purple",
-    bgColor: "bg-purple-50",
-    borderColor: "border-purple-200",
-    textColor: "text-purple-800",
-    iconColor: "text-purple-600",
-  },
-];
-
 export default function TransferCategorySelector({
   selectedCategory,
   onCategoryChange,
   error,
 }: TransferCategorySelectorProps) {
+  const t = useTranslations("transfersPage");
+
+  const categoryOptions = [
+    {
+      value: TransferCategory.PATIENT,
+      label: t("patientTransfer"),
+      icon: User,
+      color: "blue",
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-200",
+      textColor: "text-blue-800",
+      iconColor: "text-blue-600",
+    },
+    {
+      value: TransferCategory.ENVELOPE,
+      label: t("envelopeTransfer"),
+      icon: Package,
+      color: "orange",
+      bgColor: "bg-orange-50",
+      borderColor: "border-orange-200",
+      textColor: "text-orange-800",
+      iconColor: "text-orange-600",
+    },
+    {
+      value: TransferCategory.MEDICAL_INSTRUMENTS,
+      label: t("medicalInstrumentsTransfer"),
+      icon: Stethoscope,
+      color: "purple",
+      bgColor: "bg-purple-50",
+      borderColor: "border-purple-200",
+      textColor: "text-purple-800",
+      iconColor: "text-purple-600",
+    },
+  ];
+
   return (
     <div className="space-y-4">
       <div>
         <label className="block text-sm font-semibold text-gray-800 mb-3">
-          Select Transfer Type
+          {t("selectTransferTypeLabel")}
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {categoryOptions.map((option) => {

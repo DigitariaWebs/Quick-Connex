@@ -6,22 +6,14 @@ import { useSession } from "@/contexts/SessionContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import {
-  Search,
   Filter,
-  RefreshCw,
   ChevronDown,
-  ChevronUp,
-  Menu,
   Clock,
   CheckCircle2,
   AlertTriangle,
   Users,
-  MapPin,
   X,
-  ArrowRight,
   User,
-  Calendar,
-  FileText,
 } from "lucide-react";
 import TransferRequestCard from "@/components/dashboard/actions/TransferRequestCard";
 import Sidebar from "@/components/dashboard/core/Sidebar";

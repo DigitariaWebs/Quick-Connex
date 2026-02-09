@@ -3,6 +3,7 @@
 import { FormInput } from "@/components/shared/forms/FormInput";
 import { Stethoscope, ChevronDown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 
 interface MedicalInstrumentsTransferFormProps {
   validationErrors: Record<string, string>;
@@ -11,6 +12,7 @@ interface MedicalInstrumentsTransferFormProps {
 export default function MedicalInstrumentsTransferForm({
   validationErrors,
 }: MedicalInstrumentsTransferFormProps) {
+  const t = useTranslations("transfersPage");
   const [isConditionOpen, setIsConditionOpen] = useState(false);
   const [selectedCondition, setSelectedCondition] = useState("");
   const [conditionSearchTerm, setConditionSearchTerm] = useState("");
@@ -19,10 +21,10 @@ export default function MedicalInstrumentsTransferForm({
   const conditionDropdownRef = useRef<HTMLDivElement>(null);
 
   const conditionOptions = [
-    { value: "excellent", label: "Excellent" },
-    { value: "good", label: "Good" },
-    { value: "fair", label: "Fair" },
-    { value: "poor", label: "Poor" },
+    { value: "excellent", label: t("excellent") },
+    { value: "good", label: t("good") },
+    { value: "fair", label: t("fair") },
+    { value: "poor", label: t("poor") },
   ];
 
   const [filteredConditionOptions, setFilteredConditionOptions] =
@@ -48,14 +50,14 @@ export default function MedicalInstrumentsTransferForm({
   }, []);
 
   const handleConditionInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const term = e.target.value;
     setConditionSearchTerm(term);
 
     // Filter options based on search term
     const filtered = conditionOptions.filter((opt) =>
-      opt.label.toLowerCase().includes(term.toLowerCase())
+      opt.label.toLowerCase().includes(term.toLowerCase()),
     );
     setFilteredConditionOptions(filtered);
     setIsConditionOpen(true);
@@ -75,16 +77,16 @@ export default function MedicalInstrumentsTransferForm({
     <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
       <h3 className="text-md font-semibold text-purple-800 mb-3 flex items-center">
         <Stethoscope size={18} className="mr-2" />
-        Medical Instruments Information
+        {t("medicalInstrumentsInformation")}
       </h3>
       <div className="space-y-4">
         <div>
           <FormInput
             id="equipmentName"
             name="equipmentName"
-            label="Equipment Name"
+            label={t("nameOfMedicalEquipment")}
             required
-            placeholder="Name of the medical equipment"
+            placeholder={t("nameOfMedicalEquipment")}
           />
           {validationErrors.equipmentName && (
             <p className="text-red-600 text-xs mt-1">
@@ -97,9 +99,9 @@ export default function MedicalInstrumentsTransferForm({
           <FormInput
             id="serialNumber"
             name="serialNumber"
-            label="Serial Number"
+            label={t("equipmentSerialNumber")}
             required
-            placeholder="Equipment serial number"
+            placeholder={t("equipmentSerialNumber")}
           />
           {validationErrors.serialNumber && (
             <p className="text-red-600 text-xs mt-1">
@@ -113,7 +115,7 @@ export default function MedicalInstrumentsTransferForm({
             htmlFor="condition"
             className="block text-base font-medium text-gray-700 mb-3"
           >
-            Condition
+            {t("condition")}
             <span className="text-red-500 ml-1">*</span>
           </label>
 
@@ -125,7 +127,7 @@ export default function MedicalInstrumentsTransferForm({
               value={conditionSearchTerm}
               onChange={handleConditionInputChange}
               onFocus={handleConditionInputFocus}
-              placeholder="Select condition"
+              placeholder={t("selectCondition")}
               className={`w-full px-5 py-4 text-lg border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 placeholder:text-gray-500 text-black ${
                 validationErrors.condition
                   ? "border-red-300 bg-red-50"
@@ -161,7 +163,7 @@ export default function MedicalInstrumentsTransferForm({
             >
               {filteredConditionOptions.length === 0 ? (
                 <div className="p-3 text-center text-gray-500">
-                  No condition found
+                  {t("noConditionFound")}
                 </div>
               ) : (
                 <div className="py-1">
@@ -192,14 +194,14 @@ export default function MedicalInstrumentsTransferForm({
             htmlFor="specialInstructions"
             className="block text-sm font-semibold text-gray-800 mb-1"
           >
-            Special Instructions
+            {t("specialInstructions")}
           </label>
           <textarea
             id="specialInstructions"
             name="specialInstructions"
             rows={3}
             className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 bg-white shadow-sm hover:shadow-md placeholder:text-gray-500 text-gray-900"
-            placeholder="Any special handling instructions or notes"
+            placeholder={t("specialHandlingInstructions")}
           />
           {validationErrors.specialInstructions && (
             <p className="text-red-600 text-xs mt-1">

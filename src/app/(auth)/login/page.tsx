@@ -6,9 +6,6 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { useLoginForm } from "@/hooks/auth/useLoginForm";
-import { FormInput } from "@/components/shared/forms/FormInput";
-import { SubmitButton } from "@/components/shared/forms/SubmitButton";
-import { Icon } from "@/components/shared/ui/icons/Icon";
 import { LOGO_PATH, ASSETS } from "@/constants";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 

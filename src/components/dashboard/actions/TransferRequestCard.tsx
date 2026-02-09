@@ -6,7 +6,6 @@ import {
   ArrowRight,
   Calendar,
   Clock,
-  MapPin,
   Phone,
   User,
   FileText,
@@ -14,13 +13,8 @@ import {
   CheckCircle2,
   Package,
   Stethoscope,
-  X,
 } from "lucide-react";
 import { TransferCategory } from "@/lib/transfers/constants";
-import {
-  canCancelTransfer,
-  getRemainingCancellationTimeString,
-} from "@/lib/transfers";
 import FeedbackToast from "@/components/shared/feedback/FeedbackToast";
 import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
@@ -194,6 +188,7 @@ export default function TransferRequestCard({
 }: TransferRequestCardProps) {
   const t = useTranslations("transfers");
   const tCommon = useTranslations("common");
+  const tPage = useTranslations("transfersPage");
 
   const [isAccepting, setIsAccepting] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -219,7 +214,7 @@ export default function TransferRequestCard({
 
   // Calculate remaining time using current time state
   const getRemainingTimeString = () => {
-    if (!transfer.acceptedAt) return "No time limit";
+    if (!transfer.acceptedAt) return tPage("noTimeLimit");
 
     const acceptedTime = new Date(transfer.acceptedAt);
     const now = currentTime;
@@ -231,11 +226,11 @@ export default function TransferRequestCard({
     );
 
     if (hoursLeft === 0 && minutesLeft === 0) {
-      return "Time expired";
+      return tPage("timeExpired");
     } else if (hoursLeft === 0) {
-      return `${minutesLeft}m left`;
+      return tPage("minutesLeft", { minutes: minutesLeft });
     } else {
-      return `${hoursLeft}h ${minutesLeft}m left`;
+      return tPage("hoursLeft", { hours: hoursLeft, minutes: minutesLeft });
     }
   };
 
@@ -336,7 +331,7 @@ export default function TransferRequestCard({
         credentials: "include", // Include cookies for authentication
         body: JSON.stringify({
           assignedTo: currentUserId,
-          notes: "Transfer accepted by employee",
+          notes: tPage("transferAcceptedByEmployee"),
         }),
       });
 
@@ -346,23 +341,21 @@ export default function TransferRequestCard({
         onAccept(transfer._id);
         // Show success feedback
         setFeedbackStatus("success");
-        setFeedbackMessage("Transfer accepted successfully!");
+        setFeedbackMessage(tPage("transferAcceptedSuccessfully"));
       } else {
         setFeedbackStatus("error");
-        setFeedbackMessage(data.error || "Failed to accept transfer");
+        setFeedbackMessage(data.error || tPage("failedToAcceptTransfer"));
       }
     } catch (error) {
       console.error("Error accepting transfer:", error);
-      alert("Network error occurred");
+      alert(tPage("networkErrorOccurred"));
     } finally {
       setIsAccepting(false);
     }
   };
 
   const handleCancel = async () => {
-    const reason = prompt(
-      "Please provide a reason for cancelling this transfer:",
-    );
+    const reason = prompt(tPage("provideCancelReason"));
     if (!reason) return;
 
     setIsCancelling(true);
@@ -384,21 +377,21 @@ export default function TransferRequestCard({
         onCancel?.(transfer._id);
         // Show success feedback
         setFeedbackStatus("success");
-        setFeedbackMessage("Transfer cancelled successfully!");
+        setFeedbackMessage(tPage("transferCancelledSuccessfully"));
       } else {
         setFeedbackStatus("error");
-        setFeedbackMessage(data.error || "Failed to cancel transfer");
+        setFeedbackMessage(data.error || tPage("failedToCancelTransfer"));
       }
     } catch (error) {
       console.error("Error cancelling transfer:", error);
-      alert("Network error occurred");
+      alert(tPage("networkErrorOccurred"));
     } finally {
       setIsCancelling(false);
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString(undefined, {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -457,7 +450,7 @@ export default function TransferRequestCard({
                 <span className="flex items-center">
                   {statusColors.icon}
                   <span className={`capitalize ${statusColors.text}`}>
-                    {transfer.status.replace("_", " ")}
+                    {t(transfer.status)}
                   </span>
                 </span>
               </div>
@@ -468,7 +461,7 @@ export default function TransferRequestCard({
             <div
               className={`px-2.5 py-1 rounded-2xl text-xs font-semibold ${priorityColors.bg} ${priorityColors.text} border ${priorityColors.border} uppercase`}
             >
-              {transfer.priority}
+              {t(transfer.priority)}
             </div>
           </div>
         </div>
@@ -481,7 +474,7 @@ export default function TransferRequestCard({
                 <div className="flex items-center text-sm">
                   <User size={14} className="mr-2 text-gray-400" />
                   <span className="text-gray-700">
-                    Age:{" "}
+                    {tPage("ageLabel")}{" "}
                     <span className="font-medium">
                       {
                         (
@@ -489,7 +482,7 @@ export default function TransferRequestCard({
                           transfer.transferData?.patientInfo
                         )?.age
                       }{" "}
-                      years old
+                      {tPage("yearsOld")}
                     </span>
                   </span>
                 </div>
@@ -498,7 +491,7 @@ export default function TransferRequestCard({
                   <div className="flex items-center text-sm">
                     <FileText size={14} className="mr-2 text-gray-400" />
                     <span className="text-gray-700">
-                      Dossier:{" "}
+                      {tPage("dossierLabel")}{" "}
                       <span className="font-medium">
                         {
                           (
@@ -519,20 +512,23 @@ export default function TransferRequestCard({
                 <div className="flex items-center text-sm">
                   <Package size={14} className="mr-2 text-gray-400" />
                   <span className="text-gray-700">
-                    From: {transfer.transferData.envelopeInfo.senderName}
+                    {tPage("fromLabel")}{" "}
+                    {transfer.transferData.envelopeInfo.senderName}
                   </span>
                 </div>
                 <div className="flex items-center text-sm">
                   <Package size={14} className="mr-2 text-gray-400" />
                   <span className="text-gray-700">
-                    To: {transfer.transferData.envelopeInfo.recipientName}
+                    {tPage("toLabel")}{" "}
+                    {transfer.transferData.envelopeInfo.recipientName}
                   </span>
                 </div>
                 {transfer.transferData.envelopeInfo.envelopeNumber && (
                   <div className="flex items-center text-sm">
                     <FileText size={14} className="mr-2 text-gray-400" />
                     <span className="text-gray-700">
-                      Ref: {transfer.transferData.envelopeInfo.envelopeNumber}
+                      {tPage("refLabel")}{" "}
+                      {transfer.transferData.envelopeInfo.envelopeNumber}
                     </span>
                   </div>
                 )}
@@ -545,13 +541,14 @@ export default function TransferRequestCard({
                 <div className="flex items-center text-sm">
                   <Stethoscope size={14} className="mr-2 text-gray-400" />
                   <span className="text-gray-700">
-                    Serial: {transfer.transferData.equipmentInfo.serialNumber}
+                    {tPage("serialLabel")}{" "}
+                    {transfer.transferData.equipmentInfo.serialNumber}
                   </span>
                 </div>
                 <div className="flex items-center text-sm">
                   <Stethoscope size={14} className="mr-2 text-gray-400" />
                   <span className="text-gray-700">
-                    Condition:{" "}
+                    {tPage("conditionLabel")}{" "}
                     <span className="capitalize font-medium">
                       {transfer.transferData.equipmentInfo.condition}
                     </span>
@@ -564,7 +561,7 @@ export default function TransferRequestCard({
                       className="mr-2 text-gray-400 mt-0.5 flex-shrink-0"
                     />
                     <span className="text-gray-700">
-                      Instructions:{" "}
+                      {tPage("instructionsLabel")}{" "}
                       {transfer.transferData.equipmentInfo.specialInstructions}
                     </span>
                   </div>
@@ -578,7 +575,7 @@ export default function TransferRequestCard({
       <div className="px-4 lg:px-5 py-3 bg-gray-50 border-y border-gray-100">
         <div className="flex items-center">
           <div className="flex-1 min-w-0 pr-2 lg:pr-3">
-            <p className="text-xs text-gray-500 mb-1">From</p>
+            <p className="text-xs text-gray-500 mb-1">{tPage("from")}</p>
             <p
               className="text-sm font-medium text-gray-800 truncate"
               title={getHospitalName(transfer.fromHospital)}
@@ -594,7 +591,7 @@ export default function TransferRequestCard({
           </div>
 
           <div className="flex-1 min-w-0 pl-2 lg:pl-3 text-right">
-            <p className="text-xs text-gray-500 mb-1">To</p>
+            <p className="text-xs text-gray-500 mb-1">{tPage("to")}</p>
             <p
               className="text-sm font-medium text-gray-800 truncate"
               title={getHospitalName(transfer.toHospital)}
@@ -642,7 +639,7 @@ export default function TransferRequestCard({
               disabled={isAccepting}
               className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 lg:px-4 py-2 lg:py-2 rounded-2xl font-medium hover:from-green-600 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm min-h-[44px] flex items-center justify-center text-sm lg:text-base"
             >
-              {isAccepting ? "Accepting..." : "Accept Transfer"}
+              {isAccepting ? tPage("accepting") : tPage("acceptTransfer")}
             </motion.button>
 
             <motion.div
@@ -664,7 +661,7 @@ export default function TransferRequestCard({
             <div className="px-4 py-2 bg-green-100 text-green-800 rounded-2xl font-medium text-sm border border-green-200">
               <div className="flex items-center">
                 <CheckCircle2 size={16} className="mr-2" />
-                Available for Assignment
+                {tPage("availableForAssignment")}
               </div>
             </div>
           </div>
@@ -673,7 +670,7 @@ export default function TransferRequestCard({
             <div className="px-4 py-2 bg-amber-100 text-amber-800 rounded-2xl font-medium text-sm border border-amber-200">
               <div className="flex items-center">
                 <Clock size={16} className="mr-2" />
-                Waiting for Admin Approval
+                {tPage("waitingForAdminApproval")}
               </div>
             </div>
           </div>
@@ -691,7 +688,7 @@ export default function TransferRequestCard({
                     if (adminPhone) {
                       window.location.href = `tel:${adminPhone}`;
                     } else {
-                      alert("Admin phone number not configured");
+                      alert(tPage("adminPhoneNotConfigured"));
                     }
                   }}
                   onMouseEnter={() => setIsHoveringCancel(true)}
@@ -717,7 +714,7 @@ export default function TransferRequestCard({
                       >
                         <Phone size={16} className="mr-2" />
                         <span className="text-sm font-medium whitespace-nowrap">
-                          Contact Admin
+                          {tPage("contactAdmin")}
                         </span>
                       </div>
                     )}
@@ -728,7 +725,7 @@ export default function TransferRequestCard({
               <div className="flex-1 px-3 lg:px-4 py-2 bg-blue-100 text-blue-800 rounded-2xl font-medium text-sm border border-blue-200 min-h-[44px] flex items-center">
                 <div className="flex items-center">
                   <ArrowRight size={16} className="mr-2" />
-                  In Progress
+                  {tPage("inProgress")}
                 </div>
               </div>
             )}
