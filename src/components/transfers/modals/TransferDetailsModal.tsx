@@ -647,7 +647,7 @@ export default function TransferDetailsModal({
 
     try {
       const response = await fetch(`/api/transfers/${transferId}/cancel`, {
-        method: "POST",
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
@@ -1205,6 +1205,42 @@ export default function TransferDetailsModal({
                         </>
                       )}
 
+                      {transfer?.status === "accepted" && (
+                        <>
+                          {/* Accepted Transfer Actions */}
+                          <motion.button
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{
+                              opacity: 1,
+                              x: 0,
+                              transition: { delay: 0.05 },
+                            }}
+                            whileHover={{
+                              scale: actionLoading === "reject" ? 1 : 1.02,
+                              x: actionLoading === "reject" ? 0 : 4,
+                              transition: { duration: 0.2 },
+                            }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => handleRejectTransfer()}
+                            disabled={actionLoading === "reject"}
+                            className={`w-full flex items-center justify-center px-4 py-3 rounded-xl font-semibold transition-all duration-200 border-2 hover:shadow-lg hover:scale-105 bg-red-100 border-red-400 text-red-900 hover:bg-red-200 font-semibold ${
+                              actionLoading === "reject"
+                                ? "opacity-75 cursor-not-allowed"
+                                : ""
+                            }`}
+                          >
+                            {actionLoading === "reject" ? (
+                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            ) : null}
+                            <span className="text-sm font-semibold text-black">
+                              {actionLoading === "reject"
+                                ? t("rejecting")
+                                : t("rejectTransfer")}
+                            </span>
+                          </motion.button>
+                        </>
+                      )}
+
                       {transfer?.status === "in_progress" && (
                         <>
                           {/* In Progress Transfer Actions */}
@@ -1243,6 +1279,7 @@ export default function TransferDetailsModal({
 
                       {/* Show message if no actions available */}
                       {transfer?.status !== "pending" &&
+                        transfer?.status !== "accepted" &&
                         transfer?.status !== "in_progress" && (
                           <div className="text-center py-4">
                             <div className="text-sm text-gray-500 mb-2">

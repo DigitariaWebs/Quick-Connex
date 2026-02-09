@@ -1,89 +1,110 @@
 /**
  * Transfer Cancellation API
- * 
+ *
  * This endpoint handles transfer cancellation by employees within the 4-hour window.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseService } from '@/lib/database';
-import Transfer from '@/models/Transfer';
-import User from '@/models/User';
-import { AuthService } from '@/lib/auth';
-import { TimelineService, TransferUpdateService, ActorInfo, TransferStatus } from '@/lib/transfers';
-import TransferNotificationService from '@/lib/communication/integrations/TransferNotificationService';
-import { canCancelTransfer } from '@/lib/transfers';
-import { extractRequestInfo } from '@/lib/audit/utils/request';
-import { log } from '@/lib/logging';
+import { NextRequest, NextResponse } from "next/server";
+import { DatabaseService } from "@/lib/database";
+import Transfer from "@/models/Transfer";
+import { AuthService } from "@/lib/auth";
+import { TimelineService, ActorInfo, TransferStatus } from "@/lib/transfers";
+import { canCancelTransfer } from "@/lib/transfers";
+import { extractRequestInfo } from "@/lib/audit/utils/request";
+import { log } from "@/lib/logging";
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ transferId: string }> }
+  { params }: { params: Promise<{ transferId: string }> },
 ) {
   const { transferId } = await params;
-  
+
   try {
     const body = await request.json();
     const { reason } = body;
 
     if (!transferId) {
-      return NextResponse.json({ error: 'Transfer ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Transfer ID is required" },
+        { status: 400 },
+      );
     }
 
     // Authenticate user
     const { user } = await AuthService.requireAuth(request, {
-      roles: ['employee', 'manager', 'admin', 'super_admin'],
-      requireSession: true
+      roles: ["employee", "manager", "admin", "super_admin"],
+      requireSession: true,
     });
 
     // DatabaseService handles connection automatically
-// Find the transfer
+    // Find the transfer
     const transfer = await DatabaseService.findById(Transfer, transferId, {
       populate: [
-        { path: 'requestedBy', select: 'firstName lastName email phone userType' },
-        { path: 'assignedTo', select: 'firstName lastName email phone userType' }
-      ]
+        {
+          path: "requestedBy",
+          select: "firstName lastName email phone userType",
+        },
+        {
+          path: "assignedTo",
+          select: "firstName lastName email phone userType",
+        },
+      ],
     });
 
     if (!transfer) {
-      return NextResponse.json({ error: 'Transfer not found' }, { status: 404 });
-    }
-
-    // Check if transfer can be cancelled
-    if (!canCancelTransfer(transfer)) {
       return NextResponse.json(
-        { error: 'Transfer cannot be cancelled. Either the 4-hour window has expired or the transfer is not in a cancellable state.' },
-        { status: 400 }
+        { error: "Transfer not found" },
+        { status: 404 },
       );
     }
 
+    // Check if transfer can be cancelled
+    // Employees can only cancel within 4-hour window, admins can cancel anytime if in cancellable state
+    const isAdmin = ["manager", "admin", "super_admin"].includes(user.userType);
+    const canCancel = isAdmin
+      ? transfer.status === "in_progress"
+      : canCancelTransfer(transfer);
+
+    if (!canCancel) {
+      const errorMessage = isAdmin
+        ? "Transfer cannot be cancelled. Only in-progress transfers can be cancelled by administrators."
+        : "Transfer cannot be cancelled. Either the 4-hour window has expired or the transfer is not in a cancellable state.";
+      return NextResponse.json({ error: errorMessage }, { status: 400 });
+    }
+
     // Only the assigned employee or a manager/admin can cancel
-    if (user.userType === 'employee') {
+    if (user.userType === "employee") {
       // Since assignedTo is populated, we need to compare with the _id field
       const assignedToId = transfer.assignedTo?._id?.toString();
       const userId = user._id.toString();
-      
+
       // Also try comparing without toString() in case of type issues
       const assignedToIdRaw = transfer.assignedTo?._id;
       const userIdRaw = user._id;
-      
+
       // Try multiple comparison methods
-      const isAuthorized = assignedToId === userId || 
-                          assignedToIdRaw?.equals?.(userIdRaw) || 
-                          (assignedToIdRaw && userIdRaw && assignedToIdRaw.toString() === userIdRaw.toString());
-      
+      const isAuthorized =
+        assignedToId === userId ||
+        assignedToIdRaw?.equals?.(userIdRaw) ||
+        (assignedToIdRaw &&
+          userIdRaw &&
+          assignedToIdRaw.toString() === userIdRaw.toString());
+
       if (!isAuthorized) {
         return NextResponse.json(
-          { error: `Only the assigned employee can cancel this transfer. Assigned to: ${assignedToId}, Current user: ${userId}` },
-          { status: 403 }
+          {
+            error: `Only the assigned employee can cancel this transfer. Assigned to: ${assignedToId}, Current user: ${userId}`,
+          },
+          { status: 403 },
         );
       }
     }
 
     // Store previous assignment info for timeline
     const previousAssignee = transfer.assignedTo as any;
-    const previousAssigneeName = previousAssignee 
-      ? `${previousAssignee.firstName} ${previousAssignee.lastName}` 
-      : 'Unknown';
+    const previousAssigneeName = previousAssignee
+      ? `${previousAssignee.firstName} ${previousAssignee.lastName}`
+      : "Unknown";
 
     // Extract request info for audit logging
     const requestInfo = extractRequestInfo(request);
@@ -92,48 +113,54 @@ export async function PUT(
       id: user._id as any,
       name: `${user.firstName} ${user.lastName}`,
       email: user.email,
-      userType: (user.userType === 'super_admin' ? 'admin' : user.userType) as 'admin' | 'manager' | 'employee'
+      userType: (user.userType === "super_admin" ? "admin" : user.userType) as
+        | "admin"
+        | "manager"
+        | "employee",
     };
 
     const transferIdString = transfer.transferId || transferId;
-    const cancellationReason = reason || 'Employee cancelled transfer - returned to available pool';
+    const cancellationReason =
+      reason || "Employee cancelled transfer - returned to available pool";
 
     // Create unassignment event with audit logging
     await TimelineService.createEventWithAudit(
       {
-        type: 'unassigned',
-        title: 'Transfer Returned to Available Pool',
+        type: "unassigned",
+        title: "Transfer Returned to Available Pool",
         description: `Transfer unassigned from ${previousAssigneeName} and returned to available pool`,
         actor,
         metadata: {
-          previousAssignee: previousAssignee ? {
-            id: previousAssignee._id,
-            name: previousAssigneeName,
-            email: previousAssignee.email
-          } : null,
+          previousAssignee: previousAssignee
+            ? {
+                id: previousAssignee._id,
+                name: previousAssigneeName,
+                email: previousAssignee.email,
+              }
+            : null,
           reason: cancellationReason,
-          details: `Previously assigned to: ${previousAssigneeName} (${previousAssignee?.email || 'Unknown'})`,
-          availableForReassignment: true
-        }
+          details: `Previously assigned to: ${previousAssigneeName} (${previousAssignee?.email || "Unknown"})`,
+          availableForReassignment: true,
+        },
       },
       transferIdString,
-      requestInfo
+      requestInfo,
     );
 
     // Clear assignment and update status
-    // Note: This is a special case - transitioning from 'in_progress' to 'accepted' 
+    // Note: This is a special case - transitioning from 'in_progress' to 'accepted'
     // to return transfer to available pool. This bypasses normal state machine rules.
     const currentStatus = transfer.status;
     transfer.status = TransferStatus.ACCEPTED;
     transfer.assignedTo = undefined; // Clear assignment so other employees can take it
     transfer.lastModifiedBy = user._id as any;
-    
+
     // Add to status history
     transfer.statusHistory.push({
       status: TransferStatus.ACCEPTED,
       changedBy: user._id as any,
       changedAt: new Date(),
-      reason: cancellationReason
+      reason: cancellationReason,
     });
 
     await transfer.save();
@@ -141,37 +168,42 @@ export async function PUT(
     // Create status change event with audit logging (bypassing normal validation for this special case)
     await TimelineService.createEventWithAudit(
       {
-        type: 'status_changed',
+        type: "status_changed",
         title: `Status Changed: ${currentStatus} → accepted`,
-        description: `Transfer status changed from ${currentStatus} to accepted${cancellationReason ? ` - ${cancellationReason}` : ''}`,
+        description: `Transfer status changed from ${currentStatus} to accepted${cancellationReason ? ` - ${cancellationReason}` : ""}`,
         actor,
         metadata: {
           oldValue: currentStatus,
           newValue: TransferStatus.ACCEPTED,
           reason: cancellationReason,
-          details: `Status transition from ${currentStatus} to accepted`
-        }
+          details: `Status transition from ${currentStatus} to accepted`,
+        },
       },
       transferIdString,
-      requestInfo
+      requestInfo,
     );
 
     // Send notifications
     try {
       // Note: Real-time notifications are now handled by the global SSE system
-      console.log('✅ Transfer returned to available pool - real-time notifications handled by global SSE system');
-      
+      console.log(
+        "✅ Transfer returned to available pool - real-time notifications handled by global SSE system",
+      );
+
       // TODO: Implement email/SMS notification for transfer becoming available again
-      console.log('Transfer returned to available pool - SSE notification sent, email/SMS notification would be sent here');
+      console.log(
+        "Transfer returned to available pool - SSE notification sent, email/SMS notification would be sent here",
+      );
     } catch (notificationError) {
-      console.error('Error sending notifications:', notificationError);
+      console.error("Error sending notifications:", notificationError);
       // Don't fail the operation if notifications fail
     }
 
     return NextResponse.json({
       success: true,
       data: {
-        message: 'Transfer returned to available pool. Other employees can now accept it.',
+        message:
+          "Transfer returned to available pool. Other employees can now accept it.",
         transfer: {
           id: transfer._id,
           transferId: transfer.transferId,
@@ -181,72 +213,86 @@ export async function PUT(
           unassignedBy: {
             id: user._id,
             name: `${user.firstName} ${user.lastName}`,
-            email: user.email
+            email: user.email,
           },
-          availableForReassignment: true
-        }
-      }
+          availableForReassignment: true,
+        },
+      },
     });
-
   } catch (error) {
-      log.error('Error cancelling transfer', error, {
-        category: 'transfer',
-        operation: 'cancel_transfer',
-        transferId
-      });
+    log.error("Error cancelling transfer", error, {
+      category: "transfer",
+      operation: "cancel_transfer",
+      transferId,
+    });
     if (error instanceof Error) {
-      if (error.message === 'Authentication required') {
+      if (error.message === "Authentication required") {
         return NextResponse.json(
-          { success: false, error: 'Authentication required' },
-          { status: 401 }
+          { success: false, error: "Authentication required" },
+          { status: 401 },
         );
       }
-      if (error.message.includes('Access denied')) {
+      if (error.message.includes("Access denied")) {
         return NextResponse.json(
           { success: false, error: error.message },
-          { status: 403 }
+          { status: 403 },
         );
       }
     }
-    
+
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
+      { success: false, error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ transferId: string }> }
+  { params }: { params: Promise<{ transferId: string }> },
 ) {
   const { transferId } = await params;
-  
+
   try {
     if (!transferId) {
-      return NextResponse.json({ error: 'Transfer ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Transfer ID is required" },
+        { status: 400 },
+      );
     }
-
-    // Authenticate user
-    const { user } = await AuthService.requireAuth(request, {
-      roles: ['employee', 'manager', 'admin', 'super_admin'],
-      requireSession: true
-    });
 
     // DatabaseService handles connection automatically
-// Find the transfer
-    const transfer = await DatabaseService.findById(Transfer, transferId, {
+    // Find the transfer
+    const transfer = (await DatabaseService.findById(Transfer, transferId, {
       populate: [
-        { path: 'requestedBy', select: 'firstName lastName email phone userType' },
-        { path: 'assignedTo', select: 'firstName lastName email phone userType' }
-      ]
-    }) as any;
+        {
+          path: "requestedBy",
+          select: "firstName lastName email phone userType",
+        },
+        {
+          path: "assignedTo",
+          select: "firstName lastName email phone userType",
+        },
+      ],
+    })) as any;
 
     if (!transfer) {
-      return NextResponse.json({ error: 'Transfer not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: "Transfer not found" },
+        { status: 404 },
+      );
     }
 
-    const canCancel = canCancelTransfer(transfer);
+    // Authenticate user to determine permissions
+    const { user } = await AuthService.requireAuth(request, {
+      roles: ["employee", "manager", "admin", "super_admin"],
+      requireSession: true,
+    });
+
+    const isAdmin = ["manager", "admin", "super_admin"].includes(user.userType);
+    const canCancel = isAdmin
+      ? transfer.status === "in_progress"
+      : canCancelTransfer(transfer);
 
     return NextResponse.json({
       success: true,
@@ -257,41 +303,43 @@ export async function GET(
           status: transfer.status,
           acceptedAt: transfer.acceptedAt,
           canCancel: canCancel,
-          assignedTo: transfer.assignedTo ? {
-            id: transfer.assignedTo._id,
-            name: transfer.assignedTo.firstName && transfer.assignedTo.lastName 
-              ? `${transfer.assignedTo.firstName} ${transfer.assignedTo.lastName}`
-              : 'Unknown User',
-            email: transfer.assignedTo.email || 'Unknown Email'
-          } : null
-        }
-      }
+          assignedTo: transfer.assignedTo
+            ? {
+                id: transfer.assignedTo._id,
+                name:
+                  transfer.assignedTo.firstName && transfer.assignedTo.lastName
+                    ? `${transfer.assignedTo.firstName} ${transfer.assignedTo.lastName}`
+                    : "Unknown User",
+                email: transfer.assignedTo.email || "Unknown Email",
+              }
+            : null,
+        },
+      },
     });
-
   } catch (error) {
-    log.error('Error fetching transfer cancellation info', error, {
-      category: 'transfer',
-      operation: 'get_cancel_info',
-      transferId
+    log.error("Error fetching transfer cancellation info", error, {
+      category: "transfer",
+      operation: "get_cancel_info",
+      transferId,
     });
     if (error instanceof Error) {
-      if (error.message === 'Authentication required') {
+      if (error.message === "Authentication required") {
         return NextResponse.json(
-          { success: false, error: 'Authentication required' },
-          { status: 401 }
+          { success: false, error: "Authentication required" },
+          { status: 401 },
         );
       }
-      if (error.message.includes('Access denied')) {
+      if (error.message.includes("Access denied")) {
         return NextResponse.json(
           { success: false, error: error.message },
-          { status: 403 }
+          { status: 403 },
         );
       }
     }
-    
+
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
+      { success: false, error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
