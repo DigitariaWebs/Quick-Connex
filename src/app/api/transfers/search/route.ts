@@ -23,9 +23,9 @@ export async function GET(request: NextRequest) {
 
     // Apply role-based filtering
     if (user.userType === "employee") {
-      // Employees can only see approved transfers
+      // Employees can only see approved transfers (exclude cancelled)
       query.status = {
-        $in: ["accepted", "in_progress", "completed", "cancelled"],
+        $in: ["accepted", "in_progress", "completed"],
       };
     } else if (user.userType === "manager") {
       // Managers can only see transfers they created

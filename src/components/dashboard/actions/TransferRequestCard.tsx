@@ -705,58 +705,38 @@ export default function TransferRequestCard({
         ) : transfer.status === "in_progress" &&
           currentUserType === "employee" ? (
           <div className="mt-4 flex space-x-2 lg:space-x-3">
-            {isSelected ? (
-              <div className="relative">
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevent card click
-                    const adminPhone =
-                      process.env.NEXT_PUBLIC_ADMIN_PHONE || "";
-                    if (adminPhone) {
-                      window.location.href = `tel:${adminPhone}`;
-                    } else {
-                      alert(tPage("adminPhoneNotConfigured"));
-                    }
-                  }}
-                  onMouseEnter={() => setIsHoveringCancel(true)}
-                  onMouseLeave={() => setIsHoveringCancel(false)}
-                  className="bg-blue-500 text-white rounded-2xl font-medium hover:bg-blue-600 transition-all duration-300 shadow-sm overflow-hidden flex items-center justify-center min-h-[44px]"
-                  style={{
-                    width: isHoveringCancel ? "200px" : "48px",
-                    height: "44px",
-                    padding: isHoveringCancel ? "12px 16px" : "0px",
-                    transition: "all 0.3s ease-in-out",
-                  }}
-                >
-                  <div className="flex items-center justify-center">
-                    {!isHoveringCancel ? (
-                      <Phone size={18} className="lg:w-5 lg:h-5" />
-                    ) : (
-                      <div
-                        className="flex items-center"
-                        style={{
-                          opacity: isHoveringCancel ? 1 : 0,
-                          transition: "opacity 0.2s ease-in-out 0.2s",
-                        }}
-                      >
-                        <Phone size={16} className="mr-2" />
-                        <span className="text-sm font-medium whitespace-nowrap">
-                          {tPage("contactAdmin")}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </motion.button>
-              </div>
-            ) : (
-              <div className="flex-1 px-3 lg:px-4 py-2 bg-blue-100 text-blue-800 rounded-2xl font-medium text-sm border border-blue-200 min-h-[44px] flex items-center">
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCancel();
+              }}
+              disabled={isCancelling}
+              className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-3 lg:px-4 py-2 rounded-2xl font-medium hover:from-red-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm min-h-[44px] flex items-center justify-center text-sm lg:text-base"
+            >
+              {isCancelling ? (
+                tPage("cancelling")
+              ) : (
                 <div className="flex items-center">
-                  <ArrowRight size={16} className="mr-2" />
-                  {tPage("inProgress")}
+                  <XCircle size={16} className="mr-2" />
+                  {tPage("cancelTransfer")}
                 </div>
-              </div>
-            )}
+              )}
+            </motion.button>
+
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className={`px-3 py-2 text-gray-700 rounded-2xl font-medium flex items-center justify-center min-h-[44px] ${
+                isSelected
+                  ? "bg-blue-100 border border-blue-300 text-blue-700"
+                  : "border border-gray-200"
+              }`}
+            >
+              <ArrowRight
+                size={16}
+                className="transform transition-transform lg:w-5 lg:h-5"
+              />
+            </motion.div>
           </div>
         ) : (
           <div className="mt-4 flex justify-end">

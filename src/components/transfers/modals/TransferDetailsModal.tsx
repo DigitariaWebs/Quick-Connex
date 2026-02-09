@@ -1187,7 +1187,7 @@ export default function TransferDetailsModal({
                             whileTap={{ scale: 0.98 }}
                             onClick={() => handleRejectTransfer()}
                             disabled={actionLoading === "reject"}
-                            className={`w-full flex items-center justify-center px-4 py-3 rounded-xl font-semibold transition-all duration-200 border-2 hover:shadow-lg hover:scale-105 bg-red-100 border-red-400 text-red-900 hover:bg-red-200 font-semibold ${
+                            className={`w-full flex items-center justify-center px-4 py-3 rounded-xl transition-all duration-200 border-2 hover:shadow-lg hover:scale-105 bg-red-100 border-red-400 text-red-900 hover:bg-red-200 font-semibold ${
                               actionLoading === "reject"
                                 ? "opacity-75 cursor-not-allowed"
                                 : ""
@@ -1223,7 +1223,7 @@ export default function TransferDetailsModal({
                             whileTap={{ scale: 0.98 }}
                             onClick={() => handleRejectTransfer()}
                             disabled={actionLoading === "reject"}
-                            className={`w-full flex items-center justify-center px-4 py-3 rounded-xl font-semibold transition-all duration-200 border-2 hover:shadow-lg hover:scale-105 bg-red-100 border-red-400 text-red-900 hover:bg-red-200 font-semibold ${
+                            className={`w-full flex items-center justify-center px-4 py-3 rounded-xl transition-all duration-200 border-2 hover:shadow-lg hover:scale-105 bg-red-100 border-red-400 text-red-900 hover:bg-red-200 font-semibold ${
                               actionLoading === "reject"
                                 ? "opacity-75 cursor-not-allowed"
                                 : ""

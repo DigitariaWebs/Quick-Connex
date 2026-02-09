@@ -535,7 +535,6 @@
     "noTransfers": "Aucun transfert trouvé",
     "loadingTransfers": "Chargement des transferts...",
     "total": "Total",
-    "inProgress": "En cours",
     "urgent": "Urgent",
     "filterAndSort": "Filtrer et trier",
     "hideFilters": "Masquer les filtres",
@@ -559,7 +558,6 @@
     "noTimelineEvents": "Aucun événement de chronologie",
     "timelineDescription": "Ce transfert n'a encore aucun événement de chronologie. Les événements de chronologie sont automatiquement créés lorsque les transferts sont créés, approuvés ou mis à jour.",
     "errorLoadingTimeline": "Erreur de chargement de la chronologie : {error}",
-    "retry": "Réessayer",
     "accessRestricted": "Accès restreint",
     "accessRestrictedMessage": "Seuls les gestionnaires, administrateurs et super administrateurs peuvent créer des demandes de transfert. Veuillez contacter votre administrateur si vous avez besoin d'accès.",
     "authenticationRequired": "Authentification requise",
@@ -569,10 +567,8 @@
     "createTransferRequest": "Créer une demande de transfert",
     "transferCreatedSuccessfully": "Transfert créé avec succès",
     "failedToCreateTransfer": "Échec de la création du transfert",
-    "from": "De",
     "sourceHospital": "Hôpital source",
     "searchSourceHospital": "Rechercher un hôpital source...",
-    "to": "À",
     "destinationHospital": "Hôpital de destination",
     "searchDestinationHospital": "Rechercher un hôpital de destination...",
     "transferDate": "Date du transfert",
@@ -689,8 +685,7 @@
     "noTimelineEventsFound": "Aucun événement de chronologie trouvé pour ce transfert",
     "retry": "Réessayer",
     "reason": "Raison :",
-    "changedFrom": "Modifié de",
-    "to": "à"
+    "changedFrom": "Modifié de"
   },
   "nursesPage": {
     "title": "Infirmières",

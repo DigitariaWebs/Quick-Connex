@@ -57,13 +57,12 @@ export async function GET(request: NextRequest) {
         }
         query.status = status;
       } else {
-        // Default: only show approved and active transfers to employees
+        // Default: only show approved and active transfers to employees (exclude cancelled)
         query.status = {
           $in: [
             TransferStatus.ACCEPTED,
             TransferStatus.IN_PROGRESS,
             TransferStatus.COMPLETED,
-            TransferStatus.CANCELLED,
           ],
         };
       }
