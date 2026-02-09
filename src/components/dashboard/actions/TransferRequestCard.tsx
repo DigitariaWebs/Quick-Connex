@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Package,
   Stethoscope,
+  XCircle,
 } from "lucide-react";
 import { TransferCategory } from "@/lib/transfers/constants";
 import FeedbackToast from "@/components/shared/feedback/FeedbackToast";
@@ -665,14 +666,41 @@ export default function TransferRequestCard({
               </div>
             </div>
           </div>
-        ) : transfer.status === "pending" && currentUserType === "manager" ? (
-          <div className="mt-4 flex justify-end">
-            <div className="px-4 py-2 bg-amber-100 text-amber-800 rounded-2xl font-medium text-sm border border-amber-200">
-              <div className="flex items-center">
-                <Clock size={16} className="mr-2" />
-                {tPage("waitingForAdminApproval")}
-              </div>
-            </div>
+        ) : (transfer.status === "pending" || transfer.status === "accepted") &&
+          currentUserType === "manager" ? (
+          <div className="mt-4 flex space-x-2 lg:space-x-3">
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCancel();
+              }}
+              disabled={isCancelling}
+              className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-3 lg:px-4 py-2 rounded-2xl font-medium hover:from-red-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm min-h-[44px] flex items-center justify-center text-sm lg:text-base"
+            >
+              {isCancelling ? (
+                tPage("cancelling")
+              ) : (
+                <div className="flex items-center">
+                  <XCircle size={16} className="mr-2" />
+                  {tPage("cancelTransfer")}
+                </div>
+              )}
+            </motion.button>
+
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className={`px-3 py-2 text-gray-700 rounded-2xl font-medium flex items-center justify-center min-h-[44px] ${
+                isSelected
+                  ? "bg-blue-100 border border-blue-300 text-blue-700"
+                  : "border border-gray-200"
+              }`}
+            >
+              <ArrowRight
+                size={16}
+                className="transform transition-transform lg:w-5 lg:h-5"
+              />
+            </motion.div>
           </div>
         ) : transfer.status === "in_progress" &&
           currentUserType === "employee" ? (

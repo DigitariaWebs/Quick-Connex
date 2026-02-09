@@ -661,6 +661,8 @@
     "provideCancelReason": "Veuillez fournir une raison pour annuler ce transfert :",
     "transferCancelledSuccessfully": "Transfert annulé avec succès !",
     "failedToCancelTransfer": "Échec de l'annulation du transfert",
+    "cancelling": "Annulation...",
+    "cancelTransfer": "Annuler le transfert",
     "ageLabel": "Âge :",
     "yearsOld": "ans",
     "dossierLabel": "Dossier :",

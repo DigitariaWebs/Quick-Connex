@@ -113,7 +113,7 @@ export default function TransferForm({
                 const managerHospitalId =
                   userProfile?.hospital?._id || userProfile?.hospital;
 
-                if (ciusssName) {
+                if (managerHospitalId) {
                   // Fetch all hospitals
                   const hospitalsResp = await fetch(
                     `/api/hospitals?limit=1000`,
@@ -121,36 +121,23 @@ export default function TransferForm({
                   const hospitalsData = await hospitalsResp.json();
 
                   if (hospitalsData.success) {
-                    // Filter hospitals by CIUSSS (matching organization.name with CIUSSS name, case-insensitive)
-                    const ciusssHospitals = hospitalsData.hospitals.filter(
-                      (h: any) =>
-                        h.organization?.name?.toLowerCase().trim() ===
-                        ciusssName.toLowerCase().trim(),
+                    // Normalize IDs to strings for comparison
+                    const normalizeId = (id: any): string => {
+                      if (!id) return "";
+                      if (typeof id === "string") return id;
+                      if (id._id) return String(id._id);
+                      return String(id);
+                    };
+
+                    const managerHospitalIdStr = normalizeId(managerHospitalId);
+
+                    // Find manager's hospital directly
+                    const managerHospital = hospitalsData.hospitals.find(
+                      (h: any) => normalizeId(h._id) === managerHospitalIdStr,
                     );
 
-                    if (ciusssHospitals.length > 0) {
-                      // Normalize IDs to strings for comparison
-                      const normalizeId = (id: any): string => {
-                        if (!id) return "";
-                        if (typeof id === "string") return id;
-                        if (id._id) return String(id._id);
-                        return String(id);
-                      };
-
-                      const managerHospitalIdStr =
-                        normalizeId(managerHospitalId);
-
-                      // Prefer manager's hospital if it belongs to their CIUSSS
-                      let selectedHospital = ciusssHospitals.find(
-                        (h: any) => normalizeId(h._id) === managerHospitalIdStr,
-                      );
-
-                      // If manager's hospital not found, use first hospital from CIUSSS
-                      if (!selectedHospital) {
-                        selectedHospital = ciusssHospitals[0];
-                      }
-
-                      setSelectedFromHospital(selectedHospital);
+                    if (managerHospital) {
+                      setSelectedFromHospital(managerHospital);
                     }
                   }
                 }

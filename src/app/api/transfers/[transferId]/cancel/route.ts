@@ -59,15 +59,15 @@ export async function PUT(
     }
 
     // Check if transfer can be cancelled
-    // Employees can only cancel within 4-hour window, admins can cancel anytime if in cancellable state
+    // Employees can only cancel within 4-hour window, managers/admins can cancel pending or accepted transfers
     const isAdmin = ["manager", "admin", "super_admin"].includes(user.userType);
     const canCancel = isAdmin
-      ? transfer.status === "in_progress"
+      ? transfer.status === "pending" || transfer.status === "accepted"
       : canCancelTransfer(transfer);
 
     if (!canCancel) {
       const errorMessage = isAdmin
-        ? "Transfer cannot be cancelled. Only in-progress transfers can be cancelled by administrators."
+        ? "Transfer cannot be cancelled. Only pending or accepted transfers can be cancelled by managers."
         : "Transfer cannot be cancelled. Either the 4-hour window has expired or the transfer is not in a cancellable state.";
       return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
@@ -120,68 +120,125 @@ export async function PUT(
     };
 
     const transferIdString = transfer.transferId || transferId;
-    const cancellationReason =
-      reason || "Employee cancelled transfer - returned to available pool";
-
-    // Create unassignment event with audit logging
-    await TimelineService.createEventWithAudit(
-      {
-        type: "unassigned",
-        title: "Transfer Returned to Available Pool",
-        description: `Transfer unassigned from ${previousAssigneeName} and returned to available pool`,
-        actor,
-        metadata: {
-          previousAssignee: previousAssignee
-            ? {
-                id: previousAssignee._id,
-                name: previousAssigneeName,
-                email: previousAssignee.email,
-              }
-            : null,
-          reason: cancellationReason,
-          details: `Previously assigned to: ${previousAssigneeName} (${previousAssignee?.email || "Unknown"})`,
-          availableForReassignment: true,
-        },
-      },
-      transferIdString,
-      requestInfo,
-    );
-
-    // Clear assignment and update status
-    // Note: This is a special case - transitioning from 'in_progress' to 'accepted'
-    // to return transfer to available pool. This bypasses normal state machine rules.
     const currentStatus = transfer.status;
-    transfer.status = TransferStatus.ACCEPTED;
-    transfer.assignedTo = undefined; // Clear assignment so other employees can take it
-    transfer.lastModifiedBy = user._id as any;
 
-    // Add to status history
-    transfer.statusHistory.push({
-      status: TransferStatus.ACCEPTED,
-      changedBy: user._id as any,
-      changedAt: new Date(),
-      reason: cancellationReason,
-    });
+    // Managers cancel transfers completely (set to cancelled status)
+    // Employees return in_progress transfers to available pool (set to accepted status)
+    if (isAdmin) {
+      const cancellationReason = reason || "Transfer cancelled by manager";
 
-    await transfer.save();
+      // Set status to cancelled
+      transfer.status = TransferStatus.CANCELLED;
+      transfer.lastModifiedBy = user._id as any;
 
-    // Create status change event with audit logging (bypassing normal validation for this special case)
-    await TimelineService.createEventWithAudit(
-      {
-        type: "status_changed",
-        title: `Status Changed: ${currentStatus} → accepted`,
-        description: `Transfer status changed from ${currentStatus} to accepted${cancellationReason ? ` - ${cancellationReason}` : ""}`,
-        actor,
-        metadata: {
-          oldValue: currentStatus,
-          newValue: TransferStatus.ACCEPTED,
-          reason: cancellationReason,
-          details: `Status transition from ${currentStatus} to accepted`,
+      // Add to status history
+      transfer.statusHistory.push({
+        status: TransferStatus.CANCELLED,
+        changedBy: user._id as any,
+        changedAt: new Date(),
+        reason: cancellationReason,
+      });
+
+      await transfer.save();
+
+      // Create cancellation event with audit logging
+      await TimelineService.createEventWithAudit(
+        {
+          type: "cancelled",
+          title: "Transfer Cancelled",
+          description: `Transfer cancelled by manager${cancellationReason ? ` - ${cancellationReason}` : ""}`,
+          actor,
+          metadata: {
+            reason: cancellationReason,
+            previousStatus: currentStatus,
+            cancelledBy: "manager",
+          },
         },
-      },
-      transferIdString,
-      requestInfo,
-    );
+        transferIdString,
+        requestInfo,
+      );
+
+      // Create status change event with audit logging
+      await TimelineService.createEventWithAudit(
+        {
+          type: "status_changed",
+          title: `Status Changed: ${currentStatus} → cancelled`,
+          description: `Transfer status changed from ${currentStatus} to cancelled${cancellationReason ? ` - ${cancellationReason}` : ""}`,
+          actor,
+          metadata: {
+            oldValue: currentStatus,
+            newValue: TransferStatus.CANCELLED,
+            reason: cancellationReason,
+            details: `Status transition from ${currentStatus} to cancelled`,
+          },
+        },
+        transferIdString,
+        requestInfo,
+      );
+    } else {
+      // Employee cancellation - return to available pool
+      const cancellationReason =
+        reason || "Employee cancelled transfer - returned to available pool";
+
+      // Create unassignment event with audit logging
+      await TimelineService.createEventWithAudit(
+        {
+          type: "unassigned",
+          title: "Transfer Returned to Available Pool",
+          description: `Transfer unassigned from ${previousAssigneeName} and returned to available pool`,
+          actor,
+          metadata: {
+            previousAssignee: previousAssignee
+              ? {
+                  id: previousAssignee._id,
+                  name: previousAssigneeName,
+                  email: previousAssignee.email,
+                }
+              : null,
+            reason: cancellationReason,
+            details: `Previously assigned to: ${previousAssigneeName} (${previousAssignee?.email || "Unknown"})`,
+            availableForReassignment: true,
+          },
+        },
+        transferIdString,
+        requestInfo,
+      );
+
+      // Clear assignment and update status
+      // Note: This is a special case - transitioning from 'in_progress' to 'accepted'
+      // to return transfer to available pool. This bypasses normal state machine rules.
+      transfer.status = TransferStatus.ACCEPTED;
+      transfer.assignedTo = undefined; // Clear assignment so other employees can take it
+      transfer.lastModifiedBy = user._id as any;
+
+      // Add to status history
+      transfer.statusHistory.push({
+        status: TransferStatus.ACCEPTED,
+        changedBy: user._id as any,
+        changedAt: new Date(),
+        reason: cancellationReason,
+      });
+
+      await transfer.save();
+
+      // Create status change event with audit logging (bypassing normal validation for this special case)
+      await TimelineService.createEventWithAudit(
+        {
+          type: "status_changed",
+          title: `Status Changed: ${currentStatus} → accepted`,
+          description: `Transfer status changed from ${currentStatus} to accepted${cancellationReason ? ` - ${cancellationReason}` : ""}`,
+          actor,
+          metadata: {
+            oldValue: currentStatus,
+            newValue: TransferStatus.ACCEPTED,
+            reason: cancellationReason,
+            details: `Status transition from ${currentStatus} to accepted`,
+          },
+        },
+        transferIdString,
+        requestInfo,
+      );
+    }
 
     // Send notifications
     try {
@@ -202,20 +259,32 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       data: {
-        message:
-          "Transfer returned to available pool. Other employees can now accept it.",
+        message: isAdmin
+          ? "Transfer cancelled successfully."
+          : "Transfer returned to available pool. Other employees can now accept it.",
         transfer: {
           id: transfer._id,
           transferId: transfer.transferId,
           status: transfer.status,
-          assignedTo: null,
-          unassignedAt: new Date(),
-          unassignedBy: {
-            id: user._id,
-            name: `${user.firstName} ${user.lastName}`,
-            email: user.email,
-          },
-          availableForReassignment: true,
+          assignedTo: isAdmin ? transfer.assignedTo : null,
+          ...(isAdmin
+            ? {
+                cancelledAt: new Date(),
+                cancelledBy: {
+                  id: user._id,
+                  name: `${user.firstName} ${user.lastName}`,
+                  email: user.email,
+                },
+              }
+            : {
+                unassignedAt: new Date(),
+                unassignedBy: {
+                  id: user._id,
+                  name: `${user.firstName} ${user.lastName}`,
+                  email: user.email,
+                },
+                availableForReassignment: true,
+              }),
         },
       },
     });
@@ -291,7 +360,7 @@ export async function GET(
 
     const isAdmin = ["manager", "admin", "super_admin"].includes(user.userType);
     const canCancel = isAdmin
-      ? transfer.status === "in_progress"
+      ? transfer.status === "pending" || transfer.status === "accepted"
       : canCancelTransfer(transfer);
 
     return NextResponse.json({
