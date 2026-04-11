@@ -28,7 +28,16 @@
     "clear": "Effacer",
     "apply": "Appliquer",
     "reset": "Réinitialiser",
-    "more": "plus"
+    "more": "plus",
+    "auth": {
+      "signIn": "Se connecter",
+      "email": "Email",
+      "phoneNumber": "Numéro de téléphone"
+    },
+    "messages": {
+      "createdSuccessfully": "Compte créé avec succès",
+      "info": "Votre compte est en attente d'approbation. Vous serez notifié une fois approuvé."
+    }
   },
   "auth": {
     "signIn": "Se connecter",
@@ -443,6 +452,20 @@
     "bothVerified": "Courriel et téléphone vérifiés!",
     "redirecting": "Redirection vers le tableau de bord...",
     "checkStatus": "Vérification de l'état de vérification...",
+    "edit": {
+      "edit": "Modifier",
+      "save": "Enregistrer",
+      "saving": "Enregistrement...",
+      "cancel": "Annuler",
+      "newEmailPlaceholder": "Nouvelle adresse courriel",
+      "phonePlaceholder": "(123) 456-7890",
+      "invalidEmail": "Veuillez saisir une adresse courriel valide",
+      "invalidPhone": "Veuillez saisir un numéro de téléphone valide",
+      "updateEmailFailed": "Échec de la mise à jour du courriel",
+      "updatePhoneFailed": "Échec de la mise à jour du numéro de téléphone",
+      "updateEmailRetry": "Échec de la mise à jour du courriel. Veuillez réessayer.",
+      "updatePhoneRetry": "Échec de la mise à jour du téléphone. Veuillez réessayer."
+    },
     "error": {
       "invalidCode": "Code de vérification invalide",
       "expiredCode": "Le code de vérification a expiré",

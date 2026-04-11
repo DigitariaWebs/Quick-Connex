@@ -1,10 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+  Suspense,
+} from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { isValidEmail } from "@/lib/utils/string-helpers";
+import { COUNTRY_CODES } from "@/lib/constants/country-codes";
 
 function VerifyPageContent() {
   const searchParams = useSearchParams();
@@ -12,8 +21,8 @@ function VerifyPageContent() {
   const t = useTranslations("verification");
   const tCommon = useTranslations("common");
 
-  const email = searchParams.get("email") || "";
-  const phone = searchParams.get("phone") || "";
+  const [email, setEmail] = useState<string>(searchParams.get("email") || "");
+  const [phone, setPhone] = useState<string>(searchParams.get("phone") || "");
   const countryCode = searchParams.get("countryCode") || "+1";
 
   // Email verification state
@@ -45,6 +54,34 @@ function VerifyPageContent() {
     canRequestNewCode: boolean;
     codesRemaining: number;
   }>({ canRequestNewCode: true, codesRemaining: 3 });
+
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [tempEmail, setTempEmail] = useState("");
+  const [tempPhone, setTempPhone] = useState("");
+  const [tempCountryCode, setTempCountryCode] = useState("+1");
+  const [updateEmailError, setUpdateEmailError] = useState("");
+  const [updatePhoneError, setUpdatePhoneError] = useState("");
+  const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
+  const [isUpdatingPhone, setIsUpdatingPhone] = useState(false);
+  const [isEditCountryCodeOpen, setIsEditCountryCodeOpen] = useState(false);
+  const [editCountryCodeSearch, setEditCountryCodeSearch] = useState("");
+  const editCountryCodeInputRef = useRef<HTMLInputElement>(null);
+  const editCountryCodeDropdownRef = useRef<HTMLDivElement>(null);
+
+  const filteredEditCountryCodes = useMemo(
+    () =>
+      editCountryCodeSearch
+        ? COUNTRY_CODES.filter(
+            (cc) =>
+              cc.code.includes(editCountryCodeSearch) ||
+              cc.country
+                .toLowerCase()
+                .includes(editCountryCodeSearch.toLowerCase()),
+          )
+        : COUNTRY_CODES,
+    [editCountryCodeSearch],
+  );
 
   // Format phone for display
   const formatPhoneForDisplay = useCallback(
@@ -159,6 +196,97 @@ function VerifyPageContent() {
     },
     [],
   );
+
+  const handleSaveContact = async (type: "email" | "phone") => {
+    if (type === "email") {
+      if (!isValidEmail(tempEmail)) {
+        setUpdateEmailError(t("edit.invalidEmail"));
+        return;
+      }
+      setIsUpdatingEmail(true);
+      setUpdateEmailError("");
+    } else {
+      const normalized = normalizePhoneNumber(tempPhone, tempCountryCode);
+      if (!normalized || normalized.replace(/\D/g, "").length < 7) {
+        setUpdatePhoneError(t("edit.invalidPhone"));
+        return;
+      }
+      setIsUpdatingPhone(true);
+      setUpdatePhoneError("");
+    }
+
+    const newValue =
+      type === "email"
+        ? tempEmail
+        : normalizePhoneNumber(tempPhone, tempCountryCode);
+
+    try {
+      const response = await fetch("/api/auth/update-contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, currentEmail: email, newValue }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        if (type === "email") {
+          setEmail(tempEmail);
+          setIsEditingEmail(false);
+          setEmailCode("");
+          setEmailCodeExpirationTime(null);
+          setEmailTimeRemaining(0);
+          setEmailError("");
+          router.replace(
+            `/signup/verify?email=${encodeURIComponent(tempEmail)}&phone=${encodeURIComponent(phone)}&countryCode=${encodeURIComponent(countryCode)}`,
+          );
+        } else {
+          setPhone(newValue);
+          setIsEditingPhone(false);
+          setPhoneCode("");
+          setPhoneCodeExpirationTime(null);
+          setPhoneTimeRemaining(0);
+          setPhoneError("");
+          router.replace(
+            `/signup/verify?email=${encodeURIComponent(email)}&phone=${encodeURIComponent(newValue)}&countryCode=${encodeURIComponent(countryCode)}`,
+          );
+        }
+      } else {
+        if (type === "email") {
+          setUpdateEmailError(data.error || t("edit.updateEmailFailed"));
+        } else {
+          setUpdatePhoneError(data.error || t("edit.updatePhoneFailed"));
+        }
+      }
+    } catch {
+      if (type === "email") {
+        setUpdateEmailError(t("edit.updateEmailRetry"));
+      } else {
+        setUpdatePhoneError(t("edit.updatePhoneRetry"));
+      }
+    } finally {
+      if (type === "email") {
+        setIsUpdatingEmail(false);
+      } else {
+        setIsUpdatingPhone(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!isEditCountryCodeOpen) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        editCountryCodeDropdownRef.current &&
+        !editCountryCodeDropdownRef.current.contains(event.target as Node) &&
+        editCountryCodeInputRef.current &&
+        !editCountryCodeInputRef.current.contains(event.target as Node)
+      ) {
+        setIsEditCountryCodeOpen(false);
+        setEditCountryCodeSearch("");
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isEditCountryCodeOpen]);
 
   // Countdown timer for email code expiration
   useEffect(() => {
@@ -392,32 +520,28 @@ function VerifyPageContent() {
     }
   };
 
-  // Check if user is already verified on mount
+  // Check verification status once on mount. Re-running after email/phone
+  // changes would be redundant — the edit flow always resets the field to
+  // unverified server-side, so a refetch would just confirm what we know.
   useEffect(() => {
+    if (isEmailVerified && isPhoneVerified) return;
+    if (!email && !phone) return;
+
     const checkVerificationStatus = async () => {
-      if (!email && !phone) return;
-
       try {
-        const normalizedEmail = email.toLowerCase().trim();
-        const normalizedPhone = normalizePhoneNumber(phone, countryCode);
-
         const response = await fetch("/api/auth/check-verification-status", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            email: normalizedEmail,
-            phone: normalizedPhone,
+            email: email.toLowerCase().trim(),
+            phone: normalizePhoneNumber(phone, countryCode),
           }),
         });
 
         if (response.ok) {
           const data = await response.json();
-          if (data.emailVerified) {
-            setIsEmailVerified(true);
-          }
-          if (data.phoneVerified) {
-            setIsPhoneVerified(true);
-          }
+          if (data.emailVerified) setIsEmailVerified(true);
+          if (data.phoneVerified) setIsPhoneVerified(true);
         }
       } catch (error) {
         console.error("Failed to check verification status:", error);
@@ -425,7 +549,9 @@ function VerifyPageContent() {
     };
 
     checkVerificationStatus();
-  }, [email, phone, countryCode, normalizePhoneNumber]);
+    // Intentionally mount-only: the edit flow manages verified state locally.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Redirect if no email or phone
   useEffect(() => {
@@ -568,7 +694,7 @@ function VerifyPageContent() {
   ]);
 
   const displayPhone = formatPhoneForDisplay(phone, countryCode);
-  const canContinue = isEmailVerified; // Users can continue with email verification only
+  const canContinue = isEmailVerified && isPhoneVerified;
   const isBothVerified = isEmailVerified && isPhoneVerified;
 
   return (
@@ -672,15 +798,73 @@ function VerifyPageContent() {
             <div className="mb-6">
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 space-y-4">
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-semibold text-gray-900 mb-1">
                       {t("email.title")}
                     </h3>
-                    <p className="text-sm text-gray-600">
-                      {email
-                        ? `${t("email.verify")} ${email}`
-                        : tCommon("auth.email")}
-                    </p>
+                    {!isEditingEmail ? (
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-gray-600 truncate">
+                          {email
+                            ? `${t("email.verify")} ${email}`
+                            : tCommon("auth.email")}
+                        </p>
+                        {!isEmailVerified && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTempEmail(email);
+                              setIsEditingEmail(true);
+                              setUpdateEmailError("");
+                            }}
+                            className="shrink-0 text-xs text-blue-600 hover:text-blue-700 underline"
+                          >
+                            {t("edit.edit")}
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="mt-3 space-y-3">
+                        <input
+                          type="email"
+                          value={tempEmail}
+                          onChange={(e) => {
+                            setTempEmail(e.target.value);
+                            setUpdateEmailError("");
+                          }}
+                          className="w-full px-4 py-3 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-black placeholder:text-gray-500"
+                          placeholder={t("edit.newEmailPlaceholder")}
+                          autoComplete="off"
+                        />
+                        {updateEmailError && (
+                          <p className="text-sm text-red-600">
+                            {updateEmailError}
+                          </p>
+                        )}
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleSaveContact("email")}
+                            disabled={isUpdatingEmail}
+                            className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 disabled:opacity-50 transition-colors"
+                          >
+                            {isUpdatingEmail
+                              ? t("edit.saving")
+                              : t("edit.save")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsEditingEmail(false);
+                              setUpdateEmailError("");
+                            }}
+                            className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition-colors"
+                          >
+                            {t("edit.cancel")}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   {isEmailVerified && (
                     <div className="flex items-center justify-center w-10 h-10 bg-green-500 rounded-full">
@@ -812,15 +996,128 @@ function VerifyPageContent() {
             <div className="mb-6">
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 space-y-4">
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-semibold text-gray-900 mb-1">
                       {t("phone.title")}
                     </h3>
-                    <p className="text-sm text-gray-600">
-                      {displayPhone
-                        ? `${t("phone.verify")} ${displayPhone}`
-                        : tCommon("auth.phoneNumber")}
-                    </p>
+                    {!isEditingPhone ? (
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-gray-600 truncate">
+                          {displayPhone
+                            ? `${t("phone.verify")} ${displayPhone}`
+                            : tCommon("auth.phoneNumber")}
+                        </p>
+                        {!isPhoneVerified && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const ccDigits = countryCode.replace(/\D/g, "");
+                              const allDigits = phone.replace(/\D/g, "");
+                              const local = allDigits.startsWith(ccDigits)
+                                ? allDigits.slice(ccDigits.length)
+                                : allDigits;
+                              setTempPhone(local);
+                              setTempCountryCode(countryCode);
+                              setIsEditingPhone(true);
+                              setUpdatePhoneError("");
+                            }}
+                            className="shrink-0 text-xs text-blue-600 hover:text-blue-700 underline"
+                          >
+                            {t("edit.edit")}
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="mt-3 space-y-3">
+                        <div className="flex gap-2">
+                          <div className="relative">
+                            <input
+                              ref={editCountryCodeInputRef}
+                              type="text"
+                              value={
+                                isEditCountryCodeOpen
+                                  ? editCountryCodeSearch
+                                  : tempCountryCode
+                              }
+                              onChange={(e) => {
+                                setEditCountryCodeSearch(e.target.value);
+                                setIsEditCountryCodeOpen(true);
+                              }}
+                              onFocus={() => {
+                                setEditCountryCodeSearch(tempCountryCode);
+                                setIsEditCountryCodeOpen(true);
+                              }}
+                              placeholder="+1"
+                              className="w-24 px-3 py-3 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-black placeholder:text-gray-500"
+                              autoComplete="off"
+                            />
+                            {isEditCountryCodeOpen && (
+                              <div
+                                ref={editCountryCodeDropdownRef}
+                                className="absolute z-50 w-56 mt-1 bg-white rounded-xl border border-gray-200 shadow-lg max-h-52 overflow-y-auto"
+                              >
+                                <div className="py-1">
+                                  {filteredEditCountryCodes.map((cc) => (
+                                    <button
+                                      key={cc.code}
+                                      type="button"
+                                      onClick={() => {
+                                        setTempCountryCode(cc.code);
+                                        setIsEditCountryCodeOpen(false);
+                                        setEditCountryCodeSearch("");
+                                      }}
+                                      className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
+                                    >
+                                      <span>{cc.flag}</span>
+                                      <span className="text-sm text-gray-900">
+                                        {cc.code} {cc.country}
+                                      </span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <input
+                            type="tel"
+                            value={tempPhone}
+                            onChange={(e) => {
+                              setTempPhone(e.target.value);
+                              setUpdatePhoneError("");
+                            }}
+                            className="flex-1 px-4 py-3 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-black placeholder:text-gray-500"
+                            placeholder={t("edit.phonePlaceholder")}
+                          />
+                        </div>
+                        {updatePhoneError && (
+                          <p className="text-sm text-red-600">
+                            {updatePhoneError}
+                          </p>
+                        )}
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleSaveContact("phone")}
+                            disabled={isUpdatingPhone}
+                            className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 disabled:opacity-50 transition-colors"
+                          >
+                            {isUpdatingPhone
+                              ? t("edit.saving")
+                              : t("edit.save")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsEditingPhone(false);
+                              setUpdatePhoneError("");
+                            }}
+                            className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition-colors"
+                          >
+                            {t("edit.cancel")}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   {isPhoneVerified && (
                     <div className="flex items-center justify-center w-10 h-10 bg-green-500 rounded-full">

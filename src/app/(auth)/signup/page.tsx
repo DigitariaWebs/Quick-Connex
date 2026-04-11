@@ -9,6 +9,7 @@ import { UserTypeButton } from "@/components/shared/forms/UserTypeButton";
 import { TermsModal } from "@/components/shared/modals/TermsModal";
 import { LanguageSwitcher } from "@/components/shared/LanguageSwitcher";
 import { LOGO_PATH, ASSETS } from "@/constants";
+import { COUNTRY_CODES } from "@/lib/constants/country-codes";
 
 // Validation status type
 type ValidationStatus = "idle" | "checking" | "exists" | "available" | "error";
@@ -98,33 +99,8 @@ export default function SignUpPage() {
   const countryCodeInputRef = useRef<HTMLInputElement>(null);
   const countryCodeDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Popular country codes
-  const countryCodes = [
-    { code: "+1", country: "US/Canada", flag: "🇺🇸" },
-    { code: "+33", country: "France", flag: "🇫🇷" },
-    { code: "+44", country: "UK", flag: "🇬🇧" },
-    { code: "+49", country: "Germany", flag: "🇩🇪" },
-    { code: "+34", country: "Spain", flag: "🇪🇸" },
-    { code: "+39", country: "Italy", flag: "🇮🇹" },
-    { code: "+31", country: "Netherlands", flag: "🇳🇱" },
-    { code: "+32", country: "Belgium", flag: "🇧🇪" },
-    { code: "+41", country: "Switzerland", flag: "🇨🇭" },
-    { code: "+351", country: "Portugal", flag: "🇵🇹" },
-    { code: "+45", country: "Denmark", flag: "🇩🇰" },
-    { code: "+46", country: "Sweden", flag: "🇸🇪" },
-    { code: "+47", country: "Norway", flag: "🇳🇴" },
-    { code: "+358", country: "Finland", flag: "🇫🇮" },
-    { code: "+61", country: "Australia", flag: "🇦🇺" },
-    { code: "+64", country: "New Zealand", flag: "🇳🇿" },
-    { code: "+81", country: "Japan", flag: "🇯🇵" },
-    { code: "+86", country: "China", flag: "🇨🇳" },
-    { code: "+91", country: "India", flag: "🇮🇳" },
-    { code: "+971", country: "UAE", flag: "🇦🇪" },
-    { code: "+213", country: "Algeria", flag: "🇩🇿" },
-  ];
-
   const [filteredCountryCodes, setFilteredCountryCodes] =
-    useState(countryCodes);
+    useState(COUNTRY_CODES);
   const [countryCodeSearchTerm, setCountryCodeSearchTerm] =
     useState<string>("");
 
@@ -472,7 +448,7 @@ export default function SignUpPage() {
     setCountryCodeSearchTerm(term);
     const searchTerm = term.toLowerCase();
     setFilteredCountryCodes(
-      countryCodes.filter(
+      COUNTRY_CODES.filter(
         (cc) =>
           cc.code.includes(searchTerm) ||
           cc.country.toLowerCase().includes(searchTerm),

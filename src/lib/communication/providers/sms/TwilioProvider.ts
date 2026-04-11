@@ -1,6 +1,6 @@
 /**
  * Twilio SMS Provider Implementation
- * 
+ *
  * This file provides a real implementation of the Twilio SMS provider
  * using the Twilio API for sending SMS messages.
  */
@@ -10,14 +10,14 @@ import {
   CommunicationServiceResponse,
   CommunicationStatus,
   SMSProvider,
-} from '../../core/types';
-import { BaseSMSProvider } from './SMSProvider';
+} from "../../core/types";
+import { BaseSMSProvider } from "./SMSProvider";
 
 /**
  * Twilio Provider Implementation
  */
 export class TwilioProvider extends BaseSMSProvider {
-  providerType: SMSProvider = 'twilio';
+  providerType: SMSProvider = "twilio";
   private accountSid: string;
   private authToken: string;
   private fromNumber: string;
@@ -39,26 +39,26 @@ export class TwilioProvider extends BaseSMSProvider {
   async send(message: SMSMessage): Promise<CommunicationServiceResponse> {
     try {
       if (!this.accountSid || !this.authToken) {
-        throw new Error('Twilio Account SID and Auth Token are required');
+        throw new Error("Twilio Account SID and Auth Token are required");
       }
 
       if (!this.fromNumber) {
-        throw new Error('Twilio From Number (SMS_FROM_NUMBER) is required');
+        throw new Error("Twilio From Number (SMS_FROM_NUMBER) is required");
       }
 
       // Prepare Twilio message
       const twilioMessage = this.prepareTwilioMessage(message);
 
-      console.log('📱 [Twilio] Attempting to send SMS:', {
+      console.log("📱 [Twilio] Attempting to send SMS:", {
         to: twilioMessage.To,
         from: twilioMessage.From,
-        messageLength: twilioMessage.Body?.length || 0
+        messageLength: twilioMessage.Body?.length || 0,
       });
 
       // Send via Twilio API
       const response = await this.sendViaAPI(twilioMessage);
 
-      console.log('📱 [Twilio] SMS API response:', {
+      console.log("📱 [Twilio] SMS API response:", {
         sid: response.sid,
         status: response.status,
         to: response.to,
@@ -66,56 +66,72 @@ export class TwilioProvider extends BaseSMSProvider {
         errorCode: response.error_code,
         errorMessage: response.error_message,
         price: response.price,
-        priceUnit: response.price_unit
+        priceUnit: response.price_unit,
       });
 
       // Check if Twilio returned an error status
-      if (response.status === 'failed' || response.error_code) {
-        const errorMsg = response.error_message || `Twilio error: ${response.error_code}`;
-        console.error('❌ [Twilio] SMS failed:', {
+      if (response.status === "failed" || response.error_code) {
+        const errorMsg =
+          response.error_message || `Twilio error: ${response.error_code}`;
+        console.error("❌ [Twilio] SMS failed:", {
           sid: response.sid,
           errorCode: response.error_code,
           errorMessage: response.error_message,
-          status: response.status
+          status: response.status,
         });
         return {
           success: false,
           messageId: message.id,
           providerId: response.sid,
-          status: 'failed',
+          status: "failed",
           error: errorMsg,
         };
       }
 
       // Warn if price is null - this often indicates trial account restrictions
-      if (response.price === null && response.status === 'queued') {
-        console.warn('⚠️ [Twilio] SMS queued but price is null - this may indicate:');
-        console.warn('   1. Trial account restriction (number not verified)');
-        console.warn('   2. Message may fail after queuing');
-        console.warn(`   Check Twilio dashboard for Message SID: ${response.sid}`);
-        console.warn(`   Verify recipient number ${response.to} in Twilio console if using trial account`);
+      if (response.price === null && response.status === "queued") {
+        console.warn(
+          "⚠️ [Twilio] SMS queued but price is null - this may indicate:",
+        );
+        console.warn("   1. Trial account restriction (number not verified)");
+        console.warn("   2. Message may fail after queuing");
+        console.warn(
+          `   Check Twilio dashboard for Message SID: ${response.sid}`,
+        );
+        console.warn(
+          `   Verify recipient number ${response.to} in Twilio console if using trial account`,
+        );
+      }
+
+      if (process.env.NODE_ENV === "development") {
+        console.log("📱 [SMS]", "─".repeat(50));
+        console.log("📱 [SMS] TO     :", twilioMessage.To);
+        console.log("📱 [SMS] FROM   :", twilioMessage.From);
+        console.log("📱 [SMS] MESSAGE:", twilioMessage.Body);
+        console.log("📱 [SMS] SID    :", response.sid);
+        console.log("📱 [SMS]", "─".repeat(50));
       }
 
       return {
         success: true,
         messageId: message.id,
         providerId: response.sid,
-        status: response.status || 'sent',
+        status: response.status || "sent",
         cost: this.calculateCost(message),
-        currency: 'USD',
+        currency: "USD",
       };
-
     } catch (error) {
-      console.error('❌ [Twilio] Send error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('❌ [Twilio] Error details:', {
+      console.error("❌ [Twilio] Send error:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      console.error("❌ [Twilio] Error details:", {
         message: errorMessage,
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       });
       return {
         success: false,
         messageId: message.id,
-        status: 'failed',
+        status: "failed",
         error: errorMessage,
       };
     }
@@ -127,7 +143,7 @@ export class TwilioProvider extends BaseSMSProvider {
   async getStatus(messageId: string): Promise<CommunicationStatus> {
     try {
       if (!this.accountSid || !this.authToken) {
-        throw new Error('Twilio credentials not configured');
+        throw new Error("Twilio credentials not configured");
       }
 
       // Get message status from Twilio API
@@ -135,9 +151,9 @@ export class TwilioProvider extends BaseSMSProvider {
         `https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}/Messages/${messageId}.json`,
         {
           headers: {
-            'Authorization': `Basic ${Buffer.from(`${this.accountSid}:${this.authToken}`).toString('base64')}`,
+            Authorization: `Basic ${Buffer.from(`${this.accountSid}:${this.authToken}`).toString("base64")}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -146,10 +162,9 @@ export class TwilioProvider extends BaseSMSProvider {
 
       const data = await response.json();
       return this.mapTwilioStatus(data.status);
-
     } catch (error) {
-      console.error('Twilio status error:', error);
-      return 'failed';
+      console.error("Twilio status error:", error);
+      return "failed";
     }
   }
 
@@ -167,14 +182,14 @@ export class TwilioProvider extends BaseSMSProvider {
         `https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}.json`,
         {
           headers: {
-            'Authorization': `Basic ${Buffer.from(`${this.accountSid}:${this.authToken}`).toString('base64')}`,
+            Authorization: `Basic ${Buffer.from(`${this.accountSid}:${this.authToken}`).toString("base64")}`,
           },
-        }
+        },
       );
 
       return response.ok;
     } catch (error) {
-      console.error('Twilio validation error:', error);
+      console.error("Twilio validation error:", error);
       return false;
     }
   }
@@ -198,12 +213,18 @@ export class TwilioProvider extends BaseSMSProvider {
 
     // Add optional parameters
     if (message.metadata?.notificationId) {
-      (twilioMessage as any).StatusCallback = `${process.env.TWILIO_WEBHOOK_URL || 'https://yourdomain.com/api/webhooks/twilio'}`;
+      (twilioMessage as any).StatusCallback =
+        `${process.env.TWILIO_WEBHOOK_URL || "https://yourdomain.com/api/webhooks/twilio"}`;
     }
 
     // Add custom parameters
     if (message.metadata) {
-      (twilioMessage as any).StatusCallbackEvent = ['sent', 'delivered', 'failed', 'undelivered'];
+      (twilioMessage as any).StatusCallbackEvent = [
+        "sent",
+        "delivered",
+        "failed",
+        "undelivered",
+      ];
     }
 
     return twilioMessage;
@@ -214,33 +235,35 @@ export class TwilioProvider extends BaseSMSProvider {
    */
   private async sendViaAPI(message: any): Promise<any> {
     const formData = new URLSearchParams();
-    Object.keys(message).forEach(key => {
+    Object.keys(message).forEach((key) => {
       formData.append(key, message[key]);
     });
 
     const response = await fetch(
       `https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}/Messages.json`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Basic ${Buffer.from(`${this.accountSid}:${this.authToken}`).toString('base64')}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `Basic ${Buffer.from(`${this.accountSid}:${this.authToken}`).toString("base64")}`,
+          "Content-Type": "application/x-www-form-urlencoded",
         },
         body: formData,
-      }
+      },
     );
 
     const responseData = await response.json();
 
     if (!response.ok) {
-      console.error('❌ [Twilio] API error response:', {
+      console.error("❌ [Twilio] API error response:", {
         status: response.status,
         statusText: response.statusText,
         errorCode: responseData.code,
         errorMessage: responseData.message,
-        moreInfo: responseData.more_info
+        moreInfo: responseData.more_info,
       });
-      throw new Error(`Twilio API error: ${response.status} - ${responseData.message || 'Unknown error'} (Code: ${responseData.code || 'N/A'})`);
+      throw new Error(
+        `Twilio API error: ${response.status} - ${responseData.message || "Unknown error"} (Code: ${responseData.code || "N/A"})`,
+      );
     }
 
     return responseData;
@@ -251,21 +274,21 @@ export class TwilioProvider extends BaseSMSProvider {
    */
   private mapTwilioStatus(twilioStatus: string): CommunicationStatus {
     switch (twilioStatus.toLowerCase()) {
-      case 'queued':
-      case 'sending':
-        return 'pending';
-      case 'sent':
-        return 'sent';
-      case 'delivered':
-        return 'delivered';
-      case 'failed':
-      case 'undelivered':
-        return 'failed';
-      case 'receiving':
-      case 'received':
-        return 'delivered';
+      case "queued":
+      case "sending":
+        return "pending";
+      case "sent":
+        return "sent";
+      case "delivered":
+        return "delivered";
+      case "failed":
+      case "undelivered":
+        return "failed";
+      case "receiving":
+      case "received":
+        return "delivered";
       default:
-        return 'pending';
+        return "pending";
     }
   }
 
@@ -277,12 +300,12 @@ export class TwilioProvider extends BaseSMSProvider {
     // US: $0.0075 per SMS
     // This is a simplified calculation
     const phoneNumber = message.recipient.phone;
-    
+
     // Check if it's a US number
-    if (phoneNumber.startsWith('+1')) {
+    if (phoneNumber.startsWith("+1")) {
       return 0.0075; // US pricing
     }
-    
+
     // Default to US pricing for simplicity
     // In production, you'd want to look up pricing by country
     return 0.0075;
@@ -297,9 +320,9 @@ export class TwilioProvider extends BaseSMSProvider {
         `https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}/Balance.json`,
         {
           headers: {
-            'Authorization': `Basic ${Buffer.from(`${this.accountSid}:${this.authToken}`).toString('base64')}`,
+            Authorization: `Basic ${Buffer.from(`${this.accountSid}:${this.authToken}`).toString("base64")}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -308,9 +331,8 @@ export class TwilioProvider extends BaseSMSProvider {
 
       const data = await response.json();
       return parseFloat(data.balance);
-
     } catch (error) {
-      console.error('Twilio balance error:', error);
+      console.error("Twilio balance error:", error);
       return 0;
     }
   }
@@ -320,18 +342,22 @@ export class TwilioProvider extends BaseSMSProvider {
    */
   async getUsageStats(startDate?: Date, endDate?: Date): Promise<any> {
     try {
-      const start = startDate ? startDate.toISOString().split('T')[0] : 
-        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      const end = endDate ? endDate.toISOString().split('T')[0] : 
-        new Date().toISOString().split('T')[0];
+      const start = startDate
+        ? startDate.toISOString().split("T")[0]
+        : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split("T")[0];
+      const end = endDate
+        ? endDate.toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0];
 
       const response = await fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}/Usage/Records.json?StartDate=${start}&EndDate=${end}`,
         {
           headers: {
-            'Authorization': `Basic ${Buffer.from(`${this.accountSid}:${this.authToken}`).toString('base64')}`,
+            Authorization: `Basic ${Buffer.from(`${this.accountSid}:${this.authToken}`).toString("base64")}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -340,9 +366,8 @@ export class TwilioProvider extends BaseSMSProvider {
 
       const data = await response.json();
       return data.usage_records;
-
     } catch (error) {
-      console.error('Twilio usage stats error:', error);
+      console.error("Twilio usage stats error:", error);
       return [];
     }
   }

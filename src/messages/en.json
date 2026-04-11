@@ -28,7 +28,16 @@
     "clear": "Clear",
     "apply": "Apply",
     "reset": "Reset",
-    "more": "more"
+    "more": "more",
+    "auth": {
+      "signIn": "Sign In",
+      "email": "Email",
+      "phoneNumber": "Phone Number"
+    },
+    "messages": {
+      "createdSuccessfully": "Account created successfully",
+      "info": "Your account is pending admin approval. You will be notified once approved."
+    }
   },
   "auth": {
     "signIn": "Sign In",
@@ -443,6 +452,20 @@
     "bothVerified": "Both email and phone verified!",
     "redirecting": "Redirecting to dashboard...",
     "checkStatus": "Checking verification status...",
+    "edit": {
+      "edit": "Edit",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "newEmailPlaceholder": "New email address",
+      "phonePlaceholder": "(123) 456-7890",
+      "invalidEmail": "Please enter a valid email address",
+      "invalidPhone": "Please enter a valid phone number",
+      "updateEmailFailed": "Failed to update email",
+      "updatePhoneFailed": "Failed to update phone number",
+      "updateEmailRetry": "Failed to update email. Please try again.",
+      "updatePhoneRetry": "Failed to update phone. Please try again."
+    },
     "error": {
       "invalidCode": "Invalid verification code",
       "expiredCode": "Verification code has expired",
