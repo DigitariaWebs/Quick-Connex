@@ -335,9 +335,14 @@ export default function TransferForm({
       return;
     }
 
-    // Format date and time for submission
+    // Format date and time for submission (use local components to avoid UTC shift)
     const formattedDate = selectedDate
-      ? selectedDate.toISOString().split("T")[0]
+      ? `${selectedDate.getFullYear()}-${(selectedDate.getMonth() + 1)
+          .toString()
+          .padStart(
+            2,
+            "0",
+          )}-${selectedDate.getDate().toString().padStart(2, "0")}`
       : "";
     const formattedTime = selectedTime
       ? `${selectedTime.getHours().toString().padStart(2, "0")}:${selectedTime

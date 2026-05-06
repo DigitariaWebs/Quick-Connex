@@ -133,8 +133,9 @@ export function DatePickerInput({
     </button>
   ));
 
-  // Get today's date for min date
+  // Min date = start of today (avoid blocking today's selection when current time > 00:00)
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   return (
     <div>

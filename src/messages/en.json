@@ -684,6 +684,8 @@
     "provideCancelReason": "Please provide a reason for cancelling this transfer:",
     "transferCancelledSuccessfully": "Transfer cancelled successfully!",
     "failedToCancelTransfer": "Failed to cancel transfer",
+    "cancelling": "Cancelling...",
+    "cancelTransfer": "Cancel Transfer",
     "ageLabel": "Age:",
     "yearsOld": "years old",
     "dossierLabel": "Dossier:",
